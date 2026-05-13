@@ -11,7 +11,7 @@ import
   , VTreeType
   } from '../types';
 
-import { drill } from '../util';
+import { getFirstDOMRef } from '../util';
 import { delegator } from '../event';
 
 export const eventContext : EventContext<DOMRef> = {
@@ -80,7 +80,8 @@ export const drawingContext : DrawingContext<DOMRef> = {
     if (node.nextSibling) {
       switch (node.nextSibling.type) {
         case VTreeType.VComp:
-          return drill(node.nextSibling) as DOMRef;
+        case VTreeType.VFrag:
+          return getFirstDOMRef(node.nextSibling) as DOMRef;
         default:
           return node.nextSibling.domRef as DOMRef;
       }

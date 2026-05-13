@@ -1,5 +1,5 @@
-import { Class, Mount, DrawingContext, CSS, VNode, VText, VComp, VTree, Props, VTreeType, OP } from './types';
-import { getDOMRef } from './util';
+import { Class, Mount, DrawingContext, CSS, VNode, VFrag, VText, VComp, VTree, Props, VTreeType, OP } from './types';
+import { forEachDOMRef, getFirstDOMRef, getLastDOMRef } from './util';
 
 /* virtual-dom diffing algorithm, applies patches as detected */
 export function diff<T>(c: VTree<T>, n: VTree<T>, parent: T, context: DrawingContext<T>): void {
@@ -17,6 +17,18 @@ export function diff<T>(c: VTree<T>, n: VTree<T>, parent: T, context: DrawingCon
           return;
         }
         replace(c, n, parent, context);
+    }
+    else if (c.type === VTreeType.VFrag && n.type === VTreeType.VFrag) {
+        if (n.key === c.key) {
+          // Snapshot the DOM anchor *before* any mutations so growing the VFrag
+          // inserts new nodes at the correct position (before the following sibling).
+          const endAnchor = c.children.length > 0
+            ? (getLastDOMRef(c) as unknown as Node).nextSibling as unknown as T | null
+            : null;
+          diffChildren(c.children, n.children, parent, context, endAnchor);
+        } else {
+          replace(c, n, parent, context);
+        }
     }
     else if (c.type === VTreeType.VNode && n.type === VTreeType.VNode) {
         if (n.tag === c.tag && n.key === c.key) {
@@ -38,6 +50,19 @@ function diffVText<T>(c: VText<T>, n: VText<T>, context : DrawingContext<T>): vo
 
 // replace everything function
 function replace<T>(c: VTree<T>, n: VTree<T>, parent: T, context : DrawingContext<T>): void {
+  // VFrag spans multiple DOM nodes — destroy all, then create n at the same position
+  if (c.type === VTreeType.VFrag) {
+    const anchor = c.children.length > 0
+      ? (getLastDOMRef(c) as unknown as Node).nextSibling as unknown as T | null
+      : null;
+    destroy(c, parent, context);
+    if (anchor) {
+      createElement(parent, OP.INSERT_BEFORE, anchor, n, context);
+    } else {
+      create(n, parent, context);
+    }
+    return;
+  }
   // step1 : prepare to delete, unmount things
   switch (c.type) {
       case VTreeType.VText:
@@ -47,7 +72,22 @@ function replace<T>(c: VTree<T>, n: VTree<T>, parent: T, context : DrawingContex
           break;
   }
 
-  createElement(parent, OP.REPLACE, getDOMRef(c), n, context);
+  // For VComp whose child spans multiple DOM nodes (e.g. VFrag child), we must
+  // remove ALL old DOM refs, not just the first one, before inserting new nodes.
+  const firstRef = getFirstDOMRef(c);
+  const lastRef  = getLastDOMRef(c);
+  if ((firstRef as unknown as Node) !== (lastRef as unknown as Node)) {
+    // Multi-DOM node: anchor-based insert-then-remove
+    const anchor = (lastRef as unknown as Node).nextSibling as unknown as T | null;
+    forEachDOMRef(c, ref => context.removeChild(parent, ref));
+    if (anchor) {
+      createElement(parent, OP.INSERT_BEFORE, anchor, n, context);
+    } else {
+      create(n, parent, context);
+    }
+  } else {
+    createElement(parent, OP.REPLACE, firstRef, n, context);
+  }
 
   // step 3: call destroyed hooks, call created hooks
   switch (c.type) {
@@ -65,12 +105,15 @@ function destroy<T>(c: VTree<T>, parent: T, context: DrawingContext<T>): void {
   switch (c.type) {
       case VTreeType.VText:
           break;
+      case VTreeType.VFrag:
+          for (const child of c.children) destroy(child, parent, context);
+          return;
       default:
           callBeforeDestroyedRecursive(c);
           break;
   }
   // step 2: destroy
-  context.removeChild(parent, getDOMRef(c));
+  forEachDOMRef(c, ref => context.removeChild(parent, ref));
   // step 3: invoke post-hooks for vnode and vcomp
   switch (c.type) {
       case VTreeType.VText:
@@ -82,21 +125,21 @@ function destroy<T>(c: VTree<T>, parent: T, context: DrawingContext<T>): void {
 }
 
 // ** recursive calls to hooks
-function callDestroyedRecursive<T>(c: VNode<T> | VComp<T>): void {
-  callDestroyed(c);
+function callDestroyedRecursive<T>(c: VNode<T> | VComp<T> | VFrag<T>): void {
+  if (c.type === VTreeType.VFrag) {
+    for (const child of c.children)
+      if (child.type !== VTreeType.VText) callDestroyedRecursive(child as VNode<T> | VComp<T> | VFrag<T>);
+    return;
+  }
+  callDestroyed(c as VNode<T> | VComp<T>);
   switch (c.type) {
     case VTreeType.VNode:
-      for (const child of c.children) {
-        if (child.type === VTreeType.VNode || child.type === VTreeType.VComp) {
-           callDestroyedRecursive(child);
-        }
-      }
+      for (const child of c.children)
+        if (child.type !== VTreeType.VText) callDestroyedRecursive(child as VNode<T> | VComp<T> | VFrag<T>);
       break;
     case VTreeType.VComp:
-      if (c.child) {
-        if (c.child.type === VTreeType.VNode || c.child.type === VTreeType.VComp)
-          callDestroyedRecursive(c.child);
-      }
+      if (c.child && c.child.type !== VTreeType.VText)
+        callDestroyedRecursive(c.child as VNode<T> | VComp<T> | VFrag<T>);
       break;
   }
 }
@@ -118,20 +161,23 @@ function callBeforeDestroyed<T>(c: VNode<T> | VComp<T>): void {
   }
 }
 
-function callBeforeDestroyedRecursive<T>(c: VNode<T> | VComp<T>): void {
-  callBeforeDestroyed(c);
+function callBeforeDestroyedRecursive<T>(c: VNode<T> | VComp<T> | VFrag<T>): void {
+  if (c.type === VTreeType.VFrag) {
+    for (const child of c.children)
+      if (child.type !== VTreeType.VText) callBeforeDestroyedRecursive(child as VNode<T> | VComp<T> | VFrag<T>);
+    return;
+  }
+  callBeforeDestroyed(c as VNode<T> | VComp<T>);
   switch (c.type) {
     case VTreeType.VNode:
       for (const child of c.children) {
          if (child.type === VTreeType.VText) continue;
-         callBeforeDestroyedRecursive(child);
+         callBeforeDestroyedRecursive(child as VNode<T> | VComp<T> | VFrag<T>);
       }
       break;
     case VTreeType.VComp:
-      if (c.child) { 
-        if (c.child.type === VTreeType.VNode || c.child.type === VTreeType.VComp)
-          callBeforeDestroyedRecursive(c.child);
-      }
+      if (c.child && c.child.type !== VTreeType.VText)
+        callBeforeDestroyedRecursive(c.child as VNode<T> | VComp<T> | VFrag<T>);
       break;
   }
 }
@@ -214,7 +260,7 @@ function diffProps<T extends Object>(cProps: Props, nProps: Props, node: T, isSv
   /* add remaining */
   for (const n in nProps) {
     /* Only add new properties, skip (continue) if they already exist in current property map */
-    if (cProps && cProps[n]) continue;
+    if (cProps && n in cProps) continue;
     newProp = nProps[n];
     if (isSvg) {
       if (n === 'href') {
@@ -249,12 +295,24 @@ function shouldSync<T> (cs: Array<VTree<T>>, ns: Array<VTree<T>>) {
     return true;
 }
 
-function diffChildren<T>(cs: Array<VTree<T>>, ns: Array<VTree<T>>, parent: T, context: DrawingContext<T>): void {
+function diffChildren<T>(cs: Array<VTree<T>>, ns: Array<VTree<T>>, parent: T, context: DrawingContext<T>, endAnchor: T | null = null): void {
   if (shouldSync(cs,ns)) {
-    syncChildren(cs, ns, parent, context);
+    syncChildren(cs, ns, parent, context, endAnchor);
   } else {
-    for (let i = 0; i < Math.max (ns.length, cs.length); i++)
-      diff(cs[i], ns[i], parent, context);
+    for (let i = 0; i < Math.max(ns.length, cs.length); i++) {
+      const c = cs[i], n = ns[i];
+      if (!c && n) {
+        // When growing a VFrag, use the stored endAnchor so new nodes land in
+        // the right position (before the VFrag's following DOM sibling).
+        if (endAnchor) {
+          createElement(parent, OP.INSERT_BEFORE, endAnchor, n, context);
+        } else {
+          create(n, parent, context);
+        }
+      } else {
+        diff(c, n, parent, context);
+      }
+    }
   }
 }
 
@@ -287,6 +345,16 @@ function createElement<T>(parent : T, op: OP, replacing : T | null, n: VTree<T>,
         case OP.REPLACE:
           context.replaceChild(parent, n.domRef, replacing);
           break;
+      }
+      break;
+    case VTreeType.VFrag:
+      // INSERT_BEFORE with null anchor degrades to appendChild, so this handles
+      // OP.APPEND, OP.INSERT_BEFORE, and OP.REPLACE (remove old node after inserting).
+      for (const child of n.children) {
+        createElement(parent, OP.INSERT_BEFORE, replacing, child, context);
+      }
+      if (op === OP.REPLACE && replacing) {
+        context.removeChild(parent, replacing);
       }
       break;
     case VTreeType.VComp:
@@ -333,14 +401,17 @@ function mountComponent<T>(parent: T, op : OP, replacing: T | null, n: VComp<T>,
   n.child = mounted.componentTree;
   mounted.componentTree.parent = n;
   if (mounted.componentTree.type !== VTreeType.VComp) {
-    // Handle DOM placement for non-VComp child nodes
-    const childDomRef = getDOMRef(mounted.componentTree);
     if (op === OP.REPLACE && replacing) {
-      context.replaceChild(parent, childDomRef, replacing);
+      if (mounted.componentTree.type === VTreeType.VFrag) {
+        forEachDOMRef(mounted.componentTree, ref => context.insertBefore(parent, ref, replacing));
+        context.removeChild(parent, replacing);
+      } else {
+        context.replaceChild(parent, getFirstDOMRef(mounted.componentTree), replacing);
+      }
     } else if (op === OP.INSERT_BEFORE) {
-      context.insertBefore(parent, childDomRef, replacing);
+      forEachDOMRef(mounted.componentTree, ref => context.insertBefore(parent, ref, replacing));
     }
-      // For OP.APPEND, this happens naturally in mount()
+    // OP.APPEND: mount() already appended in order
   }
 }
 
@@ -350,15 +421,27 @@ function create<T>(n: VTree<T>, parent: T, context: DrawingContext<T>): void {
 }
 
 function insertBefore<T>(parent: T, n: VTree<T>, o: VTree<T> | null, context: DrawingContext<T>): void {
-  context.insertBefore(parent, getDOMRef(n), o ? getDOMRef(o) : null);
-} 
+  const anchor = o ? getFirstDOMRef(o) : null;
+  forEachDOMRef(n, ref => context.insertBefore(parent, ref, anchor));
+}
 
 function swapDOMRef<T>(oLast: VTree<T>, oFirst: VTree<T>, parent: T, context: DrawingContext<T>): void {
-  context.swapDOMRefs(getDOMRef(oLast), getDOMRef(oFirst), parent);
+  // dmj: Optimization to use 'swapDOMRefs' if the two nodes being operated on are either VNode or VText.
+  if ((oLast.type === VTreeType.VNode || oLast.type === VTreeType.VText) && (oFirst.type === VTreeType.VNode || oFirst.type === VTreeType.VText)) {
+    context.swapDOMRefs (getFirstDOMRef(oLast), getFirstDOMRef(oFirst), parent);
+    return;
+  }
+  // Snapshot where oLast currently ends (before we move anything)
+  const tmp = (getLastDOMRef(oLast) as unknown as Node).nextSibling as unknown as T | null;
+  const anchor = getFirstDOMRef(oFirst);
+  // Move all of oLast before oFirst's first node
+  forEachDOMRef(oLast, ref => context.insertBefore(parent, ref, anchor));
+  // Move all of oFirst to where oLast used to end
+  forEachDOMRef(oFirst, ref => context.insertBefore(parent, ref, tmp));
 }
 
 /* Child reconciliation algorithm, inspired by kivi and Bobril */
-function syncChildren<T>(os: Array<VTree<T>>, ns: Array<VTree<T>>, parent: T, context: DrawingContext<T>): void {
+function syncChildren<T>(os: Array<VTree<T>>, ns: Array<VTree<T>>, parent: T, context: DrawingContext<T>, endAnchor: T | null = null): void {
   var oldFirstIndex: number = 0,
     newFirstIndex: number = 0,
     oldLastIndex: number = os.length - 1,
@@ -388,11 +471,18 @@ function syncChildren<T>(os: Array<VTree<T>>, ns: Array<VTree<T>>, parent: T, co
                -> [ a b c ] <- new children
                */
     if (oldFirstIndex > oldLastIndex) {
-      diff(null, nFirst, parent, context);
-      /* insertBefore's semantics will append a node if the second argument provided is `null` or `undefined`.
-         Otherwise, it will insert node.domRef before oLast.domRef.
-      */
-      insertBefore(parent, nFirst, oFirst, context);
+      // When the old list is exhausted, new nodes must be inserted before the
+      // VFrag's following sibling (endAnchor) if one exists, or before oFirst
+      // (the stale position marker) if valid, otherwise appended.
+      if (endAnchor) {
+        createElement(parent, OP.INSERT_BEFORE, endAnchor, nFirst, context);
+      } else {
+        diff(null, nFirst, parent, context);
+        /* insertBefore's semantics will append a node if the second argument provided is `null` or `undefined`.
+           Otherwise, it will insert node.domRef before oLast.domRef.
+        */
+        insertBefore(parent, nFirst, oFirst, context);
+      }
       os.splice(newFirstIndex, 0, nFirst);
       newFirstIndex++;
     } /* No more new nodes, delete all remaining nodes in old list
@@ -440,7 +530,8 @@ function syncChildren<T>(os: Array<VTree<T>>, ns: Array<VTree<T>>, parent: T, co
         and now we happy path */
     else if (oFirst.key === nLast.key) {
       /* insertAfter */
-      insertBefore(parent, oFirst, oLast.nextSibling, context);
+      const afterOLast = (getLastDOMRef(oLast) as unknown as Node).nextSibling as unknown as T | null;
+      forEachDOMRef(oFirst, ref => context.insertBefore(parent, ref, afterOLast));
       /* swap positions in old vdom */
       os.splice(oldLastIndex, 0, os.splice(oldFirstIndex, 1)[0]);
       diff(os[oldLastIndex--], ns[newLastIndex--], parent, context);
@@ -509,7 +600,7 @@ function syncChildren<T>(os: Array<VTree<T>>, ns: Array<VTree<T>>, parent: T, co
         -> [ b e a j   ] <- new children
              ^
         */ else {
-            createElement(parent, OP.INSERT_BEFORE, getDOMRef(oFirst), nFirst, context);
+            createElement(parent, OP.INSERT_BEFORE, getFirstDOMRef(oFirst), nFirst, context);
             os.splice(oldFirstIndex++, 0, nFirst);
             newFirstIndex++;
             oldLastIndex++;

@@ -1,0 +1,2193 @@
+/**
+ * Tests for VFrag (React-Fragment-like) virtual DOM nodes.
+ *
+ * VFrag represents a group of sibling nodes with no enclosing DOM element.
+ */
+import { diff } from '../miso/dom';
+import { delegator } from '../miso/event';
+import { hydrate } from '../miso/hydrate';
+import { vfrag, vfragKeyed, vcomp, vnode, vtext, vtextKeyed } from '../miso/smart';
+import { DOMRef, VNode, VText, EventCapture } from '../miso/types';
+import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
+import { drawingContext, eventContext, hydrationContext } from '../miso/context/dom';
+
+beforeAll(() => {
+  console.log = () => {};
+  console.info = () => {};
+  console.warn = () => {};
+  console.error = () => {};
+});
+
+afterEach(() => {
+  document.body.innerHTML = '';
+});
+
+// ---------------------------------------------------------------------------
+// DOM diffing tests
+// ---------------------------------------------------------------------------
+
+describe('VFrag — DOM creation', () => {
+
+  test('creates all children as siblings with no wrapper element', () => {
+    const frag = vfrag<DOMRef>([vtext('a'), vtext('b'), vtext('c')]);
+    diff<DOMRef>(null, frag, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(3);
+    expect(document.body.childNodes[0].textContent).toBe('a');
+    expect(document.body.childNodes[1].textContent).toBe('b');
+    expect(document.body.childNodes[2].textContent).toBe('c');
+  });
+
+  test('creates fragment containing element nodes', () => {
+    const frag = vfrag<DOMRef>([
+      vnode<DOMRef>({ tag: 'span' }),
+      vnode<DOMRef>({ tag: 'p' }),
+    ]);
+    diff<DOMRef>(null, frag, document.body, drawingContext);
+    expect(document.body.children.length).toBe(2);
+    expect(document.body.children[0].tagName.toLowerCase()).toBe('span');
+    expect(document.body.children[1].tagName.toLowerCase()).toBe('p');
+  });
+
+  test('creates empty fragment (no children added)', () => {
+    const frag = vfrag<DOMRef>([]);
+    diff<DOMRef>(null, frag, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(0);
+  });
+
+  test('creates nested fragment (fragment inside fragment)', () => {
+    const inner = vfrag<DOMRef>([vtext('x'), vtext('y')]);
+    const outer = vfrag<DOMRef>([vtext('before'), inner, vtext('after')]);
+    diff<DOMRef>(null, outer, document.body, drawingContext);
+    // 'before', 'x', 'y', 'after' — 4 text nodes
+    expect(document.body.childNodes.length).toBe(4);
+    expect(document.body.textContent).toBe('beforexyafter');
+  });
+
+});
+
+// ---------------------------------------------------------------------------
+// Keyed VFrag children in the syncChildren (child reconciliation) path
+// ---------------------------------------------------------------------------
+
+describe('VFrag — keyed children sync (syncChildren)', () => {
+
+  // Helper: render a VNode whose children are keyed VFrags, then re-render
+  // with a new child order and return the resulting DOM text content array.
+  function textOrder(): string[] {
+    return Array.from(document.body.firstChild!.childNodes).map(n => n.textContent ?? '');
+  }
+
+  test('happy path — same order, in-place diff of keyed fragment children', () => {
+    // fA: [a1, a2]  fB: [b1, b2]   ->  same order, update text
+    const cA = vfragKeyed<DOMRef>('A', [vtext('a1'), vtext('a2')]);
+    const cB = vfragKeyed<DOMRef>('B', [vtext('b1'), vtext('b2')]);
+    const old = vnode<DOMRef>({ tag: 'div', children: [cA, cB] });
+    diff(null, old, document.body, drawingContext);
+    expect(textOrder()).toEqual(['a1', 'a2', 'b1', 'b2']);
+
+    const nA = vfragKeyed<DOMRef>('A', [vtext('A1'), vtext('A2')]);
+    const nB = vfragKeyed<DOMRef>('B', [vtext('B1'), vtext('B2')]);
+    const next = vnode<DOMRef>({ tag: 'div', children: [nA, nB] });
+    diff(old, next, document.body, drawingContext);
+    expect(textOrder()).toEqual(['A1', 'A2', 'B1', 'B2']);
+  });
+
+  test('flip-flop swap — two keyed fragments fully reversed', () => {
+    // [ fA fB ] -> [ fB fA ]
+    // fA = [a1, a2], fB = [b1, b2]
+    const cA = vfragKeyed<DOMRef>('A', [vtext('a1'), vtext('a2')]);
+    const cB = vfragKeyed<DOMRef>('B', [vtext('b1'), vtext('b2')]);
+    const old = vnode<DOMRef>({ tag: 'div', children: [cA, cB] });
+    diff(null, old, document.body, drawingContext);
+    expect(textOrder()).toEqual(['a1', 'a2', 'b1', 'b2']);
+
+    const nB = vfragKeyed<DOMRef>('B', [vtext('b1'), vtext('b2')]);
+    const nA = vfragKeyed<DOMRef>('A', [vtext('a1'), vtext('a2')]);
+    const next = vnode<DOMRef>({ tag: 'div', children: [nB, nA] });
+    diff(old, next, document.body, drawingContext);
+    expect(textOrder()).toEqual(['b1', 'b2', 'a1', 'a2']);
+  });
+
+  test('move first to last — [ fA fB fC ] -> [ fB fC fA ]', () => {
+    const cA = vfragKeyed<DOMRef>('A', [vtext('a1'), vtext('a2')]);
+    const cB = vfragKeyed<DOMRef>('B', [vtext('b1'), vtext('b2')]);
+    const cC = vfragKeyed<DOMRef>('C', [vtext('c1'), vtext('c2')]);
+    const old = vnode<DOMRef>({ tag: 'div', children: [cA, cB, cC] });
+    diff(null, old, document.body, drawingContext);
+    expect(textOrder()).toEqual(['a1', 'a2', 'b1', 'b2', 'c1', 'c2']);
+
+    const nB = vfragKeyed<DOMRef>('B', [vtext('b1'), vtext('b2')]);
+    const nC = vfragKeyed<DOMRef>('C', [vtext('c1'), vtext('c2')]);
+    const nA = vfragKeyed<DOMRef>('A', [vtext('a1'), vtext('a2')]);
+    const next = vnode<DOMRef>({ tag: 'div', children: [nB, nC, nA] });
+    diff(old, next, document.body, drawingContext);
+    expect(textOrder()).toEqual(['b1', 'b2', 'c1', 'c2', 'a1', 'a2']);
+  });
+
+  test('move last to first — [ fA fB fC ] -> [ fC fA fB ]', () => {
+    const cA = vfragKeyed<DOMRef>('A', [vtext('a1'), vtext('a2')]);
+    const cB = vfragKeyed<DOMRef>('B', [vtext('b1'), vtext('b2')]);
+    const cC = vfragKeyed<DOMRef>('C', [vtext('c1'), vtext('c2')]);
+    const old = vnode<DOMRef>({ tag: 'div', children: [cA, cB, cC] });
+    diff(null, old, document.body, drawingContext);
+    expect(textOrder()).toEqual(['a1', 'a2', 'b1', 'b2', 'c1', 'c2']);
+
+    const nC = vfragKeyed<DOMRef>('C', [vtext('c1'), vtext('c2')]);
+    const nA = vfragKeyed<DOMRef>('A', [vtext('a1'), vtext('a2')]);
+    const nB = vfragKeyed<DOMRef>('B', [vtext('b1'), vtext('b2')]);
+    const next = vnode<DOMRef>({ tag: 'div', children: [nC, nA, nB] });
+    diff(old, next, document.body, drawingContext);
+    expect(textOrder()).toEqual(['c1', 'c2', 'a1', 'a2', 'b1', 'b2']);
+  });
+
+  test('insert new keyed fragment into existing list (case 1: no more old nodes)', () => {
+    // [ fA fC ] -> [ fA fB fC ]  — fB is new, inserted between fA and fC
+    const cA = vfragKeyed<DOMRef>('A', [vtext('a1'), vtext('a2')]);
+    const cC = vfragKeyed<DOMRef>('C', [vtext('c1'), vtext('c2')]);
+    const old = vnode<DOMRef>({ tag: 'div', children: [cA, cC] });
+    diff(null, old, document.body, drawingContext);
+    expect(textOrder()).toEqual(['a1', 'a2', 'c1', 'c2']);
+
+    const nA = vfragKeyed<DOMRef>('A', [vtext('a1'), vtext('a2')]);
+    const nB = vfragKeyed<DOMRef>('B', [vtext('b1'), vtext('b2')]);
+    const nC = vfragKeyed<DOMRef>('C', [vtext('c1'), vtext('c2')]);
+    const next = vnode<DOMRef>({ tag: 'div', children: [nA, nB, nC] });
+    diff(old, next, document.body, drawingContext);
+    expect(textOrder()).toEqual(['a1', 'a2', 'b1', 'b2', 'c1', 'c2']);
+  });
+
+  test('delete keyed fragment from middle of list (case 2: no more new nodes)', () => {
+    // [ fA fB fC ] -> [ fA fC ]  — fB is removed
+    const cA = vfragKeyed<DOMRef>('A', [vtext('a1'), vtext('a2')]);
+    const cB = vfragKeyed<DOMRef>('B', [vtext('b1'), vtext('b2')]);
+    const cC = vfragKeyed<DOMRef>('C', [vtext('c1'), vtext('c2')]);
+    const old = vnode<DOMRef>({ tag: 'div', children: [cA, cB, cC] });
+    diff(null, old, document.body, drawingContext);
+    expect(textOrder()).toEqual(['a1', 'a2', 'b1', 'b2', 'c1', 'c2']);
+
+    const nA = vfragKeyed<DOMRef>('A', [vtext('a1'), vtext('a2')]);
+    const nC = vfragKeyed<DOMRef>('C', [vtext('c1'), vtext('c2')]);
+    const next = vnode<DOMRef>({ tag: 'div', children: [nA, nC] });
+    diff(old, next, document.body, drawingContext);
+    expect(textOrder()).toEqual(['a1', 'a2', 'c1', 'c2']);
+  });
+
+  test('linear search — sorted shuffle (case 8: no bilateral key match)', () => {
+    // [ fA fE fC ] -> [ fB fE fD ]
+    // fA and fC are removed, fB and fD are new, fE stays in place via linear search
+    const cA = vfragKeyed<DOMRef>('A', [vtext('a1'), vtext('a2')]);
+    const cE = vfragKeyed<DOMRef>('E', [vtext('e1'), vtext('e2')]);
+    const cC = vfragKeyed<DOMRef>('C', [vtext('c1'), vtext('c2')]);
+    const old = vnode<DOMRef>({ tag: 'div', children: [cA, cE, cC] });
+    diff(null, old, document.body, drawingContext);
+    expect(textOrder()).toEqual(['a1', 'a2', 'e1', 'e2', 'c1', 'c2']);
+
+    const nB = vfragKeyed<DOMRef>('B', [vtext('b1'), vtext('b2')]);
+    const nE = vfragKeyed<DOMRef>('E', [vtext('e1'), vtext('e2')]);
+    const nD = vfragKeyed<DOMRef>('D', [vtext('d1'), vtext('d2')]);
+    const next = vnode<DOMRef>({ tag: 'div', children: [nB, nE, nD] });
+    diff(old, next, document.body, drawingContext);
+    expect(textOrder()).toEqual(['b1', 'b2', 'e1', 'e2', 'd1', 'd2']);
+  });
+
+  test('grow keyed list with following sibling — new nodes must not escape past sibling', () => {
+    // parent div: [ VFragKeyed('list',[A,B]),  VNode('span') ]
+    // grow to:    [ VFragKeyed('list',[A,B,C]), VNode('span') ]
+    // Without endAnchor threaded into syncChildren, C would be appended AFTER span.
+    const cA = vfragKeyed<DOMRef>('A', [vtext('a')]);
+    const cB = vfragKeyed<DOMRef>('B', [vtext('b')]);
+    const old = vnode<DOMRef>({ tag: 'div', children: [
+      vfragKeyed<DOMRef>('list', [cA, cB]),
+      vnode<DOMRef>({ tag: 'span' }),
+    ]});
+    diff(null, old, document.body, drawingContext);
+    expect(textOrder()).toEqual(['a', 'b', '']);
+
+    const nA = vfragKeyed<DOMRef>('A', [vtext('a')]);
+    const nB = vfragKeyed<DOMRef>('B', [vtext('b')]);
+    const nC = vfragKeyed<DOMRef>('C', [vtext('c')]);
+    const next = vnode<DOMRef>({ tag: 'div', children: [
+      vfragKeyed<DOMRef>('list', [nA, nB, nC]),
+      vnode<DOMRef>({ tag: 'span' }),
+    ]});
+    diff(old, next, document.body, drawingContext);
+    // 'c' must appear before the span, not after it
+    expect(textOrder()).toEqual(['a', 'b', 'c', '']);
+  });
+
+});
+
+// ---------------------------------------------------------------------------
+// Nested keyed fragments — fragments whose children are themselves keyed
+// fragments, exercising the syncChildren key optimizations recursively.
+// ---------------------------------------------------------------------------
+
+describe('VFrag — nested keyed fragments (syncChildren recursion)', () => {
+
+  function bodyText(): string[] {
+    return Array.from(document.body.firstChild!.childNodes).map(n => n.textContent ?? '');
+  }
+
+  test('nested keyed frags: in-place update of inner keyed children', () => {
+    // outer frag contains two inner keyed frags, each with keyed text children
+    // vtextKeyed(text, key) — keys are stable ('ka','kb','kc','kd'), only text changes
+    const inner1 = vfragKeyed<DOMRef>('I1', [
+      vtextKeyed('a', 'ka'),
+      vtextKeyed('b', 'kb'),
+    ]);
+    const inner2 = vfragKeyed<DOMRef>('I2', [
+      vtextKeyed('c', 'kc'),
+      vtextKeyed('d', 'kd'),
+    ]);
+    const outer = vfragKeyed<DOMRef>('O', [inner1, inner2]);
+    const root = vnode<DOMRef>({ tag: 'div', children: [outer] });
+    diff(null, root, document.body, drawingContext);
+    expect(bodyText()).toEqual(['a', 'b', 'c', 'd']);
+
+    // update text values in place — keys are stable so syncChildren should patch
+    const nInner1 = vfragKeyed<DOMRef>('I1', [
+      vtextKeyed('A', 'ka'),
+      vtextKeyed('B', 'kb'),
+    ]);
+    const nInner2 = vfragKeyed<DOMRef>('I2', [
+      vtextKeyed('C', 'kc'),
+      vtextKeyed('D', 'kd'),
+    ]);
+    const nOuter = vfragKeyed<DOMRef>('O', [nInner1, nInner2]);
+    const nRoot = vnode<DOMRef>({ tag: 'div', children: [nOuter] });
+    diff(root, nRoot, document.body, drawingContext);
+    expect(bodyText()).toEqual(['A', 'B', 'C', 'D']);
+  });
+
+  test('nested keyed frags: swap inner keyed fragments inside outer', () => {
+    // [ outer[ I1[a,b], I2[c,d] ] ] -> [ outer[ I2[c,d], I1[a,b] ] ]
+    const inner1 = vfragKeyed<DOMRef>('I1', [vtext('a'), vtext('b')]);
+    const inner2 = vfragKeyed<DOMRef>('I2', [vtext('c'), vtext('d')]);
+    const outer = vfragKeyed<DOMRef>('O', [inner1, inner2]);
+    const root = vnode<DOMRef>({ tag: 'div', children: [outer] });
+    diff(null, root, document.body, drawingContext);
+    expect(bodyText()).toEqual(['a', 'b', 'c', 'd']);
+
+    const nInner2 = vfragKeyed<DOMRef>('I2', [vtext('c'), vtext('d')]);
+    const nInner1 = vfragKeyed<DOMRef>('I1', [vtext('a'), vtext('b')]);
+    const nOuter = vfragKeyed<DOMRef>('O', [nInner2, nInner1]);
+    const nRoot = vnode<DOMRef>({ tag: 'div', children: [nOuter] });
+    diff(root, nRoot, document.body, drawingContext);
+    expect(bodyText()).toEqual(['c', 'd', 'a', 'b']);
+  });
+
+  test('nested keyed frags: swap outer keyed fragments', () => {
+    // div[ F1[ I1[a,b], I2[c,d] ], F2[ I3[e,f] ] ]
+    // ->
+    // div[ F2[ I3[e,f] ], F1[ I1[a,b], I2[c,d] ] ]
+    const i1 = vfragKeyed<DOMRef>('I1', [vtext('a'), vtext('b')]);
+    const i2 = vfragKeyed<DOMRef>('I2', [vtext('c'), vtext('d')]);
+    const i3 = vfragKeyed<DOMRef>('I3', [vtext('e'), vtext('f')]);
+    const f1 = vfragKeyed<DOMRef>('F1', [i1, i2]);
+    const f2 = vfragKeyed<DOMRef>('F2', [i3]);
+    const root = vnode<DOMRef>({ tag: 'div', children: [f1, f2] });
+    diff(null, root, document.body, drawingContext);
+    expect(bodyText()).toEqual(['a', 'b', 'c', 'd', 'e', 'f']);
+
+    const ni1 = vfragKeyed<DOMRef>('I1', [vtext('a'), vtext('b')]);
+    const ni2 = vfragKeyed<DOMRef>('I2', [vtext('c'), vtext('d')]);
+    const ni3 = vfragKeyed<DOMRef>('I3', [vtext('e'), vtext('f')]);
+    const nf1 = vfragKeyed<DOMRef>('F1', [ni1, ni2]);
+    const nf2 = vfragKeyed<DOMRef>('F2', [ni3]);
+    const nRoot = vnode<DOMRef>({ tag: 'div', children: [nf2, nf1] });
+    diff(root, nRoot, document.body, drawingContext);
+    expect(bodyText()).toEqual(['e', 'f', 'a', 'b', 'c', 'd']);
+  });
+
+});
+
+describe('VFrag — DOM diffing (same key, in-place update)', () => {
+
+  test('diffs two fragments with same key, updating text children', () => {
+    const c = vfragKeyed<DOMRef>('k', [vtext('old1'), vtext('old2')]);
+    diff<DOMRef>(null, c, document.body, drawingContext);
+    expect(document.body.childNodes[0].textContent).toBe('old1');
+    expect(document.body.childNodes[1].textContent).toBe('old2');
+
+    const n = vfragKeyed<DOMRef>('k', [vtext('new1'), vtext('new2')]);
+    diff<DOMRef>(c, n, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(2);
+    expect(document.body.childNodes[0].textContent).toBe('new1');
+    expect(document.body.childNodes[1].textContent).toBe('new2');
+  });
+
+  test('diffs fragment against itself (no-op), DOM unchanged', () => {
+    const c = vfrag<DOMRef>([vtext('x')]);
+    diff<DOMRef>(null, c, document.body, drawingContext);
+    const ref = document.body.childNodes[0];
+
+    const n = vfrag<DOMRef>([vtext('x')]);
+    diff<DOMRef>(c, n, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(1);
+    // text node reference should be reused
+    expect(document.body.childNodes[0].textContent).toBe('x');
+  });
+
+  test('replaces fragment with different key', () => {
+    const c = vfragKeyed<DOMRef>('k1', [vtext('a'), vtext('b')]);
+    diff<DOMRef>(null, c, document.body, drawingContext);
+
+    const n = vfragKeyed<DOMRef>('k2', [vtext('c')]);
+    diff<DOMRef>(c, n, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(1);
+    expect(document.body.childNodes[0].textContent).toBe('c');
+  });
+
+  test('replaces fragment with different key preserves position when followed by a sibling', () => {
+    // [ frag(k1)[a,b], span ]  ->  [ frag(k2)[c], span ]
+    // Without the anchor fix, frag(k2) would be appended after span.
+    const c = vfragKeyed<DOMRef>('k1', [vtext('a'), vtext('b')]);
+    const sibling = vnode<DOMRef>({ tag: 'span' });
+    const parent = vnode<DOMRef>({ tag: 'div', children: [c, sibling] });
+    diff<DOMRef>(null, parent, document.body, drawingContext);
+    expect((document.body.firstChild as Element).childNodes.length).toBe(3); // a, b, span
+
+    const n = vfragKeyed<DOMRef>('k2', [vtext('c')]);
+    const nSibling = vnode<DOMRef>({ tag: 'span' });
+    const nParent = vnode<DOMRef>({ tag: 'div', children: [n, nSibling] });
+    diff<DOMRef>(parent, nParent, document.body, drawingContext);
+
+    const div = document.body.firstChild as Element;
+    expect(div.childNodes.length).toBe(2); // c, span
+    expect(div.childNodes[0].textContent).toBe('c');
+    expect((div.childNodes[1] as Element).tagName.toLowerCase()).toBe('span');
+  });
+
+});
+
+describe('VFrag — DOM diffing (replace with other types)', () => {
+
+  test('replaces VFrag with VNode', () => {
+    const c = vfrag<DOMRef>([vtext('a'), vtext('b')]);
+    diff<DOMRef>(null, c, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(2);
+
+    const n = vnode<DOMRef>({ tag: 'div' });
+    diff<DOMRef>(c, n, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(1);
+    expect((document.body.childNodes[0] as Element).tagName.toLowerCase()).toBe('div');
+  });
+
+  test('replaces VNode with VFrag', () => {
+    const c = vnode<DOMRef>({ tag: 'div' });
+    diff<DOMRef>(null, c, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(1);
+
+    const n = vfrag<DOMRef>([vtext('p'), vtext('q')]);
+    diff<DOMRef>(c, n, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(2);
+    expect(document.body.childNodes[0].textContent).toBe('p');
+    expect(document.body.childNodes[1].textContent).toBe('q');
+  });
+
+  test('replaces VNode with VFrag preserves position when followed by a sibling', () => {
+    // [ div(to-replace), span ] -> [ frag[a,b], span ]
+    // Without the fix, frag children were appended after span.
+    const c = vnode<DOMRef>({ tag: 'div' });
+    const sibling = vnode<DOMRef>({ tag: 'span' });
+    const parent = vnode<DOMRef>({ tag: 'section', children: [c, sibling] });
+    diff<DOMRef>(null, parent, document.body, drawingContext);
+    expect((document.body.firstChild as Element).childNodes.length).toBe(2);
+
+    const n = vfrag<DOMRef>([vtext('a'), vtext('b')]);
+    const nSibling = vnode<DOMRef>({ tag: 'span' });
+    const nParent = vnode<DOMRef>({ tag: 'section', children: [n, nSibling] });
+    diff<DOMRef>(parent, nParent, document.body, drawingContext);
+
+    const section = document.body.firstChild as Element;
+    expect(section.childNodes.length).toBe(3); // a, b, span
+    expect(section.childNodes[0].textContent).toBe('a');
+    expect(section.childNodes[1].textContent).toBe('b');
+    expect((section.childNodes[2] as Element).tagName.toLowerCase()).toBe('span');
+  });
+
+  test('replaces VFrag with VText', () => {
+    const c = vfrag<DOMRef>([vtext('x'), vtext('y')]);
+    diff<DOMRef>(null, c, document.body, drawingContext);
+
+    const n = vtext<DOMRef>('hello');
+    diff<DOMRef>(c, n, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(1);
+    expect(document.body.textContent).toBe('hello');
+  });
+
+  test('replaces VText with VFrag', () => {
+    const c = vtext<DOMRef>('hello');
+    diff<DOMRef>(null, c, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(1);
+
+    const n = vfrag<DOMRef>([vtext('x'), vtext('y')]);
+    diff<DOMRef>(c, n, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(2);
+    expect(document.body.childNodes[0].textContent).toBe('x');
+    expect(document.body.childNodes[1].textContent).toBe('y');
+  });
+
+  test('replaces VComp (VNode root) with VFrag', () => {
+    const comp = vcomp<DOMRef>({
+      mount: (p) => {
+        const n = vnode<DOMRef>({ tag: 'em' });
+        diff(null, n, p, drawingContext);
+        return { componentId: 50 as any, componentTree: n };
+      },
+      unmount: () => {},
+    });
+    diff<DOMRef>(null, comp, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(1);
+    expect((document.body.firstChild as Element).tagName.toLowerCase()).toBe('em');
+
+    const n = vfrag<DOMRef>([vtext('a'), vtext('b'), vtext('c')]);
+    diff<DOMRef>(comp, n, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(3);
+    expect(document.body.childNodes[0].textContent).toBe('a');
+    expect(document.body.childNodes[1].textContent).toBe('b');
+    expect(document.body.childNodes[2].textContent).toBe('c');
+  });
+
+  test('replaces VFrag with VComp (VNode root)', () => {
+    const c = vfrag<DOMRef>([vtext('a'), vtext('b')]);
+    diff<DOMRef>(null, c, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(2);
+
+    const comp = vcomp<DOMRef>({
+      mount: (p) => {
+        const n = vnode<DOMRef>({ tag: 'span' });
+        diff(null, n, p, drawingContext);
+        return { componentId: 51 as any, componentTree: n };
+      },
+      unmount: () => {},
+    });
+    diff<DOMRef>(c, comp, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(1);
+    expect((document.body.firstChild as Element).tagName.toLowerCase()).toBe('span');
+  });
+
+  test('replaces VFrag with VNode preserves position when followed by a sibling', () => {
+    // [ frag[a,b], span ] -> [ div, span ]
+    // Without the anchor fix, div would be appended after span.
+    const c = vfrag<DOMRef>([vtext('a'), vtext('b')]);
+    const sibling = vnode<DOMRef>({ tag: 'span' });
+    const parent = vnode<DOMRef>({ tag: 'div', children: [c, sibling] });
+    diff<DOMRef>(null, parent, document.body, drawingContext);
+    expect((document.body.firstChild as Element).childNodes.length).toBe(3); // a, b, span
+
+    const n = vnode<DOMRef>({ tag: 'p' });
+    const nSibling = vnode<DOMRef>({ tag: 'span' });
+    const nParent = vnode<DOMRef>({ tag: 'div', children: [n, nSibling] });
+    diff<DOMRef>(parent, nParent, document.body, drawingContext);
+
+    const div = document.body.firstChild as Element;
+    expect(div.childNodes.length).toBe(2); // p, span
+    expect((div.childNodes[0] as Element).tagName.toLowerCase()).toBe('p');
+    expect((div.childNodes[1] as Element).tagName.toLowerCase()).toBe('span');
+  });
+
+  // dom.ts replace() line 84: VFrag is replaced at the top level (body) with a
+  // following sibling present — the anchor path (INSERT_BEFORE) must be taken,
+  // not the tail-append path, so the new node lands before the sibling.
+  test('replaces top-level VFrag with VNode when a sibling follows (anchor INSERT_BEFORE path)', () => {
+    const frag = vfrag<DOMRef>([vtext('x'), vtext('y')]);
+    const sibling = vnode<DOMRef>({ tag: 'span' });
+    // Mount both directly on body so frag is replaced at the top level.
+    diff<DOMRef>(null, frag, document.body, drawingContext);
+    diff<DOMRef>(null, sibling, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(3); // 'x','y',<span>
+
+    const next = vnode<DOMRef>({ tag: 'p' });
+    diff<DOMRef>(frag, next, document.body, drawingContext);
+
+    // <p> must appear before <span>, not after it.
+    expect(document.body.childNodes.length).toBe(2);
+    expect((document.body.childNodes[0] as Element).tagName.toLowerCase()).toBe('p');
+    expect((document.body.childNodes[1] as Element).tagName.toLowerCase()).toBe('span');
+  });
+
+});
+
+describe('VFrag — DOM removal', () => {
+
+  test('destroys all children when diffed against null', () => {
+    const c = vfrag<DOMRef>([vtext('a'), vtext('b')]);
+    diff<DOMRef>(null, c, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(2);
+
+    diff<DOMRef>(c, null, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(0);
+  });
+
+});
+
+// ---------------------------------------------------------------------------
+// Event delegation tests
+// ---------------------------------------------------------------------------
+
+describe('VFrag — event delegation', () => {
+
+  test('delegates click to a VNode child inside a VFrag', () => {
+    var count = 0;
+    const btn = vnode<DOMRef>({
+      tag: 'button',
+      events: {
+        captures: {},
+        bubbles: {
+          click: {
+            options: { preventDefault: false, stopPropagation: false },
+            runEvent: (_e, _node) => { count++; },
+          },
+        },
+      },
+    });
+    const frag = vfrag<DOMRef>([btn]);
+    // set parent links
+    btn.parent = frag as any;
+
+    diff<DOMRef>(null, frag, document.body, drawingContext);
+
+    const events: Array<EventCapture> = [{ name: 'click', capture: false }];
+    delegator<DOMRef>(
+      document.body,
+      events,
+      (cb) => cb(frag),
+      false,
+      eventContext,
+    );
+
+    (btn.domRef as HTMLElement).click();
+    expect(count).toBe(1);
+  });
+
+  test('event bubbles through VFrag parent', () => {
+    var outerCount = 0;
+    const inner = vnode<DOMRef>({
+      tag: 'button',
+      events: {
+        captures: {},
+        bubbles: {
+          click: {
+            options: { preventDefault: false, stopPropagation: false },
+            runEvent: (_e, _node) => {},
+          },
+        },
+      },
+    });
+    const outer = vnode<DOMRef>({
+      tag: 'div',
+      events: {
+        captures: {},
+        bubbles: {
+          click: {
+            options: { preventDefault: false, stopPropagation: false },
+            runEvent: (_e, _node) => { outerCount++; },
+          },
+        },
+      },
+      children: [],
+    });
+    const frag = vfrag<DOMRef>([inner]);
+
+    // wire up parent chain: inner -> frag -> outer
+    inner.parent = frag as any;
+    frag.parent = outer as any;
+    outer.children = [frag as any];
+
+    diff<DOMRef>(null, outer, document.body, drawingContext);
+    // manually place button inside outer's dom
+    outer.domRef.appendChild(inner.domRef);
+
+    const events: Array<EventCapture> = [{ name: 'click', capture: false }];
+    delegator<DOMRef>(
+      document.body,
+      events,
+      (cb) => cb(outer),
+      false,
+      eventContext,
+    );
+
+    (inner.domRef as HTMLElement).click();
+    expect(outerCount).toBe(1);
+  });
+
+});
+
+// ---------------------------------------------------------------------------
+// Empty VFrag edge cases
+// ---------------------------------------------------------------------------
+
+describe('VFrag — empty fragment edge cases', () => {
+
+  test('getFirstDOMRef on empty VFrag throws (empty frags are removed in Haskell)', () => {
+    const { getFirstDOMRef } = require('../miso/util');
+    const frag = vfrag<DOMRef>([]);
+    expect(() => getFirstDOMRef(frag)).toThrow();
+  });
+
+  test('creating an empty fragment leaves DOM unchanged', () => {
+    const frag = vfrag<DOMRef>([]);
+    diff<DOMRef>(null, frag, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(0);
+  });
+
+  test('destroying an empty fragment is a no-op', () => {
+    document.body.appendChild(document.createTextNode('bystander'));
+    const frag = vfrag<DOMRef>([]);
+    diff<DOMRef>(frag, null, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(1);
+    expect(document.body.childNodes[0].textContent).toBe('bystander');
+  });
+
+  test('replacing non-empty node with empty fragment removes the node', () => {
+    const c = vnode<DOMRef>({ tag: 'div' });
+    diff<DOMRef>(null, c, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(1);
+
+    const n = vfrag<DOMRef>([]);
+    diff<DOMRef>(c, n, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(0);
+  });
+
+  test('replacing empty fragment with a node adds the node', () => {
+    const c = vfrag<DOMRef>([]);
+    diff<DOMRef>(null, c, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(0);
+
+    const n = vnode<DOMRef>({ tag: 'span' });
+    diff<DOMRef>(c, n, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(1);
+    expect((document.body.childNodes[0] as Element).tagName.toLowerCase()).toBe('span');
+  });
+
+  test('diffing two empty fragments with same key is a no-op', () => {
+    const c = vfragKeyed<DOMRef>('k', []);
+    diff<DOMRef>(null, c, document.body, drawingContext);
+    const n = vfragKeyed<DOMRef>('k', []);
+    diff<DOMRef>(c, n, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(0);
+  });
+
+});
+
+describe('VFrag — hydration', () => {
+
+  test('hydrates fragment of text nodes from pre-rendered DOM', () => {
+    // SSR renders VFrag [VText "hello", VText " world"] as "hello world" → one text node.
+    document.body.appendChild(document.createTextNode('hello world'));
+
+    const frag = vfrag<DOMRef>([vtext('hello'), vtext(' world')]);
+    const result = hydrate(false, document.body, frag, hydrationContext, drawingContext);
+    expect(result).toBe(true);
+    // collapseSiblingTextNodes merges children; [0] owns the single DOM text node.
+    expect((frag.children[0] as VText<DOMRef>).domRef.textContent).toBe('hello world');
+  });
+
+  test('hydrates fragment of element nodes', () => {
+    const span = document.createElement('span');
+    const p = document.createElement('p');
+    document.body.appendChild(span);
+    document.body.appendChild(p);
+
+    const frag = vfrag<DOMRef>([
+      vnode<DOMRef>({ tag: 'span' }),
+      vnode<DOMRef>({ tag: 'p' }),
+    ]);
+    const result = hydrate(false, document.body, frag, hydrationContext, drawingContext);
+    expect(result).toBe(true);
+    expect((frag.children[0] as VNode<DOMRef>).domRef).toBe(span);
+    expect((frag.children[1] as VNode<DOMRef>).domRef).toBe(p);
+  });
+
+  test('hydration fails when DOM has fewer nodes than fragment children', () => {
+    document.body.appendChild(document.createTextNode('only one'));
+
+    const frag = vfrag<DOMRef>([vtext('only one'), vtext('missing')]);
+    const result = hydrate(false, document.body, frag, hydrationContext, drawingContext);
+    expect(result).toBe(false);
+  });
+
+  // collapseSiblingTextNodes recursion: inner VFrag has consecutive VText children.
+  // SSR: outer VFrag renders as "ab" (one text node) + "c" (one text node).
+  // collapseSiblingTextNodes must recurse into the inner VFrag to collapse
+  // [VText "a", VText "b"] → [VText "ab"] before walk tries to match DOM nodes.
+  test('hydrates nested VFrag whose inner VFrag has consecutive VText children (collapse recursion)', () => {
+    // SSR: inner VFrag [VText "a", VText "b"] → "ab" (1 text node); outer sibling VText "c" → 1 text node.
+    document.body.appendChild(document.createTextNode('ab'));
+    document.body.appendChild(document.createTextNode('c'));
+
+    const inner = vfrag<DOMRef>([vtext('a'), vtext('b')]);
+    const outer = vfrag<DOMRef>([inner, vtext('c')]);
+    const result = hydrate(false, document.body, outer, hydrationContext, drawingContext);
+    expect(result).toBe(true);
+    // inner.children collapsed to 1 node owning the 'ab' text node
+    expect(inner.children.length).toBe(1);
+    expect((inner.children[0] as VText<DOMRef>).domRef.textContent).toBe('ab');
+    // outer.children[1] (VText 'c') owns the second text node
+    expect((outer.children[1] as VText<DOMRef>).domRef.textContent).toBe('c');
+  });
+
+  // collapseSiblingTextNodes recursion 3 levels deep: L3 has [VText "x", VText "y"],
+  // L2 wraps L3, L1 wraps L2 + VText "z".
+  // SSR: L3 → "xy" (1 text node), L1 sibling → "z" (1 text node).
+  // collapseSiblingTextNodes must recurse all the way into L3 to collapse it.
+  test('hydrates 3-level deeply nested VFrag of VText (collapse recursion depth)', () => {
+    document.body.appendChild(document.createTextNode('xy'));
+    document.body.appendChild(document.createTextNode('z'));
+
+    const l3 = vfrag<DOMRef>([vtext('x'), vtext('y')]);
+    const l2 = vfrag<DOMRef>([l3]);
+    const l1 = vfrag<DOMRef>([l2, vtext('z')]);
+    const result = hydrate(false, document.body, l1, hydrationContext, drawingContext);
+    expect(result).toBe(true);
+    // l3 collapsed to 1 child owning the 'xy' text node
+    expect(l3.children.length).toBe(1);
+    expect((l3.children[0] as VText<DOMRef>).domRef.textContent).toBe('xy');
+    // l1's second child owns 'z'
+    expect((l1.children[1] as VText<DOMRef>).domRef.textContent).toBe('z');
+  });
+
+  // Bug H1 regression: nested VFrag — inner VFrag spans 2 DOM nodes but
+  // the outer loop must advance past both, not just 1.
+  // Use element nodes so SSR text-merging doesn't obscure cursor arithmetic.
+  test('hydrates nested VFrag (Bug H1 regression)', () => {
+    const s1 = document.createElement('span');
+    const s2 = document.createElement('em');
+    const s3 = document.createElement('p');
+    document.body.appendChild(s1);
+    document.body.appendChild(s2);
+    document.body.appendChild(s3);
+
+    // outer VFrag [ innerVFrag[span, em], p ]
+    const inner = vfrag<DOMRef>([vnode<DOMRef>({ tag: 'span' }), vnode<DOMRef>({ tag: 'em' })]);
+    const outer = vfrag<DOMRef>([inner, vnode<DOMRef>({ tag: 'p' })]);
+    const result = hydrate(false, document.body, outer, hydrationContext, drawingContext);
+    expect(result).toBe(true);
+    expect((inner.children[0] as VNode<DOMRef>).domRef).toBe(s1 as unknown as DOMRef);
+    expect((inner.children[1] as VNode<DOMRef>).domRef).toBe(s2 as unknown as DOMRef);
+    expect((outer.children[1] as VNode<DOMRef>).domRef).toBe(s3 as unknown as DOMRef);
+  });
+
+  // Bug H1 regression: VComp with VFrag root inside an outer VFrag —
+  // the VComp occupies 2 DOM nodes but outer loop must advance past both.
+  // Use element nodes so SSR text-merging doesn't obscure cursor arithmetic.
+  test('hydrates VFrag containing VComp with VFrag root (Bug H1 regression)', () => {
+    const s1 = document.createElement('span');
+    const s2 = document.createElement('em');
+    const s3 = document.createElement('p');
+    document.body.appendChild(s1);
+    document.body.appendChild(s2);
+    document.body.appendChild(s3);
+
+    let innerFrag: any;
+    const comp = vcomp<DOMRef>({
+      mount: (_p) => {
+        innerFrag = vfrag<DOMRef>([vnode<DOMRef>({ tag: 'span' }), vnode<DOMRef>({ tag: 'em' })]);
+        return { componentId: 60 as any, componentTree: innerFrag };
+      },
+      unmount: () => {},
+    });
+    const outer = vfrag<DOMRef>([comp, vnode<DOMRef>({ tag: 'p' })]);
+    const result = hydrate(false, document.body, outer, hydrationContext, drawingContext);
+    expect(result).toBe(true);
+    expect((innerFrag.children[0] as VNode<DOMRef>).domRef).toBe(s1 as unknown as DOMRef);
+    expect((innerFrag.children[1] as VNode<DOMRef>).domRef).toBe(s2 as unknown as DOMRef);
+    expect((outer.children[1] as VNode<DOMRef>).domRef).toBe(s3 as unknown as DOMRef);
+  });
+
+  // Bug H2 regression: VNode with a VFrag child — VFrag spans 2 childNodes
+  // but the walk used childNodes[i] by vtree index, skipping nodes.
+  test('hydrates VNode whose children include a VFrag (Bug H2 regression)', () => {
+    const div = document.createElement('div');
+    div.appendChild(document.createElement('span'));
+    div.appendChild(document.createElement('em'));
+    div.appendChild(document.createElement('p'));
+    document.body.appendChild(div);
+
+    // VNode(div) [ VFrag[span, em], p ]
+    const innerFrag = vfrag<DOMRef>([
+      vnode<DOMRef>({ tag: 'span' }),
+      vnode<DOMRef>({ tag: 'em' }),
+    ]);
+    const pNode = vnode<DOMRef>({ tag: 'p' });
+    const vtree = vnode<DOMRef>({ tag: 'div', children: [innerFrag, pNode] });
+    const result = hydrate(false, document.body, vtree, hydrationContext, drawingContext);
+    expect(result).toBe(true);
+    expect((innerFrag.children[0] as VNode<DOMRef>).domRef).toBe(div.childNodes[0] as unknown as DOMRef);
+    expect((innerFrag.children[1] as VNode<DOMRef>).domRef).toBe(div.childNodes[1] as unknown as DOMRef);
+    expect(pNode.domRef).toBe(div.childNodes[2] as unknown as DOMRef);
+  });
+
+  // Bug H2 regression: VNode with VComp(VFrag root) child followed by sibling.
+  // SSR renders VFrag[VText "p", VText "q"] as "pq" → one text node inside div.
+  test('hydrates VNode with VComp(VFrag root) child followed by sibling (Bug H2 regression)', () => {
+    const div = document.createElement('div');
+    div.appendChild(document.createTextNode('pq'));
+    div.appendChild(document.createElement('hr'));
+    document.body.appendChild(div);
+
+    let innerFrag: any;
+    const comp = vcomp<DOMRef>({
+      mount: (_p) => {
+        innerFrag = vfrag<DOMRef>([vtext('p'), vtext('q')]);
+        return { componentId: 61 as any, componentTree: innerFrag };
+      },
+      unmount: () => {},
+    });
+    const hr = vnode<DOMRef>({ tag: 'hr' });
+    const vtree = vnode<DOMRef>({ tag: 'div', children: [comp, hr] });
+    const result = hydrate(false, document.body, vtree, hydrationContext, drawingContext);
+    expect(result).toBe(true);
+    // innerFrag children collapsed to [VText('pq')]; it owns the single text node.
+    expect((innerFrag.children[0] as VText<DOMRef>).domRef.textContent).toBe('pq');
+    expect(hr.domRef).toBe(div.childNodes[1] as unknown as DOMRef);
+  });
+
+});
+
+// ---------------------------------------------------------------------------
+// VComp whose root is a VFrag
+// ---------------------------------------------------------------------------
+
+describe('VComp with VFrag root', () => {
+
+  test('mounts all fragment children as siblings', () => {
+    const comp = vcomp<DOMRef>({
+      mount: (p) => {
+        const frag = vfrag<DOMRef>([vtext('x'), vtext('y'), vtext('z')]);
+        diff(null, frag, p, drawingContext);
+        return { componentId: 0, componentTree: frag };
+      },
+    });
+    diff(null, comp, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(3);
+    expect(document.body.childNodes[0].textContent).toBe('x');
+    expect(document.body.childNodes[1].textContent).toBe('y');
+    expect(document.body.childNodes[2].textContent).toBe('z');
+  });
+
+  test('mounts fragment of element nodes', () => {
+    const comp = vcomp<DOMRef>({
+      mount: (p) => {
+        const frag = vfrag<DOMRef>([
+          vnode<DOMRef>({ tag: 'span' }),
+          vnode<DOMRef>({ tag: 'div' }),
+        ]);
+        diff(null, frag, p, drawingContext);
+        return { componentId: 1, componentTree: frag };
+      },
+    });
+    diff(null, comp, document.body, drawingContext);
+    expect(document.body.children.length).toBe(2);
+    expect(document.body.children[0].tagName.toLowerCase()).toBe('span');
+    expect(document.body.children[1].tagName.toLowerCase()).toBe('div');
+  });
+
+  test('nextSibling drills into first child of VFrag-rooted component', () => {
+    const comp = vcomp<DOMRef>({
+      mount: (p) => {
+        const frag = vfrag<DOMRef>([vnode<DOMRef>({ tag: 'span' }), vnode<DOMRef>({ tag: 'em' })]);
+        diff(null, frag, p, drawingContext);
+        return { componentId: 2, componentTree: frag };
+      },
+    });
+    const sibling = vnode<DOMRef>({ tag: 'b' });
+    comp.nextSibling = sibling;
+    const parent = vnode<DOMRef>({ tag: 'div', children: [comp, sibling] });
+    diff(null, parent, document.body, drawingContext);
+    // nextSibling of the comp should be the domRef of the sibling 'b'
+    expect(drawingContext.nextSibling(comp)).toBe((sibling as VNode<DOMRef>).domRef);
+  });
+
+  test('replacing a VComp whose root is VFrag with a VNode removes all fragment children', () => {
+    const comp = vcomp<DOMRef>({
+      mount: (p) => {
+        const frag = vfrag<DOMRef>([vtext('a'), vtext('b')]);
+        diff(null, frag, p, drawingContext);
+        return { componentId: 3, componentTree: frag };
+      },
+      unmount: (_id) => {},
+    });
+    diff(null, comp, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(2);
+
+    // replace with a plain node
+    const next = vnode<DOMRef>({ tag: 'p' });
+    diff(comp, next, document.body, drawingContext);
+    expect(document.body.children.length).toBe(1);
+    expect(document.body.children[0].tagName.toLowerCase()).toBe('p');
+  });
+
+  test('VComp with VFrag root inserted before a sibling places all fragment children in correct position', () => {
+    // Render a div with [ "before", comp(root=frag["x","y"]), "after" ].
+    // The comp is diffed via INSERT_BEFORE (anchor = "after" text node).
+    // All of x and y must appear between "before" and "after", not at the end.
+    const comp = vcomp<DOMRef>({
+      mount: (p) => {
+        const frag = vfrag<DOMRef>([vtext('x'), vtext('y')]);
+        diff(null, frag, p, drawingContext);
+        return { componentId: 4, componentTree: frag };
+      },
+    });
+    const before = vtext<DOMRef>('before');
+    const after = vtext<DOMRef>('after');
+    const parent = vnode<DOMRef>({ tag: 'div', children: [before, comp, after] });
+    diff(null, parent, document.body, drawingContext);
+
+    const div = document.body.firstChild as Element;
+    // Expected order: before | x | y | after  (4 child nodes)
+    expect(div.childNodes.length).toBe(4);
+    expect(div.childNodes[0].textContent).toBe('before');
+    expect(div.childNodes[1].textContent).toBe('x');
+    expect(div.childNodes[2].textContent).toBe('y');
+    expect(div.childNodes[3].textContent).toBe('after');
+  });
+
+  test('destroying a VComp whose root is VFrag removes all fragment children from the DOM', () => {
+    // Render [ "before", comp(root=frag["p","q","r"]), "after" ] then destroy the comp.
+    // All 3 fragment DOM nodes must be removed, leaving only the two surrounding text nodes.
+    const comp = vcomp<DOMRef>({
+      mount: (p) => {
+        const frag = vfrag<DOMRef>([vtext('p'), vtext('q'), vtext('r')]);
+        diff(null, frag, p, drawingContext);
+        return { componentId: 5, componentTree: frag };
+      },
+      unmount: (_id) => {},
+    });
+    const before = vtext<DOMRef>('before');
+    const after = vtext<DOMRef>('after');
+    const parent = vnode<DOMRef>({ tag: 'div', children: [before, comp, after] });
+    diff(null, parent, document.body, drawingContext);
+
+    const div = document.body.firstChild as Element;
+    expect(div.childNodes.length).toBe(5); // before, p, q, r, after
+
+    // Destroy the component — all 3 fragment nodes must go, leaving before + after
+    diff(comp, null, div as unknown as DOMRef, drawingContext);
+    expect(div.childNodes.length).toBe(2);
+    expect(div.childNodes[0].textContent).toBe('before');
+    expect(div.childNodes[1].textContent).toBe('after');
+  });
+
+  test('VComp that mounts an empty VFrag does not throw', () => {
+    const comp = vcomp<DOMRef>({
+      mount: (p) => {
+        const frag = vfrag<DOMRef>([]);
+        diff(null, frag, p, drawingContext);
+        return { componentId: 6, componentTree: frag };
+      },
+    });
+    expect(() => diff(null, comp, document.body, drawingContext)).not.toThrow();
+    expect(document.body.childNodes.length).toBe(0);
+  });
+
+});
+
+// ---------------------------------------------------------------------------
+// Additional edge-case tests
+// ---------------------------------------------------------------------------
+
+describe('VFrag — event on non-first child of fragment', () => {
+
+  test('click on second button inside VFrag is dispatched correctly', () => {
+    var countFirst = 0;
+    var countSecond = 0;
+    const btn1 = vnode<DOMRef>({
+      tag: 'button',
+      events: {
+        captures: {},
+        bubbles: {
+          click: {
+            options: { preventDefault: false, stopPropagation: false },
+            runEvent: (_e, _node) => { countFirst++; },
+          },
+        },
+      },
+    });
+    const btn2 = vnode<DOMRef>({
+      tag: 'button',
+      events: {
+        captures: {},
+        bubbles: {
+          click: {
+            options: { preventDefault: false, stopPropagation: false },
+            runEvent: (_e, _node) => { countSecond++; },
+          },
+        },
+      },
+    });
+    const frag = vfrag<DOMRef>([btn1, btn2]);
+    btn1.parent = frag as any;
+    btn2.parent = frag as any;
+
+    diff<DOMRef>(null, frag, document.body, drawingContext);
+
+    const events: Array<EventCapture> = [{ name: 'click', capture: false }];
+    delegator<DOMRef>(
+      document.body,
+      events,
+      (cb) => cb(frag),
+      false,
+      eventContext,
+    );
+
+    (btn2.domRef as HTMLElement).click();
+    expect(countFirst).toBe(0);
+    expect(countSecond).toBe(1);
+
+    (btn1.domRef as HTMLElement).click();
+    expect(countFirst).toBe(1);
+    expect(countSecond).toBe(1);
+  });
+
+});
+
+describe('VFrag — nextSibling is itself a VFrag', () => {
+
+  test('anchor for INSERT_BEFORE drills into first DOM child of a VFrag next-sibling', () => {
+    // Layout: div > [ comp(VFrag["x","y"]), fragSibling(["s1","s2"]) ]
+    // comp is inserted before fragSibling; the anchor must be "s1", not the VFrag object.
+    const fragSibling = vfrag<DOMRef>([vtext<DOMRef>('s1'), vtext<DOMRef>('s2')]);
+    const comp = vcomp<DOMRef>({
+      mount: (p) => {
+        const inner = vfrag<DOMRef>([vtext('x'), vtext('y')]);
+        diff(null, inner, p, drawingContext);
+        return { componentId: 10, componentTree: inner };
+      },
+    });
+    comp.nextSibling = fragSibling as any;
+    const parent = vnode<DOMRef>({ tag: 'div', children: [comp, fragSibling] });
+    diff(null, parent, document.body, drawingContext);
+
+    const div = document.body.firstChild as Element;
+    // Expected order: x | y | s1 | s2
+    expect(div.childNodes.length).toBe(4);
+    expect(div.childNodes[0].textContent).toBe('x');
+    expect(div.childNodes[1].textContent).toBe('y');
+    expect(div.childNodes[2].textContent).toBe('s1');
+    expect(div.childNodes[3].textContent).toBe('s2');
+  });
+
+});
+
+describe('VFrag — two sibling VComps with VFrag roots swapped', () => {
+
+  test('swapping [compA(VFrag), compB(VFrag)] to [compB(VFrag), compA(VFrag)] repositions all DOM nodes', () => {
+    let idCounter = 20;
+    const makeComp = (texts: string[]) => vcomp<DOMRef>({
+      mount: (p) => {
+        const inner = vfrag<DOMRef>(texts.map(t => vtext<DOMRef>(t)));
+        diff(null, inner, p, drawingContext);
+        return { componentId: idCounter++, componentTree: inner };
+      },
+      unmount: (_id) => {},
+    });
+
+    const compA1 = makeComp(['a1', 'a2']);
+    const compB1 = makeComp(['b1', 'b2']);
+    const kA1 = vfragKeyed<DOMRef>('A', [compA1]);
+    const kB1 = vfragKeyed<DOMRef>('B', [compB1]);
+    const root1 = vnode<DOMRef>({ tag: 'div', children: [kA1, kB1] });
+    diff(null, root1, document.body, drawingContext);
+
+    const div = document.body.firstChild as Element;
+    expect(Array.from(div.childNodes).map(n => n.textContent)).toEqual(['a1', 'a2', 'b1', 'b2']);
+
+    const compA2 = makeComp(['a1', 'a2']);
+    const compB2 = makeComp(['b1', 'b2']);
+    const kA2 = vfragKeyed<DOMRef>('A', [compA2]);
+    const kB2 = vfragKeyed<DOMRef>('B', [compB2]);
+    const root2 = vnode<DOMRef>({ tag: 'div', children: [kB2, kA2] });
+    diff(root1, root2, document.body, drawingContext);
+
+    expect(Array.from(div.childNodes).map(n => n.textContent)).toEqual(['b1', 'b2', 'a1', 'a2']);
+  });
+
+});
+
+describe('VFrag — unkeyed child count changes', () => {
+
+  test('unkeyed VFrag shrinks from 3 children to 1', () => {
+    const old = vfrag<DOMRef>([vtext('p'), vtext('q'), vtext('r')]);
+    diff(null, old, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(3);
+
+    const next = vfrag<DOMRef>([vtext('p')]);
+    diff(old, next, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(1);
+    expect(document.body.childNodes[0].textContent).toBe('p');
+  });
+
+  test('unkeyed VFrag grows from 1 child to 3', () => {
+    const old = vfrag<DOMRef>([vtext('p')]);
+    diff(null, old, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(1);
+
+    const next = vfrag<DOMRef>([vtext('p'), vtext('q'), vtext('r')]);
+    diff(old, next, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(3);
+    expect(document.body.childNodes[1].textContent).toBe('q');
+    expect(document.body.childNodes[2].textContent).toBe('r');
+  });
+
+});
+
+describe('VFrag — VComp inner VFrag child count changes on re-render', () => {
+
+  test('VComp with VFrag root grows from 2 to 3 text nodes on patch', () => {
+    let tree: any;
+    const comp = vcomp<DOMRef>({
+      mount: (p) => {
+        const inner = vfrag<DOMRef>([vtext('a'), vtext('b')]);
+        diff(null, inner, p, drawingContext);
+        tree = inner;
+        return { componentId: 30, componentTree: inner };
+      },
+    });
+    const parent = vnode<DOMRef>({ tag: 'div', children: [comp] });
+    diff(null, parent, document.body, drawingContext);
+
+    const div = document.body.firstChild as Element;
+    expect(div.childNodes.length).toBe(2);
+
+    // Patch the inner frag directly (simulating a re-render)
+    const next = vfrag<DOMRef>([vtext('a'), vtext('b'), vtext('c')]);
+    diff(tree, next, div as unknown as DOMRef, drawingContext);
+    expect(div.childNodes.length).toBe(3);
+    expect(div.childNodes[2].textContent).toBe('c');
+  });
+
+  test('VComp with VFrag root shrinks from 3 to 1 text node on patch', () => {
+    let tree: any;
+    const comp = vcomp<DOMRef>({
+      mount: (p) => {
+        const inner = vfrag<DOMRef>([vtext('x'), vtext('y'), vtext('z')]);
+        diff(null, inner, p, drawingContext);
+        tree = inner;
+        return { componentId: 31, componentTree: inner };
+      },
+    });
+    const parent = vnode<DOMRef>({ tag: 'div', children: [comp] });
+    diff(null, parent, document.body, drawingContext);
+
+    const div = document.body.firstChild as Element;
+    expect(div.childNodes.length).toBe(3);
+
+    const next = vfrag<DOMRef>([vtext('x')]);
+    diff(tree, next, div as unknown as DOMRef, drawingContext);
+    expect(div.childNodes.length).toBe(1);
+    expect(div.childNodes[0].textContent).toBe('x');
+  });
+
+});
+
+describe('VFrag — tail insertion (no following anchor)', () => {
+
+  test('VComp with VFrag root appended as last child (no anchor) places all children at end', () => {
+    const comp = vcomp<DOMRef>({
+      mount: (p) => {
+        const inner = vfrag<DOMRef>([vtext('x'), vtext('y')]);
+        diff(null, inner, p, drawingContext);
+        return { componentId: 40, componentTree: inner };
+      },
+    });
+    const before = vtext<DOMRef>('before');
+    // comp is the LAST child — no nextSibling anchor
+    const parent = vnode<DOMRef>({ tag: 'div', children: [before, comp] });
+    diff(null, parent, document.body, drawingContext);
+
+    const div = document.body.firstChild as Element;
+    expect(div.childNodes.length).toBe(3);
+    expect(div.childNodes[0].textContent).toBe('before');
+    expect(div.childNodes[1].textContent).toBe('x');
+    expect(div.childNodes[2].textContent).toBe('y');
+  });
+
+});
+
+describe('VFrag — keyed delete all children', () => {
+
+  test('diffing a keyed VFrag from 3 children to 0 removes all DOM nodes', () => {
+    const cA = vfragKeyed<DOMRef>('A', [vtext('a1'), vtext('a2')]);
+    const cB = vfragKeyed<DOMRef>('B', [vtext('b1')]);
+    const cC = vfragKeyed<DOMRef>('C', [vtext('c1'), vtext('c2')]);
+    const old = vnode<DOMRef>({ tag: 'div', children: [cA, cB, cC] });
+    diff(null, old, document.body, drawingContext);
+    expect((document.body.firstChild as Element).childNodes.length).toBe(5);
+
+    const next = vnode<DOMRef>({ tag: 'div', children: [] });
+    diff(old, next, document.body, drawingContext);
+    expect((document.body.firstChild as Element).childNodes.length).toBe(0);
+  });
+
+});
+
+// ---------------------------------------------------------------------------
+// Stress test: mixed keyed children — VFrags of size 1/2/3, VComps with
+// VFrag roots, and plain text nodes — reordered across multiple diffs.
+// ---------------------------------------------------------------------------
+
+describe('VFrag — stress: mixed keyed reordering', () => {
+
+  // Helper: build a DOM-mounting VComp whose root is a VFrag of text nodes.
+  let compIdCounter = 100;
+  function makeFragComp(texts: string[]) {
+    const id = compIdCounter++;
+    return vcomp<DOMRef>({
+      mount: (p) => {
+        const inner = vfrag<DOMRef>(texts.map(t => vtext<DOMRef>(t)));
+        diff(null, inner, p, drawingContext);
+        return { componentId: id, componentTree: inner };
+      },
+      unmount: (_id) => {},
+    });
+  }
+
+  // Returns text content of all direct children of the first div.
+  function texts(): string[] {
+    const div = document.body.firstChild as Element;
+    return Array.from(div.childNodes).map(n => n.textContent ?? '');
+  }
+
+  // Build keyed items from a spec list.
+  // Each item is: { key, kind: 'frag1'|'frag2'|'frag3'|'comp1'|'comp2'|'comp3'|'text' }
+  type ItemSpec = { key: string; kind: string };
+
+  function buildItem(spec: ItemSpec) {
+    switch (spec.kind) {
+      case 'frag1': return vfragKeyed<DOMRef>(spec.key, [vtext(`${spec.key}-a`)]);
+      case 'frag2': return vfragKeyed<DOMRef>(spec.key, [vtext(`${spec.key}-a`), vtext(`${spec.key}-b`)]);
+      case 'frag3': return vfragKeyed<DOMRef>(spec.key, [vtext(`${spec.key}-a`), vtext(`${spec.key}-b`), vtext(`${spec.key}-c`)]);
+      case 'comp1': return vfragKeyed<DOMRef>(spec.key, [makeFragComp([`${spec.key}-x`])]);
+      case 'comp2': return vfragKeyed<DOMRef>(spec.key, [makeFragComp([`${spec.key}-x`, `${spec.key}-y`])]);
+      case 'comp3': return vfragKeyed<DOMRef>(spec.key, [makeFragComp([`${spec.key}-x`, `${spec.key}-y`, `${spec.key}-z`])]);
+      case 'text':  return vtextKeyed(`${spec.key}-t`, spec.key) as any as VText<DOMRef>;
+      default: throw new Error('unknown kind');
+    }
+  }
+
+  function expectedTexts(specs: ItemSpec[]): string[] {
+    return specs.flatMap(s => {
+      switch (s.kind) {
+        case 'frag1': return [`${s.key}-a`];
+        case 'frag2': return [`${s.key}-a`, `${s.key}-b`];
+        case 'frag3': return [`${s.key}-a`, `${s.key}-b`, `${s.key}-c`];
+        case 'comp1': return [`${s.key}-x`];
+        case 'comp2': return [`${s.key}-x`, `${s.key}-y`];
+        case 'comp3': return [`${s.key}-x`, `${s.key}-y`, `${s.key}-z`];
+        case 'text':  return [`${s.key}-t`];
+        default: return [];
+      }
+    });
+  }
+
+  function buildRoot(specs: ItemSpec[]) {
+    return vnode<DOMRef>({ tag: 'div', children: specs.map(buildItem) });
+  }
+
+  // ── Test 1: initial render then full reversal ────────────────────────────
+  test('full reversal of 5 mixed keyed children', () => {
+    const order1: ItemSpec[] = [
+      { key: 'A', kind: 'frag3'  },
+      { key: 'B', kind: 'comp2'  },
+      { key: 'C', kind: 'text'   },
+      { key: 'D', kind: 'frag1'  },
+      { key: 'E', kind: 'comp3'  },
+    ];
+    const v1 = buildRoot(order1);
+    diff(null, v1, document.body, drawingContext);
+    expect(texts()).toEqual(expectedTexts(order1));
+
+    const order2 = [...order1].reverse();
+    const v2 = buildRoot(order2);
+    diff(v1, v2, document.body, drawingContext);
+    expect(texts()).toEqual(expectedTexts(order2));
+  });
+
+  // ── Test 2: 3 shuffles in a row ──────────────────────────────────────────
+  test('three successive shuffles of 6 mixed items', () => {
+    const base: ItemSpec[] = [
+      { key: 'P', kind: 'frag1' },
+      { key: 'Q', kind: 'frag2' },
+      { key: 'R', kind: 'frag3' },
+      { key: 'S', kind: 'comp1' },
+      { key: 'T', kind: 'comp2' },
+      { key: 'U', kind: 'text'  },
+    ];
+
+    const shuffle1: ItemSpec[] = [base[3], base[0], base[5], base[2], base[1], base[4]]; // S P U R Q T
+    const shuffle2: ItemSpec[] = [base[5], base[4], base[3], base[2], base[1], base[0]]; // U T S R Q P
+    const shuffle3: ItemSpec[] = [base[1], base[3], base[0], base[5], base[4], base[2]]; // Q S P U T R
+
+    const v0 = buildRoot(base);
+    diff(null, v0, document.body, drawingContext);
+    expect(texts()).toEqual(expectedTexts(base));
+
+    const v1 = buildRoot(shuffle1);
+    diff(v0, v1, document.body, drawingContext);
+    expect(texts()).toEqual(expectedTexts(shuffle1));
+
+    const v2 = buildRoot(shuffle2);
+    diff(v1, v2, document.body, drawingContext);
+    expect(texts()).toEqual(expectedTexts(shuffle2));
+
+    const v3 = buildRoot(shuffle3);
+    diff(v2, v3, document.body, drawingContext);
+    expect(texts()).toEqual(expectedTexts(shuffle3));
+  });
+
+  // ── Test 3: interleave inserts and deletes while reordering ─────────────
+  test('insert, delete and reorder simultaneously', () => {
+    // Initial: A(frag2) B(comp1) C(frag3) D(text)
+    const v0specs: ItemSpec[] = [
+      { key: 'A', kind: 'frag2' },
+      { key: 'B', kind: 'comp1' },
+      { key: 'C', kind: 'frag3' },
+      { key: 'D', kind: 'text'  },
+    ];
+    const v0 = buildRoot(v0specs);
+    diff(null, v0, document.body, drawingContext);
+    expect(texts()).toEqual(expectedTexts(v0specs));
+
+    // Next: C(frag3) NEW-X(frag1) A(frag2) NEW-Y(comp3)  — B and D removed
+    const v1specs: ItemSpec[] = [
+      { key: 'C', kind: 'frag3' },
+      { key: 'X', kind: 'frag1' },
+      { key: 'A', kind: 'frag2' },
+      { key: 'Y', kind: 'comp3' },
+    ];
+    const v1 = buildRoot(v1specs);
+    diff(v0, v1, document.body, drawingContext);
+    expect(texts()).toEqual(expectedTexts(v1specs));
+  });
+
+  // ── Test 4: fragment changing size while other items reorder ─────────────
+  test('items reorder while a VFrag grows and another shrinks', () => {
+    // Initial: A(frag1) B(frag3) C(comp2) D(text)
+    const v0specs: ItemSpec[] = [
+      { key: 'A', kind: 'frag1' },
+      { key: 'B', kind: 'frag3' },
+      { key: 'C', kind: 'comp2' },
+      { key: 'D', kind: 'text'  },
+    ];
+    const v0 = buildRoot(v0specs);
+    diff(null, v0, document.body, drawingContext);
+    expect(texts()).toEqual(expectedTexts(v0specs));
+
+    // Next: D(text) C(comp2) B(frag1 — shrank) A(frag3 — grew)
+    const v1specs: ItemSpec[] = [
+      { key: 'D', kind: 'text'  },
+      { key: 'C', kind: 'comp2' },
+      { key: 'B', kind: 'frag1' },  // was frag3, now frag1
+      { key: 'A', kind: 'frag3' },  // was frag1, now frag3
+    ];
+    const v1 = buildRoot(v1specs);
+    diff(v0, v1, document.body, drawingContext);
+    expect(texts()).toEqual(expectedTexts(v1specs));
+  });
+
+  // ── Test 5: two VComps with VFrag roots rotate around a plain text node ──
+  test('two VComp+VFrag siblings rotate around a text sentinel', () => {
+    //  Round 1: compA(3)  "mid"  compB(2)
+    //  Round 2: compB(2)  "mid"  compA(3)
+    //  Round 3: "mid"  compA(3)  compB(2)
+
+    const mkA = () => vfragKeyed<DOMRef>('CA', [makeFragComp(['a1', 'a2', 'a3'])]);
+    const mkB = () => vfragKeyed<DOMRef>('CB', [makeFragComp(['b1', 'b2'])]);
+    const mkM = () => vtextKeyed('mid', 'M') as any as VText<DOMRef>;
+
+    const r1 = vnode<DOMRef>({ tag: 'div', children: [mkA(), mkM(), mkB()] });
+    diff(null, r1, document.body, drawingContext);
+    expect(texts()).toEqual(['a1', 'a2', 'a3', 'mid', 'b1', 'b2']);
+
+    const r2 = vnode<DOMRef>({ tag: 'div', children: [mkB(), mkM(), mkA()] });
+    diff(r1, r2, document.body, drawingContext);
+    expect(texts()).toEqual(['b1', 'b2', 'mid', 'a1', 'a2', 'a3']);
+
+    const r3 = vnode<DOMRef>({ tag: 'div', children: [mkM(), mkA(), mkB()] });
+    diff(r2, r3, document.body, drawingContext);
+    expect(texts()).toEqual(['mid', 'a1', 'a2', 'a3', 'b1', 'b2']);
+  });
+
+  // ── Test 6: nested VFrag keyed children reorder inside an outer keyed VFrag
+  test('outer keyed VFrag contains inner keyed VFrags that themselves reorder', () => {
+    // outer["O"] = [ inner["I1"](frag2), inner["I2"](frag3), inner["I3"](frag1) ]
+    const mkOuter = (order: Array<[string, string]>) =>
+      vfragKeyed<DOMRef>('O', order.map(([k, kind]) => buildItem({ key: k, kind })));
+
+    const o1 = vnode<DOMRef>({ tag: 'div', children: [
+      mkOuter([['I1','frag2'], ['I2','frag3'], ['I3','frag1']]),
+    ]});
+    diff(null, o1, document.body, drawingContext);
+    expect(texts()).toEqual(['I1-a','I1-b','I2-a','I2-b','I2-c','I3-a']);
+
+    // reverse inner order
+    const o2 = vnode<DOMRef>({ tag: 'div', children: [
+      mkOuter([['I3','frag1'], ['I2','frag3'], ['I1','frag2']]),
+    ]});
+    diff(o1, o2, document.body, drawingContext);
+    expect(texts()).toEqual(['I3-a','I2-a','I2-b','I2-c','I1-a','I1-b']);
+
+    // rotate: I2 I3 I1
+    const o3 = vnode<DOMRef>({ tag: 'div', children: [
+      mkOuter([['I2','frag3'], ['I3','frag1'], ['I1','frag2']]),
+    ]});
+    diff(o2, o3, document.body, drawingContext);
+    expect(texts()).toEqual(['I2-a','I2-b','I2-c','I3-a','I1-a','I1-b']);
+  });
+
+  // ── Test 7: event on a button inside a VComp+VFrag that moves position ───
+  test('button in VComp+VFrag fires click after the comp is repositioned', () => {
+    let clickCount = 0;
+    const makeClickComp = (key: string) => vfragKeyed<DOMRef>(key, [
+      vcomp<DOMRef>({
+        mount: (p) => {
+          const btn = vnode<DOMRef>({
+            tag: 'button',
+            events: {
+              captures: {},
+              bubbles: {
+                click: {
+                  options: { preventDefault: false, stopPropagation: false },
+                  runEvent: () => { clickCount++; },
+                },
+              },
+            },
+          });
+          const inner = vfrag<DOMRef>([btn]);
+          btn.parent = inner as any;
+          diff(null, inner, p, drawingContext);
+          return { componentId: compIdCounter++, componentTree: inner };
+        },
+        unmount: (_id) => {},
+      }),
+    ]);
+
+    const before = vfragKeyed<DOMRef>('BEF', [vtext('before')]);
+    const after  = vfragKeyed<DOMRef>('AFT', [vtext('after')]);
+
+    // Mount into an explicit wrapper so the delegator listener lives on the
+    // wrapper element (not document.body). afterEach clears innerHTML, which
+    // removes the wrapper and its listeners — no cross-test leakage.
+    const wrapper = document.createElement('div');
+    document.body.appendChild(wrapper);
+
+    // Round 1: [ BEF, CLICK_COMP, AFT ]
+    const clickComp1 = makeClickComp('CC');
+    const r1 = vnode<DOMRef>({ tag: 'div', children: [before, clickComp1, after] });
+    diff(null, r1, wrapper as unknown as DOMRef, drawingContext);
+
+    const div = wrapper.firstChild as Element;
+    const events: Array<EventCapture> = [{ name: 'click', capture: false }];
+
+    // Register the delegator ONCE on the wrapper with a mutable root reference.
+    // The delegator must be on an ancestor of r1's DOM node so that
+    // buildTargetToElement produces stack=[div, btn] (length 2), letting
+    // the stack.length>1 branch on the VNode(div) recurse into its VFrag children.
+    let currentRoot: typeof r1 = r1;
+    delegator<DOMRef>(wrapper as unknown as DOMRef, events, (cb) => cb(currentRoot), false, eventContext);
+
+    let btn1 = div.querySelector('button') as HTMLElement;
+    btn1.click();
+    expect(clickCount).toBe(1);
+
+    // Round 2: [ CLICK_COMP, BEF, AFT ]  — comp moves to front
+    const clickComp2 = makeClickComp('CC');
+    const r2 = vnode<DOMRef>({ tag: 'div', children: [clickComp2, before, after] });
+    diff(r1, r2, wrapper as unknown as DOMRef, drawingContext);
+    currentRoot = r2;
+
+    let btn2 = div.querySelector('button') as HTMLElement;
+    btn2.click();
+    expect(clickCount).toBe(2);
+  });
+
+});
+
+// ---------------------------------------------------------------------------
+// #1 — VFrag ↔ VComp replace
+// ---------------------------------------------------------------------------
+
+describe('VFrag — replace with VComp and VComp(VFrag root) replace with VFrag', () => {
+
+  test('replaces VFrag with a VComp whose root is a VFrag', () => {
+    const old = vfrag<DOMRef>([vtext('x')]);
+    diff(null, old, document.body, drawingContext);
+
+    const comp = vcomp<DOMRef>({
+      mount: (p) => {
+        const inner = vfrag<DOMRef>([vtext('p'), vtext('q')]);
+        diff(null, inner, p, drawingContext);
+        return { componentId: 11 as any, componentTree: inner };
+      },
+      unmount: () => {},
+    });
+    diff(old, comp, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(2);
+    expect(document.body.childNodes[0].textContent).toBe('p');
+    expect(document.body.childNodes[1].textContent).toBe('q');
+  });
+
+  test('replaces VComp(VFrag root) with a VFrag', () => {
+    const comp = vcomp<DOMRef>({
+      mount: (p) => {
+        const inner = vfrag<DOMRef>([vtext('p'), vtext('q')]);
+        diff(null, inner, p, drawingContext);
+        return { componentId: 12 as any, componentTree: inner };
+      },
+      unmount: () => {},
+    });
+    diff(null, comp, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(2);
+
+    const next = vfrag<DOMRef>([vtext('a'), vtext('b'), vtext('c')]);
+    diff(comp, next, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(3);
+    expect(document.body.childNodes[0].textContent).toBe('a');
+    expect(document.body.childNodes[1].textContent).toBe('b');
+    expect(document.body.childNodes[2].textContent).toBe('c');
+  });
+
+  test('replaces VFrag with VComp preserves sibling position', () => {
+    const sentinel = vnode<DOMRef>({ tag: 'span' });
+    const frag = vfrag<DOMRef>([vtext('a'), vtext('b')]);
+    const root = vnode<DOMRef>({ tag: 'div', children: [frag, sentinel] });
+    diff(null, root, document.body, drawingContext);
+    const div = document.body.firstChild as Element;
+    expect(div.childNodes.length).toBe(3); // 'a','b',<span>
+
+    const comp = vcomp<DOMRef>({
+      mount: (p) => {
+        const n = vnode<DOMRef>({ tag: 'em' });
+        diff(null, n, p, drawingContext);
+        return { componentId: 13 as any, componentTree: n };
+      },
+      unmount: () => {},
+    });
+    const root2 = vnode<DOMRef>({ tag: 'div', children: [comp, sentinel] });
+    diff(root, root2, document.body, drawingContext);
+    expect(div.childNodes.length).toBe(2);
+    expect((div.childNodes[0] as Element).tagName.toLowerCase()).toBe('em');
+    expect((div.childNodes[1] as Element).tagName.toLowerCase()).toBe('span');
+  });
+
+  // dom.ts mountComponent() lines 406-407: OP.REPLACE where the mounted
+  // component tree is a VFrag — all fragment DOM nodes must be inserted before
+  // the replaced node, then the replaced node removed.
+  test('VComp with VFrag root replaces an existing VNode via OP.REPLACE (mountComponent anchor path)', () => {
+    // Start with a single <em> inside a <div>, then replace it with a VComp
+    // whose root is a VFrag of two text nodes.
+    const old = vnode<DOMRef>({ tag: 'em' });
+    const wrapper = vnode<DOMRef>({ tag: 'div', children: [old] });
+    diff<DOMRef>(null, wrapper, document.body, drawingContext);
+    const div = document.body.firstChild as Element;
+    expect(div.childNodes.length).toBe(1);
+
+    const comp = vcomp<DOMRef>({
+      mount: (p) => {
+        const inner = vfrag<DOMRef>([vtext('hello'), vtext(' world')]);
+        // OP.REPLACE is handled by mountComponent internally; mount() receives
+        // the parent element and the Haskell side appends children via diff.
+        diff<DOMRef>(null, inner, p, drawingContext);
+        return { componentId: 99 as any, componentTree: inner };
+      },
+      unmount: () => {},
+    });
+
+    const newWrapper = vnode<DOMRef>({ tag: 'div', children: [comp] });
+    diff<DOMRef>(wrapper, newWrapper, document.body, drawingContext);
+
+    // The VFrag's two text nodes must have replaced the <em>.
+    expect(div.childNodes.length).toBe(2);
+    expect(div.childNodes[0].textContent).toBe('hello');
+    expect(div.childNodes[1].textContent).toBe(' world');
+  });
+
+});
+
+// ---------------------------------------------------------------------------
+// #2 — oFirst.key === nLast.key regression (live DOM anchor)
+// ---------------------------------------------------------------------------
+
+describe('VFrag — syncChildren oFirst→nLast (move-to-end) with multi-node VFrags', () => {
+
+  test('[ fragA(2 nodes), fragB(2 nodes) ] → [ fragB, fragA ] uses live DOM anchor', () => {
+    const fragA = vfragKeyed<DOMRef>('A', [vtext('a1'), vtext('a2')]);
+    const fragB = vfragKeyed<DOMRef>('B', [vtext('b1'), vtext('b2')]);
+    const root = vnode<DOMRef>({ tag: 'div', children: [fragA, fragB] });
+    diff(null, root, document.body, drawingContext);
+    const div = document.body.firstChild as Element;
+    expect(div.childNodes.length).toBe(4);
+    expect([...div.childNodes].map(n => n.textContent)).toEqual(['a1','a2','b1','b2']);
+
+    // fragA.key === nLast.key (nLast=fragA after reversal), triggers oFirst→nLast branch
+    const fragA2 = vfragKeyed<DOMRef>('A', [vtext('a1'), vtext('a2')]);
+    const fragB2 = vfragKeyed<DOMRef>('B', [vtext('b1'), vtext('b2')]);
+    const root2 = vnode<DOMRef>({ tag: 'div', children: [fragB2, fragA2] });
+    diff(root, root2, document.body, drawingContext);
+    expect([...div.childNodes].map(n => n.textContent)).toEqual(['b1','b2','a1','a2']);
+  });
+
+  test('[ fragA(3), fragB(2), fragC(1) ] → [ fragB, fragC, fragA ] (multi-step)', () => {
+    const mk = (key: string, texts: string[]) =>
+      vfragKeyed<DOMRef>(key, texts.map(t => vtext(t)));
+
+    const root = vnode<DOMRef>({ tag: 'div', children: [mk('A',['a1','a2','a3']), mk('B',['b1','b2']), mk('C',['c1'])] });
+    diff(null, root, document.body, drawingContext);
+    const div = document.body.firstChild as Element;
+    expect(div.childNodes.length).toBe(6);
+
+    const root2 = vnode<DOMRef>({ tag: 'div', children: [mk('B',['b1','b2']), mk('C',['c1']), mk('A',['a1','a2','a3'])] });
+    diff(root, root2, document.body, drawingContext);
+    expect([...div.childNodes].map(n => n.textContent)).toEqual(['b1','b2','c1','a1','a2','a3']);
+  });
+
+});
+
+// ---------------------------------------------------------------------------
+// #3 — event stopPropagation at VComp barrier
+// ---------------------------------------------------------------------------
+
+describe('VFrag — event stopPropagation at VComp barrier', () => {
+
+  test('click inside VComp does not propagate to outer VNode when eventPropagation=false', () => {
+    let innerCount = 0;
+    let outerCount = 0;
+
+    const btn = vnode<DOMRef>({
+      tag: 'button',
+      events: {
+        captures: {},
+        bubbles: {
+          click: {
+            options: { preventDefault: false, stopPropagation: false },
+            runEvent: () => { innerCount++; },
+          },
+        },
+      },
+    });
+
+    const comp = vcomp<DOMRef>({
+      eventPropagation: false,
+      mount: (p) => {
+        diff(null, btn, p, drawingContext);
+        return { componentId: 20 as any, componentTree: btn };
+      },
+      unmount: () => {},
+    });
+
+    const outer = vnode<DOMRef>({
+      tag: 'div',
+      events: {
+        captures: {},
+        bubbles: {
+          click: {
+            options: { preventDefault: false, stopPropagation: false },
+            runEvent: () => { outerCount++; },
+          },
+        },
+      },
+      children: [comp],
+    });
+
+    diff(null, outer, document.body, drawingContext);
+    comp.child = btn;
+    btn.parent = comp as any;
+
+    const events: Array<EventCapture> = [{ name: 'click', capture: false }];
+    delegator<DOMRef>(document.body, events, (cb) => cb(outer), false, eventContext);
+
+    (btn.domRef as HTMLElement).click();
+    expect(innerCount).toBe(1);
+    expect(outerCount).toBe(0);
+  });
+
+  test('click inside VComp propagates to outer VNode when eventPropagation=true', () => {
+    let innerCount = 0;
+    let outerCount = 0;
+
+    const btn = vnode<DOMRef>({
+      tag: 'button',
+      events: {
+        captures: {},
+        bubbles: {
+          click: {
+            options: { preventDefault: false, stopPropagation: false },
+            runEvent: () => { innerCount++; },
+          },
+        },
+      },
+    });
+
+    const comp = vcomp<DOMRef>({
+      eventPropagation: true,
+      mount: (p) => {
+        diff(null, btn, p, drawingContext);
+        return { componentId: 21 as any, componentTree: btn };
+      },
+      unmount: () => {},
+    });
+
+    const outer = vnode<DOMRef>({
+      tag: 'div',
+      events: {
+        captures: {},
+        bubbles: {
+          click: {
+            options: { preventDefault: false, stopPropagation: false },
+            runEvent: () => { outerCount++; },
+          },
+        },
+      },
+      children: [comp],
+    });
+
+    diff(null, outer, document.body, drawingContext);
+    // diff() sets btn.parent = comp (via mountComponent) but not comp.parent.
+    // Set it manually so propagateWhileAble can continue past the VComp barrier.
+    comp.parent = outer as any;
+
+    const events: Array<EventCapture> = [{ name: 'click', capture: false }];
+    delegator<DOMRef>(document.body, events, (cb) => cb(outer), false, eventContext);
+
+    (btn.domRef as HTMLElement).click();
+    expect(innerCount).toBe(1);
+    expect(outerCount).toBe(1);
+  });
+
+});
+
+// ---------------------------------------------------------------------------
+// #5 — hydration of VComp with VFrag root
+// ---------------------------------------------------------------------------
+
+describe('VFrag — hydration of VComp with VFrag root', () => {
+
+  test('hydrates VComp whose mount returns a VFrag of text nodes', () => {
+    // SSR renders VFrag [VText "hello", VText " world"] as "hello world" → one text node.
+    document.body.appendChild(document.createTextNode('hello world'));
+
+    const comp = vcomp<DOMRef>({
+      mount: (_p) => {
+        const inner = vfrag<DOMRef>([vtext('hello'), vtext(' world')]);
+        return { componentId: 30 as any, componentTree: inner };
+      },
+      unmount: () => {},
+    });
+
+    const ok = hydrate(false, document.body, comp, hydrationContext, drawingContext);
+    expect(ok).toBe(true);
+    expect(document.body.childNodes.length).toBe(1);
+  });
+
+  test('hydrates VComp whose mount returns a VFrag of element nodes', () => {
+    document.body.appendChild(document.createElement('span'));
+    document.body.appendChild(document.createElement('em'));
+
+    const comp = vcomp<DOMRef>({
+      mount: (_p) => {
+        const inner = vfrag<DOMRef>([
+          vnode<DOMRef>({ tag: 'span' }),
+          vnode<DOMRef>({ tag: 'em' }),
+        ]);
+        return { componentId: 31 as any, componentTree: inner };
+      },
+      unmount: () => {},
+    });
+
+    const ok = hydrate(false, document.body, comp, hydrationContext, drawingContext);
+    expect(ok).toBe(true);
+    expect(document.body.children.length).toBe(2);
+    expect(document.body.children[0].tagName.toLowerCase()).toBe('span');
+    expect(document.body.children[1].tagName.toLowerCase()).toBe('em');
+  });
+
+  test('hydration fails gracefully when VComp VFrag root has too few DOM nodes', () => {
+    document.body.appendChild(document.createTextNode('only one'));
+
+    const comp = vcomp<DOMRef>({
+      mount: (_p) => {
+        const inner = vfrag<DOMRef>([vtext('only one'), vtext('missing')]);
+        return { componentId: 32 as any, componentTree: inner };
+      },
+      unmount: () => {},
+    });
+
+    const ok = hydrate(false, document.body, comp, hydrationContext, drawingContext);
+    expect(ok).toBe(false);
+  });
+
+});
+
+// ---------------------------------------------------------------------------
+// #6 — keyed VFrag growing from 0 → N via syncChildren
+// ---------------------------------------------------------------------------
+
+describe('VFrag — keyed VFrag added to existing keyed list via syncChildren', () => {
+
+  test('new keyed VFrag added to keyed list (syncChildren INSERT_BEFORE path)', () => {
+    // Start with only fragB; fragA key does not exist yet
+    const fragB = vfragKeyed<DOMRef>('B', [vtext('b1'), vtext('b2')]);
+    const root  = vnode<DOMRef>({ tag: 'div', children: [fragB] });
+    diff(null, root, document.body, drawingContext);
+    const div = document.body.firstChild as Element;
+    expect(div.childNodes.length).toBe(2);
+
+    // Now prepend fragA (new key) before fragB — syncChildren "not found" branch
+    // creates it via INSERT_BEFORE getFirstDOMRef(oFirst) which is 'b1'
+    const fragA2 = vfragKeyed<DOMRef>('A', [vtext('a1'), vtext('a2')]);
+    const fragB2 = vfragKeyed<DOMRef>('B', [vtext('b1'), vtext('b2')]);
+    const root2  = vnode<DOMRef>({ tag: 'div', children: [fragA2, fragB2] });
+    diff(root, root2, document.body, drawingContext);
+    expect(div.childNodes.length).toBe(4);
+    expect([...div.childNodes].map(n => n.textContent)).toEqual(['a1','a2','b1','b2']);
+  });
+
+});
+// ---------------------------------------------------------------------------
+// Bug A regression — VFrag same-key growth with following sibling
+// ---------------------------------------------------------------------------
+
+describe('VFrag — same-key growth preserves position (Bug A regression)', () => {
+
+  test('VFrag grows 1→3 children in-place; following <span> stays after', () => {
+    const frag   = vfrag<DOMRef>([vtext('p')]);
+    const span   = vnode<DOMRef>({ tag: 'span' });
+    const root   = vnode<DOMRef>({ tag: 'div', children: [frag, span] });
+    diff(null, root, document.body, drawingContext);
+    const div = document.body.firstChild as Element;
+    expect([...div.childNodes].map(n => n.textContent ?? n.nodeName.toLowerCase()))
+      .toEqual(['p', '']);    // '' = empty span textContent
+
+    const frag2  = vfrag<DOMRef>([vtext('p'), vtext('q'), vtext('r')]);
+    const span2  = vnode<DOMRef>({ tag: 'span' });
+    const root2  = vnode<DOMRef>({ tag: 'div', children: [frag2, span2] });
+    diff(root, root2, document.body, drawingContext);
+    expect(div.childNodes.length).toBe(4);
+    // p q r must precede span, not follow it
+    expect([...div.childNodes].map(n => n.textContent ?? n.nodeName.toLowerCase()))
+      .toEqual(['p', 'q', 'r', '']);
+  });
+
+  test('two VFrags in sibling position both grow independently', () => {
+    const f1  = vfrag<DOMRef>([vtext('a')]);
+    const f2  = vfrag<DOMRef>([vtext('x')]);
+    const root = vnode<DOMRef>({ tag: 'div', children: [f1, f2] });
+    diff(null, root, document.body, drawingContext);
+    const div = document.body.firstChild as Element;
+    expect([...div.childNodes].map(n => n.textContent)).toEqual(['a', 'x']);
+
+    const f1b  = vfrag<DOMRef>([vtext('a'), vtext('b')]);
+    const f2b  = vfrag<DOMRef>([vtext('x'), vtext('y')]);
+    const root2 = vnode<DOMRef>({ tag: 'div', children: [f1b, f2b] });
+    diff(root, root2, document.body, drawingContext);
+    expect([...div.childNodes].map(n => n.textContent)).toEqual(['a', 'b', 'x', 'y']);
+  });
+
+});
+
+// ---------------------------------------------------------------------------
+// Lifecycle hooks inside VFrag
+// ---------------------------------------------------------------------------
+
+describe('VFrag — lifecycle hooks fire for children', () => {
+
+  test('unmount fires when VComp inside a VFrag is destroyed', () => {
+    let unmounted = false;
+    const comp = vcomp<DOMRef>({
+      mount: (p) => {
+        const n = vnode<DOMRef>({ tag: 'em' });
+        diff(null, n, p, drawingContext);
+        return { componentId: 50 as any, componentTree: n };
+      },
+      unmount: (_id) => { unmounted = true; },
+    });
+    const frag = vfrag<DOMRef>([comp]);
+    diff(null, frag, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(1);
+
+    // Destroy the frag — unmount on the nested VComp must fire
+    diff(frag, null, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(0);
+    expect(unmounted).toBe(true);
+  });
+
+  test('unmount fires when VFrag containing VComp is replaced by VNode', () => {
+    let unmounted = false;
+    const comp = vcomp<DOMRef>({
+      mount: (p) => {
+        const n = vnode<DOMRef>({ tag: 'em' });
+        diff(null, n, p, drawingContext);
+        return { componentId: 51 as any, componentTree: n };
+      },
+      unmount: (_id) => { unmounted = true; },
+    });
+    const frag = vfrag<DOMRef>([comp]);
+    diff(null, frag, document.body, drawingContext);
+
+    const replacement = vnode<DOMRef>({ tag: 'div' });
+    diff(frag, replacement, document.body, drawingContext);
+    expect(unmounted).toBe(true);
+    expect((document.body.firstChild as Element).tagName.toLowerCase()).toBe('div');
+  });
+
+  test('onCreated fires for VNode child of VFrag', () => {
+    let createdRef: DOMRef | null = null;
+    const child = vnode<DOMRef>({
+      tag: 'span',
+      onCreated: (ref) => { createdRef = ref; },
+    });
+    const frag = vfrag<DOMRef>([child]);
+    diff(null, frag, document.body, drawingContext);
+    expect(createdRef).not.toBeNull();
+    expect((createdRef as unknown as Element).tagName.toLowerCase()).toBe('span');
+  });
+
+  test('onDestroyed fires for VNode child of VFrag when frag is destroyed', () => {
+    let destroyed = false;
+    const child = vnode<DOMRef>({
+      tag: 'p',
+      onDestroyed: () => { destroyed = true; },
+    });
+    const frag = vfrag<DOMRef>([child]);
+    diff(null, frag, document.body, drawingContext);
+    diff(frag, null, document.body, drawingContext);
+    expect(destroyed).toBe(true);
+  });
+
+  test('onDestroyed fires for VNode inside VComp with VFrag root when VComp is destroyed', () => {
+    let destroyed = false;
+    const inner = vnode<DOMRef>({ tag: 'span', onDestroyed: () => { destroyed = true; } });
+    const comp = vcomp<DOMRef>({
+      mount: (p) => {
+        const fragRoot = vfrag<DOMRef>([inner]);
+        diff(null, fragRoot, p, drawingContext);
+        return { componentId: 60 as any, componentTree: fragRoot };
+      },
+      unmount: (_id) => {},
+    });
+    diff(null, comp, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(1);
+    diff(comp, null, document.body, drawingContext);
+    expect(destroyed).toBe(true);
+    expect(document.body.childNodes.length).toBe(0);
+  });
+
+  test('callDestroyedRecursive reaches VNode nested inside VComp VFrag root replaced by another node', () => {
+    let destroyed = false;
+    const inner = vnode<DOMRef>({ tag: 'em', onDestroyed: () => { destroyed = true; } });
+    const comp = vcomp<DOMRef>({
+      mount: (p) => {
+        const fragRoot = vfrag<DOMRef>([inner]);
+        diff(null, fragRoot, p, drawingContext);
+        return { componentId: 61 as any, componentTree: fragRoot };
+      },
+      unmount: (_id) => {},
+    });
+    diff(null, comp, document.body, drawingContext);
+    const replacement = vnode<DOMRef>({ tag: 'div' });
+    diff(comp, replacement, document.body, drawingContext);
+    expect(destroyed).toBe(true);
+    expect((document.body.firstChild as Element).tagName.toLowerCase()).toBe('div');
+  });
+
+});
+
+// ---------------------------------------------------------------------------
+// Mixed-type child replace inside VFrag
+// ---------------------------------------------------------------------------
+
+describe('VFrag — mixed-type child change within unkeyed diff', () => {
+
+  test('VNode tag changes inside VFrag (replace path within diffChildren)', () => {
+    // VFrag[span, p] → VFrag[em, p]: span replaced by em via replace()
+    const frag  = vfrag<DOMRef>([
+      vnode<DOMRef>({ tag: 'span' }),
+      vnode<DOMRef>({ tag: 'p' }),
+    ]);
+    diff(null, frag, document.body, drawingContext);
+    expect(document.body.children.length).toBe(2);
+
+    const frag2 = vfrag<DOMRef>([
+      vnode<DOMRef>({ tag: 'em' }),
+      vnode<DOMRef>({ tag: 'p' }),
+    ]);
+    diff(frag, frag2, document.body, drawingContext);
+    expect(document.body.children.length).toBe(2);
+    expect(document.body.children[0].tagName.toLowerCase()).toBe('em');
+    expect(document.body.children[1].tagName.toLowerCase()).toBe('p');
+  });
+
+  test('VText→VNode type swap inside VFrag preserves following sibling', () => {
+    const frag  = vfrag<DOMRef>([vtext('hello'), vnode<DOMRef>({ tag: 'b' })]);
+    const outer = vnode<DOMRef>({ tag: 'div', children: [frag, vnode<DOMRef>({ tag: 'hr' })] });
+    diff(null, outer, document.body, drawingContext);
+    const div = document.body.firstChild as Element;
+    expect(div.childNodes.length).toBe(3); // "hello", b, hr
+
+    const frag2  = vfrag<DOMRef>([vnode<DOMRef>({ tag: 'em' }), vnode<DOMRef>({ tag: 'b' })]);
+    const outer2 = vnode<DOMRef>({ tag: 'div', children: [frag2, vnode<DOMRef>({ tag: 'hr' })] });
+    diff(outer, outer2, document.body, drawingContext);
+    expect(div.childNodes.length).toBe(3);
+    expect((div.childNodes[0] as Element).tagName.toLowerCase()).toBe('em');
+    expect((div.childNodes[1] as Element).tagName.toLowerCase()).toBe('b');
+    expect((div.childNodes[2] as Element).tagName.toLowerCase()).toBe('hr');
+  });
+
+  test('VFrag shrinks then grows back (idempotent round-trip)', () => {
+    const frag1 = vfrag<DOMRef>([vtext('a'), vtext('b'), vtext('c')]);
+    const span  = vnode<DOMRef>({ tag: 'span' });
+    const root1 = vnode<DOMRef>({ tag: 'div', children: [frag1, span] });
+    diff(null, root1, document.body, drawingContext);
+    const div = document.body.firstChild as Element;
+    expect([...div.childNodes].map(n => n.textContent ?? '')).toEqual(['a','b','c','']);
+
+    const frag2 = vfrag<DOMRef>([vtext('a')]);
+    const root2 = vnode<DOMRef>({ tag: 'div', children: [frag2, vnode<DOMRef>({ tag: 'span' })] });
+    diff(root1, root2, document.body, drawingContext);
+    expect([...div.childNodes].map(n => n.textContent ?? '')).toEqual(['a','']);
+
+    const frag3 = vfrag<DOMRef>([vtext('a'), vtext('b'), vtext('c')]);
+    const root3 = vnode<DOMRef>({ tag: 'div', children: [frag3, vnode<DOMRef>({ tag: 'span' })] });
+    diff(root2, root3, document.body, drawingContext);
+    expect([...div.childNodes].map(n => n.textContent ?? '')).toEqual(['a','b','c','']);
+  });
+
+});
+
+// ── onBeforeDestroyed fires for VNode children of VFrag ───────────────────────
+
+describe('VFrag — onBeforeDestroyed fires for children', () => {
+
+  test('onBeforeDestroyed fires on VNode child when VFrag is destroyed', () => {
+    let fired = false;
+    const child = vnode<DOMRef>({ tag: 'span', onBeforeDestroyed: () => { fired = true; } });
+    const frag  = vfrag<DOMRef>([child]);
+    diff<DOMRef>(null, frag, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(1);
+    diff<DOMRef>(frag, null, document.body, drawingContext);
+    expect(fired).toBe(true);
+    expect(document.body.childNodes.length).toBe(0);
+  });
+
+  test('onBeforeDestroyed fires on VNode child when VFrag is replaced', () => {
+    let fired = false;
+    const child = vnode<DOMRef>({ tag: 'p', onBeforeDestroyed: () => { fired = true; } });
+    const frag  = vfrag<DOMRef>([child]);
+    diff<DOMRef>(null, frag, document.body, drawingContext);
+    const replacement = vnode<DOMRef>({ tag: 'div' });
+    diff<DOMRef>(frag, replacement, document.body, drawingContext);
+    expect(fired).toBe(true);
+    expect((document.body.firstChild as Element).tagName.toLowerCase()).toBe('div');
+  });
+
+  test('onBeforeDestroyed fires on nested VNode inside nested VFrag', () => {
+    let fired = false;
+    const inner = vnode<DOMRef>({ tag: 'em', onBeforeDestroyed: () => { fired = true; } });
+    const innerFrag = vfrag<DOMRef>([inner]);
+    const outerFrag = vfrag<DOMRef>([innerFrag]);
+    diff<DOMRef>(null, outerFrag, document.body, drawingContext);
+    diff<DOMRef>(outerFrag, null, document.body, drawingContext);
+    expect(fired).toBe(true);
+  });
+
+});
+
+// ---------------------------------------------------------------------------
+// Capture-phase events through VFrag
+// ---------------------------------------------------------------------------
+
+describe('VFrag — capture-phase event fires when VFrag is in the ancestor path', () => {
+
+  test('capture handler on outer VNode fires when click target is inside VFrag child', () => {
+    let captureCount = 0;
+    let bubbleCount = 0;
+
+    const btn = vnode<DOMRef>({
+      tag: 'button',
+      events: {
+        captures: {},
+        bubbles: {
+          click: {
+            options: { preventDefault: false, stopPropagation: false },
+            runEvent: () => { bubbleCount++; },
+          },
+        },
+      },
+    });
+
+    const frag = vfrag<DOMRef>([btn]);
+
+    const outer = vnode<DOMRef>({
+      tag: 'div',
+      events: {
+        captures: {
+          click: {
+            options: { preventDefault: false, stopPropagation: false },
+            runEvent: () => { captureCount++; },
+          },
+        },
+        bubbles: {},
+      },
+      children: [frag],
+    });
+
+    diff<DOMRef>(null, outer, document.body, drawingContext);
+    btn.parent = frag as any;
+    frag.parent = outer as any;
+
+    const events: Array<EventCapture> = [{ name: 'click', capture: true }];
+    delegator<DOMRef>(document.body, events, (cb) => cb(outer), false, eventContext);
+
+    (btn.domRef as HTMLElement).click();
+    expect(captureCount).toBe(1);
+    expect(bubbleCount).toBe(1);
+  });
+
+  test('capture handler with stopPropagation prevents bubble when VFrag is in path', () => {
+    let captureCount = 0;
+    let bubbleCount = 0;
+
+    const btn = vnode<DOMRef>({
+      tag: 'button',
+      events: {
+        captures: {},
+        bubbles: {
+          click: {
+            options: { preventDefault: false, stopPropagation: false },
+            runEvent: () => { bubbleCount++; },
+          },
+        },
+      },
+    });
+
+    const frag = vfrag<DOMRef>([btn]);
+
+    const outer = vnode<DOMRef>({
+      tag: 'div',
+      events: {
+        captures: {
+          click: {
+            options: { preventDefault: false, stopPropagation: true },
+            runEvent: () => { captureCount++; },
+          },
+        },
+        bubbles: {},
+      },
+      children: [frag],
+    });
+
+    diff<DOMRef>(null, outer, document.body, drawingContext);
+    btn.parent = frag as any;
+    frag.parent = outer as any;
+
+    const events: Array<EventCapture> = [{ name: 'click', capture: true }];
+    delegator<DOMRef>(document.body, events, (cb) => cb(outer), false, eventContext);
+
+    (btn.domRef as HTMLElement).click();
+    expect(captureCount).toBe(1);
+    expect(bubbleCount).toBe(0); // stopPropagation on capture prevents bubble
+  });
+
+});

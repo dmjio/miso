@@ -1228,6 +1228,38 @@ describe('DOM tests', () => {
     expect(comp.child).toBeTruthy();
   });
 
+  test('Should handle VComp creation with OP.INSERT_BEFORE (keyed insert into list)', () => {
+    // [ span(k1), span(k3) ] -> [ span(k1), comp(k2), span(k3) ]
+    // comp(k2) is new and must be inserted before span(k3) via OP.INSERT_BEFORE
+    const old = vnode<DOMRef>({ tag: 'div', children: [
+      vnodeKeyed<DOMRef>('span', 'k1'),
+      vnodeKeyed<DOMRef>('span', 'k3'),
+    ]});
+    diff<DOMRef>(null, old, document.body, drawingContext);
+
+    let mounted = false;
+    const comp = vcomp<DOMRef>({
+      key: 'k2',
+      mount: (parent) => {
+        mounted = true;
+        const vn = vnode<DOMRef>({ tag: 'em' });
+        diff<DOMRef>(null, vn, parent, drawingContext);
+        return { componentId: 99 as any, componentTree: vn };
+      },
+    });
+    const next = vnode<DOMRef>({ tag: 'div', children: [
+      vnodeKeyed<DOMRef>('span', 'k1'),
+      comp,
+      vnodeKeyed<DOMRef>('span', 'k3'),
+    ]});
+    diff<DOMRef>(old, next, document.body, drawingContext);
+
+    expect(mounted).toBe(true);
+    const div = document.body.firstChild as Element;
+    expect(div.children.length).toBe(3);
+    expect(div.children[1].tagName.toLowerCase()).toBe('em');
+  });
+
   test('Should handle nested VComp with final VNode', () => {
     let outerMounted = false;
     
@@ -1414,6 +1446,60 @@ describe('DOM tests', () => {
     
     expect(parent.domRef.children[0]).toBe(newFirst.domRef);
     expect(parent.domRef.children[0].tagName).toBe('DIV');
+  });
+
+});
+
+describe('diffProps — falsy prop values not re-applied', () => {
+
+  test('prop with value 0 is not re-applied on identity diff', () => {
+    let setCount = 0;
+    const inp = vnode<DOMRef>({
+      tag: 'input',
+      props: { tabIndex: 0 },
+    });
+    diff(null, inp, document.body, drawingContext);
+    // patch with same props — setAttribute should NOT be called again for tabIndex
+    const origSetAttribute = (document.body.firstChild as Element).setAttribute.bind(document.body.firstChild);
+    (document.body.firstChild as any).setAttribute = (k: string, v: any) => {
+      if (k === 'tabIndex') setCount++;
+      origSetAttribute(k, v);
+    };
+    const inp2 = vnode<DOMRef>({ tag: 'input', props: { tabIndex: 0 } });
+    diff(inp, inp2, document.body, drawingContext);
+    expect(setCount).toBe(0);
+  });
+
+  test('prop with value false is not re-applied on identity diff', () => {
+    let setCount = 0;
+    const btn = vnode<DOMRef>({ tag: 'button', props: { disabled: false } });
+    diff(null, btn, document.body, drawingContext);
+    const el = document.body.firstChild as any;
+    const orig = el.setAttribute.bind(el);
+    el.setAttribute = (k: string, v: any) => { if (k === 'disabled') setCount++; orig(k, v); };
+    const btn2 = vnode<DOMRef>({ tag: 'button', props: { disabled: false } });
+    diff(btn, btn2, document.body, drawingContext);
+    expect(setCount).toBe(0);
+  });
+
+  test('prop with value empty string is not re-applied on identity diff', () => {
+    let setCount = 0;
+    const inp = vnode<DOMRef>({ tag: 'input', props: { placeholder: '' } });
+    diff(null, inp, document.body, drawingContext);
+    const el = document.body.firstChild as any;
+    const orig = el.setAttribute.bind(el);
+    el.setAttribute = (k: string, v: any) => { if (k === 'placeholder') setCount++; orig(k, v); };
+    const inp2 = vnode<DOMRef>({ tag: 'input', props: { placeholder: '' } });
+    diff(inp, inp2, document.body, drawingContext);
+    expect(setCount).toBe(0);
+  });
+
+  test('prop changing from 0 to 1 is applied', () => {
+    const inp = vnode<DOMRef>({ tag: 'input', props: { tabIndex: 0 } });
+    diff(null, inp, document.body, drawingContext);
+    const inp2 = vnode<DOMRef>({ tag: 'input', props: { tabIndex: 1 } });
+    diff(inp, inp2, document.body, drawingContext);
+    expect((document.body.firstChild as HTMLInputElement).tabIndex).toBe(1);
   });
 
 });

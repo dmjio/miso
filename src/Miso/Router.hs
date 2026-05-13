@@ -161,7 +161,7 @@ import           Control.Monad
 import           GHC.Generics
 import           GHC.TypeLits
 -----------------------------------------------------------------------------
-import           Miso.Types hiding (model)
+import           Miso.Types hiding (model, fragment, fragment_)
 import           Miso.Util
 import qualified Miso.Html.Property as P
 import           Miso.Util.Parser hiding (NoParses)

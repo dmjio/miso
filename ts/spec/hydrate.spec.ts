@@ -1,6 +1,6 @@
 /* imports */
 import { hydrate } from '../miso/hydrate';
-import { vnode, vtext, vcomp } from '../miso/smart';
+import { vnode, vtext, vcomp, vfrag } from '../miso/smart';
 import { Mount, VText, VNode, DOMRef, VComp } from '../miso/types';
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
 import { hydrationContext, drawingContext } from '../miso/context/dom';
@@ -437,5 +437,68 @@ describe ("Hydration tests", () => {
 
     expect(result).toBe(true);
     expect(tree.domRef).toBeDefined();
+  });
+
+  test('Should hydrate a VFrag of text nodes at the top level', () => {
+    // SSR renders VFrag [VText "foo", VText "bar"] as "foobar" → one text node.
+    document.body.appendChild(document.createTextNode('foobar'));
+
+    const frag = vfrag<DOMRef>([vtext('foo'), vtext('bar')]);
+    const result = hydrate(false, document.body, frag, hydrationContext, drawingContext);
+    expect(result).toBe(true);
+    // After collapseSiblingTextNodes, children[0] is the merged VText('foobar').
+    expect((frag.children[0] as VText<DOMRef>).domRef.textContent).toBe('foobar');
+  });
+
+  test('Should hydrate a VFrag of element nodes nested inside a VNode', () => {
+    // SSR renders: <div><span></span><p></p></div>
+    // VDOM:        vnode(div, [vfrag([vnode(span), vnode(p)])])
+    const div = document.createElement('div');
+    div.appendChild(document.createElement('span'));
+    div.appendChild(document.createElement('p'));
+    document.body.appendChild(div);
+
+    const frag = vfrag<DOMRef>([
+      vnode<DOMRef>({ tag: 'span' }),
+      vnode<DOMRef>({ tag: 'p' }),
+    ]);
+    const tree = vnode<DOMRef>({ children: [frag] });
+    const result = hydrate(false, document.body, tree, hydrationContext, drawingContext);
+    expect(result).toBe(true);
+    expect((frag.children[0] as VNode<DOMRef>).domRef.tagName.toLowerCase()).toBe('span');
+    expect((frag.children[1] as VNode<DOMRef>).domRef.tagName.toLowerCase()).toBe('p');
+  });
+
+  test('Should fail to hydrate VFrag when DOM has fewer nodes than fragment children', () => {
+    document.body.appendChild(document.createTextNode('only'));
+
+    const frag = vfrag<DOMRef>([vtext('only'), vtext('missing')]);
+    const result = hydrate(false, document.body, frag, hydrationContext, drawingContext);
+    expect(result).toBe(false);
+  });
+
+  test('Should hydrate a nested VFrag (frag inside frag) inside a VNode', () => {
+    // SSR: <div><span></span><em></em><b></b></div>
+    // VDOM: vnode(div, [vfrag([vnode(span), vfrag([vnode(em), vnode(b)])])])
+    const div = document.createElement('div');
+    div.appendChild(document.createElement('span'));
+    div.appendChild(document.createElement('em'));
+    div.appendChild(document.createElement('b'));
+    document.body.appendChild(div);
+
+    const innerFrag = vfrag<DOMRef>([
+      vnode<DOMRef>({ tag: 'em' }),
+      vnode<DOMRef>({ tag: 'b' }),
+    ]);
+    const outerFrag = vfrag<DOMRef>([
+      vnode<DOMRef>({ tag: 'span' }),
+      innerFrag,
+    ]);
+    const tree = vnode<DOMRef>({ children: [outerFrag] });
+    const result = hydrate(false, document.body, tree, hydrationContext, drawingContext);
+    expect(result).toBe(true);
+    expect((outerFrag.children[0] as VNode<DOMRef>).domRef.tagName.toLowerCase()).toBe('span');
+    expect((innerFrag.children[0] as VNode<DOMRef>).domRef.tagName.toLowerCase()).toBe('em');
+    expect((innerFrag.children[1] as VNode<DOMRef>).domRef.tagName.toLowerCase()).toBe('b');
   });
 });

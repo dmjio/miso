@@ -78,6 +78,39 @@
 --   to events that are raised by the application. This function takes any @action@,
 --   updating the @model@ and optionally introduces 'IO' into the system.
 --
+-- = t'View' DSL
+--
+-- The 'View' type is the core type for both templating and adding interactivity to a web page. It is similar to
+-- a [Rose tree](https://en.wikipedia.org/wiki/Rose_tree) data structure. This is how the Virtual DOM is constructed. It is
+-- mutually recursive with the 'Component' type (via the 'view' function), which allows us to embed
+-- 'Component' inside other 'Component'.
+--
+-- @
+-- data 'View' model action
+--   = 'VNode' 'Namespace' 'Tag' ['Attribute' action] ['View' model action]
+--   | 'VText' (Maybe 'Key') 'MisoString'
+--   | 'VComp' (Maybe 'Key') ('SomeComponent' model)
+--   | 'VFrag' (Maybe 'Key') ['View' model action]
+-- @
+--
+-- 'VNode' and 'VText' have a one-to-one mapping from the virtual DOM to the physical DOM. The 'VComp' constructor is abstract and does not contain a reference to the physical DOM. The existential type of 'SomeComponent' is defined recursively in terms of 'View' and is what allows us to embed other polymorphic 'Component'.
+--
+-- @
+-- data 'SomeComponent' parent
+--   = forall model action . Eq model
+--   => 'SomeComponent' ('Component' parent model action)
+-- @
+--
+-- The smart constructors:
+--
+-- * 'node', 'vnode'
+-- * 'text', 'vtext'
+-- * 'component', 'vcomp'
+-- * 'fragment_', 'fragment', 'vfrag', 'vfrag_'
+-- * ('+>')
+--
+-- are used to build 'VNode', 'VText', 'VFrag' and 'VComp' respectively. A list of all the smart constructors defined in terms of 'node' (e.g. 'Miso.Html.Element.div_') can be found in "Miso.Html.Element".
+--
 -- = Your first t'Component'
 --
 -- To define a 'Component' the 'component' smart constructor can be used.
@@ -109,7 +142,7 @@
 --       Subtract -> 'this' -= 1
 --
 --     v :: Int -> 'View' Int Action
---     v x = H.div_
+--     v x = 'vfrag'
 --       [ H.button_ [ HE.onClick Add, HP.id_ "add" ] [ "+" ]
 --       , text (ms x)
 --       , H.button_ [ HE.onClick Subtract, HP.id_ "subtract" ] [ "-" ]
@@ -256,6 +289,40 @@
 --
 -- As a convention, the @*with@ variant of 'VNode' lifecycle hooks (e.g. 'Miso.Event.onCreatedWith') provide the target 'DOMRef' in the callback function (shown above).
 --
+-- = 'VFrag' (Fragment nodes)
+--
+-- Similar to the [React Fragment](https://react.dev/reference/react/Fragment) API (@\<Fragment\>@ or @\<\>\<\/\>@ syntax), and to @DocumentFragment@ in the browser DOM API. @miso@ provides a 'VFrag' constructor for grouping together sibling nodes without introducing an extra wrapper element in the DOM.
+--
+-- @
+-- -- Renders two \<li\> elements as direct siblings, no enclosing element
+-- 'fragment' [ 'li_' [] [ 'text' "Item A" ], 'li_' [] [ 'text' "Item B" ] ]
+-- @
+--
+-- A 'VFrag' may optionally carry a 'Key'. Keyed fragments participate in the same
+-- reconciliation algorithm as keyed 'VNode' and 'VText' nodes, allowing the virtual
+-- DOM differ to identify, reorder, and reuse groups of siblings efficiently.
+--
+-- @
+-- -- Keyed fragment — survives reordering without full teardown\/remount
+-- 'vfrag_' "my-key" [ 'li_' [] [ 'text' "A" ], 'li_' [] [ 'text' "B" ] ]
+-- @
+--
+-- Fragments may be nested — a 'VFrag' child may itself be a 'VFrag'. The diff function
+-- recurses into nested fragments and processes all fragments as if they were
+-- flat sequence of sibling DOM nodes, so nesting carries no runtime cost beyond the extra 'View' allocation.
+--
+-- Empty fragments (@'fragment' []@) in child nodes are erased from the virtual DOM tree in the
+-- Haskell layer before they reach diffing in JavaScript and are therefore a no-op.
+--
+-- There is an edge case where an empty 'VFrag' can be returned from a 'Component'. In this case an empty text node will be used.
+--
+-- The smart constructors for 'VFrag' are:
+--
+-- * 'fragment'   — unkeyed fragment
+-- * 'vfrag'      — unkeyed fragment (alias)
+-- * 'fragment_'  — keyed fragment
+-- * 'vfrag_'     — keyed fragment (alias, infix-friendly: @\"key\" \`vfrag_\` [...]@)
+--
 -- = 'Key'
 --
 -- A 'Key' is a unique identifier used to optimize diffing.
@@ -281,37 +348,6 @@
 --   , 'textKey' "key-4" "text here"
 --   ]
 -- @
---
--- = t'View' DSL
---
--- The 'View' type is the core type for templating a web page. It is similar to
--- a [Rose tree](https://en.wikipedia.org/wiki/Rose_tree) data structure. This is how the Virtual DOM is constructed. It is
--- mutually recursive with the 'Component' type (via the 'view' function), which allows us to embed
--- 'Component' inside other 'Component'.
---
--- @
--- data 'View' model action
---   = 'VNode' 'Namespace' 'Tag' ['Attribute' action] ['View' model action]
---   | 'VText' (Maybe 'Key') 'MisoString'
---   | 'VComp' (Maybe 'Key') ('SomeComponent' model)
--- @
---
--- 'VNode' and 'VText' have a one-to-one mapping from the virtual DOM to the physical DOM. The 'VComp' constructor is abstract and does not contain a reference to the physical DOM. The existential type of 'SomeComponent' is defined recursively in terms of 'View' and is what allows us to embed other polymorphic 'Component'.
---
--- @
--- data 'SomeComponent' parent
---   = forall model action . Eq model
---   => 'SomeComponent' ('Component' parent model action)
--- @
---
--- The smart constructors:
---
--- * 'node', 'vnode'
--- * 'text', 'vtext'
--- * 'component', 'vcomp'
--- * ('+>')
---
--- are used to build 'VNode', 'VText' and 'VComp' respectively. A list of all the smart constructors defined in terms of 'node' (e.g. 'Miso.Html.Element.div_') can be found in "Miso.Html.Element".
 --
 -- = 'Events'
 --

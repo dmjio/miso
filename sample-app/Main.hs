@@ -60,9 +60,7 @@ updateModel = \case
 -- | Constructs a virtual DOM from a model
 viewModel :: Model -> View Model Action
 viewModel x =
-  H.div_
-    [ P.className "counter"
-    ]
+  vfrag
     [ H.button_ [ H.onClick AddOne ] [ text "+" ]
     , text $ ms (x ^. counter)
     , H.button_ [ H.onClick SubtractOne ] [ text "-" ]

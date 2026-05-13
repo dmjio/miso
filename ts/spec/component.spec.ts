@@ -278,7 +278,7 @@ describe ('Component tests', () => {
     diff<DOMRef>(component, vnode<DOMRef>({}), document.body, drawingContext);
 
     // Test node is removed from DOM
-    expect(document.body.children[0].tagName).toBe('DIV');
+    expect((document.body.childNodes[0] as Element).tagName).toBe('DIV');
     expect(unmountCount).toBe(1);
   });
 
@@ -311,8 +311,8 @@ describe ('Component tests', () => {
     diff<DOMRef>(node, component, document.body, drawingContext);
 
     // Test node is removed from DOM
-    expect(document.body.children[0].tagName).toBe('DIV');
-    expect(document.body.children.length).toBe(1);
+    expect((document.body.childNodes[0] as Element).tagName).toBe('DIV');
+    expect(document.body.childNodes.length).toBe(1);
     expect(unmountCount).toBe(0);
     expect(mountCount).toBe(1);
   });
@@ -337,7 +337,30 @@ describe ('Component tests', () => {
 
     // Test component was populated
     expect(document.body.childNodes.length).toBe(1);
-    expect(document.body.children[0].tagName).toBe('DIV');
+    expect((document.body.childNodes[0] as Element).tagName).toBe('DIV');
+  });
+
+  test('Should mount a component whose root is an empty text node', () => {
+    // Models the top-level VFrag [] case: Haskell emits a single empty VText
+    // as a placeholder so the VComp always has exactly one concrete DOM ref.
+    let mountCount = 0;
+
+    const component = vcomp<DOMRef>({
+      mount: (domRef) => {
+        mountCount++;
+        const child = vtext<DOMRef>('');
+        diff<DOMRef>(null, child, domRef, drawingContext);
+        return { componentId: 0, componentTree: child };
+      },
+    });
+
+    diff<DOMRef>(null, component, document.body, drawingContext);
+
+    expect(mountCount).toBe(1);
+    // One empty text node in the DOM
+    expect(document.body.childNodes.length).toBe(1);
+    expect(document.body.childNodes[0].nodeType).toBe(Node.TEXT_NODE);
+    expect(document.body.childNodes[0].textContent).toBe('');
   });
 
 })

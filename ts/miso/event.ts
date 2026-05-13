@@ -1,5 +1,4 @@
 import { EventContext, VTree, EventCapture, EventObject, Options, VTreeType } from './types';
-import { getDOMRef } from './util';
 
 /* event delegation algorithm */
 export function delegator<T> (
@@ -22,7 +21,7 @@ export function delegator<T> (
   }
 }
 /* the event listener shared by both delegator and undelegator */
-function listener<T>(e: Event | [Event], mount: T, getVTree: (VTree) => void, debug: boolean, context: EventContext<T>): void {
+function listener<T>(e: Event | [Event], mount: T, getVTree: ((callback: (vtree: VTree<T>) => void) => void), debug: boolean, context: EventContext<T>): void {
   getVTree(function (vtree: VTree<T>) {
       if (Array.isArray(e)) {
           for (const key of e) {
@@ -80,6 +79,18 @@ export function delegateEvent <T> (
       if (obj.type === VTreeType.VText) {
         return;
       }
+      else if (obj.type === VTreeType.VFrag) {
+        // Walk into whichever child's subtree contains the target.
+        // Guard with containsDOMRef before recursing so we don't mutate the
+        // shared stack array for siblings that don't contain the target.
+        for (const child of obj.children) {
+          if (containsDOMRef(child, stack[0], context)) {
+            delegateEvent(event, child, stack, debug, context);
+            return;
+          }
+        }
+        return;
+      }
       else if (obj.type === VTreeType.VComp) {
         if (!obj.child) {
           if (debug) {
@@ -107,8 +118,9 @@ export function delegateEvent <T> (
           }
           stack.splice(0,1);
           for (const child of obj.children) {
-            if (context.isEqual(getDOMRef(child), stack[0])) {
+            if (containsDOMRef(child, stack[0], context)) {
               delegateEvent(event, child, stack, debug, context);
+              return;
             }
           }
         }
@@ -120,6 +132,14 @@ export function delegateEvent <T> (
       /* VComp doesn't have events directly, delegate to its child */
       if (obj.child) {
         delegateEvent(event, obj.child, stack, debug, context);
+      }
+    } else if (obj.type === VTreeType.VFrag) {
+      /* VFrag doesn't have events directly, delegate into the child that owns the target */
+      for (const child of obj.children) {
+        if (containsDOMRef(child, stack[0], context)) {
+          delegateEvent(event, child, stack, debug, context);
+          return;
+        }
       }
     } else if (obj.type === VTreeType.VNode) {
     /* captures run first */
@@ -160,6 +180,10 @@ function propagateWhileAble<T>(vtree: VTree<T>, event: Event): void {
     switch (vtree.type) {
       case VTreeType.VText:
         /* impossible case */
+        break;
+      case VTreeType.VFrag:
+        /* Propagate through fragment to its parent */
+        vtree = vtree.parent;
         break;
       case VTreeType.VNode:
         const eventObj = vtree.events.bubbles[event.type];
@@ -226,6 +250,19 @@ export function eventJSON(at: string | Array<string>, obj: any): Object[] {
     }
   }
   return newObj;
+}
+/* Returns true if target is among the DOM refs owned by vtree (handles VFrag/VComp) */
+function containsDOMRef<T>(vtree: VTree<T>, target: T, context: EventContext<T>): boolean {
+  switch (vtree.type) {
+    case VTreeType.VFrag:
+      for (const child of vtree.children)
+        if (containsDOMRef(child, target, context)) return true;
+      return false;
+    case VTreeType.VComp:
+      return vtree.child ? containsDOMRef(vtree.child, target, context) : false;
+    default:
+      return context.isEqual(vtree.domRef, target);
+  }
 }
 /* get static and dynamic properties */
 function getAllPropertyNames(obj: Event): Object {

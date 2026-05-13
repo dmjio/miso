@@ -195,9 +195,9 @@ main = startApp defaultEvents app
 foreign export javascript "hs_start" main :: IO ()
 #endif
 ----------------------------------------------------------------------------
--- | `component` takes as arguments the initial model, update function, view function
+-- | `vcomp` takes as arguments the initial model, update function, view function
 app :: App Int Action
-app = component 0 updateModel viewModel
+app = vcomp 0 updateModel viewModel
 ----------------------------------------------------------------------------
 -- | Updates model, optionally introduces side effects
 updateModel :: Action -> Effect parent Int Action
@@ -210,10 +210,7 @@ updateModel = \case
 ----------------------------------------------------------------------------
 -- | Constructs a virtual DOM from a model
 viewModel :: Int -> View Int Action
-viewModel x =
-  H.div_
-    [ P.className "counter"
-    ]
+viewModel x = vfrag
     [ H.button_ [ H.onClick AddOne ] [ text "+" ]
     , text (ms x)
     , H.button_ [ H.onClick SubtractOne ] [ text "-" ]
