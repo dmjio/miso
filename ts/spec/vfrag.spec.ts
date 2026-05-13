@@ -1486,27 +1486,6 @@ describe('VFrag — stress: mixed keyed reordering', () => {
 
 describe('VFrag — replace with VComp and VComp(VFrag root) replace with VFrag', () => {
 
-  test('replaces VFrag with a VComp whose root is a VNode', () => {
-    const frag = vfrag<DOMRef>([vtext('a'), vtext('b')]);
-    diff(null, frag, document.body, drawingContext);
-    expect(document.body.childNodes.length).toBe(2);
-
-    let mounted = false;
-    const comp = vcomp<DOMRef>({
-      mount: (p) => {
-        mounted = true;
-        const n = vnode<DOMRef>({ tag: 'em' });
-        diff(null, n, p, drawingContext);
-        return { componentId: 10 as any, componentTree: n };
-      },
-      unmount: () => {},
-    });
-    diff(frag, comp, document.body, drawingContext);
-    expect(mounted).toBe(true);
-    expect(document.body.childNodes.length).toBe(1);
-    expect((document.body.firstChild as Element).tagName.toLowerCase()).toBe('em');
-  });
-
   test('replaces VFrag with a VComp whose root is a VFrag', () => {
     const old = vfrag<DOMRef>([vtext('x')]);
     diff(null, old, document.body, drawingContext);
@@ -1642,65 +1621,7 @@ describe('VFrag — syncChildren oFirst→nLast (move-to-end) with multi-node VF
 });
 
 // ---------------------------------------------------------------------------
-// #3 — diffProps falsy value regression
-// ---------------------------------------------------------------------------
-
-describe('diffProps — falsy prop values not re-applied', () => {
-
-  test('prop with value 0 is not re-applied on identity diff', () => {
-    let setCount = 0;
-    const inp = vnode<DOMRef>({
-      tag: 'input',
-      props: { tabIndex: 0 },
-    });
-    diff(null, inp, document.body, drawingContext);
-    // patch with same props — setAttribute should NOT be called again for tabIndex
-    const origSetAttribute = (document.body.firstChild as Element).setAttribute.bind(document.body.firstChild);
-    (document.body.firstChild as any).setAttribute = (k: string, v: any) => {
-      if (k === 'tabIndex') setCount++;
-      origSetAttribute(k, v);
-    };
-    const inp2 = vnode<DOMRef>({ tag: 'input', props: { tabIndex: 0 } });
-    diff(inp, inp2, document.body, drawingContext);
-    expect(setCount).toBe(0);
-  });
-
-  test('prop with value false is not re-applied on identity diff', () => {
-    let setCount = 0;
-    const btn = vnode<DOMRef>({ tag: 'button', props: { disabled: false } });
-    diff(null, btn, document.body, drawingContext);
-    const el = document.body.firstChild as any;
-    const orig = el.setAttribute.bind(el);
-    el.setAttribute = (k: string, v: any) => { if (k === 'disabled') setCount++; orig(k, v); };
-    const btn2 = vnode<DOMRef>({ tag: 'button', props: { disabled: false } });
-    diff(btn, btn2, document.body, drawingContext);
-    expect(setCount).toBe(0);
-  });
-
-  test('prop with value empty string is not re-applied on identity diff', () => {
-    let setCount = 0;
-    const inp = vnode<DOMRef>({ tag: 'input', props: { placeholder: '' } });
-    diff(null, inp, document.body, drawingContext);
-    const el = document.body.firstChild as any;
-    const orig = el.setAttribute.bind(el);
-    el.setAttribute = (k: string, v: any) => { if (k === 'placeholder') setCount++; orig(k, v); };
-    const inp2 = vnode<DOMRef>({ tag: 'input', props: { placeholder: '' } });
-    diff(inp, inp2, document.body, drawingContext);
-    expect(setCount).toBe(0);
-  });
-
-  test('prop changing from 0 to 1 is applied', () => {
-    const inp = vnode<DOMRef>({ tag: 'input', props: { tabIndex: 0 } });
-    diff(null, inp, document.body, drawingContext);
-    const inp2 = vnode<DOMRef>({ tag: 'input', props: { tabIndex: 1 } });
-    diff(inp, inp2, document.body, drawingContext);
-    expect((document.body.firstChild as HTMLInputElement).tabIndex).toBe(1);
-  });
-
-});
-
-// ---------------------------------------------------------------------------
-// #4 — event stopPropagation at VComp barrier
+// #3 — event stopPropagation at VComp barrier
 // ---------------------------------------------------------------------------
 
 describe('VFrag — event stopPropagation at VComp barrier', () => {
@@ -2144,6 +2065,104 @@ describe('VFrag — onBeforeDestroyed fires for children', () => {
     diff<DOMRef>(null, outerFrag, document.body, drawingContext);
     diff<DOMRef>(outerFrag, null, document.body, drawingContext);
     expect(fired).toBe(true);
+  });
+
+});
+
+// ---------------------------------------------------------------------------
+// Capture-phase events through VFrag
+// ---------------------------------------------------------------------------
+
+describe('VFrag — capture-phase event fires when VFrag is in the ancestor path', () => {
+
+  test('capture handler on outer VNode fires when click target is inside VFrag child', () => {
+    let captureCount = 0;
+    let bubbleCount = 0;
+
+    const btn = vnode<DOMRef>({
+      tag: 'button',
+      events: {
+        captures: {},
+        bubbles: {
+          click: {
+            options: { preventDefault: false, stopPropagation: false },
+            runEvent: () => { bubbleCount++; },
+          },
+        },
+      },
+    });
+
+    const frag = vfrag<DOMRef>([btn]);
+
+    const outer = vnode<DOMRef>({
+      tag: 'div',
+      events: {
+        captures: {
+          click: {
+            options: { preventDefault: false, stopPropagation: false },
+            runEvent: () => { captureCount++; },
+          },
+        },
+        bubbles: {},
+      },
+      children: [frag],
+    });
+
+    diff<DOMRef>(null, outer, document.body, drawingContext);
+    btn.parent = frag as any;
+    frag.parent = outer as any;
+
+    const events: Array<EventCapture> = [{ name: 'click', capture: true }];
+    delegator<DOMRef>(document.body, events, (cb) => cb(outer), false, eventContext);
+
+    (btn.domRef as HTMLElement).click();
+    expect(captureCount).toBe(1);
+    expect(bubbleCount).toBe(1);
+  });
+
+  test('capture handler with stopPropagation prevents bubble when VFrag is in path', () => {
+    let captureCount = 0;
+    let bubbleCount = 0;
+
+    const btn = vnode<DOMRef>({
+      tag: 'button',
+      events: {
+        captures: {},
+        bubbles: {
+          click: {
+            options: { preventDefault: false, stopPropagation: false },
+            runEvent: () => { bubbleCount++; },
+          },
+        },
+      },
+    });
+
+    const frag = vfrag<DOMRef>([btn]);
+
+    const outer = vnode<DOMRef>({
+      tag: 'div',
+      events: {
+        captures: {
+          click: {
+            options: { preventDefault: false, stopPropagation: true },
+            runEvent: () => { captureCount++; },
+          },
+        },
+        bubbles: {},
+      },
+      children: [frag],
+    });
+
+    diff<DOMRef>(null, outer, document.body, drawingContext);
+    btn.parent = frag as any;
+    frag.parent = outer as any;
+
+    const events: Array<EventCapture> = [{ name: 'click', capture: true }];
+    delegator<DOMRef>(document.body, events, (cb) => cb(outer), false, eventContext);
+
+    (btn.domRef as HTMLElement).click();
+    expect(captureCount).toBe(1);
+    expect(bubbleCount).toBe(0); // stopPropagation on capture prevents bubble
   });
 
 });

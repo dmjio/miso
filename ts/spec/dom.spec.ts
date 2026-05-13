@@ -1449,3 +1449,57 @@ describe('DOM tests', () => {
   });
 
 });
+
+describe('diffProps — falsy prop values not re-applied', () => {
+
+  test('prop with value 0 is not re-applied on identity diff', () => {
+    let setCount = 0;
+    const inp = vnode<DOMRef>({
+      tag: 'input',
+      props: { tabIndex: 0 },
+    });
+    diff(null, inp, document.body, drawingContext);
+    // patch with same props — setAttribute should NOT be called again for tabIndex
+    const origSetAttribute = (document.body.firstChild as Element).setAttribute.bind(document.body.firstChild);
+    (document.body.firstChild as any).setAttribute = (k: string, v: any) => {
+      if (k === 'tabIndex') setCount++;
+      origSetAttribute(k, v);
+    };
+    const inp2 = vnode<DOMRef>({ tag: 'input', props: { tabIndex: 0 } });
+    diff(inp, inp2, document.body, drawingContext);
+    expect(setCount).toBe(0);
+  });
+
+  test('prop with value false is not re-applied on identity diff', () => {
+    let setCount = 0;
+    const btn = vnode<DOMRef>({ tag: 'button', props: { disabled: false } });
+    diff(null, btn, document.body, drawingContext);
+    const el = document.body.firstChild as any;
+    const orig = el.setAttribute.bind(el);
+    el.setAttribute = (k: string, v: any) => { if (k === 'disabled') setCount++; orig(k, v); };
+    const btn2 = vnode<DOMRef>({ tag: 'button', props: { disabled: false } });
+    diff(btn, btn2, document.body, drawingContext);
+    expect(setCount).toBe(0);
+  });
+
+  test('prop with value empty string is not re-applied on identity diff', () => {
+    let setCount = 0;
+    const inp = vnode<DOMRef>({ tag: 'input', props: { placeholder: '' } });
+    diff(null, inp, document.body, drawingContext);
+    const el = document.body.firstChild as any;
+    const orig = el.setAttribute.bind(el);
+    el.setAttribute = (k: string, v: any) => { if (k === 'placeholder') setCount++; orig(k, v); };
+    const inp2 = vnode<DOMRef>({ tag: 'input', props: { placeholder: '' } });
+    diff(inp, inp2, document.body, drawingContext);
+    expect(setCount).toBe(0);
+  });
+
+  test('prop changing from 0 to 1 is applied', () => {
+    const inp = vnode<DOMRef>({ tag: 'input', props: { tabIndex: 0 } });
+    diff(null, inp, document.body, drawingContext);
+    const inp2 = vnode<DOMRef>({ tag: 'input', props: { tabIndex: 1 } });
+    diff(inp, inp2, document.body, drawingContext);
+    expect((document.body.firstChild as HTMLInputElement).tabIndex).toBe(1);
+  });
+
+});
