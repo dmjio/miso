@@ -109,7 +109,7 @@
 --       Subtract -> 'this' -= 1
 --
 --     v :: Int -> 'View' Int Action
---     v x = H.div_
+--     v x = 'vfrag'
 --       [ H.button_ [ HE.onClick Add, HP.id_ "add" ] [ "+" ]
 --       , text (ms x)
 --       , H.button_ [ HE.onClick Subtract, HP.id_ "subtract" ] [ "-" ]
@@ -305,11 +305,22 @@
 --   => 'SomeComponent' ('Component' parent model action)
 -- @
 --
--- = t'VFrag' — Fragment nodes
+-- The smart constructors:
+--
+-- * 'node', 'vnode'
+-- * 'text', 'vtext'
+-- * 'component', 'vcomp'
+-- * 'fragment_', 'fragment', 'vfrag', 'vfrag_'
+-- * ('+>')
+--
+-- are used to build 'VNode', 'VText', 'VFrag' and 'VComp' respectively. A list of all the smart constructors defined in terms of 'node' (e.g. 'Miso.Html.Element.div_') can be found in "Miso.Html.Element".
+--
+-- = 'VFrag' (Fragment nodes)
+--
+-- Similar to the [React Fragment](https://react.dev/docs/fragments) API, @miso@ provides a 'VFrag' constructor for grouping together sibling nodes without introducing an extra wrapper element in the DOM.
 --
 -- 'VFrag' is a /grouping/ constructor that renders a list of sibling 'View' nodes into the DOM
--- without introducing any wrapper element. It is similar to React's @\<Fragment\>@ or @\<\>\<\/\>@
--- syntax, and to @DocumentFragment@ in the browser DOM API.
+-- It is similar to React's @\<Fragment\>@ or @\<\>\<\/\>@ syntax, and to @DocumentFragment@ in the browser DOM API.
 --
 -- @
 -- -- Renders two \<li\> elements as direct siblings, no enclosing element
@@ -340,16 +351,6 @@
 -- * 'vfrag'      — unkeyed fragment (alias)
 -- * 'fragment_'  — keyed fragment
 -- * 'vfrag_'     — keyed fragment (alias, infix-friendly: @\"key\" \`vfrag_\` [...]@)
---
--- The smart constructors:
---
--- * 'node', 'vnode'
--- * 'text', 'vtext'
--- * 'component', 'vcomp'
--- * 'fragment_', 'fragment', 'vfrag', 'vfrag_'
--- * ('+>')
---
--- are used to build 'VNode', 'VText', 'VFrag' and 'VComp' respectively. A list of all the smart constructors defined in terms of 'node' (e.g. 'Miso.Html.Element.div_') can be found in "Miso.Html.Element".
 --
 -- = 'Events'
 --
