@@ -1099,7 +1099,14 @@ buildVTree events_ parentId_ vcompId hydrate snk logLevel_ = \case
     FFI.set "ns" ("text" :: MisoString) vtree
     FFI.set "text" t vtree
     pure (VTree vtree)
-  VFrag _ [] -> pure (VTree (Object jsNull))
+  VFrag key [] -> do
+    -- dmj: render an empty fragment as an empty text node, if top-level. Otherwise these get erased.
+    vtree <- create
+    flip (FFI.set "type") vtree =<< toJSVal VTextType
+    forM_ key $ \k -> FFI.set "key" (ms k) vtree
+    FFI.set "ns" ("text" :: MisoString) vtree
+    FFI.set "text" ("" :: MisoString) vtree
+    pure (VTree vtree)
   VFrag maybeKey kids -> do
     frag <- create
     FFI.set "type" VFragType frag
