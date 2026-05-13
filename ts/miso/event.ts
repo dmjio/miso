@@ -134,9 +134,12 @@ export function delegateEvent <T> (
         delegateEvent(event, obj.child, stack, debug, context);
       }
     } else if (obj.type === VTreeType.VFrag) {
-      /* VFrag doesn't have events directly, delegate into children */
+      /* VFrag doesn't have events directly, delegate into the child that owns the target */
       for (const child of obj.children) {
-        delegateEvent(event, child, stack, debug, context);
+        if (containsDOMRef(child, stack[0], context)) {
+          delegateEvent(event, child, stack, debug, context);
+          return;
+        }
       }
     } else if (obj.type === VTreeType.VNode) {
     /* captures run first */
