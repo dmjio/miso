@@ -190,6 +190,31 @@ describe('VFrag — keyed children sync (syncChildren)', () => {
     expect(textOrder()).toEqual(['b1', 'b2', 'e1', 'e2', 'd1', 'd2']);
   });
 
+  test('grow keyed list with following sibling — new nodes must not escape past sibling', () => {
+    // parent div: [ VFragKeyed('list',[A,B]),  VNode('span') ]
+    // grow to:    [ VFragKeyed('list',[A,B,C]), VNode('span') ]
+    // Without endAnchor threaded into syncChildren, C would be appended AFTER span.
+    const cA = vfragKeyed<DOMRef>('A', [vtext('a')]);
+    const cB = vfragKeyed<DOMRef>('B', [vtext('b')]);
+    const old = vnode<DOMRef>({ tag: 'div', children: [
+      vfragKeyed<DOMRef>('list', [cA, cB]),
+      vnode<DOMRef>({ tag: 'span' }),
+    ]});
+    diff(null, old, document.body, drawingContext);
+    expect(textOrder()).toEqual(['a', 'b', '']);
+
+    const nA = vfragKeyed<DOMRef>('A', [vtext('a')]);
+    const nB = vfragKeyed<DOMRef>('B', [vtext('b')]);
+    const nC = vfragKeyed<DOMRef>('C', [vtext('c')]);
+    const next = vnode<DOMRef>({ tag: 'div', children: [
+      vfragKeyed<DOMRef>('list', [nA, nB, nC]),
+      vnode<DOMRef>({ tag: 'span' }),
+    ]});
+    diff(old, next, document.body, drawingContext);
+    // 'c' must appear before the span, not after it
+    expect(textOrder()).toEqual(['a', 'b', 'c', '']);
+  });
+
 });
 
 // ---------------------------------------------------------------------------

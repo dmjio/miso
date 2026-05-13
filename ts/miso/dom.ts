@@ -297,7 +297,7 @@ function shouldSync<T> (cs: Array<VTree<T>>, ns: Array<VTree<T>>) {
 
 function diffChildren<T>(cs: Array<VTree<T>>, ns: Array<VTree<T>>, parent: T, context: DrawingContext<T>, endAnchor: T | null = null): void {
   if (shouldSync(cs,ns)) {
-    syncChildren(cs, ns, parent, context);
+    syncChildren(cs, ns, parent, context, endAnchor);
   } else {
     for (let i = 0; i < Math.max(ns.length, cs.length); i++) {
       const c = cs[i], n = ns[i];
@@ -441,7 +441,7 @@ function swapDOMRef<T>(oLast: VTree<T>, oFirst: VTree<T>, parent: T, context: Dr
 }
 
 /* Child reconciliation algorithm, inspired by kivi and Bobril */
-function syncChildren<T>(os: Array<VTree<T>>, ns: Array<VTree<T>>, parent: T, context: DrawingContext<T>): void {
+function syncChildren<T>(os: Array<VTree<T>>, ns: Array<VTree<T>>, parent: T, context: DrawingContext<T>, endAnchor: T | null = null): void {
   var oldFirstIndex: number = 0,
     newFirstIndex: number = 0,
     oldLastIndex: number = os.length - 1,
@@ -471,11 +471,18 @@ function syncChildren<T>(os: Array<VTree<T>>, ns: Array<VTree<T>>, parent: T, co
                -> [ a b c ] <- new children
                */
     if (oldFirstIndex > oldLastIndex) {
-      diff(null, nFirst, parent, context);
-      /* insertBefore's semantics will append a node if the second argument provided is `null` or `undefined`.
-         Otherwise, it will insert node.domRef before oLast.domRef.
-      */
-      insertBefore(parent, nFirst, oFirst, context);
+      // When the old list is exhausted, new nodes must be inserted before the
+      // VFrag's following sibling (endAnchor) if one exists, or before oFirst
+      // (the stale position marker) if valid, otherwise appended.
+      if (endAnchor) {
+        createElement(parent, OP.INSERT_BEFORE, endAnchor, nFirst, context);
+      } else {
+        diff(null, nFirst, parent, context);
+        /* insertBefore's semantics will append a node if the second argument provided is `null` or `undefined`.
+           Otherwise, it will insert node.domRef before oLast.domRef.
+        */
+        insertBefore(parent, nFirst, oFirst, context);
+      }
       os.splice(newFirstIndex, 0, nFirst);
       newFirstIndex++;
     } /* No more new nodes, delete all remaining nodes in old list

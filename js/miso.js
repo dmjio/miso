@@ -526,7 +526,7 @@ function shouldSync(cs, ns) {
 }
 function diffChildren(cs, ns, parent, context, endAnchor = null) {
   if (shouldSync(cs, ns)) {
-    syncChildren(cs, ns, parent, context);
+    syncChildren(cs, ns, parent, context, endAnchor);
   } else {
     for (let i = 0;i < Math.max(ns.length, cs.length); i++) {
       const c = cs[i], n = ns[i];
@@ -645,7 +645,7 @@ function swapDOMRef(oLast, oFirst, parent, context) {
   forEachDOMRef(oLast, (ref) => context.insertBefore(parent, ref, anchor));
   forEachDOMRef(oFirst, (ref) => context.insertBefore(parent, ref, tmp));
 }
-function syncChildren(os, ns, parent, context) {
+function syncChildren(os, ns, parent, context, endAnchor = null) {
   var oldFirstIndex = 0, newFirstIndex = 0, oldLastIndex = os.length - 1, newLastIndex = ns.length - 1, tmp, nFirst, nLast, oLast, oFirst, found, node;
   for (;; ) {
     if (newFirstIndex > newLastIndex && oldFirstIndex > oldLastIndex) {
@@ -656,8 +656,12 @@ function syncChildren(os, ns, parent, context) {
     oFirst = os[oldFirstIndex];
     oLast = os[oldLastIndex];
     if (oldFirstIndex > oldLastIndex) {
-      diff(null, nFirst, parent, context);
-      insertBefore(parent, nFirst, oFirst, context);
+      if (endAnchor) {
+        createElement(parent, 2 /* INSERT_BEFORE */, endAnchor, nFirst, context);
+      } else {
+        diff(null, nFirst, parent, context);
+        insertBefore(parent, nFirst, oFirst, context);
+      }
       os.splice(newFirstIndex, 0, nFirst);
       newFirstIndex++;
     } else if (newFirstIndex > newLastIndex) {
