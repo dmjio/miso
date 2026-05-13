@@ -80,7 +80,8 @@ module Miso.JSON
   -- * Options
   , Options (..)
   , defaultOptions
-  -- * Generics
+  -- * Modifiers
+  , camelTo2
   , GToJSON (..)
   , GToFields (..)
   , GToJSONSum (..)
@@ -172,17 +173,26 @@ genericToJSON opts = gToJSON opts . from
 data Options
   = Options
   { fieldLabelModifier    :: String -> String
+  -- ^ Modify record field names before encoding (default: identity).
+  , constructorTagModifier :: String -> String
+  -- ^ Modify constructor names used as tags before encoding (default: identity).
   , allNullaryToStringTag :: Bool
   -- ^ When 'True' (the default, matching aeson) and every constructor of a
   -- sum type is nullary, encode/decode each constructor as a bare JSON
   -- 'String' (e.g. @\"Red\"@) rather than a tagged object
   -- (e.g. @{\"tag\":\"Red\"}@).
+  , omitNothingFields :: Bool
+  -- ^ When 'True', record fields whose value is 'Nothing' are omitted from
+  -- the encoded object entirely. When 'False' (the default, matching aeson)
+  -- they are encoded as @null@.
   }
 ----------------------------------------------------------------------------
 defaultOptions :: Options
 defaultOptions = Options
-  { fieldLabelModifier    = \x -> x
-  , allNullaryToStringTag = True
+  { fieldLabelModifier     = \x -> x
+  , constructorTagModifier = \x -> x
+  , allNullaryToStringTag  = True
+  , omitNothingFields      = False
   }
 ----------------------------------------------------------------------------
 camelTo2 :: Char -> String -> String
@@ -233,6 +243,20 @@ instance (Selector m, GToFields f) => GToFields (S1 m f) where
 ----------------------------------------------------------------------------
 instance ToJSON a => GToFields (K1 r a) where
   gToFields _ (K1 x) = PositionalFields [toJSON x]
+----------------------------------------------------------------------------
+-- | Special 'GToFields' instance for @'Maybe' a@ fields that honours
+-- 'omitNothingFields': when the option is 'True' and the value is
+-- 'Nothing', the field is omitted from the encoded object entirely.
+instance {-# OVERLAPPING #-} (Selector m, ToJSON a)
+    => GToFields (S1 m (K1 r (Maybe a))) where
+  gToFields opts s@(M1 (K1 mx)) =
+    let n   = selName (undefined :: S1 m (K1 r (Maybe a)) ())
+        key = ms (fieldLabelModifier opts n)
+    in if null n
+       then PositionalFields [toJSON mx]
+       else case mx of
+              Nothing | omitNothingFields opts -> RecordFields []
+              _                                -> RecordFields [(key, toJSON mx)]
 ----------------------------------------------------------------------------
 -- | Determine at the type level whether every constructor of a sum type
 -- is nullary (has no fields). Used to implement 'allNullaryToStringTag'.
@@ -323,7 +347,8 @@ instance (GToJSONSumNullary f, GToJSONSumNullary g) => GToJSONSumNullary (f :+: 
   gToJSONSumNullary opts (R1 x) = gToJSONSumNullary opts x
 ----------------------------------------------------------------------------
 instance Constructor m => GToJSONSumNullary (C1 m U1) where
-  gToJSONSumNullary _ c = String (ms (conName c))
+  gToJSONSumNullary opts _ =
+    String (ms (constructorTagModifier opts (conName (undefined :: C1 m U1 ()))))
 ----------------------------------------------------------------------------
 -- | Catch-all for non-nullary constructors — unreachable when 'gAllNullary'
 -- guards are in place, but required for instance resolution.
@@ -339,7 +364,10 @@ instance (GToJSONSum f, GToJSONSum g) => GToJSONSum (f :+: g) where
   gToJSONSum opts (R1 x) = gToJSONSum opts x
 ----------------------------------------------------------------------------
 instance (Constructor m, GToFields f) => GToJSONSum (C1 m f) where
-  gToJSONSum opts c@(M1 x) = encodeTaggedCon (ms (conName c)) (gToFields opts x)
+  gToJSONSum opts (M1 x) =
+    encodeTaggedCon
+      (ms (constructorTagModifier opts (conName (undefined :: C1 m f ()))))
+      (gToFields opts x)
 ----------------------------------------------------------------------------
 instance ToJSON () where
   toJSON () = Array []
@@ -447,8 +475,7 @@ class FromJSON a where
 ----------------------------------------------------------------------------
 -- | Top-level generic decoding class. Symmetric with 'GToJSON'.
 --
--- Decoding rules match aeson's default @TaggedObject \"tag\" \"contents\"@
--- (with @allNullaryToStringTag = False@).
+-- Decoding rules match aeson's defaults (see 'Options' and 'defaultOptions').
 class GFromJSON (f :: Type -> Type) where
   gParseJSON :: Options -> Value -> Parser (f a)
 ----------------------------------------------------------------------------
@@ -482,8 +509,8 @@ instance (GFromJSONSumNullary f, GFromJSONSumNullary g) => GFromJSONSumNullary (
     (L1 <$> gFromJSONSumNullary opts v) <|> (R1 <$> gFromJSONSumNullary opts v)
 ----------------------------------------------------------------------------
 instance Constructor m => GFromJSONSumNullary (C1 m U1) where
-  gFromJSONSumNullary _ v =
-    let tag = ms (conName (undefined :: C1 m U1 a))
+  gFromJSONSumNullary opts v =
+    let tag = ms (constructorTagModifier opts (conName (undefined :: C1 m U1 ())))
     in case v of
          String t | t == tag  -> pure (M1 U1)
                   | otherwise -> pfail ("expected \"" <> tag <> "\" got \"" <> t <> "\"")
@@ -503,7 +530,7 @@ instance (GFromJSONSum f, GFromJSONSum g) => GFromJSONSum (f :+: g) where
 ----------------------------------------------------------------------------
 instance (Constructor m, GFromFields f) => GFromJSONSum (C1 m f) where
   gFromJSONSum opts v = M1 <$> parseTaggedCon tag opts v
-    where tag = ms (conName (undefined :: C1 m f a))
+    where tag = ms (constructorTagModifier opts (conName (undefined :: C1 m f ())))
 ----------------------------------------------------------------------------
 -- | Parse a single-constructor (product) type from a 'Value'.
 parseProd :: forall f a. GFromFields f => Options -> Value -> Parser (f a)

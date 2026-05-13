@@ -21,6 +21,7 @@ import qualified Data.Map.Strict as M
 import           Data.Map.Strict (Map)
 import qualified Data.IntMap.Strict as IM
 import           Data.IntMap.Strict (IntMap)
+import           Data.Char (toLower)
 import           Prelude hiding ((!!))
 import           GHC.Generics
 import           Control.Monad
@@ -426,6 +427,28 @@ main = withJS $ do
       it "round-trips record with Maybe field absent" $ do
         (JSON.fromJSON (JSON.toJSON (Profile "dmjio" Nothing)) :: JSON.Result Profile)
           `shouldBe` JSON.Success (Profile "dmjio" Nothing)
+      -- omitNothingFields
+      it "omits Nothing fields when omitNothingFields = True" $ do
+        let opts = JSON.defaultOptions { JSON.omitNothingFields = True }
+        JSON.genericToJSON opts (Profile "dmjio" Nothing)
+          `shouldBe` JSON.object [("handle", JSON.String "dmjio")]
+      it "keeps Nothing fields as null when omitNothingFields = False" $ do
+        JSON.toJSON (Profile "dmjio" Nothing)
+          `shouldBe` JSON.object
+            [("handle", JSON.String "dmjio"), ("bio", JSON.Null)]
+      -- constructorTagModifier
+      it "applies constructorTagModifier to sum tags" $ do
+        let opts = JSON.defaultOptions
+              { JSON.constructorTagModifier = map toLower
+              , JSON.allNullaryToStringTag  = False
+              }
+        JSON.genericToJSON opts Red   `shouldBe` JSON.object [("tag", JSON.String "red")]
+        JSON.genericToJSON opts Green `shouldBe` JSON.object [("tag", JSON.String "green")]
+      it "applies constructorTagModifier to nullary string tags" $ do
+        let opts = JSON.defaultOptions
+              { JSON.constructorTagModifier = map toLower }
+        JSON.genericToJSON opts Red   `shouldBe` JSON.String "red"
+        JSON.genericToJSON opts Green `shouldBe` JSON.String "green"
 
     describe "Miso.Data.Map tests" $ do
       it "should construct a Map from a list and perform operations" $ do
