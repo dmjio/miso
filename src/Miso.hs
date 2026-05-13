@@ -78,6 +78,39 @@
 --   to events that are raised by the application. This function takes any @action@,
 --   updating the @model@ and optionally introduces 'IO' into the system.
 --
+-- = t'View' DSL
+--
+-- The 'View' type is the core type for both templating and adding interactivity to a web page. It is similar to
+-- a [Rose tree](https://en.wikipedia.org/wiki/Rose_tree) data structure. This is how the Virtual DOM is constructed. It is
+-- mutually recursive with the 'Component' type (via the 'view' function), which allows us to embed
+-- 'Component' inside other 'Component'.
+--
+-- @
+-- data 'View' model action
+--   = 'VNode' 'Namespace' 'Tag' ['Attribute' action] ['View' model action]
+--   | 'VText' (Maybe 'Key') 'MisoString'
+--   | 'VComp' (Maybe 'Key') ('SomeComponent' model)
+--   | 'VFrag' (Maybe 'Key') ['View' model action]
+-- @
+--
+-- 'VNode' and 'VText' have a one-to-one mapping from the virtual DOM to the physical DOM. The 'VComp' constructor is abstract and does not contain a reference to the physical DOM. The existential type of 'SomeComponent' is defined recursively in terms of 'View' and is what allows us to embed other polymorphic 'Component'.
+--
+-- @
+-- data 'SomeComponent' parent
+--   = forall model action . Eq model
+--   => 'SomeComponent' ('Component' parent model action)
+-- @
+--
+-- The smart constructors:
+--
+-- * 'node', 'vnode'
+-- * 'text', 'vtext'
+-- * 'component', 'vcomp'
+-- * 'fragment_', 'fragment', 'vfrag', 'vfrag_'
+-- * ('+>')
+--
+-- are used to build 'VNode', 'VText', 'VFrag' and 'VComp' respectively. A list of all the smart constructors defined in terms of 'node' (e.g. 'Miso.Html.Element.div_') can be found in "Miso.Html.Element".
+--
 -- = Your first t'Component'
 --
 -- To define a 'Component' the 'component' smart constructor can be used.
@@ -256,65 +289,6 @@
 --
 -- As a convention, the @*with@ variant of 'VNode' lifecycle hooks (e.g. 'Miso.Event.onCreatedWith') provide the target 'DOMRef' in the callback function (shown above).
 --
--- = 'Key'
---
--- A 'Key' is a unique identifier used to optimize diffing.
---
--- Virtual DOM nodes can be \"keyed\" (See 'key_'). Keys have multiple meanings in @miso@ (and react).
---
--- * Keys are used to optimize child node list diffing.
---
--- When two lists of elements are being diffed, as long as they all have unique keys, diffing large child lists will be much faster. This optimization automatically occurs when all the elements in a 'VNode' child list contain unique keys. Unless all 'View' nodes in a child list are keyed, this optimization will not fire.
---
--- * Keys are used to compare two identical nodes.
---
--- If two `VNode` are being compared (or two `VComp`) and their keys differ, the old node will be destroyed and a new one created. Otherwise, the underlying DOM node won't be removed, but its properties will be diffed. In the case of diffing two t'Component' (the 'VComp' case), if the keys differ, the 'unmount' phase will be triggered for the old 'VComp' and the 'mount' phase will be triggered for the new 'Component'. The underlying DOM reference will be replaced.
---
--- See the 'key_' property for usage (and smart constructors like 'textKey_' and ('+>') as well).
---
--- @
--- 'ul_'
---   []
---   [ 'li_' [ 'key_' "key-1" ] [ "a" ]
---   , 'li_' [ 'key_' "key-2" ] [ "b" ]
---   , "key-3" '+>' counter
---   , 'textKey' "key-4" "text here"
---   ]
--- @
---
--- = t'View' DSL
---
--- The 'View' type is the core type for templating a web page. It is similar to
--- a [Rose tree](https://en.wikipedia.org/wiki/Rose_tree) data structure. This is how the Virtual DOM is constructed. It is
--- mutually recursive with the 'Component' type (via the 'view' function), which allows us to embed
--- 'Component' inside other 'Component'.
---
--- @
--- data 'View' model action
---   = 'VNode' 'Namespace' 'Tag' ['Attribute' action] ['View' model action]
---   | 'VText' (Maybe 'Key') 'MisoString'
---   | 'VComp' (Maybe 'Key') ('SomeComponent' model)
---   | 'VFrag' (Maybe 'Key') ['View' model action]
--- @
---
--- 'VNode' and 'VText' have a one-to-one mapping from the virtual DOM to the physical DOM. The 'VComp' constructor is abstract and does not contain a reference to the physical DOM. The existential type of 'SomeComponent' is defined recursively in terms of 'View' and is what allows us to embed other polymorphic 'Component'.
---
--- @
--- data 'SomeComponent' parent
---   = forall model action . Eq model
---   => 'SomeComponent' ('Component' parent model action)
--- @
---
--- The smart constructors:
---
--- * 'node', 'vnode'
--- * 'text', 'vtext'
--- * 'component', 'vcomp'
--- * 'fragment_', 'fragment', 'vfrag', 'vfrag_'
--- * ('+>')
---
--- are used to build 'VNode', 'VText', 'VFrag' and 'VComp' respectively. A list of all the smart constructors defined in terms of 'node' (e.g. 'Miso.Html.Element.div_') can be found in "Miso.Html.Element".
---
 -- = 'VFrag' (Fragment nodes)
 --
 -- Similar to the [React Fragment](https://react.dev/docs/fragments) API, @miso@ provides a 'VFrag' constructor for grouping together sibling nodes without introducing an extra wrapper element in the DOM.
@@ -351,6 +325,32 @@
 -- * 'vfrag'      — unkeyed fragment (alias)
 -- * 'fragment_'  — keyed fragment
 -- * 'vfrag_'     — keyed fragment (alias, infix-friendly: @\"key\" \`vfrag_\` [...]@)
+--
+-- = 'Key'
+--
+-- A 'Key' is a unique identifier used to optimize diffing.
+--
+-- Virtual DOM nodes can be \"keyed\" (See 'key_'). Keys have multiple meanings in @miso@ (and react).
+--
+-- * Keys are used to optimize child node list diffing.
+--
+-- When two lists of elements are being diffed, as long as they all have unique keys, diffing large child lists will be much faster. This optimization automatically occurs when all the elements in a 'VNode' child list contain unique keys. Unless all 'View' nodes in a child list are keyed, this optimization will not fire.
+--
+-- * Keys are used to compare two identical nodes.
+--
+-- If two `VNode` are being compared (or two `VComp`) and their keys differ, the old node will be destroyed and a new one created. Otherwise, the underlying DOM node won't be removed, but its properties will be diffed. In the case of diffing two t'Component' (the 'VComp' case), if the keys differ, the 'unmount' phase will be triggered for the old 'VComp' and the 'mount' phase will be triggered for the new 'Component'. The underlying DOM reference will be replaced.
+--
+-- See the 'key_' property for usage (and smart constructors like 'textKey_' and ('+>') as well).
+--
+-- @
+-- 'ul_'
+--   []
+--   [ 'li_' [ 'key_' "key-1" ] [ "a" ]
+--   , 'li_' [ 'key_' "key-2" ] [ "b" ]
+--   , "key-3" '+>' counter
+--   , 'textKey' "key-4" "text here"
+--   ]
+-- @
 --
 -- = 'Events'
 --
