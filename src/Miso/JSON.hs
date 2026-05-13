@@ -84,6 +84,7 @@ module Miso.JSON
   , GToJSON (..)
   , GToFields (..)
   , GToJSONSum (..)
+  , GAllNullary (..)
   , Fields (..)
   , GFromJSON (..)
   , GFromFields (..)
@@ -170,11 +171,19 @@ genericToJSON opts = gToJSON opts . from
 ----------------------------------------------------------------------------
 data Options
   = Options
-  { fieldLabelModifier :: String -> String
+  { fieldLabelModifier    :: String -> String
+  , allNullaryToStringTag :: Bool
+  -- ^ When 'True' (the default, matching aeson) and every constructor of a
+  -- sum type is nullary, encode/decode each constructor as a bare JSON
+  -- 'String' (e.g. @\"Red\"@) rather than a tagged object
+  -- (e.g. @{\"tag\":\"Red\"}@).
   }
 ----------------------------------------------------------------------------
 defaultOptions :: Options
-defaultOptions = Options { fieldLabelModifier = \x -> x }
+defaultOptions = Options
+  { fieldLabelModifier    = \x -> x
+  , allNullaryToStringTag = True
+  }
 ----------------------------------------------------------------------------
 camelTo2 :: Char -> String -> String
 camelTo2 c = Prelude.map toLower . go2 . go1
@@ -225,6 +234,29 @@ instance (Selector m, GToFields f) => GToFields (S1 m f) where
 instance ToJSON a => GToFields (K1 r a) where
   gToFields _ (K1 x) = PositionalFields [toJSON x]
 ----------------------------------------------------------------------------
+-- | Determine at the type level whether every constructor of a sum type
+-- is nullary (has no fields). Used to implement 'allNullaryToStringTag'.
+class GAllNullary (f :: Type -> Type) where
+  gAllNullary :: Bool
+----------------------------------------------------------------------------
+instance GAllNullary U1 where
+  gAllNullary = True
+----------------------------------------------------------------------------
+instance GAllNullary (K1 r a) where
+  gAllNullary = False
+----------------------------------------------------------------------------
+instance (GAllNullary f, GAllNullary g) => GAllNullary (f :*: g) where
+  gAllNullary = False  -- has multiple fields, definitely not nullary
+----------------------------------------------------------------------------
+instance GAllNullary f => GAllNullary (S1 m f) where
+  gAllNullary = gAllNullary @f
+----------------------------------------------------------------------------
+instance GAllNullary f => GAllNullary (C1 m f) where
+  gAllNullary = gAllNullary @f
+----------------------------------------------------------------------------
+instance (GAllNullary f, GAllNullary g) => GAllNullary (f :+: g) where
+  gAllNullary = gAllNullary @f && gAllNullary @g
+----------------------------------------------------------------------------
 -- | Encode a single-constructor (product) type. No tag is added.
 --
 -- * Record:       @{"field1": v, ...}@
@@ -253,14 +285,14 @@ encodeTaggedCon tag = \case
 ----------------------------------------------------------------------------
 -- | Top-level generic encoding class.
 --
--- Encoding rules match aeson's default @TaggedObject \"tag\" \"contents\"@
--- (with @allNullaryToStringTag = False@):
+-- Encoding rules match aeson's defaults:
 --
--- * Single-constructor record:          @{\"field1\": v1, ...}@
--- * Single-constructor positional:      @v@ (1 field), @[v1,v2,...]@ (n>1), @[]@ (0)
--- * Sum record constructor:             @{\"tag\": \"C\", \"field1\": v1, ...}@
--- * Sum nullary constructor:            @{\"tag\": \"C\"}@
--- * Sum positional constructor:         @{\"tag\": \"C\", \"contents\": v}@ or @[...]@
+-- * All-nullary sum + 'allNullaryToStringTag':  @\"C\"@
+-- * Single-constructor record:                  @{\"field1\": v1, ...}@
+-- * Single-constructor positional:              @v@ (1 field), @[v1,v2,...]@ (n>1), @[]@ (0)
+-- * Sum record constructor:                     @{\"tag\": \"C\", \"field1\": v1, ...}@
+-- * Sum nullary constructor:                    @{\"tag\": \"C\"}@
+-- * Sum positional constructor:                 @{\"tag\": \"C\", \"contents\": v}@ or @[...]@
 class GToJSON (f :: Type -> Type) where
   gToJSON :: Options -> f a -> Value
 ----------------------------------------------------------------------------
@@ -273,9 +305,30 @@ class GToJSONRep (f :: Type -> Type) where
 -- Single constructor: no tag
 instance GToFields f => GToJSONRep (C1 m f) where
   gToJSONRep opts (M1 x) = encodeProduct (gToFields opts x)
--- Sum: each branch tagged
-instance (GToJSONSum f, GToJSONSum g) => GToJSONRep (f :+: g) where
-  gToJSONRep opts x = gToJSONSum opts x
+-- Sum: branch on allNullaryToStringTag
+instance (GToJSONSum f, GToJSONSum g, GToJSONSumNullary f, GToJSONSumNullary g, GAllNullary f, GAllNullary g)
+    => GToJSONRep (f :+: g) where
+  gToJSONRep opts x
+    | allNullaryToStringTag opts && gAllNullary @f && gAllNullary @g
+    = gToJSONSumNullary opts x
+    | otherwise
+    = gToJSONSum opts x
+----------------------------------------------------------------------------
+-- | Encode all-nullary sum constructors as bare 'String' values.
+class GToJSONSumNullary (f :: Type -> Type) where
+  gToJSONSumNullary :: Options -> f a -> Value
+----------------------------------------------------------------------------
+instance (GToJSONSumNullary f, GToJSONSumNullary g) => GToJSONSumNullary (f :+: g) where
+  gToJSONSumNullary opts (L1 x) = gToJSONSumNullary opts x
+  gToJSONSumNullary opts (R1 x) = gToJSONSumNullary opts x
+----------------------------------------------------------------------------
+instance Constructor m => GToJSONSumNullary (C1 m U1) where
+  gToJSONSumNullary _ c = String (ms (conName c))
+----------------------------------------------------------------------------
+-- | Catch-all for non-nullary constructors — unreachable when 'gAllNullary'
+-- guards are in place, but required for instance resolution.
+instance {-# OVERLAPPABLE #-} Constructor m => GToJSONSumNullary (C1 m f) where
+  gToJSONSumNullary _ _ = error "GToJSONSumNullary: non-nullary constructor (impossible)"
 ----------------------------------------------------------------------------
 -- | Encode sum constructors with a @\"tag\"@ key.
 class GToJSONSum (f :: Type -> Type) where
@@ -411,9 +464,35 @@ class GFromJSONRep (f :: Type -> Type) where
 -- Single constructor
 instance GFromFields f => GFromJSONRep (C1 m f) where
   gFromJSONRep opts v = M1 <$> parseProd opts v
--- Sum type
-instance (GFromJSONSum f, GFromJSONSum g) => GFromJSONRep (f :+: g) where
-  gFromJSONRep opts v = gFromJSONSum opts v
+-- Sum type: branch on allNullaryToStringTag
+instance (GFromJSONSum f, GFromJSONSum g, GFromJSONSumNullary f, GFromJSONSumNullary g, GAllNullary f, GAllNullary g)
+    => GFromJSONRep (f :+: g) where
+  gFromJSONRep opts v
+    | allNullaryToStringTag opts && gAllNullary @f && gAllNullary @g
+    = gFromJSONSumNullary opts v
+    | otherwise
+    = gFromJSONSum opts v
+----------------------------------------------------------------------------
+-- | Parse all-nullary sum constructors from bare 'String' values.
+class GFromJSONSumNullary (f :: Type -> Type) where
+  gFromJSONSumNullary :: Options -> Value -> Parser (f a)
+----------------------------------------------------------------------------
+instance (GFromJSONSumNullary f, GFromJSONSumNullary g) => GFromJSONSumNullary (f :+: g) where
+  gFromJSONSumNullary opts v =
+    (L1 <$> gFromJSONSumNullary opts v) <|> (R1 <$> gFromJSONSumNullary opts v)
+----------------------------------------------------------------------------
+instance Constructor m => GFromJSONSumNullary (C1 m U1) where
+  gFromJSONSumNullary _ v =
+    let tag = ms (conName (undefined :: C1 m U1 a))
+    in case v of
+         String t | t == tag  -> pure (M1 U1)
+                  | otherwise -> pfail ("expected \"" <> tag <> "\" got \"" <> t <> "\"")
+         _        -> pfail ("expected String for nullary constructor " <> tag)
+----------------------------------------------------------------------------
+-- | Catch-all for non-nullary constructors — unreachable when 'gAllNullary'
+-- guards are in place, but required for instance resolution.
+instance {-# OVERLAPPABLE #-} Constructor m => GFromJSONSumNullary (C1 m f) where
+  gFromJSONSumNullary _ _ = pfail "GFromJSONSumNullary: non-nullary constructor (impossible)"
 ----------------------------------------------------------------------------
 -- | Parse sum constructors, trying each branch left-to-right.
 class GFromJSONSum (f :: Type -> Type) where

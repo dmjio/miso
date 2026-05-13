@@ -347,11 +347,11 @@ main = withJS $ do
           `shouldBe` Right (JSON.Object (M.fromList [("a",JSON.Bool True),("b",JSON.Number 1.1)]))
 
     describe "Miso.JSON generic encoding tests" $ do
-      -- Nullary sum constructors → {"tag":"C"}
-      it "encodes nullary sum constructors as tagged objects" $ do
-        JSON.toJSON Red   `shouldBe` JSON.object [("tag", JSON.String "Red")]
-        JSON.toJSON Green `shouldBe` JSON.object [("tag", JSON.String "Green")]
-        JSON.toJSON Blue  `shouldBe` JSON.object [("tag", JSON.String "Blue")]
+      -- Nullary sum constructors → bare String (allNullaryToStringTag = True)
+      it "encodes nullary sum constructors as bare strings" $ do
+        JSON.toJSON Red   `shouldBe` JSON.String "Red"
+        JSON.toJSON Green `shouldBe` JSON.String "Green"
+        JSON.toJSON Blue  `shouldBe` JSON.String "Blue"
       it "round-trips nullary sum constructors" $ do
         (JSON.fromJSON (JSON.toJSON Red)   :: JSON.Result Color) `shouldBe` JSON.Success Red
         (JSON.fromJSON (JSON.toJSON Green) :: JSON.Result Color) `shouldBe` JSON.Success Green
