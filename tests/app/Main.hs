@@ -105,6 +105,43 @@ data Person = Person { name :: MisoString, age :: Int }
   deriving stock Generic
   deriving anyclass (ToJSVal, ToObject)
 ----------------------------------------------------------------------------
+-- Types for generic JSON encoding/decoding tests
+----------------------------------------------------------------------------
+-- Nullary sum
+data Color = Red | Green | Blue
+  deriving stock (Generic, Show, Eq)
+  deriving anyclass (JSON.ToJSON, JSON.FromJSON)
+----------------------------------------------------------------------------
+-- Single-constructor record (no tag)
+data Point = Point { px :: Int, py :: Int }
+  deriving stock (Generic, Show, Eq)
+  deriving anyclass (JSON.ToJSON, JSON.FromJSON)
+----------------------------------------------------------------------------
+-- Single-constructor newtype-like (unwrapped)
+data Wrapper = Wrapper Int
+  deriving stock (Generic, Show, Eq)
+  deriving anyclass (JSON.ToJSON, JSON.FromJSON)
+----------------------------------------------------------------------------
+-- Multi-constructor sum with positional fields
+data Shape
+  = Circle Double
+  | Rectangle Double Double
+  | Dot
+  deriving stock (Generic, Show, Eq)
+  deriving anyclass (JSON.ToJSON, JSON.FromJSON)
+----------------------------------------------------------------------------
+-- Multi-constructor sum with record fields
+data Animal
+  = Cat { catName :: MisoString, lives :: Int }
+  | Dog { dogName :: MisoString, tricks :: Int }
+  deriving stock (Generic, Show, Eq)
+  deriving anyclass (JSON.ToJSON, JSON.FromJSON)
+----------------------------------------------------------------------------
+-- Record with Maybe field
+data Profile = Profile { handle :: MisoString, bio :: Maybe MisoString }
+  deriving stock (Generic, Show, Eq)
+  deriving anyclass (JSON.ToJSON, JSON.FromJSON)
+----------------------------------------------------------------------------
 getAge :: Person -> IO Int
 getAge = inline "return age;"
 ----------------------------------------------------------------------------
@@ -308,6 +345,87 @@ main = withJS $ do
           Right (JSON.Array [JSON.Number 1, JSON.Bool True, JSON.Null])
         decodePure "{\"a\":true,\"b\":1.1}"
           `shouldBe` Right (JSON.Object (M.fromList [("a",JSON.Bool True),("b",JSON.Number 1.1)]))
+
+    describe "Miso.JSON generic encoding tests" $ do
+      -- Nullary sum constructors → {"tag":"C"}
+      it "encodes nullary sum constructors as tagged objects" $ do
+        JSON.toJSON Red   `shouldBe` JSON.object [("tag", JSON.String "Red")]
+        JSON.toJSON Green `shouldBe` JSON.object [("tag", JSON.String "Green")]
+        JSON.toJSON Blue  `shouldBe` JSON.object [("tag", JSON.String "Blue")]
+      it "round-trips nullary sum constructors" $ do
+        (JSON.fromJSON (JSON.toJSON Red)   :: JSON.Result Color) `shouldBe` JSON.Success Red
+        (JSON.fromJSON (JSON.toJSON Green) :: JSON.Result Color) `shouldBe` JSON.Success Green
+        (JSON.fromJSON (JSON.toJSON Blue)  :: JSON.Result Color) `shouldBe` JSON.Success Blue
+      -- Single-constructor record → flat object, no tag
+      it "encodes single-constructor records as flat objects" $ do
+        JSON.toJSON (Point 3 4)
+          `shouldBe` JSON.object [("px", JSON.Number 3), ("py", JSON.Number 4)]
+      it "round-trips single-constructor records" $ do
+        (JSON.fromJSON (JSON.toJSON (Point 3 4)) :: JSON.Result Point)
+          `shouldBe` JSON.Success (Point 3 4)
+      -- Single-constructor positional → unwrapped value
+      it "encodes single-constructor positional as unwrapped value" $ do
+        JSON.toJSON (Wrapper 42) `shouldBe` JSON.Number 42
+      it "round-trips single-constructor positional" $ do
+        (JSON.fromJSON (JSON.toJSON (Wrapper 42)) :: JSON.Result Wrapper)
+          `shouldBe` JSON.Success (Wrapper 42)
+      -- Sum positional: 1 field → {"tag":"C","contents":v}
+      it "encodes sum single-field constructor with contents" $ do
+        JSON.toJSON (Circle 5.0)
+          `shouldBe` JSON.object [("tag", JSON.String "Circle"), ("contents", JSON.Number 5.0)]
+      -- Sum positional: 2 fields → {"tag":"C","contents":[v1,v2]}
+      it "encodes sum multi-field positional constructor with contents array" $ do
+        JSON.toJSON (Rectangle 3.0 4.0)
+          `shouldBe` JSON.object
+            [ ("tag", JSON.String "Rectangle")
+            , ("contents", JSON.Array [JSON.Number 3.0, JSON.Number 4.0])
+            ]
+      -- Sum nullary → {"tag":"C"}
+      it "encodes sum nullary constructor as tagged object" $ do
+        JSON.toJSON Dot `shouldBe` JSON.object [("tag", JSON.String "Dot")]
+      it "round-trips sum positional constructors" $ do
+        (JSON.fromJSON (JSON.toJSON (Circle 5.0))       :: JSON.Result Shape) `shouldBe` JSON.Success (Circle 5.0)
+        (JSON.fromJSON (JSON.toJSON (Rectangle 3.0 4.0)) :: JSON.Result Shape) `shouldBe` JSON.Success (Rectangle 3.0 4.0)
+        (JSON.fromJSON (JSON.toJSON Dot)                :: JSON.Result Shape) `shouldBe` JSON.Success Dot
+      -- Sum record → {"tag":"C","field1":v1,...}
+      it "encodes sum record constructors with tag and flat fields" $ do
+        JSON.toJSON (Cat "Mittens" 9)
+          `shouldBe` JSON.object
+            [ ("tag",     JSON.String "Cat")
+            , ("catName", JSON.String "Mittens")
+            , ("lives",   JSON.Number 9)
+            ]
+        JSON.toJSON (Dog "Rex" 3)
+          `shouldBe` JSON.object
+            [ ("tag",     JSON.String "Dog")
+            , ("dogName", JSON.String "Rex")
+            , ("tricks",  JSON.Number 3)
+            ]
+      it "round-trips sum record constructors" $ do
+        (JSON.fromJSON (JSON.toJSON (Cat "Mittens" 9)) :: JSON.Result Animal)
+          `shouldBe` JSON.Success (Cat "Mittens" 9)
+        (JSON.fromJSON (JSON.toJSON (Dog "Rex" 3)) :: JSON.Result Animal)
+          `shouldBe` JSON.Success (Dog "Rex" 3)
+      -- Record with Maybe field present
+      it "encodes record with present Maybe field" $ do
+        JSON.toJSON (Profile "dmjio" (Just "Haskell hacker"))
+          `shouldBe` JSON.object
+            [ ("handle", JSON.String "dmjio")
+            , ("bio",    JSON.String "Haskell hacker")
+            ]
+      -- Record with Maybe field absent → null
+      it "encodes record with absent Maybe field as null" $ do
+        JSON.toJSON (Profile "dmjio" Nothing)
+          `shouldBe` JSON.object
+            [ ("handle", JSON.String "dmjio")
+            , ("bio",    JSON.Null)
+            ]
+      it "round-trips record with Maybe field present" $ do
+        (JSON.fromJSON (JSON.toJSON (Profile "dmjio" (Just "Haskell hacker"))) :: JSON.Result Profile)
+          `shouldBe` JSON.Success (Profile "dmjio" (Just "Haskell hacker"))
+      it "round-trips record with Maybe field absent" $ do
+        (JSON.fromJSON (JSON.toJSON (Profile "dmjio" Nothing)) :: JSON.Result Profile)
+          `shouldBe` JSON.Success (Profile "dmjio" Nothing)
 
     describe "Miso.Data.Map tests" $ do
       it "should construct a Map from a list and perform operations" $ do
