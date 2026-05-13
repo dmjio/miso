@@ -21,6 +21,7 @@ import qualified Data.Map.Strict as M
 import           Data.Map.Strict (Map)
 import qualified Data.IntMap.Strict as IM
 import           Data.IntMap.Strict (IntMap)
+import           Data.Char (toLower)
 import           Prelude hiding ((!!))
 import           GHC.Generics
 import           Control.Monad
@@ -104,6 +105,66 @@ data Route
 data Person = Person { name :: MisoString, age :: Int }
   deriving stock Generic
   deriving anyclass (ToJSVal, ToObject)
+----------------------------------------------------------------------------
+-- Types for generic JSON encoding/decoding tests
+----------------------------------------------------------------------------
+-- Nullary sum
+data Color = Red | Green | Blue
+  deriving stock (Generic, Show, Eq)
+  deriving anyclass (JSON.ToJSON, JSON.FromJSON)
+----------------------------------------------------------------------------
+-- Single-constructor record (no tag)
+data Point = Point { px :: Int, py :: Int }
+  deriving stock (Generic, Show, Eq)
+  deriving anyclass (JSON.ToJSON, JSON.FromJSON)
+----------------------------------------------------------------------------
+-- Single-constructor newtype-like (unwrapped)
+data Wrapper = Wrapper Int
+  deriving stock (Generic, Show, Eq)
+  deriving anyclass (JSON.ToJSON, JSON.FromJSON)
+----------------------------------------------------------------------------
+-- Single-constructor with a list field (exercises parseProd gFieldCount == 1 fix)
+data WrapperList = WrapperList [MisoString]
+  deriving stock (Generic, Show, Eq)
+  deriving anyclass (JSON.ToJSON, JSON.FromJSON)
+----------------------------------------------------------------------------
+-- Multi-constructor sum with positional fields
+data Shape
+  = Circle Double
+  | Rectangle Double Double
+  | Dot
+  deriving stock (Generic, Show, Eq)
+  deriving anyclass (JSON.ToJSON, JSON.FromJSON)
+----------------------------------------------------------------------------
+-- Multi-constructor sum with record fields
+data Animal
+  = Cat { catName :: MisoString, lives :: Int }
+  | Dog { dogName :: MisoString, tricks :: Int }
+  deriving stock (Generic, Show, Eq)
+  deriving anyclass (JSON.ToJSON, JSON.FromJSON)
+----------------------------------------------------------------------------
+-- Record with Maybe field
+data Profile = Profile { handle :: MisoString, bio :: Maybe MisoString }
+  deriving stock (Generic, Show, Eq)
+  deriving anyclass (JSON.ToJSON, JSON.FromJSON)
+----------------------------------------------------------------------------
+-- Record with camelCase fields for fieldLabelModifier tests
+data CamelRecord = CamelRecord { firstName :: MisoString, lastName :: MisoString }
+  deriving stock (Generic, Show, Eq)
+  deriving anyclass (JSON.ToJSON, JSON.FromJSON)
+----------------------------------------------------------------------------
+-- Sum type with a single-field constructor whose field type is a list
+-- (exercises the parseTaggedCon gFieldCount == 1 fix)
+data NestedList
+  = NestedList [MisoString]
+  | EmptyNested
+  deriving stock (Generic, Show, Eq)
+  deriving anyclass (JSON.ToJSON, JSON.FromJSON)
+----------------------------------------------------------------------------
+-- Zero-field single constructor (exercises parseProd 0-field guard)
+data Nullary = Nullary
+  deriving stock (Generic, Show, Eq)
+  deriving anyclass (JSON.ToJSON, JSON.FromJSON)
 ----------------------------------------------------------------------------
 getAge :: Person -> IO Int
 getAge = inline "return age;"
@@ -308,6 +369,217 @@ main = withJS $ do
           Right (JSON.Array [JSON.Number 1, JSON.Bool True, JSON.Null])
         decodePure "{\"a\":true,\"b\":1.1}"
           `shouldBe` Right (JSON.Object (M.fromList [("a",JSON.Bool True),("b",JSON.Number 1.1)]))
+
+    describe "Miso.JSON generic encoding tests" $ do
+      -- Nullary sum constructors → bare String (allNullaryToStringTag = True)
+      it "encodes nullary sum constructors as bare strings" $ do
+        JSON.toJSON Red   `shouldBe` JSON.String "Red"
+        JSON.toJSON Green `shouldBe` JSON.String "Green"
+        JSON.toJSON Blue  `shouldBe` JSON.String "Blue"
+      it "round-trips nullary sum constructors" $ do
+        (JSON.fromJSON (JSON.toJSON Red)   :: JSON.Result Color) `shouldBe` JSON.Success Red
+        (JSON.fromJSON (JSON.toJSON Green) :: JSON.Result Color) `shouldBe` JSON.Success Green
+        (JSON.fromJSON (JSON.toJSON Blue)  :: JSON.Result Color) `shouldBe` JSON.Success Blue
+      -- Single-constructor record → flat object, no tag
+#ifndef GHCJS_OLD      
+      it "encodes single-constructor records as flat objects" $ do
+        JSON.toJSON (Point 3 4)
+          `shouldBe` JSON.object [("px", JSON.Number 3), ("py", JSON.Number 4)]
+      it "round-trips single-constructor records" $ do
+        (JSON.fromJSON (JSON.toJSON (Point 3 4)) :: JSON.Result Point)
+          `shouldBe` JSON.Success (Point 3 4)
+#endif          
+      -- Single-constructor positional → unwrapped value
+      it "encodes single-constructor positional as unwrapped value" $ do
+        JSON.toJSON (Wrapper 42) `shouldBe` JSON.Number 42
+      it "round-trips single-constructor positional" $ do
+        (JSON.fromJSON (JSON.toJSON (Wrapper 42)) :: JSON.Result Wrapper)
+          `shouldBe` JSON.Success (Wrapper 42)
+      -- Single-constructor with a list field: the whole array is the field value,
+      -- not spread as multiple positional elements (parseProd gFieldCount fix)
+      it "encodes single-constructor list field as bare array" $ do
+        JSON.toJSON (WrapperList ["x", "y", "z"])
+          `shouldBe` JSON.Array [JSON.String "x", JSON.String "y", JSON.String "z"]
+      it "round-trips single-constructor list field" $ do
+        (JSON.fromJSON (JSON.toJSON (WrapperList ["x", "y", "z"])) :: JSON.Result WrapperList)
+          `shouldBe` JSON.Success (WrapperList ["x", "y", "z"])
+      it "round-trips single-constructor empty list field" $ do
+        (JSON.fromJSON (JSON.toJSON (WrapperList [])) :: JSON.Result WrapperList)
+          `shouldBe` JSON.Success (WrapperList [])
+      -- Sum positional: 1 field → {"tag":"C","contents":v}
+      it "encodes sum single-field constructor with contents" $ do
+        JSON.toJSON (Circle 5.0)
+          `shouldBe` JSON.object [("tag", JSON.String "Circle"), ("contents", JSON.Number 5.0)]
+      -- Sum positional: 2 fields → {"tag":"C","contents":[v1,v2]}
+      it "encodes sum multi-field positional constructor with contents array" $ do
+        JSON.toJSON (Rectangle 3.0 4.0)
+          `shouldBe` JSON.object
+            [ ("tag", JSON.String "Rectangle")
+            , ("contents", JSON.Array [JSON.Number 3.0, JSON.Number 4.0])
+            ]
+      -- Sum nullary → {"tag":"C"}
+      it "encodes sum nullary constructor as tagged object" $ do
+        JSON.toJSON Dot `shouldBe` JSON.object [("tag", JSON.String "Dot")]
+      it "round-trips sum positional constructors" $ do
+        (JSON.fromJSON (JSON.toJSON (Circle 5.0))       :: JSON.Result Shape) `shouldBe` JSON.Success (Circle 5.0)
+        (JSON.fromJSON (JSON.toJSON (Rectangle 3.0 4.0)) :: JSON.Result Shape) `shouldBe` JSON.Success (Rectangle 3.0 4.0)
+        (JSON.fromJSON (JSON.toJSON Dot)                :: JSON.Result Shape) `shouldBe` JSON.Success Dot
+      -- Sum record → {"tag":"C","field1":v1,...}
+      it "encodes sum record constructors with tag and flat fields" $ do
+        JSON.toJSON (Cat "Mittens" 9)
+          `shouldBe` JSON.object
+            [ ("tag",     JSON.String "Cat")
+            , ("catName", JSON.String "Mittens")
+            , ("lives",   JSON.Number 9)
+            ]
+        JSON.toJSON (Dog "Rex" 3)
+          `shouldBe` JSON.object
+            [ ("tag",     JSON.String "Dog")
+            , ("dogName", JSON.String "Rex")
+            , ("tricks",  JSON.Number 3)
+            ]
+      it "round-trips sum record constructors" $ do
+        (JSON.fromJSON (JSON.toJSON (Cat "Mittens" 9)) :: JSON.Result Animal)
+          `shouldBe` JSON.Success (Cat "Mittens" 9)
+        (JSON.fromJSON (JSON.toJSON (Dog "Rex" 3)) :: JSON.Result Animal)
+          `shouldBe` JSON.Success (Dog "Rex" 3)
+      -- Record with Maybe field present
+      it "encodes record with present Maybe field" $ do
+        JSON.toJSON (Profile "dmjio" (Just "Haskell hacker"))
+          `shouldBe` JSON.object
+            [ ("handle", JSON.String "dmjio")
+            , ("bio",    JSON.String "Haskell hacker")
+            ]
+      -- Record with Maybe field absent → null
+      it "encodes record with absent Maybe field as null" $ do
+        JSON.toJSON (Profile "dmjio" Nothing)
+          `shouldBe` JSON.object
+            [ ("handle", JSON.String "dmjio")
+            , ("bio",    JSON.Null)
+            ]
+      it "round-trips record with Maybe field present" $ do
+        (JSON.fromJSON (JSON.toJSON (Profile "dmjio" (Just "Haskell hacker"))) :: JSON.Result Profile)
+          `shouldBe` JSON.Success (Profile "dmjio" (Just "Haskell hacker"))
+      it "round-trips record with Maybe field absent" $ do
+        (JSON.fromJSON (JSON.toJSON (Profile "dmjio" Nothing)) :: JSON.Result Profile)
+          `shouldBe` JSON.Success (Profile "dmjio" Nothing)
+      -- omitNothingFields
+      it "omits Nothing fields when omitNothingFields = True" $ do
+        let opts = JSON.defaultOptions { JSON.omitNothingFields = True }
+        JSON.genericToJSON opts (Profile "dmjio" Nothing)
+          `shouldBe` JSON.object [("handle", JSON.String "dmjio")]
+      it "keeps Nothing fields as null when omitNothingFields = False" $ do
+        JSON.toJSON (Profile "dmjio" Nothing)
+          `shouldBe` JSON.object
+            [("handle", JSON.String "dmjio"), ("bio", JSON.Null)]
+      -- constructorTagModifier
+      it "applies constructorTagModifier to sum tags" $ do
+        let opts = JSON.defaultOptions
+              { JSON.constructorTagModifier = map toLower
+              , JSON.allNullaryToStringTag  = False
+              }
+        JSON.genericToJSON opts Red   `shouldBe` JSON.object [("tag", JSON.String "red")]
+        JSON.genericToJSON opts Green `shouldBe` JSON.object [("tag", JSON.String "green")]
+      it "applies constructorTagModifier to nullary string tags" $ do
+        let opts = JSON.defaultOptions
+              { JSON.constructorTagModifier = map toLower }
+        JSON.genericToJSON opts Red   `shouldBe` JSON.String "red"
+        JSON.genericToJSON opts Green `shouldBe` JSON.String "green"
+      -- Single-field constructor whose field is a list type.
+      -- Exercises the parseTaggedCon gFieldCount == 1 fix: the whole
+      -- "contents" array must be passed as one value, not spread.
+      it "encodes single-field list constructor as {tag, contents:[...]}" $ do
+        JSON.toJSON (NestedList ["a", "b", "c"])
+          `shouldBe` JSON.object
+            [ ("tag",      JSON.String "NestedList")
+            , ("contents", JSON.Array [JSON.String "a", JSON.String "b", JSON.String "c"])
+            ]
+      it "round-trips single-field list constructor" $ do
+        (JSON.fromJSON (JSON.toJSON (NestedList ["a", "b", "c"])) :: JSON.Result NestedList)
+          `shouldBe` JSON.Success (NestedList ["a", "b", "c"])
+      it "round-trips single-field empty-list constructor" $ do
+        (JSON.fromJSON (JSON.toJSON (NestedList [])) :: JSON.Result NestedList)
+          `shouldBe` JSON.Success (NestedList [])
+      it "round-trips nullary sibling of single-field list constructor" $ do
+        (JSON.fromJSON (JSON.toJSON EmptyNested) :: JSON.Result NestedList)
+          `shouldBe` JSON.Success EmptyNested
+#ifndef GHCJS_OLD
+      -- #3: omitNothingFields = True decode — missing key decodes as Nothing
+      it "decodes missing key as Nothing when omitNothingFields was used" $ do
+        let opts = JSON.defaultOptions { JSON.omitNothingFields = True }
+            encoded = JSON.genericToJSON opts (Profile "dmjio" Nothing)
+        -- encoded = {"handle":"dmjio"} — no "bio" key at all
+        (JSON.fromJSON encoded :: JSON.Result Profile)
+          `shouldBe` JSON.Success (Profile "dmjio" Nothing)
+#endif
+      -- #5: fieldLabelModifier round-trip
+      it "round-trips record with fieldLabelModifier (camelTo2 '_')" $ do
+        let opts = JSON.defaultOptions { JSON.fieldLabelModifier = JSON.camelTo2 '_' }
+            val  = JSON.genericToJSON opts (CamelRecord "John" "Doe")
+        val `shouldBe` JSON.object
+          [ ("first_name", JSON.String "John")
+          , ("last_name",  JSON.String "Doe")
+          ]
+        -- decoding with default opts fails (looks for "firstName")
+        (JSON.fromJSON val :: JSON.Result CamelRecord)
+          `shouldBe` JSON.Error "Key not found: firstName"
+        -- decoding with matching opts succeeds
+        JSON.parseEither (JSON.genericParseJSON opts) val
+          `shouldBe` Right (CamelRecord "John" "Doe")
+      -- #7: full string round-trip via encodePure / decodePure
+#ifndef GHCJS_OLD
+      it "round-trips Point through encodePure/decodePure" $ do
+        let s = JSON.encodePure (Point 7 8)
+            result = do
+              v <- decodePure s
+              case JSON.fromJSON v of
+                JSON.Success x -> Right (x :: Point)
+                JSON.Error e   -> Left (S.unpack e)
+        result `shouldBe` Right (Point 7 8)
+#endif
+      it "round-trips Animal through encodePure/decodePure" $ do
+        let s = JSON.encodePure (Cat "Mittens" 9)
+            result = do
+              v <- decodePure s
+              case JSON.fromJSON v of
+                JSON.Success x -> Right (x :: Animal)
+                JSON.Error e   -> Left (S.unpack e)
+        result `shouldBe` Right (Cat "Mittens" 9)
+      it "round-trips NestedList through encodePure/decodePure" $ do
+        let s = JSON.encodePure (NestedList ["a", "b"])
+            result = do
+              v <- decodePure s
+              case JSON.fromJSON v of
+                JSON.Success x -> Right (x :: NestedList)
+                JSON.Error e   -> Left (S.unpack e)
+        result `shouldBe` Right (NestedList ["a", "b"])
+      -- #8: parseProd 0-field constructor only accepts Array []
+      it "encodes 0-field constructor as Array []" $ do
+        JSON.toJSON Nullary `shouldBe` JSON.Array []
+      it "round-trips 0-field constructor" $ do
+        (JSON.fromJSON (JSON.toJSON Nullary) :: JSON.Result Nullary)
+          `shouldBe` JSON.Success Nullary
+      it "rejects non-Array for 0-field constructor" $ do
+        (JSON.fromJSON (JSON.String "Nullary") :: JSON.Result Nullary)
+          `shouldSatisfy` \case
+            JSON.Error _ -> True
+            _            -> False
+      -- #9: parseProd multi-field non-record rejects non-Array
+      it "rejects non-Array for multi-field positional constructor" $ do
+        (JSON.fromJSON (JSON.String "oops") :: JSON.Result Shape)
+          `shouldSatisfy` \case
+            JSON.Error _ -> True
+            _            -> False
+      -- #10: encodePure escapes special characters in strings (Bug 2 fix)
+      it "encodePure escapes double quotes in strings" $ do
+        JSON.encodePure (JSON.String "say \"hello\"")
+          `shouldBe` "\"say \\\"hello\\\"\""
+      it "encodePure escapes backslashes in strings" $ do
+        JSON.encodePure (JSON.String "back\\slash")
+          `shouldBe` "\"back\\\\slash\""
+      it "encodePure escapes special chars in object keys" $ do
+        JSON.encodePure (JSON.object [("ke\"y", JSON.Bool True)])
+          `shouldBe` "{\"ke\\\"y\":true}"
 
     describe "Miso.Data.Map tests" $ do
       it "should construct a Map from a list and perform operations" $ do
