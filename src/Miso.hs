@@ -325,12 +325,14 @@
 -- 'vfrag_' "my-key" [ 'li_' [] [ 'text' "A" ], 'li_' [] [ 'text' "B" ] ]
 -- @
 --
--- Fragments may be nested — a 'VFrag' child may itself be a 'VFrag'. The differ
--- recurses into nested fragments and still produces a flat sequence of sibling DOM
--- nodes, so nesting carries no runtime cost beyond the extra 'View' allocation.
+-- Fragments may be nested — a 'VFrag' child may itself be a 'VFrag'. The diff function
+-- recurses into nested fragments and processes all fragments as if they were
+-- flat sequence of sibling DOM nodes, so nesting carries no runtime cost beyond the extra 'View' allocation.
 --
--- Empty fragments (@'fragment' []@) are stripped from the virtual DOM tree in the
--- Haskell layer before they reach the JavaScript differ and are therefore a no-op.
+-- Empty fragments (@'fragment' []@) in child nodes are erased from the virtual DOM tree in the
+-- Haskell layer before they reach diffing in JavaScript and are therefore a no-op.
+--
+-- There is an edge case where an empty 'VFrag' can be returned from a 'Component'. In this case an empty text node will be used.
 --
 -- The smart constructors for 'VFrag' are:
 --
