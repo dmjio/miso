@@ -80,8 +80,7 @@ module Miso.JSON
   -- * Options
   , Options (..)
   , defaultOptions
-  -- * Modifiers
-  , camelTo2
+  -- * Generics
   , GToJSON (..)
   , GToFields (..)
   , GToJSONSum (..)
@@ -249,7 +248,7 @@ instance ToJSON a => GToFields (K1 r a) where
 -- 'Nothing', the field is omitted from the encoded object entirely.
 instance {-# OVERLAPPING #-} (Selector m, ToJSON a)
     => GToFields (S1 m (K1 r (Maybe a))) where
-  gToFields opts s@(M1 (K1 mx)) =
+  gToFields opts (M1 (K1 mx)) =
     let n   = selName (undefined :: S1 m (K1 r (Maybe a)) ())
         key = ms (fieldLabelModifier opts n)
     in if null n
