@@ -291,10 +291,7 @@
 --
 -- = 'VFrag' (Fragment nodes)
 --
--- Similar to the [React Fragment](https://react.dev/docs/fragments) API, @miso@ provides a 'VFrag' constructor for grouping together sibling nodes without introducing an extra wrapper element in the DOM.
---
--- 'VFrag' is a /grouping/ constructor that renders a list of sibling 'View' nodes into the DOM
--- It is similar to React's @\<Fragment\>@ or @\<\>\<\/\>@ syntax, and to @DocumentFragment@ in the browser DOM API.
+-- Similar to the [React Fragment](https://react.dev/docs/fragments) API (@\<Fragment\>@ or @\<\>\<\/\>@ syntax), and to @DocumentFragment@ in the browser DOM API. @miso@ provides a 'VFrag' constructor for grouping together sibling nodes without introducing an extra wrapper element in the DOM.
 --
 -- @
 -- -- Renders two \<li\> elements as direct siblings, no enclosing element
