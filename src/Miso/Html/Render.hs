@@ -139,7 +139,6 @@ renderBuilder (VComp _ (SomeComponent vcomp_)) =
 #else
       vkids = [ unsafeCoerce $ (view vcomp_) (model vcomp_) ]
 #endif
-renderBuilder (VFrag _ [])   = stringUtf8 " "
 renderBuilder (VFrag _ kids) = foldMap renderBuilder kids
 ----------------------------------------------------------------------------
 renderAttrs :: Attribute action -> Builder
