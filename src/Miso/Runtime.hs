@@ -277,13 +277,6 @@ inheritChildBindings compParentId childState bindings = do
          isDirty .= True
      _ -> do
        pure ()
-  when (any isChildToParent bindings) $ do
-    renderComponents (IS.singleton compParentId)
-  where
-    isChildToParent :: Binding parent model -> Bool
-    isChildToParent = \case
-      ChildToParent {} -> True
-      _ -> False
 -----------------------------------------------------------------------------
 initSubs :: [Sub action] -> IORef (Map MisoString ThreadId) -> Sink action -> IO ()
 initSubs subs_ _componentSubThreads _componentSink = do
