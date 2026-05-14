@@ -1,6 +1,6 @@
 const http = require('http');
 const url = require('url');
-const { chromium } = require('playwright');
+const { firefox } = require('playwright');
 const fs = require('fs');
 const path = require('path');
 
@@ -10,8 +10,6 @@ let isShuttingDown = false;
 let isReady = false;
 const TEST_TIMEOUT = 10000;
 const WAIT_TIMEOUT = 15000;
-const NAVIGATION_RETRY_COUNT = 3;  // Max retries for navigation errors
-const NAVIGATION_RETRY_DELAY = 30; // Delay between retries (ms)
 
 // ======================
 // READINESS MANAGEMENT
@@ -50,7 +48,7 @@ function cleanupReadyFile() {
 // BROWSER MANAGEMENT
 // ======================
 async function initializeBrowser() {
-  browser = await chromium.launch({ headless: true });
+  browser = await firefox.launch({ headless: true });
   console.log('✅ Browser launched successfully');
 }
 
@@ -84,7 +82,7 @@ async function executeTestCore(page, port, timeout) {
     const consoleHandler = (msg) => {
       if (testCompleted) return;
       let text = msg.text();
-      console.log(text);
+      console.log("BROWSER SAYS:", text);
       
       // Normalize known debug noise
       if (text === '[DEBUG_HYDRATE] Could not copy DOM into virtual DOM, falling back to diff') {
