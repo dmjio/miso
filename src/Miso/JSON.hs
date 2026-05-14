@@ -125,11 +125,10 @@ import qualified Miso.String as MS
 import           Miso.JSON.Types
 import qualified Miso.JSON.Parser as Parser
 ----------------------------------------------------------------------------
+import           Numeric (showHex)
 #ifndef VANILLA
 import           Control.Monad.Trans.Maybe
 import           System.IO.Unsafe (unsafePerformIO)
-#else
-import           Numeric (showHex)
 #endif
 
 ----------------------------------------------------------------------------
@@ -536,8 +535,13 @@ parseProd :: forall f a. GFromFields f => Options -> Value -> Parser (f a)
 parseProd opts v
   | gIsRecord @f = withObject "generic record" (gFromRecord opts) v
   | otherwise    = case v of
-      Array vs -> gFromPositional opts vs
-      _        -> gFromPositional opts [v]  -- single-field shorthand
+      Array vs
+        | gFieldCount @f == 1 -> gFromPositional opts [Array vs]
+        | otherwise           -> gFromPositional opts vs
+      _
+        | gFieldCount @f == 0 -> pfail "expected Array [] for 0-field constructor"
+        | gFieldCount @f == 1 -> gFromPositional opts [v]  -- single-field shorthand
+        | otherwise           -> pfail "expected JSON Array for multi-field constructor"
 ----------------------------------------------------------------------------
 -- | Parse a tagged sum constructor from an Object envelope.
 parseTaggedCon :: forall f a. GFromFields f => MisoString -> Options -> Value -> Parser (f a)
@@ -552,7 +556,9 @@ parseTaggedCon tag opts = \case
       else if gIsRecord @f
            then gFromRecord opts o
            else case M.lookup "contents" o of
-                  Just (Array vs) -> gFromPositional opts vs
+                  Just (Array vs)
+                    | gFieldCount @f == 1 -> gFromPositional opts [Array vs]
+                    | otherwise           -> gFromPositional opts vs
                   Just single     -> gFromPositional opts [single]
                   Nothing         -> gFromPositional opts []
   _ -> pfail ("expected JSON object for constructor " <> ms (show tag))
@@ -795,7 +801,6 @@ encodePure = ms . toJSON
 instance FromMisoString Value where
   fromMisoStringEither = Parser.decodePure
 ----------------------------------------------------------------------------
-#ifdef VANILLA
 -- | Escape special characters in a string for JSON serialization
 -- Handles: \, ", and all JSON control characters per RFC 8259
 escapeJSONString :: MisoString -> MisoString
@@ -817,15 +822,9 @@ escapeJSONString = MS.concatMap escapeChar
     padHex n = MS.pack $ replicate (4 - length h) '0' ++ h
       where h = showHex n ""
 ----------------------------------------------------------------------------
-#endif
 instance ToMisoString Value where
   toMisoString = \case
-    String s ->
-#ifdef VANILLA
-      "\"" <> escapeJSONString s <> "\""
-#else
-      "\"" <> s <> "\""
-#endif
+    String s -> "\"" <> escapeJSONString s <> "\""
     Number n
       | (i, 0.0) <- properFraction n -> ms @Int i
       | otherwise -> ms n
@@ -839,18 +838,14 @@ instance ToMisoString Value where
       "false"
     Object o ->
       "{" <>
-#ifdef VANILLA
         MS.intercalate "," [ "\"" <> escapeJSONString k <> "\"" <> ":" <> ms v | (k,v) <- M.toList o ]
-#else
-        MS.intercalate "," [ "\"" <> k <> "\"" <> ":" <> ms v | (k,v) <- M.toList o ]
-#endif
       <> "}"
 ----------------------------------------------------------------------------
 #ifdef VANILLA
 decode :: FromJSON a => MisoString -> Maybe a
 decode s
   | Right x <- Parser.decodePure s
-  , Success v <- fromJSON x = v
+  , Success v <- fromJSON x = Just v
   | otherwise = Nothing
 #else
 decode :: FromJSON a => MisoString -> Maybe a
