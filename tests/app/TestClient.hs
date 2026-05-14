@@ -8,6 +8,7 @@ import Miso
     , fromMisoString
     , toMisoString
     , defaultEvents
+    , withJS
     )
 import Miso.JSON (decode)
 import Miso.DSL
@@ -70,7 +71,7 @@ getScriptContents className = do
         Just e -> (toMisoString <$>) <$> textContent e
 
 main :: IO ()
-main = do
+main = withJS $ do
     rawTestData <- getScriptContents "initial-data"
 
     let mTestData = decode =<< rawTestData

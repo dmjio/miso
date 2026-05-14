@@ -1,6 +1,5 @@
 import { WASI, OpenFile, File, ConsoleStdout } from "https://cdn.jsdelivr.net/npm/@bjorn3/browser_wasi_shim@0.3.0/dist/index.js";
 import ghc_wasm_jsffi from "./wasm.js";
-import "./miso.js";
 
 const args = [];
 const env = ["GHCRTS=-H64m"];
