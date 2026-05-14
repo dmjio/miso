@@ -170,6 +170,20 @@ data Component parent model action
   -- ^ action to execute during t'Miso.Types.Component' unmount phase.
   --
   -- @since 1.9.0.0
+  , reactiveRendering :: Bool
+  -- ^ This makes your component:
+  -- - Render whenever its parent renders
+  -- - Always use fresh view and update functions, if they were defined
+  -- in terms of ancestor state.
+  -- Similar to React's, if you're passing props to your component like...
+  --
+  -- > "component-key" +> Child.component someProps someOtherProps
+  --
+  -- ...and then using those props in your view or update functions, the view
+  -- and update functions will always be called with the latest props.
+  --
+  -- Note this currently requires a component key,
+  -- meaning @mount_@ is unsupported.
   }
 -----------------------------------------------------------------------------
 -- | @mountPoint@ for t'Miso.Types.Component', e.g "body"
@@ -248,6 +262,7 @@ component m u v = Component
   , eventPropagation = False
   , mount = Nothing
   , unmount = Nothing
+  , reactiveRendering = False
   }
 -----------------------------------------------------------------------------
 -- | Synonym for 'component'
