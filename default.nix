@@ -70,7 +70,6 @@ rec {
     export PATH="${pkgs.lib.makeBinPath [ pkgs.http-server pkgs.bun ]}:$PATH"
     bun install playwright@1.53
     http-server -p 8061 ${legacyPkgs.haskell.packages.ghcjs.miso-tests}/bin/component-tests.jsexe &
-    cd tests
     PW_API_PORT=8060
     PORT=$PW_API_PORT bun run ./ts/playwright.ts &
     PLAYWRIGHT_SERVER_PID=$!
