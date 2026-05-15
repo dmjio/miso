@@ -69,11 +69,18 @@ rec {
     export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
     export PATH="${pkgs.lib.makeBinPath [ pkgs.http-server pkgs.bun ]}:$PATH"
     bun install playwright@1.53
-    http-server ${legacyPkgs.haskell.packages.ghcjs.miso-tests}/bin/component-tests.jsexe &
+    http-server -p 8061 ${legacyPkgs.haskell.packages.ghcjs.miso-tests}/bin/component-tests.jsexe &
     cd tests
-    bun run ../ts/playwright.ts
+    PW_API_PORT=8060
+    PORT=$PW_API_PORT bun run ./ts/playwright.ts &
+    PLAYWRIGHT_SERVER_PID=$!
+    echo $PLAYWRIGHT_SERVER_PID
+    until curl -sf "http://localhost:$PW_API_PORT/ready"; do sleep 0.1; done
+    echo "Playwright server ready, asking it to start test."
+    curl --fail "http://localhost:$PW_API_PORT/test?port=8061&wait=true"
     exit_code=$?
     pkill http-server
+    kill $PLAYWRIGHT_SERVER_PID
     exit "$exit_code"
   '';
 
