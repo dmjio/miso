@@ -1,6 +1,6 @@
 const http = require('http');
 const url = require('url');
-const { firefox } = require('playwright');
+const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
 
@@ -48,7 +48,7 @@ function cleanupReadyFile() {
 // BROWSER MANAGEMENT
 // ======================
 async function initializeBrowser() {
-  browser = await firefox.launch({ headless: true });
+  browser = await chromium.launch({ headless: true });
   console.log('✅ Browser launched successfully');
 }
 
