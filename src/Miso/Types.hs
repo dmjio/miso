@@ -41,6 +41,7 @@ module Miso.Types
   , LogLevel      (..)
   , VTree         (..)
   , VTreeType     (..)
+  , Props
   , Tag
   , CacheBust
   , MountPoint
@@ -66,6 +67,8 @@ module Miso.Types
   -- ** Component mounting
   , (+>)
   , mount_
+  , mountProps
+  , mountProps_
   -- ** Key combinators
   , keyed
   -- ** Fragment combinators
@@ -152,6 +155,11 @@ data Component parent model action
   -- ^ Receives mail from other components
   --
   -- @since 1.9.0.0
+  , useProps :: Value -> Maybe action
+  -- ^ Receives props from parent component when using 'mountProps'.
+  -- Called by the diff engine whenever the parent re-renders with changed props.
+  --
+  -- @since 1.11.0.0
   , bindings :: [ Binding parent model ]
   -- ^ Data bindings between parent and child t'Miso.Types.Component's
   --
@@ -244,6 +252,7 @@ component m u v = Component
   , mountPoint = Nothing
   , logLevel = Off
   , mailbox = const Nothing
+  , useProps = const Nothing
   , bindings = []
   , eventPropagation = False
   , mount = Nothing
@@ -299,11 +308,17 @@ data LogLevel
 --
 type Tag = MisoString
 -----------------------------------------------------------------------------
+-- | JSON props passed from a parent t'Miso.Types.Component' to a child via 'mountProps'.
+-- 'Nothing' means no props; the child's 'useProps' will never be called.
+type Props = Maybe Value
+-----------------------------------------------------------------------------
 -- | Core type for constructing a virtual DOM in Haskell
 data View model action
   = VNode Namespace Tag [Attribute action] [View model action]
   | VText (Maybe Key) MisoString
-  | VComp (Maybe Key) (SomeComponent model)
+  | VComp (Maybe Key) Props (SomeComponent model)
+  -- ^ t'Miso.Types.Component' node. 'Props' carries optional JSON props for the child;
+  -- set via 'mountProps'. The child opts in by defining 'useProps'.
   | VFrag (Maybe Key) [View model action]
   deriving Functor
 -----------------------------------------------------------------------------
@@ -330,8 +345,8 @@ keyed
 keyed key = \case
     VText _ txt ->
       VText (Just (Key key)) txt
-    VComp _ comp ->
-      VComp (Just (Key key)) comp
+    VComp _ val comp ->
+      VComp (Just (Key key)) val comp
     VFrag _ kids ->
       VFrag (Just (Key key)) kids
     VNode ns tag attrs kids ->
@@ -387,7 +402,7 @@ fragment_ key = VFrag (Just (Key key))
   -- ^ 'Component'
   -> View model a
 infixr 0 +>
-key +> comp = VComp (Just (toKey key)) (SomeComponent comp)
+key +> comp = VComp (Just (toKey key)) Nothing (SomeComponent comp)
 -----------------------------------------------------------------------------
 -- | t'Miso.Types.Component' mounting combinator.
 --
@@ -406,7 +421,49 @@ mount_
   => Component model child a
   -- ^ 'Component' to mount
   -> View model action
-mount_ comp = VComp Nothing (SomeComponent comp)
+mount_ comp = VComp Nothing Nothing (SomeComponent comp)
+-----------------------------------------------------------------------------
+-- | Mount a t'Miso.Types.Component' with props, without a key.
+--
+-- Use 'mountProps_' if you need a key to distinguish between multiple
+-- sibling components of the same type.
+--
+-- @
+-- mountProps (ChildProps model.limit model.theme) $
+--   (component 0 update view) { useProps = checkProps PropsReceived BadProps }
+-- @
+--
+-- @since 1.11.0.0
+mountProps
+  :: forall child parent action props a . (Eq child, ToJSON props)
+  => props
+  -- ^ Props to pass (must be JSON-serialisable)
+  -> Component parent child action
+  -- ^ Child t'Miso.Types.Component'
+  -> View parent a
+mountProps p comp = VComp Nothing (Just (toJSON p)) (SomeComponent comp)
+-----------------------------------------------------------------------------
+-- | Mount a t'Miso.Types.Component' with props and a key.
+--
+-- The key is required when two sibling 'mountProps_' components share the
+-- same type — it lets the diff engine tell them apart.
+--
+-- @
+-- "counter" \`mountProps_\` (ChildProps model.limit model.theme) $
+--   (component 0 update view) { useProps = checkProps PropsReceived BadProps }
+-- @
+--
+-- @since 1.11.0.0
+mountProps_
+  :: forall child parent action props a . (Eq child, ToJSON props)
+  => MisoString
+  -- ^ Key
+  -> props
+  -- ^ Props to pass (must be JSON-serialisable)
+  -> Component parent child action
+  -- ^ Child t'Miso.Types.Component'
+  -> View parent a
+mountProps_ key p comp = VComp (Just (toKey key)) (Just (toJSON p)) (SomeComponent comp)
 -----------------------------------------------------------------------------
 -- | DOM element namespace.
 data Namespace

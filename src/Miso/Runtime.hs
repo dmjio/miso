@@ -47,6 +47,7 @@ module Miso.Runtime
   -- ** Communication
   , mail
   , checkMail
+  , checkProps
   , broadcast
   , parent
   , mailParent
@@ -183,6 +184,7 @@ initialize events _componentParentId hydrate isRoot comp@Component {..} getCompo
   _componentIsDirty <- pure False
   _componentVTree <- liftIO $ newIORef (VTree (Object jsNull))
   _componentSubThreads <- liftIO (newIORef M.empty)
+  let _componentLastProps = Nothing
 
   frame <- newEmptyMVar :: IO (MVar Double)
   _componentMailbox <- pure S.empty
@@ -653,6 +655,9 @@ componentModel = lens _componentModel $ \record field -> record { _componentMode
 componentBindings :: Lens (ComponentState p m a) [Binding p m]
 componentBindings = lens _componentBindings $ \record field -> record { _componentBindings = field }
 -----------------------------------------------------------------------------
+componentLastProps :: Lens (ComponentState parent model action) (Maybe Value)
+componentLastProps = lens _componentLastProps $ \record field -> record { _componentLastProps = field }
+-----------------------------------------------------------------------------
 -- | Hydrate avoids calling @diff@, and instead calls @hydrate@
 -- 'Draw' invokes 'Miso.Diff.diff'
 data Hydrate
@@ -687,6 +692,8 @@ data ComponentState parent model action
   -- ^ Declarative bindings between t'Miso.Types.Component' 'model'.
   , _componentMailbox :: Value -> Maybe action
   -- ^ Mailbox for asynchronous t'Miso.Types.Component' communication
+  , _componentLastProps :: Maybe Value
+  -- ^ Last props dispatched via 'useProps', used for change detection without JSON round-trips
   , _componentDraw :: model -> IO ()
   -- ^ Helper function for t'Miso.Types.Component' rendering
   , _componentModelDirty :: model -> model -> Bool
@@ -1033,7 +1040,7 @@ buildVTree
   -> View model action
   -> IO VTree
 buildVTree events_ parentId_ vcompId hydrate snk logLevel_ = \case
-  VComp maybeKey (SomeComponent app) -> do
+  VComp maybeKey maybeProps (SomeComponent app) -> do
     vcomp_ <- create
 
     mountCallback <- do
@@ -1062,6 +1069,23 @@ buildVTree events_ parentId_ vcompId hydrate snk logLevel_ = \case
     FFI.set "unmount" unmountCallback vcomp_
     FFI.set "eventPropagation" (eventPropagation app) vcomp_
     FFI.set "type" VCompType vcomp_
+
+    -- When props are present, install a sendProps callback.
+    -- Comparison happens in Haskell against _componentLastProps — no JSON round-trip.
+    -- TypeScript calls sendProps() unconditionally; Haskell decides whether to dispatch.
+    forM_ maybeProps $ \val -> do
+      sendPropsCallback <- toJSVal =<< do
+        syncCallback $ do
+          mcompId <- fromJSVal =<< vcomp_ ! ("componentId" :: MisoString)
+          forM_ (mcompId :: Maybe ComponentId) $ \componentId_ ->
+            IM.lookup componentId_ <$> readIORef components >>= \case
+              Nothing -> pure ()
+              Just cs ->
+                when (_componentLastProps cs /= Just val) $ do
+                  modifyComponent componentId_ (componentLastProps .= Just val)
+                  forM_ (useProps app val) (_componentSink cs)
+      FFI.set "sendProps" sendPropsCallback vcomp_
+
     pure (VTree vcomp_)
   VNode ns tag attrs kids -> do
     vnode_ <- createNode "vnode" ns tag
@@ -1354,6 +1378,33 @@ checkMail
   -- ^ The message received to parse.
   -> Maybe action
 checkMail successful errorful value =
+  pure $ case fromJSON value of
+    Success x -> successful x
+    Error err -> errorful (ms err)
+-----------------------------------------------------------------------------
+-- | Decode props received via 'mountProps' into an action.
+--
+-- Convenience wrapper for the 'useProps' field on a t'Miso.Types.Component'.
+-- Mirrors 'checkMail': always dispatches an action, routing decode failures
+-- to the errorful callback.
+--
+-- @
+-- data Action = PropsReceived MyProps | BadProps MisoString
+--
+-- main = app { useProps = checkProps PropsReceived BadProps }
+-- @
+--
+-- @since 1.11.0.0
+checkProps
+  :: FromJSON props
+  => (props -> action)
+  -- ^ Successful callback
+  -> (MisoString -> action)
+  -- ^ Errorful callback
+  -> Value
+  -- ^ The props value received from the parent.
+  -> Maybe action
+checkProps successful errorful value =
   pure $ case fromJSON value of
     Success x -> successful x
     Error err -> errorful (ms err)

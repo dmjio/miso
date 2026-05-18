@@ -36,6 +36,8 @@ export type VComp<T> = {
   eventPropagation: boolean;
   mount: (parent: T) => Mount<T>;
   unmount: (vcompId: ComponentId) => void;
+  // present when mounted via props_ on the Haskell side; comparison done in Haskell
+  sendProps?: () => void;
 };
 
 export type Mount<T> = {

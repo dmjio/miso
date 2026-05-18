@@ -89,7 +89,7 @@
 -- data 'View' model action
 --   = 'VNode' 'Namespace' 'Tag' ['Attribute' action] ['View' model action]
 --   | 'VText' (Maybe 'Key') 'MisoString'
---   | 'VComp' (Maybe 'Key') ('SomeComponent' model)
+--   | 'VComp' (Maybe 'Key') 'Props' ('SomeComponent' model)
 --   | 'VFrag' (Maybe 'Key') ['View' model action]
 -- @
 --
@@ -205,7 +205,7 @@
 --   => 'MisoString'
 --   -> 'Component' model child action
 --   -> 'View' model a
--- key '+>' vcomp = 'VComp' (Just (toKey key)) ('SomeComponent' vcomp)
+-- key '+>' vcomp = 'VComp' (Just (toKey key)) Nothing ('SomeComponent' vcomp)
 -- @
 --
 -- Practically, using this combinator looks like:
@@ -243,6 +243,43 @@
 -- @
 --
 -- 'startApp' and 'miso' will always infer @parent@ as 'ROOT'.
+--
+-- = 'Props'
+--
+-- @
+-- type 'Props' = Maybe 'Value'
+-- @
+--
+-- 'Props' are a way to pass data from a parent 'Component' to a child 'Component' at render time,
+-- modelled after [React props](https://react.dev/learn/passing-props-to-a-component).
+-- In React, a parent renders a child with props and the child re-renders whenever those values change.
+-- In @miso@ the mechanism is the same, but since each 'Component' owns its own 'model' and 'update' loop,
+-- props arrive as a dispatched action via 'useProps' rather than being injected directly into the 'View'.
+--
+-- Use 'mountProps' (no key) or 'mountProps_' (with key) to pass any 'Miso.JSON.ToJSON' value
+-- to a child, and 'checkProps' to decode it into an action:
+--
+-- @
+-- -- Parent
+-- view :: Model -> 'View' Model Action
+-- view m =
+--   mountProps_ \"theme-panel\" (m ^. limit, m ^. theme) $
+--     ('component' 0 childUpdate childView) { useProps = 'checkProps' PropsReceived BadProps }
+--
+-- -- Child
+-- data ChildAction = PropsReceived (Int, Theme) | BadProps 'Miso.String.MisoString' | ...
+--
+-- childUpdate :: ChildAction -> 'Effect' ChildModel ChildAction
+-- childUpdate (PropsReceived (limit, theme)) = 'modify' \m -> m { limit, theme }
+-- childUpdate (BadProps err) = 'io_' ('consoleError' err)
+-- @
+--
+-- The diff engine calls the child\'s 'useProps' only when the props value has actually changed,
+-- so spurious re-renders are avoided. 'checkProps' mirrors 'checkMail': it always dispatches
+-- an action, routing decode failures to the errorful callback.
+--
+-- 'Props' can be drilled through multiple layers of 'Component' by having each intermediate child
+-- forward them down via its own 'mountProps' or 'mountProps_' call in its view function.
 --
 -- = 'VComp' lifecycle hooks
 --
@@ -707,6 +744,10 @@ module Miso
   , vcomp
   , (+>)
   , mount_
+    -- ** Props
+  , mountProps
+  , mountProps_
+  , checkProps
     -- ** View
   , vcomp
   , vnode
