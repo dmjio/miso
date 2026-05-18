@@ -131,7 +131,7 @@ renderBuilder (VNode ns tag attrs children) = mconcat
               , ns == MATHML
               ]
 
-renderBuilder (VComp _ (SomeComponent vcomp_)) =
+renderBuilder (VComp _ _ (SomeComponent vcomp_)) =
   foldMap renderBuilder vkids
     where
 #ifdef SSR

@@ -14,6 +14,7 @@ export function diff<T>(c: VTree<T>, n: VTree<T>, parent: T, context: DrawingCon
           n.child = c.child;
           n.componentId = c.componentId;
           if (c.child) c.child.parent = n;
+          if (n.sendProps) n.sendProps();
           return;
         }
         replace(c, n, parent, context);
