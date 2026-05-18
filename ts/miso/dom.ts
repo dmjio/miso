@@ -504,17 +504,17 @@ function syncChildren<T>(os: Array<VTree<T>>, ns: Array<VTree<T>>, parent: T, co
                -> [ a b c ] <- new children
                */
     if (oldFirstIndex > oldLastIndex) {
-      // When the old list is exhausted, new nodes must be inserted before the
-      // VFrag's following sibling (endAnchor) if one exists, or before oFirst
-      // (the stale position marker) if valid, otherwise appended.
-      if (endAnchor) {
-        createElement(parent, OP.INSERT_BEFORE, endAnchor, nFirst, context);
+      // Back-processed nodes (oFirst) are already in their correct DOM positions
+      // and must take priority as the insertion anchor over endAnchor. endAnchor
+      // is only the right fallback when the old list was truly empty (no oFirst).
+      const oFirstRef = oFirst
+        ? (getFirstDOMRef(oFirst) ?? context.nextSibling(oFirst))
+        : null;
+      const anchor = oFirstRef ?? endAnchor;
+      if (anchor) {
+        createElement(parent, OP.INSERT_BEFORE, anchor, nFirst, context);
       } else {
-        diff(null, nFirst, parent, context);
-        /* insertBefore's semantics will append a node if the second argument provided is `null` or `undefined`.
-           Otherwise, it will insert node.domRef before oLast.domRef.
-        */
-        insertBefore(parent, nFirst, oFirst, context);
+        create(nFirst, parent, context);
       }
       os.splice(newFirstIndex, 0, nFirst);
       newFirstIndex++;
