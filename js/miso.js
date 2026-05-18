@@ -239,12 +239,12 @@ function getFirstDOMRef(tree) {
   switch (tree.type) {
     case 3 /* VFrag */: {
       if (!tree.children || tree.children.length === 0)
-        throw new Error("getFirstDOMRef called on empty VFrag");
+        return null;
       return getFirstDOMRef(tree.children[0]);
     }
     case 0 /* VComp */:
       if (!tree.child)
-        throw new Error("getFirstDOMRef called on unmounted VComp");
+        return null;
       return getFirstDOMRef(tree.child);
     default:
       return tree.domRef;
@@ -254,12 +254,12 @@ function getLastDOMRef(tree) {
   switch (tree.type) {
     case 3 /* VFrag */: {
       if (!tree.children || tree.children.length === 0)
-        throw new Error("getLastDOMRef called on empty VFrag");
+        return null;
       return getLastDOMRef(tree.children[tree.children.length - 1]);
     }
     case 0 /* VComp */:
       if (!tree.child)
-        throw new Error("getLastDOMRef called on unmounted VComp");
+        return null;
       return getLastDOMRef(tree.child);
     default:
       return tree.domRef;
@@ -287,7 +287,8 @@ function diff(c, n, parent, context) {
     replace(c, n, parent, context);
   } else if (c.type === 3 /* VFrag */ && n.type === 3 /* VFrag */) {
     if (n.key === c.key) {
-      const endAnchor = c.children.length > 0 ? getLastDOMRef(c).nextSibling : null;
+      const lastRef = getLastDOMRef(c);
+      const endAnchor = lastRef ? lastRef.nextSibling : context.nextSibling(c);
       diffChildren(c.children, n.children, parent, context, endAnchor);
     } else {
       replace(c, n, parent, context);
@@ -310,7 +311,8 @@ function diffVText(c, n, context) {
 }
 function replace(c, n, parent, context) {
   if (c.type === 3 /* VFrag */) {
-    const anchor = c.children.length > 0 ? getLastDOMRef(c).nextSibling : null;
+    const lastRef2 = getLastDOMRef(c);
+    const anchor = lastRef2 ? lastRef2.nextSibling : context.nextSibling(c);
     destroy(c, parent, context);
     if (anchor) {
       createElement(parent, 2 /* INSERT_BEFORE */, anchor, n, context);
@@ -328,7 +330,14 @@ function replace(c, n, parent, context) {
   }
   const firstRef = getFirstDOMRef(c);
   const lastRef = getLastDOMRef(c);
-  if (firstRef !== lastRef) {
+  if (!firstRef || !lastRef) {
+    const anchor = context.nextSibling(c);
+    if (anchor) {
+      createElement(parent, 2 /* INSERT_BEFORE */, anchor, n, context);
+    } else {
+      create(n, parent, context);
+    }
+  } else if (firstRef !== lastRef) {
     const anchor = lastRef.nextSibling;
     forEachDOMRef(c, (ref) => context.removeChild(parent, ref));
     if (anchor) {
@@ -615,16 +624,23 @@ function mountComponent(parent, op, replacing, n, context) {
   n.componentId = mounted.componentId;
   n.child = mounted.componentTree;
   mounted.componentTree.parent = n;
+  const componentDOMRef = getFirstDOMRef(mounted.componentTree);
   if (mounted.componentTree.type !== 0 /* VComp */) {
     if (op === 1 /* REPLACE */ && replacing) {
-      if (mounted.componentTree.type === 3 /* VFrag */) {
+      if (!componentDOMRef) {
+        context.removeChild(parent, replacing);
+      } else if (mounted.componentTree.type === 3 /* VFrag */) {
         forEachDOMRef(mounted.componentTree, (ref) => context.insertBefore(parent, ref, replacing));
         context.removeChild(parent, replacing);
       } else {
-        context.replaceChild(parent, getFirstDOMRef(mounted.componentTree), replacing);
+        context.replaceChild(parent, componentDOMRef, replacing);
       }
     } else if (op === 2 /* INSERT_BEFORE */) {
-      forEachDOMRef(mounted.componentTree, (ref) => context.insertBefore(parent, ref, replacing));
+      if (replacing) {
+        forEachDOMRef(mounted.componentTree, (ref) => context.insertBefore(parent, ref, replacing));
+      } else {
+        forEachDOMRef(mounted.componentTree, (ref) => context.appendChild(parent, ref));
+      }
     }
   }
 }
@@ -632,18 +648,33 @@ function create(n, parent, context) {
   createElement(parent, 0 /* APPEND */, null, n, context);
 }
 function insertBefore(parent, n, o, context) {
-  const anchor = o ? getFirstDOMRef(o) : null;
-  forEachDOMRef(n, (ref) => context.insertBefore(parent, ref, anchor));
+  const anchor = o ? getFirstDOMRef(o) ?? context.nextSibling(o) : null;
+  if (anchor) {
+    forEachDOMRef(n, (ref) => context.insertBefore(parent, ref, anchor));
+  } else {
+    forEachDOMRef(n, (ref) => context.appendChild(parent, ref));
+  }
 }
 function swapDOMRef(oLast, oFirst, parent, context) {
-  if ((oLast.type === 1 /* VNode */ || oLast.type === 2 /* VText */) && (oFirst.type === 1 /* VNode */ || oFirst.type === 2 /* VText */)) {
-    context.swapDOMRefs(getFirstDOMRef(oLast), getFirstDOMRef(oFirst), parent);
+  const oLastRef = getFirstDOMRef(oLast);
+  const oFirstRef = getFirstDOMRef(oFirst);
+  if (oLastRef && oFirstRef && (oLast.type === 1 /* VNode */ || oLast.type === 2 /* VText */) && (oFirst.type === 1 /* VNode */ || oFirst.type === 2 /* VText */)) {
+    context.swapDOMRefs(oLastRef, oFirstRef, parent);
     return;
   }
-  const tmp = getLastDOMRef(oLast).nextSibling;
-  const anchor = getFirstDOMRef(oFirst);
-  forEachDOMRef(oLast, (ref) => context.insertBefore(parent, ref, anchor));
-  forEachDOMRef(oFirst, (ref) => context.insertBefore(parent, ref, tmp));
+  const lastRef = getLastDOMRef(oLast);
+  const tmp = lastRef ? lastRef.nextSibling : context.nextSibling(oLast);
+  const anchor = getFirstDOMRef(oFirst) ?? context.nextSibling(oFirst);
+  if (anchor) {
+    forEachDOMRef(oLast, (ref) => context.insertBefore(parent, ref, anchor));
+  } else {
+    forEachDOMRef(oLast, (ref) => context.appendChild(parent, ref));
+  }
+  if (tmp) {
+    forEachDOMRef(oFirst, (ref) => context.insertBefore(parent, ref, tmp));
+  } else {
+    forEachDOMRef(oFirst, (ref) => context.appendChild(parent, ref));
+  }
 }
 function syncChildren(os, ns, parent, context, endAnchor = null) {
   var oldFirstIndex = 0, newFirstIndex = 0, oldLastIndex = os.length - 1, newLastIndex = ns.length - 1, tmp, nFirst, nLast, oLast, oFirst, found, node;
@@ -656,11 +687,12 @@ function syncChildren(os, ns, parent, context, endAnchor = null) {
     oFirst = os[oldFirstIndex];
     oLast = os[oldLastIndex];
     if (oldFirstIndex > oldLastIndex) {
-      if (endAnchor) {
-        createElement(parent, 2 /* INSERT_BEFORE */, endAnchor, nFirst, context);
+      const oFirstRef = oFirst ? getFirstDOMRef(oFirst) ?? context.nextSibling(oFirst) : null;
+      const anchor = oFirstRef ?? endAnchor;
+      if (anchor) {
+        createElement(parent, 2 /* INSERT_BEFORE */, anchor, nFirst, context);
       } else {
-        diff(null, nFirst, parent, context);
-        insertBefore(parent, nFirst, oFirst, context);
+        create(nFirst, parent, context);
       }
       os.splice(newFirstIndex, 0, nFirst);
       newFirstIndex++;
@@ -681,8 +713,13 @@ function syncChildren(os, ns, parent, context, endAnchor = null) {
       diff(os[oldFirstIndex++], ns[newFirstIndex++], parent, context);
       diff(os[oldLastIndex--], ns[newLastIndex--], parent, context);
     } else if (oFirst.key === nLast.key) {
-      const afterOLast = getLastDOMRef(oLast).nextSibling;
-      forEachDOMRef(oFirst, (ref) => context.insertBefore(parent, ref, afterOLast));
+      const lastRef = getLastDOMRef(oLast);
+      const afterOLast = lastRef ? lastRef.nextSibling : context.nextSibling(oLast);
+      if (afterOLast) {
+        forEachDOMRef(oFirst, (ref) => context.insertBefore(parent, ref, afterOLast));
+      } else {
+        forEachDOMRef(oFirst, (ref) => context.appendChild(parent, ref));
+      }
       os.splice(oldLastIndex, 0, os.splice(oldFirstIndex, 1)[0]);
       diff(os[oldLastIndex--], ns[newLastIndex--], parent, context);
     } else if (oLast.key === nFirst.key) {
@@ -707,7 +744,12 @@ function syncChildren(os, ns, parent, context, endAnchor = null) {
         insertBefore(parent, node, os[oldFirstIndex], context);
         newFirstIndex++;
       } else {
-        createElement(parent, 2 /* INSERT_BEFORE */, getFirstDOMRef(oFirst), nFirst, context);
+        const anchor = getFirstDOMRef(oFirst) ?? context.nextSibling(oFirst);
+        if (anchor) {
+          createElement(parent, 2 /* INSERT_BEFORE */, anchor, nFirst, context);
+        } else {
+          create(nFirst, parent, context);
+        }
         os.splice(oldFirstIndex++, 0, nFirst);
         newFirstIndex++;
         oldLastIndex++;
@@ -993,13 +1035,19 @@ var componentContext = {
 };
 var drawingContext = {
   nextSibling: (node) => {
-    if (node.nextSibling) {
-      switch (node.nextSibling.type) {
+    let sibling = node.nextSibling;
+    while (sibling) {
+      switch (sibling.type) {
         case 0 /* VComp */:
-        case 3 /* VFrag */:
-          return getFirstDOMRef(node.nextSibling);
+        case 3 /* VFrag */: {
+          const ref = getFirstDOMRef(sibling);
+          if (ref)
+            return ref;
+          sibling = sibling.nextSibling;
+          break;
+        }
         default:
-          return node.nextSibling.domRef;
+          return sibling.domRef;
       }
     }
     return null;
@@ -1132,8 +1180,9 @@ function diagnoseError(logLevel, vtree, node) {
   if (logLevel)
     console.warn("[DEBUG_HYDRATE] VTree differed from node", vtree, node);
 }
-function nextAfter(tree) {
-  return getLastDOMRef(tree).nextSibling;
+function nextAfter(tree, current) {
+  const lastRef = getLastDOMRef(tree);
+  return lastRef ? lastRef.nextSibling : current;
 }
 function walk(logLevel, vtree, node, context, drawingContext2) {
   switch (vtree.type) {
@@ -1155,7 +1204,7 @@ function walk(logLevel, vtree, node, context, drawingContext2) {
         }
         if (!walk(logLevel, child, node, context, drawingContext2))
           return false;
-        node = nextAfter(child);
+        node = nextAfter(child, node);
       }
       break;
     case 2 /* VText */:
@@ -1183,7 +1232,7 @@ function walk(logLevel, vtree, node, context, drawingContext2) {
         if (!walk(logLevel, vdomChild, domCursor, context, drawingContext2)) {
           return false;
         }
-        domCursor = nextAfter(vdomChild);
+        domCursor = nextAfter(vdomChild, domCursor);
       }
       break;
   }
