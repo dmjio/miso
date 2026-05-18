@@ -93,7 +93,7 @@
 --   | 'VFrag' (Maybe 'Key') ['View' model action]
 -- @
 --
--- 'VNode' and 'VText' have a one-to-one mapping from the virtual DOM to the physical DOM. The 'VComp' constructor is abstract and does not contain a reference to the physical DOM. The existential type of 'SomeComponent' is defined recursively in terms of 'View' and is what allows us to embed other polymorphic 'Component'.
+-- 'VNode' and 'VText' have a one-to-one mapping from the virtual DOM to the physical DOM. The 'VComp' and 'VFrag' constructors are abstract (live only on the virtual DOM) and do not contain a reference to the physical DOM. The existential type of 'SomeComponent' is defined recursively in terms of 'View' and is what allows us to embed other polymorphic 'Component'.
 --
 -- @
 -- data 'SomeComponent' parent
@@ -309,12 +309,10 @@
 --
 -- Fragments may be nested — a 'VFrag' child may itself be a 'VFrag'. The diff function
 -- recurses into nested fragments and processes all fragments as if they were
--- flat sequence of sibling DOM nodes, so nesting carries no runtime cost beyond the extra 'View' allocation.
+-- flat sequence of sibling DOM nodes, so nesting carries no runtime cost beyond the extra 'VFrag' constructor allocation.
 --
 -- Empty fragments (@'fragment' []@) in child nodes are erased from the virtual DOM tree in the
 -- Haskell layer before they reach diffing in JavaScript and are therefore a no-op.
---
--- There is an edge case where an empty 'VFrag' can be returned from a 'Component'. In this case an empty text node will be used.
 --
 -- The smart constructors for 'VFrag' are:
 --
@@ -346,6 +344,7 @@
 --   , 'li_' [ 'key_' "key-2" ] [ "b" ]
 --   , "key-3" '+>' counter
 --   , 'textKey' "key-4" "text here"
+--   , vfrag_ "key-5" [ "foo", "bar" ]
 --   ]
 -- @
 --
