@@ -620,10 +620,10 @@ describe('VFrag — event delegation', () => {
 
 describe('VFrag — empty fragment edge cases', () => {
 
-  test('getFirstDOMRef on empty VFrag throws (empty frags are removed in Haskell)', () => {
+  test('getFirstDOMRef on empty VFrag returns null', () => {
     const { getFirstDOMRef } = require('../miso/util');
     const frag = vfrag<DOMRef>([]);
-    expect(() => getFirstDOMRef(frag)).toThrow();
+    expect(getFirstDOMRef(frag)).toBeNull();
   });
 
   test('creating an empty fragment leaves DOM unchanged', () => {

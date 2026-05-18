@@ -53,8 +53,11 @@ function diagnoseError(logLevel: boolean, vtree: VTree<DOMRef>, node: Node): voi
 }
 
 // Advance past all DOM nodes owned by `tree` and return the next sibling.
-function nextAfter(tree: VTree<DOMRef>): Node {
-  return (getLastDOMRef(tree) as unknown as Node).nextSibling as Node;
+function nextAfter(tree: VTree<DOMRef>, current: Node): Node {
+  const lastRef = getLastDOMRef(tree);
+  return lastRef
+    ? (lastRef as unknown as Node).nextSibling as Node
+    : current;
 }
 
 function walk(logLevel: boolean, vtree: VTree<DOMRef>, node: Node, context: HydrationContext<DOMRef>, drawingContext: DrawingContext<DOMRef>): boolean {
@@ -85,7 +88,7 @@ function walk(logLevel: boolean, vtree: VTree<DOMRef>, node: Node, context: Hydr
           return false;
         }
         if (!walk(logLevel, child, node, context, drawingContext)) return false;
-        node = nextAfter(child);
+        node = nextAfter(child, node);
       }
       break;
     case VTreeType.VText:
@@ -117,7 +120,7 @@ function walk(logLevel: boolean, vtree: VTree<DOMRef>, node: Node, context: Hydr
         if (!walk(logLevel, vdomChild, domCursor, context, drawingContext)) {
           return false;
         }
-        domCursor = nextAfter(vdomChild);
+        domCursor = nextAfter(vdomChild, domCursor);
       }
       break;
   }

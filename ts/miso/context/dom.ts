@@ -77,13 +77,18 @@ export const componentContext : ComponentContext = {
 
 export const drawingContext : DrawingContext<DOMRef> = {
   nextSibling : (node: VTree<DOMRef>) => {
-    if (node.nextSibling) {
-      switch (node.nextSibling.type) {
+    let sibling = node.nextSibling;
+    while (sibling) {
+      switch (sibling.type) {
         case VTreeType.VComp:
-        case VTreeType.VFrag:
-          return getFirstDOMRef(node.nextSibling) as DOMRef;
+        case VTreeType.VFrag: {
+          const ref = getFirstDOMRef(sibling);
+          if (ref) return ref as DOMRef;
+          sibling = sibling.nextSibling;
+          break;
+        }
         default:
-          return node.nextSibling.domRef as DOMRef;
+          return sibling.domRef as DOMRef;
       }
     }
     return null;
