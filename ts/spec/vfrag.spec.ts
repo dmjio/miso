@@ -215,6 +215,36 @@ describe('VFrag — keyed children sync (syncChildren)', () => {
     expect(textOrder()).toEqual(['a', 'b', 'c', '']);
   });
 
+  test('prepend new keyed child to VFrag children — endAnchor must not override oFirst', () => {
+    // parent div: [ VFragKeyed('list',[A,B,C]),  VNode('span') ]
+    // grows to:   [ VFragKeyed('list',[D,A,B,C]), VNode('span') ]
+    // D is new; A, B, C all back-match, leaving oldFirstIndex > oldLastIndex with
+    // endAnchor = <span/> and oFirst = A (already in the correct DOM position).
+    // Bug: D was inserted before <span> (endAnchor) instead of before A (oFirst),
+    // placing it at the end of the VFrag rather than the beginning.
+    const cA = vfragKeyed<DOMRef>('A', [vtext('a')]);
+    const cB = vfragKeyed<DOMRef>('B', [vtext('b')]);
+    const cC = vfragKeyed<DOMRef>('C', [vtext('c')]);
+    const old = vnode<DOMRef>({ tag: 'div', children: [
+      vfragKeyed<DOMRef>('list', [cA, cB, cC]),
+      vnode<DOMRef>({ tag: 'span' }),
+    ]});
+    diff(null, old, document.body, drawingContext);
+    expect(textOrder()).toEqual(['a', 'b', 'c', '']);
+
+    const nD = vfragKeyed<DOMRef>('D', [vtext('d')]);
+    const nA = vfragKeyed<DOMRef>('A', [vtext('a')]);
+    const nB = vfragKeyed<DOMRef>('B', [vtext('b')]);
+    const nC = vfragKeyed<DOMRef>('C', [vtext('c')]);
+    const next = vnode<DOMRef>({ tag: 'div', children: [
+      vfragKeyed<DOMRef>('list', [nD, nA, nB, nC]),
+      vnode<DOMRef>({ tag: 'span' }),
+    ]});
+    diff(old, next, document.body, drawingContext);
+    // 'd' must appear FIRST, before 'a' — not appended after 'c'
+    expect(textOrder()).toEqual(['d', 'a', 'b', 'c', '']);
+  });
+
 });
 
 // ---------------------------------------------------------------------------
@@ -620,10 +650,10 @@ describe('VFrag — event delegation', () => {
 
 describe('VFrag — empty fragment edge cases', () => {
 
-  test('getFirstDOMRef on empty VFrag throws (empty frags are removed in Haskell)', () => {
+  test('getFirstDOMRef on empty VFrag returns null', () => {
     const { getFirstDOMRef } = require('../miso/util');
     const frag = vfrag<DOMRef>([]);
-    expect(() => getFirstDOMRef(frag)).toThrow();
+    expect(getFirstDOMRef(frag)).toBeNull();
   });
 
   test('creating an empty fragment leaves DOM unchanged', () => {

@@ -22,9 +22,10 @@ export function diff<T>(c: VTree<T>, n: VTree<T>, parent: T, context: DrawingCon
         if (n.key === c.key) {
           // Snapshot the DOM anchor *before* any mutations so growing the VFrag
           // inserts new nodes at the correct position (before the following sibling).
-          const endAnchor = c.children.length > 0
-            ? (getLastDOMRef(c) as unknown as Node).nextSibling as unknown as T | null
-            : null;
+          const lastRef = getLastDOMRef(c);
+          const endAnchor = lastRef
+            ? (lastRef as unknown as Node).nextSibling as unknown as T | null
+            : context.nextSibling(c);
           diffChildren(c.children, n.children, parent, context, endAnchor);
         } else {
           replace(c, n, parent, context);
@@ -52,9 +53,10 @@ function diffVText<T>(c: VText<T>, n: VText<T>, context : DrawingContext<T>): vo
 function replace<T>(c: VTree<T>, n: VTree<T>, parent: T, context : DrawingContext<T>): void {
   // VFrag spans multiple DOM nodes — destroy all, then create n at the same position
   if (c.type === VTreeType.VFrag) {
-    const anchor = c.children.length > 0
-      ? (getLastDOMRef(c) as unknown as Node).nextSibling as unknown as T | null
-      : null;
+    const lastRef = getLastDOMRef(c);
+    const anchor = lastRef
+      ? (lastRef as unknown as Node).nextSibling as unknown as T | null
+      : context.nextSibling(c);
     destroy(c, parent, context);
     if (anchor) {
       createElement(parent, OP.INSERT_BEFORE, anchor, n, context);
@@ -76,7 +78,14 @@ function replace<T>(c: VTree<T>, n: VTree<T>, parent: T, context : DrawingContex
   // remove ALL old DOM refs, not just the first one, before inserting new nodes.
   const firstRef = getFirstDOMRef(c);
   const lastRef  = getLastDOMRef(c);
-  if ((firstRef as unknown as Node) !== (lastRef as unknown as Node)) {
+  if (!firstRef || !lastRef) {
+    const anchor = context.nextSibling(c);
+    if (anchor) {
+      createElement(parent, OP.INSERT_BEFORE, anchor, n, context);
+    } else {
+      create(n, parent, context);
+    }
+  } else if ((firstRef as unknown as Node) !== (lastRef as unknown as Node)) {
     // Multi-DOM node: anchor-based insert-then-remove
     const anchor = (lastRef as unknown as Node).nextSibling as unknown as T | null;
     forEachDOMRef(c, ref => context.removeChild(parent, ref));
@@ -400,16 +409,23 @@ function mountComponent<T>(parent: T, op : OP, replacing: T | null, n: VComp<T>,
   n.componentId = mounted.componentId;
   n.child = mounted.componentTree;
   mounted.componentTree.parent = n;
+  const componentDOMRef = getFirstDOMRef(mounted.componentTree);
   if (mounted.componentTree.type !== VTreeType.VComp) {
     if (op === OP.REPLACE && replacing) {
-      if (mounted.componentTree.type === VTreeType.VFrag) {
+      if (!componentDOMRef) {
+        context.removeChild(parent, replacing);
+      } else if (mounted.componentTree.type === VTreeType.VFrag) {
         forEachDOMRef(mounted.componentTree, ref => context.insertBefore(parent, ref, replacing));
         context.removeChild(parent, replacing);
       } else {
-        context.replaceChild(parent, getFirstDOMRef(mounted.componentTree), replacing);
+        context.replaceChild(parent, componentDOMRef, replacing);
       }
     } else if (op === OP.INSERT_BEFORE) {
-      forEachDOMRef(mounted.componentTree, ref => context.insertBefore(parent, ref, replacing));
+      if (replacing) {
+        forEachDOMRef(mounted.componentTree, ref => context.insertBefore(parent, ref, replacing));
+      } else {
+        forEachDOMRef(mounted.componentTree, ref => context.appendChild(parent, ref));
+      }
     }
     // OP.APPEND: mount() already appended in order
   }
@@ -421,23 +437,40 @@ function create<T>(n: VTree<T>, parent: T, context: DrawingContext<T>): void {
 }
 
 function insertBefore<T>(parent: T, n: VTree<T>, o: VTree<T> | null, context: DrawingContext<T>): void {
-  const anchor = o ? getFirstDOMRef(o) : null;
-  forEachDOMRef(n, ref => context.insertBefore(parent, ref, anchor));
+  const anchor = o ? (getFirstDOMRef(o) ?? context.nextSibling(o)) : null;
+  if (anchor) {
+    forEachDOMRef(n, ref => context.insertBefore(parent, ref, anchor));
+  } else {
+    forEachDOMRef(n, ref => context.appendChild(parent, ref));
+  }
 }
 
 function swapDOMRef<T>(oLast: VTree<T>, oFirst: VTree<T>, parent: T, context: DrawingContext<T>): void {
   // dmj: Optimization to use 'swapDOMRefs' if the two nodes being operated on are either VNode or VText.
-  if ((oLast.type === VTreeType.VNode || oLast.type === VTreeType.VText) && (oFirst.type === VTreeType.VNode || oFirst.type === VTreeType.VText)) {
-    context.swapDOMRefs (getFirstDOMRef(oLast), getFirstDOMRef(oFirst), parent);
+  const oLastRef = getFirstDOMRef(oLast);
+  const oFirstRef = getFirstDOMRef(oFirst);
+  if (oLastRef && oFirstRef && (oLast.type === VTreeType.VNode || oLast.type === VTreeType.VText) && (oFirst.type === VTreeType.VNode || oFirst.type === VTreeType.VText)) {
+    context.swapDOMRefs (oLastRef, oFirstRef, parent);
     return;
   }
   // Snapshot where oLast currently ends (before we move anything)
-  const tmp = (getLastDOMRef(oLast) as unknown as Node).nextSibling as unknown as T | null;
-  const anchor = getFirstDOMRef(oFirst);
+  const lastRef = getLastDOMRef(oLast);
+  const tmp = lastRef
+    ? (lastRef as unknown as Node).nextSibling as unknown as T | null
+    : context.nextSibling(oLast);
+  const anchor = getFirstDOMRef(oFirst) ?? context.nextSibling(oFirst);
   // Move all of oLast before oFirst's first node
-  forEachDOMRef(oLast, ref => context.insertBefore(parent, ref, anchor));
+  if (anchor) {
+    forEachDOMRef(oLast, ref => context.insertBefore(parent, ref, anchor));
+  } else {
+    forEachDOMRef(oLast, ref => context.appendChild(parent, ref));
+  }
   // Move all of oFirst to where oLast used to end
-  forEachDOMRef(oFirst, ref => context.insertBefore(parent, ref, tmp));
+  if (tmp) {
+    forEachDOMRef(oFirst, ref => context.insertBefore(parent, ref, tmp));
+  } else {
+    forEachDOMRef(oFirst, ref => context.appendChild(parent, ref));
+  }
 }
 
 /* Child reconciliation algorithm, inspired by kivi and Bobril */
@@ -471,17 +504,17 @@ function syncChildren<T>(os: Array<VTree<T>>, ns: Array<VTree<T>>, parent: T, co
                -> [ a b c ] <- new children
                */
     if (oldFirstIndex > oldLastIndex) {
-      // When the old list is exhausted, new nodes must be inserted before the
-      // VFrag's following sibling (endAnchor) if one exists, or before oFirst
-      // (the stale position marker) if valid, otherwise appended.
-      if (endAnchor) {
-        createElement(parent, OP.INSERT_BEFORE, endAnchor, nFirst, context);
+      // Back-processed nodes (oFirst) are already in their correct DOM positions
+      // and must take priority as the insertion anchor over endAnchor. endAnchor
+      // is only the right fallback when the old list was truly empty (no oFirst).
+      const oFirstRef = oFirst
+        ? (getFirstDOMRef(oFirst) ?? context.nextSibling(oFirst))
+        : null;
+      const anchor = oFirstRef ?? endAnchor;
+      if (anchor) {
+        createElement(parent, OP.INSERT_BEFORE, anchor, nFirst, context);
       } else {
-        diff(null, nFirst, parent, context);
-        /* insertBefore's semantics will append a node if the second argument provided is `null` or `undefined`.
-           Otherwise, it will insert node.domRef before oLast.domRef.
-        */
-        insertBefore(parent, nFirst, oFirst, context);
+        create(nFirst, parent, context);
       }
       os.splice(newFirstIndex, 0, nFirst);
       newFirstIndex++;
@@ -530,8 +563,15 @@ function syncChildren<T>(os: Array<VTree<T>>, ns: Array<VTree<T>>, parent: T, co
         and now we happy path */
     else if (oFirst.key === nLast.key) {
       /* insertAfter */
-      const afterOLast = (getLastDOMRef(oLast) as unknown as Node).nextSibling as unknown as T | null;
-      forEachDOMRef(oFirst, ref => context.insertBefore(parent, ref, afterOLast));
+      const lastRef = getLastDOMRef(oLast);
+      const afterOLast = lastRef
+        ? (lastRef as unknown as Node).nextSibling as unknown as T | null
+        : context.nextSibling(oLast);
+      if (afterOLast) {
+        forEachDOMRef(oFirst, ref => context.insertBefore(parent, ref, afterOLast));
+      } else {
+        forEachDOMRef(oFirst, ref => context.appendChild(parent, ref));
+      }
       /* swap positions in old vdom */
       os.splice(oldLastIndex, 0, os.splice(oldFirstIndex, 1)[0]);
       diff(os[oldLastIndex--], ns[newLastIndex--], parent, context);
@@ -600,7 +640,12 @@ function syncChildren<T>(os: Array<VTree<T>>, ns: Array<VTree<T>>, parent: T, co
         -> [ b e a j   ] <- new children
              ^
         */ else {
-            createElement(parent, OP.INSERT_BEFORE, getFirstDOMRef(oFirst), nFirst, context);
+            const anchor = getFirstDOMRef(oFirst) ?? context.nextSibling(oFirst);
+            if (anchor) {
+              createElement(parent, OP.INSERT_BEFORE, anchor, nFirst, context);
+            } else {
+              create(nFirst, parent, context);
+            }
             os.splice(oldFirstIndex++, 0, nFirst);
             newFirstIndex++;
             oldLastIndex++;

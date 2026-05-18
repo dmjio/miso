@@ -87,9 +87,13 @@ export const componentContext : ComponentContext = {
 
 export const patchDrawingContext : DrawingContext<NodeId> = {
   nextSibling : (node: VTree<NodeId>) => {
-    if (node.nextSibling) {
-      return getFirstDOMRef(node.nextSibling);
+    let sibling = node.nextSibling;
+    while (sibling) {
+      const ref = getFirstDOMRef(sibling);
+      if (ref) return ref;
+      sibling = sibling.nextSibling;
     }
+    return null;
   },
   createTextNode : (value : string) => {
       const nodeId: number = nextNodeId ();

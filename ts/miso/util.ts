@@ -294,15 +294,15 @@ export function forEachDOMRef<T>(tree: VTree<T>, cb: (ref: T) => void): void {
 }
 
 // Returns the first concrete DOM ref owned by a tree, without allocating.
-export function getFirstDOMRef<T>(tree: VTree<T>): T {
+export function getFirstDOMRef<T>(tree: VTree<T>): T | null {
   switch (tree.type) {
     case VTreeType.VFrag: {
       if (!tree.children || tree.children.length === 0)
-        throw new Error("getFirstDOMRef called on empty VFrag");
+        return null;
       return getFirstDOMRef(tree.children[0]);
     }
     case VTreeType.VComp:
-      if (!tree.child) throw new Error("getFirstDOMRef called on unmounted VComp");
+      if (!tree.child) return null;
       return getFirstDOMRef(tree.child);
     default:
       return tree.domRef;
@@ -310,15 +310,15 @@ export function getFirstDOMRef<T>(tree: VTree<T>): T {
 }
 
 // Returns the last concrete DOM ref owned by a tree, without allocating.
-export function getLastDOMRef<T>(tree: VTree<T>): T {
+export function getLastDOMRef<T>(tree: VTree<T>): T | null {
   switch (tree.type) {
     case VTreeType.VFrag: {
       if (!tree.children || tree.children.length === 0)
-        throw new Error("getLastDOMRef called on empty VFrag");
+        return null;
       return getLastDOMRef(tree.children[tree.children.length - 1]);
     }
     case VTreeType.VComp:
-      if (!tree.child) throw new Error("getLastDOMRef called on unmounted VComp");
+      if (!tree.child) return null;
       return getLastDOMRef(tree.child);
     default:
       return tree.domRef;
@@ -326,4 +326,4 @@ export function getLastDOMRef<T>(tree: VTree<T>): T {
 }
 
 // Alias — kept for backwards-compatible public API.
-export function getDOMRef<T>(tree: VTree<T>): T { return getFirstDOMRef(tree); }
+export function getDOMRef<T>(tree: VTree<T>): T | null { return getFirstDOMRef(tree); }
