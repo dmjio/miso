@@ -94,8 +94,6 @@ module Miso.Runtime
   , topLevelComponentId
   , initComponent
   , withJS
-  -- * Effect
-  , withParentSink
   ) where
 -----------------------------------------------------------------------------
 import qualified Data.IntSet as IS
@@ -159,7 +157,7 @@ initialize
   -> Hydrate
   -> Bool
   -- ^ Is the root node being rendered?
-  -> Component parent parentAction props model action
+  -> Component parent props model action
   -> IO DOMRef
   -- ^ Callback function is used for obtaining the t'Miso.Types.Component' 'DOMRef'.
   -> IO (ComponentState parent props model action)
@@ -520,7 +518,7 @@ initialDraw
   -> Events
   -> Hydrate
   -> Bool
-  -> Component p pa props m a
+  -> Component p props m a
   -> ComponentState p props m a
   -> IO ()
 initialDraw initializedModel events hydrate isRoot Component {..} ComponentState {..} = do
@@ -830,7 +828,7 @@ subscribe
   => Topic message
   -> (message -> action)
   -> (MisoString -> action)
-  -> Effect parent parentAction model action
+  -> Effect parent model action
 subscribe (Topic topicName) successful errorful = do
   ComponentInfo {..} <- ask
   withSink $ \sink ->
@@ -877,7 +875,7 @@ subscribe (Topic topicName) successful errorful = do
 -- See 'subscribe' for more use.
 --
 -- @since 1.9.0.0
-unsubscribe :: Topic message -> Effect parent parentAction model action
+unsubscribe :: Topic message -> Effect parent model action
 unsubscribe (Topic topicName) = do
   ComponentInfo {..} <- ask
   io_ $ modifyComponent _componentInfoId $ do
@@ -1261,7 +1259,7 @@ startSub
   -- ^ The key used to track the 'Sub'
   -> Sub action
   -- ^ The 'Sub'
-  -> Effect parent parentAction model action
+  -> Effect parent model action
 startSub subKey sub = do
   ComponentInfo {..} <- ask
   io_ $ do
@@ -1300,7 +1298,7 @@ stopSub
   :: ToMisoString subKey
   => subKey
   -- ^ The key used to stop the 'Sub'
-  -> Effect parent parentAction model action
+  -> Effect parent model action
 stopSub subKey = do
   vcompId <- asks _componentInfoId
   io_ $ do
@@ -1317,7 +1315,7 @@ stopSub subKey = do
 -- | Send any @ToJSON message => message@ to a t'Miso.Types.Component' mailbox, by 'ComponentId'
 --
 -- @
--- io_ $ mail componentId ("test message" :: MisoString) :: Effect parent parentAction model action
+-- io_ $ mail componentId ("test message" :: MisoString) :: Effect parent model action
 -- @
 --
 -- @since 1.9.0.0
@@ -1340,7 +1338,7 @@ mail vcompId msg =
 -- | Send any @ToJSON message => message@ to the parent's t'Miso.Types.Component' mailbox
 --
 -- @
--- mailParent ("test message" :: MisoString) :: Effect parent parentAction model action
+-- mailParent ("test message" :: MisoString) :: Effect parent model action
 -- @
 --
 -- @since 1.9.0.0
@@ -1348,7 +1346,7 @@ mailParent
   :: ToJSON message
   => message
   -- ^ Message to send
-  -> Effect parent parentAction model action
+  -> Effect parent model action
 mailParent msg = do
   ComponentInfo {..} <- ask
   io_ (mail _componentInfoParentId msg)
@@ -1383,7 +1381,7 @@ mailAncestors msg = do
 -- N.B. this is only relevant for immediate descendants (not all descendants).
 --
 -- @
--- mailChildren ("test message" :: MisoString) :: Effect parent parentAction model action
+-- mailChildren ("test message" :: MisoString) :: Effect parent model action
 -- @
 --
 -- @since 1.9.0.0
@@ -1391,7 +1389,7 @@ mailChildren
   :: ToJSON message
   => message
   -- ^ Message to send
-  -> Effect parent parentAction model action
+  -> Effect parent model action
 mailChildren msg = do
   ComponentInfo {..} <- ask
   io_ $ do
@@ -1435,7 +1433,7 @@ parent
   -- ^ Successful callback
   -> action
   -- ^ Errorful callback
-  -> Effect parent parentAction model action
+  -> Effect parent model action
 parent successful errorful = do
   ComponentInfo {..} <- ask
   withSink $ \sink -> do
@@ -1448,7 +1446,7 @@ parent successful errorful = do
 --
 -- @
 --
--- update :: action -> Effect parent parentAction model action
+-- update :: action -> Effect parent model action
 -- update _ = broadcast (String "public service announcement")
 -- @
 --
@@ -1458,7 +1456,7 @@ broadcast
   => ToJSON message
   => message
   -- ^ Message to broadcast to all other 'Component'
-  -> Effect parent parentAction model action
+  -> Effect parent model action
 broadcast msg = do
   ComponentInfo {..} <- ask
   io_ $ do
@@ -1497,7 +1495,7 @@ websocketConnectText
   -- ^ onMessage
   -> (MisoString -> action)
   -- ^ onError
-  -> Effect parent parentAction model action
+  -> Effect parent model action
 websocketConnectText url onOpen onClosed onMessage onError =
   websocketCore $ \webSocketId sink ->
     FFI.websocketConnect url
@@ -1521,7 +1519,7 @@ websocketConnectBLOB
   -- ^ onMessage
   -> (MisoString -> action)
   -- ^ onError
-  -> Effect parent parentAction model action
+  -> Effect parent model action
 websocketConnectBLOB url onOpen onClosed onMessage onError =
   websocketCore $ \webSocketId sink ->
     FFI.websocketConnect url
@@ -1545,7 +1543,7 @@ websocketConnectArrayBuffer
   -- ^ onMessage
   -> (MisoString -> action)
   -- ^ onError
-  -> Effect parent parentAction model action
+  -> Effect parent model action
 websocketConnectArrayBuffer url onOpen onClosed onMessage onError =
   websocketCore $ \webSocketId sink ->
     FFI.websocketConnect url
@@ -1570,7 +1568,7 @@ websocketConnectJSON
   -- ^ onMessage
   -> (MisoString -> action)
   -- ^ onError
-  -> Effect parent parentAction model action
+  -> Effect parent model action
 websocketConnectJSON url onOpen onClosed onMessage onError =
   websocketCore $ \webSocketId sink ->
     FFI.websocketConnect url
@@ -1599,7 +1597,7 @@ websocketConnect
   -- ^ onMessage
   -> (MisoString -> action)
   -- ^ onError
-  -> Effect parent parentAction model action
+  -> Effect parent model action
 websocketConnect url onOpen onClosed onMessage onError =
   websocketCore $ \webSocketId sink ->
     FFI.websocketConnect url
@@ -1619,7 +1617,7 @@ websocketConnect url onOpen onClosed onMessage onError =
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/WebSocket>
 websocketCore
   :: (WebSocket -> Sink action -> IO Socket)
-  -> Effect parent parentAction model action
+  -> Effect parent model action
 websocketCore core = do
   ComponentInfo {..} <- ask
   withSink $ \sink -> do
@@ -1657,7 +1655,7 @@ finalizeWebSockets vcompId = do
           (IM.delete vcompId websockets, ())
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/close>
-websocketClose :: WebSocket -> Effect parent parentAction model action
+websocketClose :: WebSocket -> Effect parent model action
 websocketClose socketId = do
   ComponentInfo {..} <- ask
   io_ $ do
@@ -1684,7 +1682,7 @@ websocketSend
   :: ToJSON value
   => WebSocket
   -> Payload value
-  -> Effect parent parentAction model action
+  -> Effect parent model action
 websocketSend socketId msg = do
   ComponentInfo {..} <- ask
   io_ $ do
@@ -1705,7 +1703,7 @@ websocketSend socketId msg = do
 --
 -- If the t'WebSocket' identifier does not exist a 'CLOSED' is returned.
 --
-socketState :: WebSocket -> (SocketState -> action) -> Effect parent parentAction model action
+socketState :: WebSocket -> (SocketState -> action) -> Effect parent model action
 socketState socketId callback = do
   ComponentInfo {..} <- ask
   withSink $ \sink -> do
@@ -1833,7 +1831,7 @@ eventSourceConnectText
   -- ^ onMessage
   -> (MisoString -> action)
   -- ^ onError
-  -> Effect parent parentAction model action
+  -> Effect parent model action
 eventSourceConnectText url onOpen onMessage onError =
   eventSourceCore $ \eventSourceId sink -> do
     FFI.eventSourceConnect url
@@ -1856,7 +1854,7 @@ eventSourceConnectJSON
   -- ^ onMessage
   -> (MisoString -> action)
   -- ^ onError
-  -> Effect parent parentAction model action
+  -> Effect parent model action
 eventSourceConnectJSON url onOpen onMessage onError =
   eventSourceCore $ \eventSourceId sink -> do
     FFI.eventSourceConnect url
@@ -1872,7 +1870,7 @@ eventSourceConnectJSON url onOpen onMessage onError =
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/EventSource/EventSource>
 eventSourceCore
   :: (EventSource -> Sink action -> IO Socket)
-  -> Effect parent parentAction model action
+  -> Effect parent model action
 eventSourceCore core = do
   ComponentInfo {..} <- ask
   withSink $ \sink -> do
@@ -1895,7 +1893,7 @@ eventSourceCore core = do
       atomicModifyIORef' eventSourceConnectionIds (\x -> (x + 1, x))
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/EventSource/close>
-eventSourceClose :: EventSource -> Effect parent parentAction model action
+eventSourceClose :: EventSource -> Effect parent model action
 eventSourceClose socketId = do
   ComponentInfo {..} <- ask
   io_ $ do
@@ -1959,7 +1957,7 @@ initComponent
   :: (Eq props, Eq parent, Eq model)
   => Events
   -> Hydrate
-  -> Component parent parentAction props model action
+  -> Component parent props model action
   -> IO ()
 initComponent events hydrate vcomp_@Component {..} = withJS $ do
   root <- Diff.mountElement (getMountPoint mountPoint)
@@ -1992,19 +1990,4 @@ withJS action = do
   $(evalFile MISO_JS_PATH)
 #endif
   action
------------------------------------------------------------------------------
--- | @withParentSink@ allows users to write to the global event queue, from a child 'Component'.
--- This is useful for introducing 'IO' into the system on behalf of the parent (from the child).
---
--- A use-case is when using the @props@ feature to send a message back to the parent
--- 'Component' when an event is raised in the child 'Component'.
---
--- @since 1.11.0.0
-withParentSink
-  :: (Sink parentAction -> IO ())
-  -- ^ Callback function that provides access to the underlying 'Sink'.
-  -> Effect parent parentAction model action
-withParentSink f = do
-  vcompId <- asks _componentInfoParentId
-  io_ (f =<< _componentSink . (IM.! vcompId) <$> readIORef components)
 -----------------------------------------------------------------------------
