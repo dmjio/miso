@@ -36,6 +36,7 @@ export type VComp<T> = {
   eventPropagation: boolean;
   mount: (parent: T) => Mount<T>;
   unmount: (vcompId: ComponentId) => void;
+  diffProps?: () => void;
 };
 
 export type Mount<T> = {

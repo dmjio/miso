@@ -66,6 +66,8 @@ module Miso.Types
   -- ** Component mounting
   , (+>)
   , mount_
+  , mountProps_
+  , mountProps
   -- ** Key combinators
   , keyed
   -- ** Fragment combinators
@@ -101,6 +103,7 @@ import qualified Data.Map.Strict as M
 import           Data.Maybe (fromMaybe, isJust)
 import           Data.String (IsString, fromString)
 import qualified Data.Text as T
+import           Data.Void (Void)
 import           GHC.Generics
 import           Prelude
 -----------------------------------------------------------------------------
@@ -114,7 +117,7 @@ import           Miso.String (ToMisoString, MisoString, toMisoString, ms, fromMi
 import           Miso.CSS.Types (StyleSheet)
 -----------------------------------------------------------------------------
 -- | Application entry point
-data Component parent model action
+data Component parent parentAction props model action
   = Component
   { model :: model
   -- ^ Initial model
@@ -125,9 +128,9 @@ data Component parent model action
 #endif
   -- ^ Optional 'IO' to load component 'model' state, such as reading data from page.
   --   The resulting 'model' is only used during initial hydration, not on remounts.
-  , update :: action -> Effect parent model action
+  , update :: action -> Effect parent parentAction model action
   -- ^ Updates model, optionally providing effects.
-  , view :: model -> View model action
+  , view :: Maybe props -> model -> View model action
   -- ^ Draws 'View'
   , subs :: [ Sub action ]
   -- ^ Subscriptions to run during application lifetime
@@ -228,11 +231,11 @@ getMountPoint = fromMaybe "body"
 component
   :: model
   -- ^ model
-  -> (action -> Effect parent model action)
+  -> (action -> Effect parentAction parent model action)
   -- ^ update
-  -> (model -> View model action)
+  -> (Maybe props -> model -> View model action)
   -- ^ view
-  -> Component parent model action
+  -> Component parentAction parent props model action
 component m u v = Component
   { model = m
   , hydrateModel = Nothing
@@ -254,11 +257,11 @@ component m u v = Component
 vcomp
   :: model
   -- ^ model
-  -> (action -> Effect parent model action)
+  -> (action -> Effect parentAction parent model action)
   -- ^ update
-  -> (model -> View model action)
+  -> (Maybe props -> model -> View model action)
   -- ^ view
-  -> Component parent model action
+  -> Component parentAction parent props model action
 vcomp = component  
 -----------------------------------------------------------------------------
 -- | A top-level t'Miso.Types.Component' can have no @parent@.
@@ -274,7 +277,7 @@ instance Eq ROOT where _ == _ = True
 -- | A miso application is a top-level t'Miso.Types.Component', which has no @parent@.
 -- This is enforced by specializing the @parent@ type parameter to 'ROOT'.
 --
-type App model action = Component ROOT model action
+type App model action = Component ROOT ROOT ROOT model action
 -----------------------------------------------------------------------------
 -- | Logging configuration for debugging Miso internals (useful to see if prerendering is successful)
 data LogLevel
@@ -303,14 +306,13 @@ type Tag = MisoString
 data View model action
   = VNode Namespace Tag [Attribute action] [View model action]
   | VText (Maybe Key) MisoString
-  | VComp (Maybe Key) (SomeComponent model)
+  | VComp (Maybe Key) (SomeComponent model action)
   | VFrag (Maybe Key) [View model action]
-  deriving Functor
 -----------------------------------------------------------------------------
 -- | Existential wrapper allowing nesting of t'Miso.Types.Component' in t'Miso.Types.Component'
-data SomeComponent parent
-   = forall model action . Eq model
-  => SomeComponent (Component parent model action)
+data SomeComponent parent parentAction
+   = forall model action props . (Eq model, Eq props)
+  => SomeComponent (Maybe props) (Component parent parentAction props model action)
 -----------------------------------------------------------------------------
 -- | Like '+>' but operates on any 'View', not just 'Component'.
 --
@@ -380,14 +382,58 @@ fragment_ key = VFrag (Just (Key key))
 --
 -- @since 1.9.0.0
 (+>)
-  :: forall child model action a . Eq child
+  :: forall props child childAction model action . (Eq child, Eq props)
   => MisoString
   -- ^ 'VComp' 'key_'
-  -> Component model child action
+  -> Component model action props child childAction
   -- ^ 'Component'
-  -> View model a
+  -> View model action
 infixr 0 +>
-key +> comp = VComp (Just (toKey key)) (SomeComponent comp)
+key +> comp = VComp (Just (toKey key)) (SomeComponent Nothing comp)
+-----------------------------------------------------------------------------
+-- | t'Miso.Types.Component' mounting combinator.
+--
+-- Note: only use this if you're certain you won't be diffing two t'Miso.Types.Component'
+-- against each other. Otherwise, you will need a key to distinguish between
+-- the two t'Miso.Types.Component', to ensure unmounting and mounting occurs.
+--
+-- @
+-- mountProps someProps $ component model noop $ \\m ->
+--  div_ [ id_ "foo" ] [ text (ms m) ]
+-- @
+--
+-- @since 1.11.0.0
+mountProps
+  :: (Eq child, Eq props)
+  => props
+  -- ^ 'props' to use
+  -> Component model action props child childAction
+  -- ^ 'Component' to mount
+  -> View model action
+mountProps props comp  = VComp Nothing (SomeComponent (Just props) comp)
+-----------------------------------------------------------------------------
+-- | t'Miso.Types.Component' mounting combinator.
+--
+-- Note: only use this if you're certain you won't be diffing two t'Miso.Types.Component'
+-- against each other. Otherwise, you will need a key to distinguish between
+-- the two t'Miso.Types.Component', to ensure unmounting and mounting occurs.
+--
+-- @
+-- mountProps_ "key" someProps $ component model noop $ \\m ->
+--  div_ [ id_ "foo" ] [ text (ms m) ]
+-- @
+--
+-- @since 1.11.0.0
+mountProps_
+  :: (Eq child, Eq props)
+  => MisoString
+  -- ^ 'key' to use
+  -> props
+  -- ^ 'props' to use
+  -> Component model action props child childAction
+  -- ^ 'Component' to mount
+  -> View model action
+mountProps_ key props comp  = VComp (Just (Key key)) (SomeComponent (Just props) comp)
 -----------------------------------------------------------------------------
 -- | t'Miso.Types.Component' mounting combinator.
 --
@@ -403,10 +449,10 @@ key +> comp = VComp (Just (toKey key)) (SomeComponent comp)
 -- @since 1.9.0.0
 mount_
   :: Eq child
-  => Component model child a
+  => Component model action Void child childAction
   -- ^ 'Component' to mount
   -> View model action
-mount_ comp = VComp Nothing (SomeComponent comp)
+mount_ comp = VComp Nothing (SomeComponent Nothing comp)
 -----------------------------------------------------------------------------
 -- | DOM element namespace.
 data Namespace

@@ -61,7 +61,7 @@ connect
   -- ^ @onMessage@ is a callback invoked when a message has been received from the t'WebSocket' server.
   -> (MisoString -> action)
   -- ^ Error message callback
-  -> Effect parent model action
+  -> Effect parent parentAction model action
 connect = websocketConnect
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket>
@@ -80,7 +80,7 @@ connectJSON
   -- ^ @onMessage@ is a callback invoked when a JSON-encoded message has been received from the t'WebSocket' server.
   -> (MisoString -> action)
   -- ^ Error message callback
-  -> Effect parent model action
+  -> Effect parent parentAction model action
 connectJSON = websocketConnectJSON
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket>
@@ -98,7 +98,7 @@ connectText
   -- ^ @onMessage@ is a callback invoked when a text-encoded message has been received from the t'WebSocket' server.
   -> (MisoString -> action)
   -- ^ Error message callback
-  -> Effect parent model action
+  -> Effect parent parentAction model action
 connectText = websocketConnectText
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket>
@@ -116,7 +116,7 @@ connectBLOB
   -- ^ @onMessage@ is a callback invoked when a binary-encoded message has been received from the t'WebSocket' server.
   -> (MisoString -> action)
   -- ^ @onError@ callback
-  -> Effect parent model action
+  -> Effect parent parentAction model action
 connectBLOB = websocketConnectBLOB
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket>
@@ -134,7 +134,7 @@ connectArrayBuffer
   -- ^ @onMessage@ is a callback invoked when an t'ArrayBuffer' message has been received from the t'WebSocket' server.
   -> (MisoString -> action)
   -- ^ @onError@ callback
-  -> Effect parent model action
+  -> Effect parent parentAction model action
 connectArrayBuffer = websocketConnectArrayBuffer
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/send>
@@ -160,7 +160,7 @@ sendJSON
   -- ^ t'WebSocket' descriptor required to send a message to the server.
   -> json
   -- ^ A JSON-encoded message
-  -> Effect parent model action
+  -> Effect parent parentAction model action
 sendJSON socket x = websocketSend socket (JSON x)
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/send>
@@ -169,7 +169,7 @@ sendBLOB
   -- ^ t'WebSocket' descriptor required to send a message to the server.
   -> Blob
   -- ^ An t'Blob' payload to send to the t'WebSocket' server
-  -> Effect parent model action
+  -> Effect parent parentAction model action
 sendBLOB socket x = websocketSend @() socket (blob x)
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/send>
@@ -178,7 +178,7 @@ sendArrayBuffer
   -- ^ t'WebSocket' descriptor required to send a message to the server.
   -> ArrayBuffer
   -- ^ An t'ArrayBuffer' payload to send to the t'WebSocket' server
-  -> Effect parent model action
+  -> Effect parent parentAction model action
 sendArrayBuffer socket x = websocketSend @() socket (arrayBuffer x)
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/send>
@@ -187,7 +187,7 @@ sendText
   -- ^ t'WebSocket' descriptor required to send a message to the server.
   -> MisoString
   -- ^ A text payload to send to t'WebSocket' server
-  -> Effect parent model action
+  -> Effect parent parentAction model action
 sendText socket x = websocketSend @() socket (TEXT x)
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/close>
@@ -199,6 +199,6 @@ sendText socket x = websocketSend @() socket (TEXT x)
 close
   :: WebSocket
   -- ^ t'WebSocket' descriptor required to close the socket on the server.
-  -> Effect parent model action
+  -> Effect parent parentAction model action
 close = websocketClose
 -----------------------------------------------------------------------------

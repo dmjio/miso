@@ -344,7 +344,7 @@
 --   , 'li_' [ 'key_' "key-2" ] [ "b" ]
 --   , "key-3" '+>' counter
 --   , 'textKey' "key-4" "text here"
---   , vfrag_ "key-5" [ "foo", "bar" ]
+--   , 'vfrag_' "key-5" [ "foo", "bar" ]
 --   ]
 -- @
 --
