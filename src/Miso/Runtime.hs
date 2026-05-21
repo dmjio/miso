@@ -51,6 +51,7 @@ module Miso.Runtime
   , parent
   , mailParent
   , mailChildren
+  , mailAncestors
   -- ** WebSocket
   , websocketConnect
   , websocketConnectJSON
@@ -1313,7 +1314,34 @@ mailParent msg = do
   ComponentInfo {..} <- ask
   io_ (mail _componentInfoParentId msg)
 -----------------------------------------------------------------------------
+-- | Send any @ToJSON message => message@ to all ancestor t'Miso.Types.Component' 'mailbox'.
+--
+-- This function walks the t'Miso.Types.Component' ancestor hierarchy, delivering mail
+-- along the way.
+--
+-- @
+-- mailAncestors ("test message" :: MisoString) :: Effect parent model action
+-- @
+--
+-- @since 1.11.0.0
+mailAncestors
+  :: ToJSON message
+  => message
+  -- ^ Message to send
+  -> Effect parent model action
+mailAncestors msg = do
+  ComponentInfo {..} <- ask
+  io_ (climb _componentInfoParentId)
+    where
+      climb vcompId = do
+        mail vcompId msg
+        IM.lookup vcompId <$> readIORef components >>= \case
+          Nothing -> pure ()
+          Just cs -> climb (_componentParentId cs)
+-----------------------------------------------------------------------------
 -- | Send any @ToJSON message => message@ to the children's t'Miso.Types.Component' mailbox
+--
+-- N.B. this is only relevant for immediate descendants (not all descendants).
 --
 -- @
 -- mailChildren ("test message" :: MisoString) :: Effect parent model action
