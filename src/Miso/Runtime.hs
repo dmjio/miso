@@ -157,12 +157,15 @@ initialize
   -> Hydrate
   -> Bool
   -- ^ Is the root node being rendered?
+  -> props
+  -- ^ Initial props for this component
   -> Component parent props model action
   -> IO DOMRef
   -- ^ Callback function is used for obtaining the t'Miso.Types.Component' 'DOMRef'.
   -> IO (ComponentState parent props model action)
-initialize events _componentParentId hydrate isRoot comp@Component {..} getComponentMountPoint = do
+initialize events _componentParentId hydrate isRoot initialProps comp@Component {..} getComponentMountPoint = do
   _componentId <- freshComponentId
+  atomicModifyIORef' globalProps $ \g -> (IM.insert _componentId initialProps g, ())
   let
     _componentSink = \action -> liftIO $ do
       atomicModifyIORef' globalQueue (\q -> (enqueue _componentId action q, ()))
@@ -193,10 +196,10 @@ initialize events _componentParentId hydrate isRoot comp@Component {..} getCompo
       putMVar frame =<< fromJSValUnchecked jsval
 
   let _componentDraw = \newModel -> do
-        latestProps <- _componentLastProps . (IM.! _componentId) <$> readIORef components
+        props <- (IM.! _componentId) <$> readIORef globalProps
         newVTree <-
           buildVTree events _componentParentId _componentId Draw
-            _componentSink logLevel (view latestProps newModel)
+            _componentSink logLevel (view props newModel)
         oldVTree <- liftIO (readIORef _componentVTree)
         _frame <- requestAnimationFrame rAFCallback
         _timestamp :: Double <- takeMVar frame
@@ -205,8 +208,8 @@ initialize events _componentParentId hydrate isRoot comp@Component {..} getCompo
         liftIO (atomicWriteIORef _componentVTree newVTree)
         FFI.flush
 
-  let _componentApplyActions = \(actions :: [action]) model_ comps -> do
-        let info = ComponentInfo _componentId _componentParentId _componentDOMRef
+  let _componentApplyActions = \(actions :: [action]) model_ comps props -> do 
+        let info = ComponentInfo _componentId _componentParentId _componentDOMRef props
         List.foldl' (\(vcomps, m, ss, dirtySet) a ->
           case runEffect (update a) info m of
             (n, sss) ->
@@ -227,7 +230,6 @@ initialize events _componentParentId hydrate isRoot comp@Component {..} getCompo
         , _componentModelDirty = modelCheck
         , _componentChildren = mempty
         , _componentModel = initializedModel
-        , _componentLastProps = Nothing
         , ..
         }
 
@@ -330,10 +332,11 @@ scheduler =
     -- | Apply the actions across the model, evaluate async and sync IO.
     commit :: ComponentId -> [action] -> IO ComponentIds
     commit vcompId events = do
+      props <- (IM.! vcompId) <$> readIORef globalProps
       (updatedModel, schedules, dirtySet, ComponentState{..}) <- do
         atomicModifyIORef' components $ \vcomps -> do
           let cs@ComponentState {..} = vcomps IM.! vcompId
-          case _componentApplyActions events _componentModel vcomps of
+          case _componentApplyActions events _componentModel vcomps props of
             (x, updatedModel, schedules, dirtySet) ->
               (x, (updatedModel, schedules, dirtySet, cs))
       forM_ schedules $ \case
@@ -525,7 +528,9 @@ initialDraw initializedModel events hydrate isRoot Component {..} ComponentState
 #ifdef BENCH
   start <- FFI.now
 #endif
-  vtree <- buildVTree events _componentParentId _componentId hydrate _componentSink logLevel (view Nothing initializedModel)
+  props <- (IM.! _componentId) <$> readIORef globalProps
+  vtree <- buildVTree events _componentParentId _componentId hydrate _componentSink logLevel
+    (view props initializedModel)
 #ifdef BENCH
   end <- FFI.now
   when isRoot $ FFI.consoleLog $ ms (printf "buildVTree: %.3f ms" (end - start) :: String)
@@ -544,7 +549,7 @@ initialDraw initializedModel events hydrate isRoot Component {..} ComponentState
             else do
               newTree <-
                 buildVTree events _componentParentId _componentId Draw
-                  _componentSink logLevel (view _componentLastProps initializedModel)
+                  _componentSink logLevel (view props initializedModel)
               Diff.diff Nothing (Just newTree) _componentDOMRef
               liftIO (atomicWriteIORef _componentVTree newTree)
         else
@@ -642,6 +647,10 @@ dequeueAt vcompId q =
                       & queue.at vcompId .~ Nothing
       (updated, toList actions)
 -----------------------------------------------------------------------------
+globalProps :: IORef (IntMap props)
+{-# NOINLINE globalProps #-}
+globalProps = unsafePerformIO (newIORef mempty)
+-----------------------------------------------------------------------------
 globalWaiter :: Waiter
 {-# NOINLINE globalWaiter #-}
 globalWaiter = unsafePerformIO waiter
@@ -658,9 +667,6 @@ parentId = lens _componentParentId $ \record field -> record { _componentParentI
 -----------------------------------------------------------------------------
 children :: Lens (ComponentState parent props model action) (ComponentIds)
 children = lens _componentChildren $ \record field -> record { _componentChildren = field }
------------------------------------------------------------------------------
-componentLastProps :: Lens (ComponentState parent props model action) (Maybe props)
-componentLastProps = lens _componentLastProps $ \record field -> record { _componentLastProps = field }
 -----------------------------------------------------------------------------
 componentTopics :: Lens (ComponentState parent props model action) (Map MisoString (Value -> IO ()))
 componentTopics = lens _componentTopics $ \record field -> record { _componentTopics = field }
@@ -716,14 +722,13 @@ data ComponentState parent props model action
       :: [action]
       -> model
       -> IntMap (ComponentState parent props model action)
+      -> props
       -> (IntMap (ComponentState parent props model action), model, [Schedule action], ComponentIds)
   -- ^ t'Miso.Types.Component' actions application
   , _componentTopics :: Map MisoString (Value -> IO ())
   -- ^ t'Miso.Types.Component' topics using for Pub Sub async communication.
   , _componentChildren :: ComponentIds
   -- ^ 'IntSet' of children t'Miso.Types.ComponentId'
-  , _componentLastProps :: Maybe props
-  -- ^ Previously used 'props'
   }
 -----------------------------------------------------------------------------
 -- | A @Topic@ represents a place to send and receive messages. @Topic@ is used to facilitate
@@ -828,7 +833,7 @@ subscribe
   => Topic message
   -> (message -> action)
   -> (MisoString -> action)
-  -> Effect parent model action
+  -> Effect parent props model action
 subscribe (Topic topicName) successful errorful = do
   ComponentInfo {..} <- ask
   withSink $ \sink ->
@@ -875,7 +880,7 @@ subscribe (Topic topicName) successful errorful = do
 -- See 'subscribe' for more use.
 --
 -- @since 1.9.0.0
-unsubscribe :: Topic message -> Effect parent model action
+unsubscribe :: Topic message -> Effect parent props model action
 unsubscribe (Topic topicName) = do
   ComponentInfo {..} <- ask
   io_ $ modifyComponent _componentInfoId $ do
@@ -904,11 +909,7 @@ unsubscribe (Topic topicName) = do
 --   , button_ [ onClick AddOne ] [ "+" ]
 --   , button_ [ onClick SubtractOne ] [ "-" ]
 --   , component_ (client_ "client 1")
---     [ onMountedWith Mount
---     ]
 --   , component_ (client_ "client 2")
---     [ onMountedWith Mount
---     ]
 --   ] where
 --       update_ :: Action -> Effect parent () Action
 --       update_ = \case
@@ -989,7 +990,8 @@ drain ComponentState {..} = do
     [] -> pure ()
     actions -> do
        vcomps <- readIORef components
-       case _componentApplyActions actions _componentModel vcomps of
+       props <- (IM.! _componentId) <$> readIORef globalProps
+       case _componentApplyActions actions _componentModel vcomps props of
          (newVComps, _, schedules, _) -> do
            forM_ schedules $ \case
              -- dmj: process all actions synchronously during unmount
@@ -1025,9 +1027,11 @@ unmountComponent cs@ComponentState {..} = do
   finalizeEventSources _componentId
   unloadScripts cs
   freeLifecycleHooks cs
-  liftIO $ modifyComponent _componentParentId $ do
-    children.at _componentId .= Nothing
-  liftIO $ atomicModifyIORef' components $ \m -> (IM.delete _componentId m, ())
+  liftIO $ do
+    modifyComponent _componentParentId $ do
+      children.at _componentId .= Nothing
+    atomicModifyIORef' components $ \m -> (IM.delete _componentId m, ())
+    atomicModifyIORef' globalProps $ \p -> (IM.delete _componentId p, ())
   FFI.unmountComponent _componentId
 -----------------------------------------------------------------------------
 resetComponentState :: IO () -> IO ()
@@ -1057,12 +1061,12 @@ buildVTree
   -> View model action
   -> IO VTree
 buildVTree events_ parentId_ vcompId hydrate snk logLevel_ = \case
-  VComp maybeKey (SomeComponent maybeProps app) -> do
+  VComp maybeKey (SomeComponent newProps app) -> do
     vcomp_ <- create
 
     mountCallback <- do
       syncCallback1' $ \parent_ -> do
-        ComponentState {..} <- initialize events_ vcompId hydrate False app (pure parent_)
+        ComponentState {..} <- initialize events_ vcompId hydrate False newProps app (pure parent_)
         modifyComponent vcompId (children %= IS.insert _componentId)
         vtree <- toJSVal =<< readIORef _componentVTree
         FFI.set "parent" vcomp_ (Object vtree)
@@ -1083,17 +1087,15 @@ buildVTree events_ parentId_ vcompId hydrate snk logLevel_ = \case
     -- When props are present, install a diffProps callback.
     -- Comparison happens in Haskell against _componentLastProps — no round-trip.
     -- TypeScript calls diffProps() unconditionally; Haskell decides whether to dispatch.
-    forM_ maybeProps $ \val -> do
-      diffPropsCallback <- toJSVal =<< do
-        syncCallback $ do
-          componentId_ <- fromJSValUnchecked =<< vcomp_ ! ("componentId" :: MisoString)
-          cs <- (IM.! componentId_) <$> readIORef components
-          when (_componentLastProps cs /= Just val) $ do
-            modifyComponent componentId_ (componentLastProps .= Just val)
-            enqueueSchedule componentId_
+    diffPropsCallback <- toJSVal =<< do
+      syncCallback $ do
+        componentId_ <- fromJSValUnchecked =<< vcomp_ ! ("componentId" :: MisoString)
+        currentProps <- (IM.! componentId_) <$> readIORef globalProps
+        when (currentProps /= newProps) $ do
+          atomicModifyIORef' globalProps $ \p -> (IM.insert componentId_ newProps p, ())
+          enqueueSchedule componentId_
 
-      FFI.set "diffProps" diffPropsCallback vcomp_
-
+    FFI.set "diffProps" diffPropsCallback vcomp_
     FFI.set "child" jsNull vcomp_
     forM_ maybeKey (\key -> FFI.set "key" key vcomp_)
     FFI.set "mount" mountCallback vcomp_
@@ -1259,7 +1261,7 @@ startSub
   -- ^ The key used to track the 'Sub'
   -> Sub action
   -- ^ The 'Sub'
-  -> Effect parent model action
+  -> Effect parent props model action
 startSub subKey sub = do
   ComponentInfo {..} <- ask
   io_ $ do
@@ -1298,7 +1300,7 @@ stopSub
   :: ToMisoString subKey
   => subKey
   -- ^ The key used to stop the 'Sub'
-  -> Effect parent model action
+  -> Effect parent props model action
 stopSub subKey = do
   vcompId <- asks _componentInfoId
   io_ $ do
@@ -1315,7 +1317,7 @@ stopSub subKey = do
 -- | Send any @ToJSON message => message@ to a t'Miso.Types.Component' mailbox, by 'ComponentId'
 --
 -- @
--- io_ $ mail componentId ("test message" :: MisoString) :: Effect parent model action
+-- io_ $ mail componentId ("test message" :: MisoString) :: Effect parent props model action
 -- @
 --
 -- @since 1.9.0.0
@@ -1338,7 +1340,7 @@ mail vcompId msg =
 -- | Send any @ToJSON message => message@ to the parent's t'Miso.Types.Component' mailbox
 --
 -- @
--- mailParent ("test message" :: MisoString) :: Effect parent model action
+-- mailParent ("test message" :: MisoString) :: Effect parent props model action
 -- @
 --
 -- @since 1.9.0.0
@@ -1346,7 +1348,7 @@ mailParent
   :: ToJSON message
   => message
   -- ^ Message to send
-  -> Effect parent model action
+  -> Effect parent props model action
 mailParent msg = do
   ComponentInfo {..} <- ask
   io_ (mail _componentInfoParentId msg)
@@ -1365,7 +1367,7 @@ mailAncestors
   :: ToJSON message
   => message
   -- ^ Message to send
-  -> Effect parent model action
+  -> Effect parent props model action
 mailAncestors msg = do
   ComponentInfo {..} <- ask
   io_ (climb _componentInfoParentId)
@@ -1381,7 +1383,7 @@ mailAncestors msg = do
 -- N.B. this is only relevant for immediate descendants (not all descendants).
 --
 -- @
--- mailChildren ("test message" :: MisoString) :: Effect parent model action
+-- mailChildren ("test message" :: MisoString) :: Effect parent props model action
 -- @
 --
 -- @since 1.9.0.0
@@ -1389,7 +1391,7 @@ mailChildren
   :: ToJSON message
   => message
   -- ^ Message to send
-  -> Effect parent model action
+  -> Effect parent props model action
 mailChildren msg = do
   ComponentInfo {..} <- ask
   io_ $ do
@@ -1433,7 +1435,7 @@ parent
   -- ^ Successful callback
   -> action
   -- ^ Errorful callback
-  -> Effect parent model action
+  -> Effect parent props model action
 parent successful errorful = do
   ComponentInfo {..} <- ask
   withSink $ \sink -> do
@@ -1446,7 +1448,7 @@ parent successful errorful = do
 --
 -- @
 --
--- update :: action -> Effect parent model action
+-- update :: action -> Effect parent props model action
 -- update _ = broadcast (String "public service announcement")
 -- @
 --
@@ -1456,7 +1458,7 @@ broadcast
   => ToJSON message
   => message
   -- ^ Message to broadcast to all other 'Component'
-  -> Effect parent model action
+  -> Effect parent props model action
 broadcast msg = do
   ComponentInfo {..} <- ask
   io_ $ do
@@ -1495,7 +1497,7 @@ websocketConnectText
   -- ^ onMessage
   -> (MisoString -> action)
   -- ^ onError
-  -> Effect parent model action
+  -> Effect parent props model action
 websocketConnectText url onOpen onClosed onMessage onError =
   websocketCore $ \webSocketId sink ->
     FFI.websocketConnect url
@@ -1519,7 +1521,7 @@ websocketConnectBLOB
   -- ^ onMessage
   -> (MisoString -> action)
   -- ^ onError
-  -> Effect parent model action
+  -> Effect parent props model action
 websocketConnectBLOB url onOpen onClosed onMessage onError =
   websocketCore $ \webSocketId sink ->
     FFI.websocketConnect url
@@ -1543,7 +1545,7 @@ websocketConnectArrayBuffer
   -- ^ onMessage
   -> (MisoString -> action)
   -- ^ onError
-  -> Effect parent model action
+  -> Effect parent props model action
 websocketConnectArrayBuffer url onOpen onClosed onMessage onError =
   websocketCore $ \webSocketId sink ->
     FFI.websocketConnect url
@@ -1568,7 +1570,7 @@ websocketConnectJSON
   -- ^ onMessage
   -> (MisoString -> action)
   -- ^ onError
-  -> Effect parent model action
+  -> Effect parent props model action
 websocketConnectJSON url onOpen onClosed onMessage onError =
   websocketCore $ \webSocketId sink ->
     FFI.websocketConnect url
@@ -1597,7 +1599,7 @@ websocketConnect
   -- ^ onMessage
   -> (MisoString -> action)
   -- ^ onError
-  -> Effect parent model action
+  -> Effect parent props model action
 websocketConnect url onOpen onClosed onMessage onError =
   websocketCore $ \webSocketId sink ->
     FFI.websocketConnect url
@@ -1617,7 +1619,7 @@ websocketConnect url onOpen onClosed onMessage onError =
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/WebSocket>
 websocketCore
   :: (WebSocket -> Sink action -> IO Socket)
-  -> Effect parent model action
+  -> Effect parent props model action
 websocketCore core = do
   ComponentInfo {..} <- ask
   withSink $ \sink -> do
@@ -1655,7 +1657,7 @@ finalizeWebSockets vcompId = do
           (IM.delete vcompId websockets, ())
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/close>
-websocketClose :: WebSocket -> Effect parent model action
+websocketClose :: WebSocket -> Effect parent props model action
 websocketClose socketId = do
   ComponentInfo {..} <- ask
   io_ $ do
@@ -1682,7 +1684,7 @@ websocketSend
   :: ToJSON value
   => WebSocket
   -> Payload value
-  -> Effect parent model action
+  -> Effect parent props model action
 websocketSend socketId msg = do
   ComponentInfo {..} <- ask
   io_ $ do
@@ -1703,7 +1705,7 @@ websocketSend socketId msg = do
 --
 -- If the t'WebSocket' identifier does not exist a 'CLOSED' is returned.
 --
-socketState :: WebSocket -> (SocketState -> action) -> Effect parent model action
+socketState :: WebSocket -> (SocketState -> action) -> Effect parent props model action
 socketState socketId callback = do
   ComponentInfo {..} <- ask
   withSink $ \sink -> do
@@ -1831,7 +1833,7 @@ eventSourceConnectText
   -- ^ onMessage
   -> (MisoString -> action)
   -- ^ onError
-  -> Effect parent model action
+  -> Effect parent props model action
 eventSourceConnectText url onOpen onMessage onError =
   eventSourceCore $ \eventSourceId sink -> do
     FFI.eventSourceConnect url
@@ -1854,7 +1856,7 @@ eventSourceConnectJSON
   -- ^ onMessage
   -> (MisoString -> action)
   -- ^ onError
-  -> Effect parent model action
+  -> Effect parent props model action
 eventSourceConnectJSON url onOpen onMessage onError =
   eventSourceCore $ \eventSourceId sink -> do
     FFI.eventSourceConnect url
@@ -1870,7 +1872,7 @@ eventSourceConnectJSON url onOpen onMessage onError =
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/EventSource/EventSource>
 eventSourceCore
   :: (EventSource -> Sink action -> IO Socket)
-  -> Effect parent model action
+  -> Effect parent props model action
 eventSourceCore core = do
   ComponentInfo {..} <- ask
   withSink $ \sink -> do
@@ -1893,7 +1895,7 @@ eventSourceCore core = do
       atomicModifyIORef' eventSourceConnectionIds (\x -> (x + 1, x))
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/EventSource/close>
-eventSourceClose :: EventSource -> Effect parent model action
+eventSourceClose :: EventSource -> Effect parent props model action
 eventSourceClose socketId = do
   ComponentInfo {..} <- ask
   io_ $ do
@@ -1954,14 +1956,14 @@ arrayBuffer :: ArrayBuffer -> Payload value
 arrayBuffer = BUFFER
 -----------------------------------------------------------------------------
 initComponent
-  :: (Eq props, Eq parent, Eq model)
+  :: (Eq parent, Eq model)
   => Events
   -> Hydrate
-  -> Component parent props model action
+  -> Component parent () model action
   -> IO ()
 initComponent events hydrate vcomp_@Component {..} = withJS $ do
   root <- Diff.mountElement (getMountPoint mountPoint)
-  void $ initialize events rootComponentId hydrate True vcomp_ (pure root)
+  void $ initialize events rootComponentId hydrate True () vcomp_ (pure root)
 #if __GLASGOW_HASKELL__ > 865
   flip labelThread "scheduler" =<< forkIO scheduler
 #else

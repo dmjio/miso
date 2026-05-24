@@ -127,9 +127,9 @@ data Component parent props model action
 #endif
   -- ^ Optional 'IO' to load component 'model' state, such as reading data from page.
   --   The resulting 'model' is only used during initial hydration, not on remounts.
-  , update :: action -> Effect parent model action
+  , update :: action -> Effect parent props model action
   -- ^ Updates model, optionally providing effects.
-  , view :: Maybe props -> model -> View model action
+  , view :: props -> model -> View model action
   -- ^ Draws 'View'
   , subs :: [ Sub action ]
   -- ^ Subscriptions to run during application lifetime
@@ -230,9 +230,9 @@ getMountPoint = fromMaybe "body"
 component
   :: model
   -- ^ model
-  -> (action -> Effect parent model action)
+  -> (action -> Effect parent props model action)
   -- ^ update
-  -> (Maybe props -> model -> View model action)
+  -> (props -> model -> View model action)
   -- ^ view
   -> Component parent props model action
 component m u v = Component
@@ -256,9 +256,9 @@ component m u v = Component
 vcomp
   :: model
   -- ^ model
-  -> (action -> Effect parent model action)
+  -> (action -> Effect parent props model action)
   -- ^ update
-  -> (Maybe props -> model -> View model action)
+  -> (props -> model -> View model action)
   -- ^ view
   -> Component parent props model action
 vcomp = component  
@@ -311,7 +311,7 @@ data View model action
 -- | Existential wrapper allowing nesting of t'Miso.Types.Component' in t'Miso.Types.Component'
 data SomeComponent parent
    = forall model action props . (Eq model, Eq props)
-  => SomeComponent (Maybe props) (Component parent props model action)
+  => SomeComponent props (Component parent props model action)
 -----------------------------------------------------------------------------
 -- | Like '+>' but operates on any 'View', not just 'Component'.
 --
@@ -381,14 +381,14 @@ fragment_ key = VFrag (Just (Key key))
 --
 -- @since 1.9.0.0
 (+>)
-  :: forall props child childAction model action . (Eq child, Eq props)
+  :: forall child childAction model action . Eq child
   => MisoString
   -- ^ 'VComp' 'key_'
-  -> Component model props child childAction
+  -> Component model () child childAction
   -- ^ 'Component'
   -> View model action
 infixr 0 +>
-key +> comp = VComp (Just (toKey key)) (SomeComponent Nothing comp)
+key +> comp = VComp (Just (toKey key)) (SomeComponent () comp)
 -----------------------------------------------------------------------------
 -- | t'Miso.Types.Component' mounting combinator.
 --
@@ -408,8 +408,8 @@ mountProps
   -- ^ 'props' to use
   -> Component parent props child action
   -- ^ 'Component' to mount
-  -> View parent action
-mountProps props comp  = VComp Nothing (SomeComponent (Just props) comp)
+  -> View parent a
+mountProps props comp  = VComp Nothing (SomeComponent props comp)
 -----------------------------------------------------------------------------
 -- | t'Miso.Types.Component' mounting combinator.
 --
@@ -428,7 +428,7 @@ mountProps_
   -> Component parent props child action
   -- ^ 'Component' to mount
   -> View parent a
-mountProps_ key props comp  = VComp (Just (Key key)) (SomeComponent (Just props) comp)
+mountProps_ key props comp  = VComp (Just (Key key)) (SomeComponent props comp)
 -----------------------------------------------------------------------------
 -- | t'Miso.Types.Component' mounting combinator.
 --
@@ -447,7 +447,7 @@ mount_
   => Component parent () child childAction
   -- ^ 'Component' to mount
   -> View parent action
-mount_ comp = VComp Nothing (SomeComponent Nothing comp)
+mount_ comp = VComp Nothing (SomeComponent () comp)
 -----------------------------------------------------------------------------
 -- | DOM element namespace.
 data Namespace

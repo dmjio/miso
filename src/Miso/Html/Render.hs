@@ -131,7 +131,7 @@ renderBuilder (VNode ns tag attrs children) = mconcat
               , ns == MATHML
               ]
 
-renderBuilder (VComp _ (SomeComponent props vcomp_)) = -- TODO: unsafeCoerce props?
+renderBuilder (VComp _ (SomeComponent props vcomp_)) =
   foldMap renderBuilder vkids
     where
 #ifdef SSR
