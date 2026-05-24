@@ -150,9 +150,8 @@ componentInfoProps = lens _componentInfoProps $ \r x -> r { _componentInfoProps 
 --
 -- @
 --   update = \case
---     SomeAction -> do
---       props <- view componentInfoProps
---       someAction props
+--     SomeAction ->
+--       someAction =<< view props
 -- @
 --
 props :: Lens (ComponentInfo parent props) props
