@@ -130,7 +130,7 @@ componentInfoParentId = lens _componentInfoParentId $ \r x -> r { _componentInfo
 componentInfoDOMRef :: Lens (ComponentInfo parent props) DOMRef
 componentInfoDOMRef = lens _componentInfoDOMRef $ \r x -> r { _componentInfoDOMRef = x }
 -----------------------------------------------------------------------------
--- | Lens for accessing the underlying t'Miso.Types.Component' t'DOMRef'.
+-- | Lens for accessing the underlying t'Miso.Types.Component' @props@.
 --
 -- @
 --   update = \case
@@ -143,7 +143,7 @@ componentInfoDOMRef = lens _componentInfoDOMRef $ \r x -> r { _componentInfoDOMR
 componentInfoProps :: Lens (ComponentInfo parent props) props
 componentInfoProps = lens _componentInfoProps $ \r x -> r { _componentInfoProps = x }
 -----------------------------------------------------------------------------
--- | Lens for accessing the underlying t'Miso.Types.Component' t'DOMRef'.
+-- | Lens for accessing the underlying t'Miso.Types.Component' @props@.
 --
 -- This is a shorter convenience lens that is a synonynm for 'componentInfoProps'.
 -- See 'getProps' for usage in the 'Effect' monad.
@@ -157,7 +157,7 @@ componentInfoProps = lens _componentInfoProps $ \r x -> r { _componentInfoProps 
 props :: Lens (ComponentInfo parent props) props
 props = componentInfoProps
 -----------------------------------------------------------------------------
--- | 'Props' retrieval from within the 'Effect' monad.
+-- | @props@ retrieval from within the 'Effect' monad.
 --
 -- @
 --   update = \case
