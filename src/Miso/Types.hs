@@ -307,6 +307,7 @@ data View model action
   | VText (Maybe Key) MisoString
   | VComp (Maybe Key) (SomeComponent model)
   | VFrag (Maybe Key) [View model action]
+  deriving Functor
 -----------------------------------------------------------------------------
 -- | Existential wrapper allowing nesting of t'Miso.Types.Component' in t'Miso.Types.Component'
 data SomeComponent parent

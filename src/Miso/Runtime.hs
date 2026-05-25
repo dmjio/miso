@@ -316,8 +316,9 @@ scheduler =
       Just (vcompId, [])
         | vcompId < 0 -> do
             -- props propagation, negated 'ComponentId' indicates render-phase only.
-            ComponentState {..} <- (IM.! negate vcompId) <$> liftIO (readIORef components)
-            _componentDraw _componentModel
+            vcomps <- liftIO (readIORef components)
+            forM_ (IM.lookup (negate vcompId) vcomps) $ \ComponentState {..} ->
+              _componentDraw _componentModel
                              
       Just (vcompId, actions) -> do
         mounted <- isMounted vcompId
@@ -601,7 +602,7 @@ enqueue vcompId action q =
 -- feature.
 enqueueSchedule :: ComponentId -> IO ()
 enqueueSchedule vcompId =
-  liftIO . atomicModifyIORef' globalQueue $ \q ->
+  atomicModifyIORef' globalQueue $ \q ->
      (q & queueSchedule %~ (S.|> negate vcompId), ())
 -----------------------------------------------------------------------------
 -- | Case on queue schedule, get first item, span on the rest of queueSchedule, get length.
