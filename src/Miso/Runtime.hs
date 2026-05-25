@@ -620,8 +620,9 @@ dequeue q =
     S.Empty -> Nothing
     sched@(vcompId S.:<| leftover) ->
       case q ^. queue . at vcompId of
-        Nothing -> -- dmj: if unmount occurred, just pop the schedule
-          Just (vcompId, [], q & queueSchedule .~ leftover)
+        Nothing ->
+          let (_, remaining) = S.spanl (== vcompId) sched
+          in Just (vcompId, [], q & queueSchedule .~ remaining)
         Just actions ->
           case S.spanl (==vcompId) sched of
             (scheduled, remaining) ->
