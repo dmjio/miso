@@ -165,7 +165,7 @@ initialize
   -> IO (ComponentState parent props model action)
 initialize events _componentParentId hydrate isRoot initialProps comp@Component {..} getComponentMountPoint = do
   _componentId <- freshComponentId
-  atomicModifyIORef' globalProps $ \g -> (IM.insert _componentId initialProps g, ())
+  let _componentProps = initialProps
   let
     _componentSink = \action -> liftIO $ do
       atomicModifyIORef' globalQueue (\q -> (enqueue _componentId action q, ()))
@@ -196,7 +196,7 @@ initialize events _componentParentId hydrate isRoot initialProps comp@Component 
       putMVar frame =<< fromJSValUnchecked jsval
 
   let _componentDraw = \newModel -> do
-        props <- (IM.! _componentId) <$> readIORef globalProps
+        props <- (^. componentProps) . (IM.! _componentId) <$> readIORef components
         newVTree <-
           buildVTree events _componentParentId _componentId Draw
             _componentSink logLevel (view props newModel)
@@ -333,11 +333,10 @@ scheduler =
     -- | Apply the actions across the model, evaluate async and sync IO.
     commit :: ComponentId -> [action] -> IO ComponentIds
     commit vcompId events = do
-      props <- (IM.! vcompId) <$> readIORef globalProps
       (updatedModel, schedules, dirtySet, ComponentState{..}) <- do
         atomicModifyIORef' components $ \vcomps -> do
           let cs@ComponentState {..} = vcomps IM.! vcompId
-          case _componentApplyActions events _componentModel vcomps props of
+          case _componentApplyActions events _componentModel vcomps _componentProps of
             (x, updatedModel, schedules, dirtySet) ->
               (x, (updatedModel, schedules, dirtySet, cs))
       forM_ schedules $ \case
@@ -529,9 +528,8 @@ initialDraw initializedModel events hydrate isRoot Component {..} ComponentState
 #ifdef BENCH
   start <- FFI.now
 #endif
-  props <- (IM.! _componentId) <$> readIORef globalProps
   vtree <- buildVTree events _componentParentId _componentId hydrate _componentSink logLevel
-    (view props initializedModel)
+    (view _componentProps initializedModel)
 #ifdef BENCH
   end <- FFI.now
   when isRoot $ FFI.consoleLog $ ms (printf "buildVTree: %.3f ms" (end - start) :: String)
@@ -550,7 +548,7 @@ initialDraw initializedModel events hydrate isRoot Component {..} ComponentState
             else do
               newTree <-
                 buildVTree events _componentParentId _componentId Draw
-                  _componentSink logLevel (view props initializedModel)
+                  _componentSink logLevel (view _componentProps initializedModel)
               Diff.diff Nothing (Just newTree) _componentDOMRef
               liftIO (atomicWriteIORef _componentVTree newTree)
         else
@@ -649,10 +647,6 @@ dequeueAt vcompId q =
                       & queue.at vcompId .~ Nothing
       (updated, toList actions)
 -----------------------------------------------------------------------------
-globalProps :: IORef (IntMap props)
-{-# NOINLINE globalProps #-}
-globalProps = unsafePerformIO (newIORef mempty)
------------------------------------------------------------------------------
 globalWaiter :: Waiter
 {-# NOINLINE globalWaiter #-}
 globalWaiter = unsafePerformIO waiter
@@ -682,6 +676,9 @@ componentModel = lens _componentModel $ \record field -> record { _componentMode
 componentBindings :: Lens (ComponentState p props m a) [Binding p m]
 componentBindings = lens _componentBindings $ \record field -> record { _componentBindings = field }
 -----------------------------------------------------------------------------
+componentProps :: Lens (ComponentState parent props model action) props
+componentProps = lens _componentProps $ \record field -> record { _componentProps = field }
+-----------------------------------------------------------------------------
 -- | Hydrate avoids calling @diff@, and instead calls @hydrate@
 -- 'Draw' invokes 'Miso.Diff.diff'
 data Hydrate
@@ -696,6 +693,8 @@ data ComponentState parent props model action
   -- ^ The ID of the current t'Miso.Types.Component'
   , _componentParentId :: ComponentId
   -- ^ The ID of the t'Miso.Types.Component''s parent
+  , _componentProps :: props
+  -- ^ The current props passed to this t'Miso.Types.Component'
   , _componentSubThreads :: IORef (Map MisoString ThreadId)
   -- ^ Mapping of all 'Sub' in use by t'Miso.Types.Component'
   , _componentDOMRef :: DOMRef
@@ -992,8 +991,7 @@ drain ComponentState {..} = do
     [] -> pure ()
     actions -> do
        vcomps <- readIORef components
-       props <- (IM.! _componentId) <$> readIORef globalProps
-       case _componentApplyActions actions _componentModel vcomps props of
+       case _componentApplyActions actions _componentModel vcomps _componentProps of
          (newVComps, _, schedules, _) -> do
            forM_ schedules $ \case
              -- dmj: process all actions synchronously during unmount
@@ -1033,7 +1031,6 @@ unmountComponent cs@ComponentState {..} = do
     modifyComponent _componentParentId $ do
       children.at _componentId .= Nothing
     atomicModifyIORef' components $ \m -> (IM.delete _componentId m, ())
-    atomicModifyIORef' globalProps $ \p -> (IM.delete _componentId p, ())
   FFI.unmountComponent _componentId
 -----------------------------------------------------------------------------
 resetComponentState :: IO () -> IO ()
@@ -1092,9 +1089,9 @@ buildVTree events_ parentId_ vcompId hydrate snk logLevel_ = \case
     diffPropsCallback <- toJSVal =<< do
       syncCallback $ do
         componentId_ <- fromJSValUnchecked =<< vcomp_ ! ("componentId" :: MisoString)
-        currentProps <- (IM.! componentId_) <$> readIORef globalProps
+        currentProps <- _componentProps . (IM.! componentId_) <$> readIORef components
         when (currentProps /= newProps) $ do
-          atomicModifyIORef' globalProps $ \p -> (IM.insert componentId_ newProps p, ())
+          modifyComponent componentId_ (componentProps .= newProps)
           enqueueSchedule componentId_
 
     FFI.set "diffProps" diffPropsCallback vcomp_
