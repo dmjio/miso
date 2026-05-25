@@ -97,7 +97,7 @@ booleanProperties = S.fromList
   , "truespeed"
   ]
 ----------------------------------------------------------------------------
-renderBuilder :: Miso.Types.View m a -> Builder
+renderBuilder :: forall m a . Miso.Types.View m a -> Builder
 renderBuilder (VText _ "")    = fromMisoString " "
 renderBuilder (VText _ s)     = fromMisoString s
 renderBuilder (VNode _ "doctype" [] []) = "<!doctype html>"
@@ -131,13 +131,13 @@ renderBuilder (VNode ns tag attrs children) = mconcat
               , ns == MATHML
               ]
 
-renderBuilder (VComp _ (SomeComponent vcomp_)) =
+renderBuilder (VComp _ (SomeComponent props vcomp_)) =
   foldMap renderBuilder vkids
     where
 #ifdef SSR
-      vkids = [ unsafeCoerce $ (view vcomp_) $ getInitialComponentModel vcomp_ ]
+      vkids = [ unsafeCoerce $ (view vcomp_) props (getInitialComponentModel vcomp_) ]
 #else
-      vkids = [ unsafeCoerce $ (view vcomp_) (model vcomp_) ]
+      vkids = [ unsafeCoerce $ (view vcomp_) props (model vcomp_) ]
 #endif
 renderBuilder (VFrag _ kids) = foldMap renderBuilder kids
 ----------------------------------------------------------------------------

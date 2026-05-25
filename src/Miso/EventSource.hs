@@ -42,7 +42,7 @@ connectText
   -- ^ onMessage
   -> (MisoString -> action)
   -- ^ onError
-  -> Effect parent model action
+  -> Effect parent props model action
 connectText = eventSourceConnectText
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/EventSource>
@@ -55,12 +55,12 @@ connectJSON
   -- ^ onMessage
   -> (MisoString -> action)
   -- ^ onError
-  -> Effect parent model action
+  -> Effect parent props model action
 connectJSON = eventSourceConnectJSON
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/EventSource/close>
 close
   :: EventSource
-  -> Effect parent model action
+  -> Effect parent props model action
 close = eventSourceClose
 -----------------------------------------------------------------------------

@@ -282,6 +282,8 @@ function diff(c, n, parent, context) {
       n.componentId = c.componentId;
       if (c.child)
         c.child.parent = n;
+      if (n.diffProps)
+        n.diffProps();
       return;
     }
     replace(c, n, parent, context);

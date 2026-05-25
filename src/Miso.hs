@@ -73,7 +73,7 @@
 --   This is the templating function that is used to construct a new virtual DOM
 --   (or HTML if rendering on the server).
 --
--- * __update__: @'update' :: action -> 'Effect' parent model action@
+-- * __update__: @'update' :: action -> 'Effect' parent props model action@
 --   The 'update' function handles how the 'model' evolves over time in response
 --   to events that are raised by the application. This function takes any @action@,
 --   updating the @model@ and optionally introduces 'IO' into the system.
@@ -97,8 +97,8 @@
 --
 -- @
 -- data 'SomeComponent' parent
---   = forall model action . Eq model
---   => 'SomeComponent' ('Component' parent model action)
+--   = forall model action props . (Eq model, Eq props)
+--   => 'SomeComponent' props ('Component' parent model action)
 -- @
 --
 -- The smart constructors:
@@ -127,22 +127,23 @@
 -- import qualified Miso.Html.Property as HP
 -- -----------------------------------------------------------------------------
 --                        * - The type of the parent Component 'model'
---                        |     * - The type of the current Component's 'model'
---                        |     |    * - The type of the action that updates the 'model'
---                        |     |    |
--- counter :: 'Component' parent Int Action
+--                        |    * - The type of the parent Component 'props' accessible to the child
+--                        |    |     * - The type of the current Component's 'model'
+--                        |    |     |   * - The type of the action that updates the 'model'
+--                        |    |     |   |
+-- counter :: 'Component' ROOT () Int Action
 -- counter = 'vcomp' m u v
 --   where
 --     m :: Int
 --     m = 0
 --
---     u :: Action -> 'Effect' parent Int Action
+--     u :: Action -> 'Effect' ROOT () Int Action
 --     u = \\case
 --       Add -> 'this' += 1
 --       Subtract -> 'this' -= 1
 --
---     v :: Int -> 'View' Int Action
---     v x = 'vfrag'
+--     v :: () -> Int -> 'View' Int Action
+--     v _ x = 'vfrag'
 --       [ H.button_ [ HE.onClick Add, HP.id_ "add" ] [ "+" ]
 --       , text (ms x)
 --       , H.button_ [ HE.onClick Subtract, HP.id_ "subtract" ] [ "-" ]
@@ -203,7 +204,7 @@
 -- ('+>')
 --   :: forall child model action a . Eq child
 --   => 'MisoString'
---   -> 'Component' model child action
+--   -> 'Component' model () child action
 --   -> 'View' model a
 -- key '+>' vcomp = 'VComp' (Just (toKey key)) ('SomeComponent' vcomp)
 -- @
@@ -211,7 +212,7 @@
 -- Practically, using this combinator looks like:
 --
 -- @
--- view :: Int -> 'View' Int action
+-- view :: () -> Int -> 'View' Int action
 -- view x = 'div_' [ 'id_' "container" ] [ "counter" '+>' counter ]
 -- @
 --
@@ -233,7 +234,7 @@
 -- The 'App' type signature is a synonym for 'Component' 'ROOT'
 --
 -- @
--- type 'App' model action = 'Component' 'ROOT' model action
+-- type 'App' model action = 'Component' 'ROOT' () model action
 -- @
 --
 -- 'ROOT' is a type tag that encodes a 'Component' as top-level. Which means it has no @parent@, hence we mark @parent@ as 'ROOT'.
@@ -243,6 +244,149 @@
 -- @
 --
 -- 'startApp' and 'miso' will always infer @parent@ as 'ROOT'.
+--
+-- = Props
+--
+-- Inspired by [React props](https://react.dev/learn/passing-props-to-a-component),
+-- @miso@ allows a parent 'Component' to pass read-only data down to a child 'Component'
+-- via a mechanism called /props/ (short for /properties/).
+--
+-- == Props vs. Component-local state
+--
+-- * __model__: Component-local state. It is owned and mutated exclusively by the 'Component'
+--   itself through its 'Miso.Types.update' function. No other 'Component' can write to it directly.
+--
+-- * __props__: Data /inherited/ from the @parent@ 'Component'. Props flow downward through
+--   the component hierarchy and are read-only from the child's perspective. The parent decides
+--   what props to pass at mount time; the child cannot mutate them. Props that change in a
+--   the parent cause the child to re-render.
+--
+-- This mirrors the distinction in React between component state (@useState@) and props
+-- received from above (@function MyComponent({ name }) { ... }@).
+--
+-- === When to use props
+--
+-- Props are best suited for /metadata/ — contextual or configuration data that the child needs
+-- to know about but should not own. Good examples: a user's display name, a theme token, a
+-- locale string, or a read-only identifier used to customise rendering.
+--
+-- If the data drives the child's own business logic — counters it increments, form fields it
+-- edits, async state it manages — that data belongs in the child's @model@ instead. Putting
+-- mutable business-logic state in @props@ would require the parent to own and thread through
+-- every change, creating unnecessary coupling. Prefer @props@ for \"what the child should
+-- know\" and @model@ for \"what the child should do\".
+--
+-- == Props in 'Miso.Types.view'
+--
+-- The 'Miso.Types.view' field of a 'Component' always takes @props@ as its first argument:
+--
+-- @
+-- view :: props -> model -> 'View' model action
+-- @
+--
+-- Top-level applications have no parent, so @props@ is always @()@:
+--
+-- @
+-- view :: () -> model -> 'View' model action
+-- view _props model = …
+-- @
+--
+-- == Props in 'Effect' \/ 'Miso.Types.update'
+--
+-- Use 'getProps' inside the 'Effect' monad to read the current value of @props@:
+--
+-- @
+-- update :: Action -> 'Effect' parent props Model Action
+-- update = \\case
+--   SomeAction -> do
+--     p <- 'getProps'
+--     'io_' ('consoleLog' (ms (show p)))
+-- @
+--
+-- Alternatively, use the 'Miso.Lens.view' combinator with the 'props' lens:
+--
+-- @
+-- update = \\case
+--   SomeAction -> do
+--     p <- 'Miso.Lens.view' 'props'
+--     …
+-- @
+--
+-- == 'ROOT' — the top-level 'Component'
+--
+-- When a 'Component' is passed to 'startApp' (or 'miso') it has no parent.
+-- The @parent@ type is specialized to 'ROOT' and @props@ is fixed to @()@:
+--
+-- @
+-- type 'App' model action = 'Component' 'ROOT' () model action
+-- @
+--
+-- Because there is no parent to inherit from, @props@ will always be @()@ for a
+-- root-level 'Component'. You can simply ignore the first argument in 'view' and
+-- skip 'getProps' in 'Miso.Types.update'.
+--
+-- == Passing props to a child 'Component'
+--
+-- Use 'mountWithProps_' (keyed) or 'mountWithProps' (unkeyed) in the parent's 'view' to
+-- mount a child and supply its props:
+--
+-- @
+-- 'mountWithProps_'
+--   :: ('Eq' child, 'Eq' props)
+--   => 'MisoString'
+--   -> props
+--   -> 'Component' parent props child action
+--   -> 'View' parent a
+-- @
+--
+-- == Example: child reading parent-supplied props
+--
+-- The following shows a parent 'Component' that maintains a greeting string in its
+-- @model@ and passes it as @props@ to a child 'Component'. The child renders the
+-- greeting and can also read it from within its 'Miso.Types.update' function.
+--
+-- @
+-- -----------------------------------------------------------------------------
+-- -- The props type: what the parent shares with the child
+-- newtype Greeting = Greeting 'MisoString' deriving ('Eq')
+-- -----------------------------------------------------------------------------
+-- -- Child component
+-- --
+-- --                   parent      props    model  action
+-- --                   |           |        |      |
+-- child :: 'Component' ParentModel Greeting ()     ChildAction
+-- child = 'vcomp' () updateChild viewChild
+--   where
+--     viewChild :: Greeting -> () -> 'View' () ChildAction
+--     viewChild (Greeting g) _ =
+--       'div_' [] [ 'text' ("Hello, " <> g <> "!") ]
+--
+--     updateChild :: ChildAction -> 'Effect' ParentModel Greeting () ChildAction
+--     updateChild = \\case
+--       ReadGreeting -> do
+--         Greeting g <- 'getProps'
+--         'io_' ('consoleLog' g)
+-- -----------------------------------------------------------------------------
+-- -- Parent component: owns the greeting, passes it to the child as props
+-- parent :: 'App' ParentModel ParentAction
+-- parent = 'vcomp' (ParentModel "World") 'noop' viewParent
+--   where
+--     viewParent :: () -> ParentModel -> 'View' ParentModel ParentAction
+--     viewParent _ (ParentModel g) =
+--       'mountWithProps_' "child" (Greeting g) child
+-- -----------------------------------------------------------------------------
+-- newtype ParentModel = ParentModel 'MisoString' deriving ('Eq')
+-- data ChildAction = ReadGreeting
+-- data ParentAction
+-- @
+--
+-- A few things to notice:
+--
+-- * The child's @parent@ type parameter is @ParentModel@. This must match the
+--   parent 'Component' @model@ type — 'mountWithProps_' enforces this at compile time.
+-- * 'getProps' inside the child's 'Miso.Types.update' yields a @Greeting@, not
+--   the full @ParentModel@. The child only sees what the parent explicitly chose to share.
+-- * The root 'App' always has @props ~ ()@; no extra plumbing is needed when calling 'startApp'.
 --
 -- = 'VComp' lifecycle hooks
 --
@@ -271,7 +415,7 @@
 --
 -- data Action = Highlight DOMRef
 --
--- update :: Action -> 'Effect' parent model Action
+-- update :: Action -> 'Effect' parent props model Action
 -- update = \\case
 --   Highlight domRef -> 'io_' $ do
 --     ['js'| hljs.highlight(${domRef}) |]
@@ -344,7 +488,7 @@
 --   , 'li_' [ 'key_' "key-2" ] [ "b" ]
 --   , "key-3" '+>' counter
 --   , 'textKey' "key-4" "text here"
---   , vfrag_ "key-5" [ "foo", "bar" ]
+--   , 'vfrag_' "key-5" [ "foo", "bar" ]
 --   ]
 -- @
 --
@@ -420,7 +564,7 @@
 -- The 'Effect' type is defined as a 'RWS'.
 --
 -- @
--- type 'Effect' parent model action = 'RWS' ('ComponentInfo' parent) ['Schedule' action] model ()
+-- type 'Effect' parent props model action = 'RWS' ('ComponentInfo' parent props) ['Schedule' action] model ()
 -- @
 --
 -- * The 'Control.Monad.Reader' portion of 'Effect' is 'ComponentInfo'. 'ask', 'asks', 'Miso.Lens.view' can be used to access its fields.
@@ -587,7 +731,7 @@
 --
 -- import Miso.FFI.QQ ('js')
 --
--- update :: Action -> 'Effect' parent model Action
+-- update :: Action -> 'Effect' parent props model Action
 -- update = \\case
 --   Log msg -> io_ [js| console.log(${msg}) |]
 --
@@ -669,7 +813,7 @@
 -- A simple example of static prerendering would be an @index.html@ page with some HTML
 --
 -- @
--- echo "\<html\>\<head\>\<\/head\>\<body\>hello world\<\/body\>" > index.html
+-- echo "\<html\>\<head\>\<\/head\>\<body\>hello world\<\/body\>\<html\>" > index.html
 -- @
 --
 -- And a miso application that looks like:
