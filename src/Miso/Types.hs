@@ -66,8 +66,8 @@ module Miso.Types
   -- ** Component mounting
   , (+>)
   , mount_
-  , mountProps_
-  , mountProps
+  , mountWithProps_
+  , mountWithProps
   -- ** Key combinators
   , keyed
   -- ** Fragment combinators
@@ -398,29 +398,29 @@ key +> comp = VComp (Just (toKey key)) (SomeComponent () comp)
 -- the two t'Miso.Types.Component', to ensure unmounting and mounting occurs.
 --
 -- @
--- mountProps someProps $ component model noop $ \\m ->
+-- mountWithProps someProps $ component model noop $ \\m ->
 --  div_ [ id_ "foo" ] [ text (ms m) ]
 -- @
 --
 -- @since 1.11.0.0
-mountProps
+mountWithProps
   :: (Eq child, Eq props)
   => props
   -- ^ 'props' to use
   -> Component parent props child action
   -- ^ 'Component' to mount
   -> View parent a
-mountProps props comp  = VComp Nothing (SomeComponent props comp)
+mountWithProps props comp  = VComp Nothing (SomeComponent props comp)
 -----------------------------------------------------------------------------
 -- | t'Miso.Types.Component' mounting combinator.
 --
 -- @
--- mountProps_ "key" someProps $ component model noop $ \\m ->
+-- mountWithProps_ "key" someProps $ component model noop $ \\m ->
 --  div_ [ id_ "foo" ] [ text (ms m) ]
 -- @
 --
 -- @since 1.11.0.0
-mountProps_
+mountWithProps_
   :: (Eq child, Eq props)
   => MisoString
   -- ^ 'key' to use
@@ -429,7 +429,7 @@ mountProps_
   -> Component parent props child action
   -- ^ 'Component' to mount
   -> View parent a
-mountProps_ key props comp  = VComp (Just (Key key)) (SomeComponent props comp)
+mountWithProps_ key props comp  = VComp (Just (Key key)) (SomeComponent props comp)
 -----------------------------------------------------------------------------
 -- | t'Miso.Types.Component' mounting combinator.
 --

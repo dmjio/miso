@@ -326,11 +326,11 @@
 --
 -- == Passing props to a child 'Component'
 --
--- Use 'mountProps_' (keyed) or 'mountProps' (unkeyed) in the parent's 'view' to
+-- Use 'mountWithProps_' (keyed) or 'mountWithProps' (unkeyed) in the parent's 'view' to
 -- mount a child and supply its props:
 --
 -- @
--- 'mountProps_'
+-- 'mountWithProps_'
 --   :: ('Eq' child, 'Eq' props)
 --   => 'MisoString'
 --   -> props
@@ -372,7 +372,7 @@
 --   where
 --     viewParent :: () -> ParentModel -> 'View' ParentModel ParentAction
 --     viewParent _ (ParentModel g) =
---       'mountProps_' "child" (Greeting g) child
+--       'mountWithProps_' "child" (Greeting g) child
 -- -----------------------------------------------------------------------------
 -- newtype ParentModel = ParentModel 'MisoString' deriving ('Eq')
 -- data ChildAction = ReadGreeting
@@ -382,7 +382,7 @@
 -- A few things to notice:
 --
 -- * The child's @parent@ type parameter is @ParentModel@. This must match the
---   parent 'Component' @model@ type — 'mountProps_' enforces this at compile time.
+--   parent 'Component' @model@ type — 'mountWithProps_' enforces this at compile time.
 -- * 'getProps' inside the child's 'Miso.Types.update' yields a @Greeting@, not
 --   the full @ParentModel@. The child only sees what the parent explicitly chose to share.
 -- * The root 'App' always has @props ~ ()@; no extra plumbing is needed when calling 'startApp'.
