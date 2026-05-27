@@ -39,9 +39,15 @@ module Miso.Prelude
   ( module Miso
   , module Prelude
   , (.)
+  -- | The boolean type, with values 'True' and 'False'.
+  , Bool (..)
+  -- | Ordering result of a comparison: 'LT', 'EQ', or 'GT'.
+  , Ordering (..)
   ) where
 ----------------------------------------------------------------------------
 import Control.Category ((.))
-import Prelude hiding ((.), (!!))
+import Prelude hiding ((.), (!!), Bool, Ordering)
+import Data.Bool (Bool (..))
+import Data.Ord (Ordering (..))
 import Miso
 ----------------------------------------------------------------------------

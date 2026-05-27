@@ -1,9 +1,9 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -33,7 +33,10 @@ import GHC.TypeLits (ErrorMessage (..), Symbol, TypeError)
 import Miso.Lens (Lens, lens)
 -----------------------------------------------------------------------------
 
-class Generic s => HasLens (name :: Symbol) s a | name s -> a where 
+-- | Class that associates a record field @name@ with a t'Lens' into @s@ focusing on @a@.
+-- Instances are derived automatically via 'Generic'; use 'field' or @OverloadedLabels@ to construct lenses.
+class Generic s => HasLens (name :: Symbol) s a | name s -> a where
+  -- | Retrieve the t'Lens' for the field named @name@ in @s@.
   getLens :: Lens s a
 
 instance 
@@ -45,8 +48,12 @@ instance
 instance HasLens name s a => IsLabel name (Lens s a)
   where fromLabel = getLens @name
 
+-- | Construct a t'Lens' for the record field named @name@ using @TypeApplications@.
+--
+-- > age :: Lens Person Int
+-- > age = field @"age"
 {-# INLINE field #-}
-field :: forall name s a. HasLens name s a => Lens s a 
+field :: forall name s a. HasLens name s a => Lens s a
 field = fromLabel @name
 
 class GSet (name :: Symbol) typ f where

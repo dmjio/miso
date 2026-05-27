@@ -616,7 +616,7 @@ dequeue
 dequeue q =
   case q ^. queueSchedule of
     S.Empty -> Nothing
-    sched@(vcompId S.:<| leftover) ->
+    sched@(vcompId S.:<| _leftover) ->
       case q ^. queue . at vcompId of
         Nothing ->
           let (_, remaining) = S.spanl (== vcompId) sched

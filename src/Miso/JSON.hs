@@ -36,6 +36,7 @@ module Miso.JSON
   , Object
   , Pair
   , Result (..)
+  , IntMap
     -- ** Constructors
   , (.=)
   , object
@@ -108,6 +109,8 @@ import           GHC.Natural (Natural)
 import           Data.Char
 import qualified Data.Map.Strict as M
 import           Data.Map.Strict (Map)
+import qualified Data.IntMap.Strict as IM
+import           Data.IntMap.Strict (IntMap)
 import           Data.Int
 import           GHC.Natural (naturalToInteger, naturalFromInteger)
 import           GHC.TypeLits
@@ -133,6 +136,12 @@ import           System.IO.Unsafe (unsafePerformIO)
 
 ----------------------------------------------------------------------------
 infixr 8 .=
+-- | Construct a JSON 'Pair' from a key and any 'ToJSON' value.
+-- Commonly used with 'object':
+--
+-- @
+-- object [ "name" .= ("Alice" :: MisoString), "age" .= (30 :: Int) ]
+-- @
 (.=) :: ToJSON v => MisoString -> v -> Pair
 k .= v  = (k, toJSON v)
 ----------------------------------------------------------------------------
@@ -140,7 +149,7 @@ k .= v  = (k, toJSON v)
 object :: [Pair] -> Value
 object = Object . M.fromList
 ----------------------------------------------------------------------------
--- | The empty JSON 'Object' (i.e. @{}@).
+-- | The empty JSON t'Object' (i.e. @{}@).
 emptyObject :: Value
 emptyObject = Object mempty
 ----------------------------------------------------------------------------
@@ -148,26 +157,43 @@ emptyObject = Object mempty
 emptyArray :: Value
 emptyArray = Array mempty
 ----------------------------------------------------------------------------
+-- | Look up a required key in a JSON t'Object' and decode its value.
+-- Fails with a parse error if the key is absent.
 (.:) :: FromJSON a => Object -> MisoString -> Parser a
 m .: k = maybe (pfail ("Key not found: " <> k)) parseJSON (M.lookup k m)
 ----------------------------------------------------------------------------
+-- | Look up an optional key in a JSON t'Object'. Returns 'Nothing'
+-- when the key is absent rather than failing.
 (.:?) :: FromJSON a => Object -> MisoString -> Parser (Maybe a)
 m .:? k = maybe (pure Nothing) parseJSON (M.lookup k m)
 ----------------------------------------------------------------------------
+-- | Like '(.:?)', but fails if the key is present and its value cannot be
+-- decoded — unlike '(.:?)' which returns 'Nothing' for absent keys only.
 (.:!) :: FromJSON a => Object -> MisoString -> Parser (Maybe a)
 m .:! k = maybe (pure Nothing) (fmap Just . parseJSON) (M.lookup k m)
 ----------------------------------------------------------------------------
+-- | Provide a default value for an optional field parser. If the
+-- t'Parser' produces 'Nothing', the default is used instead.
 (.!=) :: Parser (Maybe a) -> a -> Parser a
 mv .!= def = fmap (maybe def id) mv
 ----------------------------------------------------------------------------
+-- | Class for types that can be encoded as a JSON 'Value'.
+-- A default instance is provided for 'Generic' types via 'genericToJSON'.
 class ToJSON a where
+  -- | Encode a value as a JSON 'Value'.
   toJSON :: a -> Value
   default toJSON :: (Generic a, GToJSON (Rep a)) => a -> Value
   toJSON = genericToJSON defaultOptions
 ----------------------------------------------------------------------------
+-- | Generic top-level JSON encoder. Encoding rules match @aeson@'s defaults;
+-- see t'Options' and 'defaultOptions' for customisation.
 genericToJSON :: (Generic a, GToJSON (Rep a)) => Options -> a -> Value
 genericToJSON opts = gToJSON opts . from
 ----------------------------------------------------------------------------
+-- | Options that control generic JSON encoding and decoding.
+-- Construct with 'defaultOptions' and override individual fields as needed.
+--
+-- @since 1.9.0.0
 data Options
   = Options
   { fieldLabelModifier    :: String -> String
@@ -177,7 +203,7 @@ data Options
   , allNullaryToStringTag :: Bool
   -- ^ When 'True' (the default, matching aeson) and every constructor of a
   -- sum type is nullary, encode/decode each constructor as a bare JSON
-  -- 'String' (e.g. @\"Red\"@) rather than a tagged object
+  -- t'String' (e.g. @\"Red\"@) rather than a tagged object
   -- (e.g. @{\"tag\":\"Red\"}@).
   , omitNothingFields :: Bool
   -- ^ When 'True', record fields whose value is 'Nothing' are omitted from
@@ -185,6 +211,9 @@ data Options
   -- they are encoded as @null@.
   }
 ----------------------------------------------------------------------------
+-- | Default t'Options': identity field/constructor modifiers,
+-- @allNullaryToStringTag@ enabled, @omitNothingFields@ disabled.
+-- Matches @aeson@'s @defaultOptions@.
 defaultOptions :: Options
 defaultOptions = Options
   { fieldLabelModifier     = \x -> x
@@ -193,6 +222,12 @@ defaultOptions = Options
   , omitNothingFields      = False
   }
 ----------------------------------------------------------------------------
+-- | Convert a camelCase identifier to a lower-case separated string.
+-- The separator character is given as the first argument.
+--
+-- @
+-- camelTo2 '_' "myFieldName"  -- "my_field_name"
+-- @
 camelTo2 :: Char -> String -> String
 camelTo2 c = Prelude.map toLower . go2 . go1
     where go1 "" = ""
@@ -219,6 +254,7 @@ combineFields _ _ = PositionalFields []  -- mixed; shouldn't occur in valid GHC 
 ----------------------------------------------------------------------------
 -- | Collect a constructor's fields into 'Fields'.
 class GToFields (f :: Type -> Type) where
+  -- | Collect the fields of a constructor into a 'Fields' value.
   gToFields :: Options -> f a -> Fields
 ----------------------------------------------------------------------------
 instance GToFields U1 where
@@ -259,6 +295,7 @@ instance {-# OVERLAPPING #-} (Selector m, ToJSON a)
 -- | Determine at the type level whether every constructor of a sum type
 -- is nullary (has no fields). Used to implement 'allNullaryToStringTag'.
 class GAllNullary (f :: Type -> Type) where
+  -- | Returns 'True' if all constructors in @f@ are nullary.
   gAllNullary :: Bool
 ----------------------------------------------------------------------------
 instance GAllNullary U1 where
@@ -316,6 +353,7 @@ encodeTaggedCon tag = \case
 -- * Sum nullary constructor:                    @{\"tag\": \"C\"}@
 -- * Sum positional constructor:                 @{\"tag\": \"C\", \"contents\": v}@ or @[...]@
 class GToJSON (f :: Type -> Type) where
+  -- | Encode a generic representation into a JSON 'Value'.
   gToJSON :: Options -> f a -> Value
 ----------------------------------------------------------------------------
 instance GToJSONRep f => GToJSON (D1 m f) where
@@ -336,8 +374,9 @@ instance (GToJSONSum f, GToJSONSum g, GToJSONSumNullary f, GToJSONSumNullary g, 
     | otherwise
     = gToJSONSum opts x
 ----------------------------------------------------------------------------
--- | Encode all-nullary sum constructors as bare 'String' values.
+-- | Encode all-nullary sum constructors as bare t'String' values.
 class GToJSONSumNullary (f :: Type -> Type) where
+  -- | Encode a nullary sum constructor as a bare JSON t'String'.
   gToJSONSumNullary :: Options -> f a -> Value
 ----------------------------------------------------------------------------
 instance (GToJSONSumNullary f, GToJSONSumNullary g) => GToJSONSumNullary (f :+: g) where
@@ -355,6 +394,7 @@ instance {-# OVERLAPPABLE #-} Constructor m => GToJSONSumNullary (C1 m f) where
 ----------------------------------------------------------------------------
 -- | Encode sum constructors with a @\"tag\"@ key.
 class GToJSONSum (f :: Type -> Type) where
+  -- | Encode a sum constructor as a tagged JSON object.
   gToJSONSum :: Options -> f a -> Value
 ----------------------------------------------------------------------------
 instance (GToJSONSum f, GToJSONSum g) => GToJSONSum (f :+: g) where
@@ -387,6 +427,9 @@ instance {-# OVERLAPPABLE #-} ToJSON a => ToJSON [a] where
 ----------------------------------------------------------------------------
 instance ToJSON v => ToJSON (M.Map MisoString v) where
   toJSON = Object . M.map toJSON
+----------------------------------------------------------------------------
+instance ToJSON v => ToJSON (IntMap v) where
+  toJSON = toJSON . IM.toList
 ----------------------------------------------------------------------------
 instance ToJSON a => ToJSON (Maybe a) where
   toJSON = \case
@@ -441,8 +484,13 @@ instance ToJSON Integer where toJSON = Number . fromInteger
 -- | Possibly lossy due to conversion to 'Double'
 instance ToJSON Natural where toJSON = Number . fromInteger . naturalToInteger
 ----------------------------------------------------------------------------
-newtype Parser a = Parser { unParser :: Either MisoString a }
-  deriving (Functor, Applicative, Monad)
+-- | A lightweight JSON parser that returns either a 'MisoString' error or a
+-- decoded value @a@. Build parsers with 'parseJSON', 'withObject',
+-- 'withText', etc., and run them with 'parseMaybe' or 'parseEither'.
+newtype Parser a = Parser
+  { unParser :: Either MisoString a
+    -- ^ The underlying result: 'Left' is a parse error, 'Right' is success.
+  } deriving (Functor, Applicative, Monad)
 ----------------------------------------------------------------------------
 instance MonadFail Parser where
   fail = pfail . pack
@@ -454,19 +502,26 @@ instance Alternative Parser where
 ----------------------------------------------------------------------------
 instance MonadPlus Parser
 ----------------------------------------------------------------------------
+-- | Run a t'Parser' function on a value, returning 'Nothing' on failure.
 parseMaybe :: (a -> Parser b) -> a -> Maybe b
 parseMaybe m v =
   case parseEither m v of
     Left _ -> Nothing
-    Right r -> Just r 
+    Right r -> Just r
 ----------------------------------------------------------------------------
+-- | Run a t'Parser' function on a value, returning 'Left' with the error
+-- message on failure.
 parseEither :: (a -> Parser b) -> a -> Either MisoString b
 parseEither m v = unParser (m v)
 ----------------------------------------------------------------------------
 pfail :: MisoString -> Parser a
 pfail message = Parser (Left message)
 ----------------------------------------------------------------------------
+-- | Class for types that can be decoded from a JSON 'Value'.
+-- A default instance is provided for 'Generic' types via 'genericParseJSON'.
 class FromJSON a where
+  -- | Decode a JSON 'Value' into @a@, failing with a t'Parser' error on
+  -- type mismatch or missing fields.
   parseJSON :: Value -> Parser a
   default parseJSON :: (Generic a, GFromJSON (Rep a)) => Value -> Parser a
   parseJSON = genericParseJSON defaultOptions
@@ -475,8 +530,11 @@ class FromJSON a where
 --
 -- Decoding rules match aeson's defaults (see 'Options' and 'defaultOptions').
 class GFromJSON (f :: Type -> Type) where
+  -- | Decode a JSON 'Value' into a generic representation.
   gParseJSON :: Options -> Value -> Parser (f a)
 ----------------------------------------------------------------------------
+-- | Generic top-level JSON decoder. Decoding rules match @aeson@'s defaults;
+-- see t'Options' and 'defaultOptions' for customisation.
 genericParseJSON :: (Generic a, GFromJSON (Rep a)) => Options -> Value -> Parser a
 genericParseJSON opts value = to <$> gParseJSON opts value
 ----------------------------------------------------------------------------
@@ -498,8 +556,9 @@ instance (GFromJSONSum f, GFromJSONSum g, GFromJSONSumNullary f, GFromJSONSumNul
     | otherwise
     = gFromJSONSum opts v
 ----------------------------------------------------------------------------
--- | Parse all-nullary sum constructors from bare 'String' values.
+-- | Parse all-nullary sum constructors from bare t'String' values.
 class GFromJSONSumNullary (f :: Type -> Type) where
+  -- | Attempt to decode a nullary sum constructor from a bare JSON t'String'.
   gFromJSONSumNullary :: Options -> Value -> Parser (f a)
 ----------------------------------------------------------------------------
 instance (GFromJSONSumNullary f, GFromJSONSumNullary g) => GFromJSONSumNullary (f :+: g) where
@@ -521,6 +580,7 @@ instance {-# OVERLAPPABLE #-} Constructor m => GFromJSONSumNullary (C1 m f) wher
 ----------------------------------------------------------------------------
 -- | Parse sum constructors, trying each branch left-to-right.
 class GFromJSONSum (f :: Type -> Type) where
+  -- | Attempt to decode a tagged JSON object as a sum constructor.
   gFromJSONSum :: Options -> Value -> Parser (f a)
 ----------------------------------------------------------------------------
 instance (GFromJSONSum f, GFromJSONSum g) => GFromJSONSum (f :+: g) where
@@ -564,14 +624,14 @@ parseTaggedCon tag opts = \case
   _ -> pfail ("expected JSON object for constructor " <> ms (show tag))
 ----------------------------------------------------------------------------
 -- | Field-level decoder. Knows whether the constructor is a record and
--- how many fields it has; can decode from a JSON 'Object' (record mode)
+-- how many fields it has; can decode from a JSON t'Object' (record mode)
 -- or a positional '[Value]' list.
 class GFromFields (f :: Type -> Type) where
   -- | Is this a record constructor (all selectors have names)?
   gIsRecord      :: Bool
   -- | Number of fields.
   gFieldCount    :: Int
-  -- | Decode from a JSON 'Object' (record mode: look up by field name).
+  -- | Decode from a JSON t'Object' (record mode: look up by field name).
   gFromRecord    :: Options -> Object -> Parser (f a)
   -- | Decode from a positional list of 'Value'.
   gFromPositional :: Options -> [Value] -> Parser (f a)
@@ -750,26 +810,42 @@ instance FromJSON Char where
 instance FromJSON v => FromJSON (Map MisoString v) where
   parseJSON = withObject "FromJSON v => Map MisoString v" $ mapM parseJSON
 ----------------------------------------------------------------------------
+instance FromJSON v => FromJSON (IntMap v) where
+  parseJSON = fmap IM.fromList . parseJSON
+----------------------------------------------------------------------------
+-- | Expect a JSON @Bool@ value and pass it to the continuation.
+-- Fails with a 'typeMismatch' error for any other 'Value'.
 withBool :: MisoString -> (Bool -> Parser a) -> Value -> Parser a
 withBool _        f (Bool arr) = f arr
 withBool expected _ v          = typeMismatch expected v
 ----------------------------------------------------------------------------
+-- | Expect a JSON @String@ value and pass it to the continuation.
+-- Fails with a 'typeMismatch' error for any other 'Value'.
 withText :: MisoString -> (MisoString -> Parser a) -> Value -> Parser a
 withText _        f (String txt) = f txt
 withText expected _ v            = typeMismatch expected v
 ----------------------------------------------------------------------------
+-- | Expect a JSON 'Array' value and pass its element list to the continuation.
+-- Fails with a 'typeMismatch' error for any other 'Value'.
 withArray :: MisoString -> ([Value] -> Parser a) -> Value -> Parser a
 withArray _        f (Array lst) = f lst
 withArray expected _ v           = typeMismatch expected v
 ----------------------------------------------------------------------------
+-- | Expect a JSON t'Object' value and pass it to the continuation.
+-- Fails with a 'typeMismatch' error for any other 'Value'.
 withObject :: MisoString -> (Object -> Parser a) -> Value -> Parser a
 withObject _        f (Object obj) = f obj
 withObject expected _ v            = typeMismatch expected v
 ----------------------------------------------------------------------------
+-- | Expect a JSON 'Number' value and pass it to the continuation.
+-- Fails with a 'typeMismatch' error for any other 'Value'.
 withNumber :: MisoString -> (Double -> Parser a) -> Value -> Parser a
 withNumber _        f (Number n) = f n
 withNumber expected _ v          = typeMismatch expected v
 ----------------------------------------------------------------------------
+-- | Produce a t'Parser' failure describing an unexpected JSON constructor.
+-- Used internally by the @with*@ combinators; can also be called from
+-- custom 'FromJSON' instances.
 typeMismatch :: MisoString -> Value -> Parser a
 typeMismatch expected actual =
   pfail
@@ -782,6 +858,9 @@ typeMismatch expected actual =
         Null -> "Null"
     )
 ----------------------------------------------------------------------------
+-- | Encode a value as a JSON 'MisoString'. On JS/WASM backends this
+-- delegates to @JSON.stringify()@ for maximum performance; on a plain
+-- GHC build it falls back to 'encodePure'.
 #ifdef VANILLA
 encode :: ToJSON a => a -> MisoString
 encode = encodePure
@@ -841,6 +920,9 @@ instance ToMisoString Value where
         MS.intercalate "," [ "\"" <> escapeJSONString k <> "\"" <> ":" <> ms v | (k,v) <- M.toList o ]
       <> "}"
 ----------------------------------------------------------------------------
+-- | Decode a JSON 'MisoString' into @a@, returning 'Nothing' on failure.
+-- On JS/WASM backends this uses @JSON.parse()@; on plain GHC it uses
+-- 'Miso.JSON.Parser.decodePure'.
 #ifdef VANILLA
 decode :: FromJSON a => MisoString -> Maybe a
 decode s
@@ -872,27 +954,36 @@ foreign import javascript unsafe
   encodePretty_ffi :: JSVal -> Int -> IO MisoString
 #endif
 -----------------------------------------------------------------------------
+-- | Pretty-print a JSON value using the given t'Config' (indentation width).
+-- On plain GHC this raises an error; use the JS/WASM backend for real output.
 #ifdef VANILLA
 encodePretty' :: ToJSON a => Config -> a -> MisoString
 encodePretty' = error "encodePretty': not implemented"
 -----------------------------------------------------------------------------
+-- | Pretty-print a JSON value with the 'defConfig' (4-space indentation).
+-- On plain GHC this raises an error; use the JS/WASM backend for real output.
 encodePretty :: ToJSON a => a -> MisoString
 encodePretty _ = error "encodePretty: not implemented"
 -----------------------------------------------------------------------------
 #else
 -----------------------------------------------------------------------------
+-- | Pretty-print a JSON value using the given t'Config' (indentation width).
 encodePretty' :: ToJSON a => Config -> a -> MisoString
 encodePretty' (Config s) x = unsafePerformIO (flip encodePretty_ffi s =<< toJSVal_Value (toJSON x))
 -----------------------------------------------------------------------------
+-- | Pretty-print a JSON value with the 'defConfig' (4-space indentation).
 encodePretty :: ToJSON a => a -> MisoString
 encodePretty = encodePretty' defConfig
 #endif
 -----------------------------------------------------------------------------
+-- | Configuration for 'encodePretty' \/ 'encodePretty\''.
 newtype Config
   = Config
   { spaces :: Int
+    -- ^ Number of spaces per indentation level.
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
+-- | Default t'Config': 4-space indentation.
 defConfig :: Config
 defConfig = Config 4
 -----------------------------------------------------------------------------
@@ -914,6 +1005,8 @@ foreign import javascript unsafe
   jsonStringify :: JSVal -> IO MisoString
 #endif
 -----------------------------------------------------------------------------
+-- | Serialise a t'JSVal' to a JSON 'MisoString' via @JSON.stringify()@.
+-- Not available on plain GHC builds.
 #ifdef VANILLA
 jsonStringify :: JSVal -> IO MisoString
 jsonStringify _ = error "jsonStringify: not implemented"
@@ -937,11 +1030,15 @@ foreign import javascript unsafe
   jsonParse :: MisoString -> IO JSVal
 #endif
 -----------------------------------------------------------------------------
+-- | Parse a JSON 'MisoString' into a t'JSVal' via @JSON.parse()@.
+-- Not available on plain GHC builds.
 #ifdef VANILLA
 jsonParse :: MisoString -> IO JSVal
 jsonParse _ = error "jsonParse: not implemented"
 #endif
 -----------------------------------------------------------------------------
+-- | Decode a JSON 'MisoString' into @a@, returning 'Left' with a
+-- descriptive error on failure.
 #ifdef VANILLA
 eitherDecode :: FromJSON a => MisoString -> Either MisoString a
 eitherDecode string =
@@ -962,6 +1059,7 @@ eitherDecode string = unsafePerformIO $ do
         Error err -> Left err)
 #endif
 ----------------------------------------------------------------------------
+-- | Convert a 'Value' to @a@, returning a 'Result'.
 fromJSON :: FromJSON a => Value -> Result a
 fromJSON value =
   case parseEither parseJSON value of
@@ -1043,11 +1141,14 @@ fromJSVal_Value jsval = do
     toObject = Object . M.fromList
 #endif
 -----------------------------------------------------------------------------
+-- | Unmarshal a t'JSVal' back into a 'Value', returning 'Nothing' when the
+-- JavaScript value cannot be represented as a JSON 'Value'.
 #ifdef VANILLA
 -----------------------------------------------------------------------------
 fromJSVal_Value :: JSVal -> IO (Maybe Value)
 fromJSVal_Value = error "fromJSVal_Value: not implemented"
 -----------------------------------------------------------------------------
+-- | Marshal a 'Value' into a t'JSVal' for use with the JavaScript FFI.
 toJSVal_Value :: Value -> IO JSVal
 toJSVal_Value = error "toJSVal_Value: not implemented"
 -----------------------------------------------------------------------------

@@ -371,7 +371,7 @@ updateRef jsval1 jsval2 = do
 -- logNameGetAge :: Person -> IO Int
 -- logNameGetAge = inline
 --   """
---   console.log('name', name);
+--   console.log("name", name);
 --   return age;
 --   """
 --
@@ -604,7 +604,7 @@ addScript useModule js_ = do
   void $ context # "appendChild" $ (head_, script)
   pure script
 -----------------------------------------------------------------------------
--- | Sets the @.value@ property on a 'DOMRef'.
+-- | Sets the @.value@ property on a t'Miso.Effect.DOMRef'.
 --
 -- Useful for resetting the @value@ property on an input element.
 --
@@ -1128,7 +1128,7 @@ newCustomEvent :: ToArgs args => args -> IO Event
 {-# INLINABLE newCustomEvent #-}
 newCustomEvent args = Event <$> new (jsg "CustomEvent") args
 -----------------------------------------------------------------------------
--- | Uses the 'splitmix' function to generate a PRNG.
+-- | Uses the @splitmix@ function to generate a PRNG.
 --
 splitmix32 :: Double -> IO JSVal
 {-# INLINABLE splitmix32 #-}

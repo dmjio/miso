@@ -10,7 +10,7 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- Mutable 'Map' data structure in 'IO'.
+-- Mutable t'Map' data structure in 'IO'.
 --
 -- A JavaScript [Map](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map). This is a convenience for manipulating JavaScript data structures from Haskell.
 --
@@ -41,6 +41,8 @@ import           Miso.DSL (jsg, JSVal, ToJSVal, FromJSVal, (!))
 import qualified Miso.DSL as DSL
 import           Miso.FFI (callFunction)
 -----------------------------------------------------------------------------
+-- | Typed wrapper around a JavaScript
+-- [Map](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map).
 newtype Map key value = Map JSVal deriving (FromJSVal, ToJSVal)
 -----------------------------------------------------------------------------
 -- | Constructs a new JS [Map](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map) in t'IO'.
@@ -66,7 +68,7 @@ clear (Map m) = void (callFunction m "clear" ())
 size :: Map key value -> IO Int
 size (Map m) = DSL.fromJSValUnchecked =<< m ! "size"
 -----------------------------------------------------------------------------
--- | Checks existence of a value by 'key', returns t'Bool.
+-- | Checks existence of a value by @key@, returns t'Bool'.
 has :: ToJSVal key => key -> Map key value -> IO Bool
 has key (Map m) = DSL.fromJSValUnchecked =<< callFunction m "has" =<< DSL.toJSVal key
 -----------------------------------------------------------------------------

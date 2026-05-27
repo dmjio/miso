@@ -11,7 +11,7 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- Mutable 'Array' data structure in 'IO'.
+-- Mutable t'Array' data structure in 'IO'.
 --
 -- A JavaScript [Array](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array). This is a convenience for manipulating JavaScript data structures from Haskell.
 --
@@ -52,6 +52,8 @@ import qualified Miso.DSL as DSL
 import           Miso.FFI (callFunction)
 import           Miso.String (ms, unpack)
 -----------------------------------------------------------------------------
+-- | Typed wrapper around a JavaScript
+-- [Array](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array).
 newtype Array value = Array JSVal deriving (FromJSVal, ToJSVal, ToObject)
 -----------------------------------------------------------------------------
 -- | Constructs a new JS [Array](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array) in t'IO'.
@@ -92,7 +94,7 @@ size (Array m) = DSL.fromJSValUnchecked =<< m ! "length"
 null :: Array value -> IO Bool
 null m = (== 0) <$> size m
 -----------------------------------------------------------------------------
--- | Checks existence of 'value' in t'Array', returns t'Bool.
+-- | Checks existence of @value@ in t'Array', returns t'Bool'.
 member :: ToJSVal value => value -> Array value -> IO Bool
 member value (Array m) = DSL.fromJSValUnchecked =<< callFunction m "includes" =<< DSL.toJSVal value
 -----------------------------------------------------------------------------

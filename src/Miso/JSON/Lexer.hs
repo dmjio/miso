@@ -35,12 +35,18 @@ import           Miso.Util.Lexer hiding (string', token)
 import Control.Applicative (liftA2)
 #endif
 ----------------------------------------------------------------------------
+-- | A single lexical token produced by the JSON lexer.
 data Token
   = TokenPunctuator Char
+  -- ^ A JSON structural character: @[@ @]@ @{@ @}@ @,@ @:@
   | TokenNumber Double
+  -- ^ A JSON number literal.
   | TokenBool Bool
+  -- ^ A JSON boolean literal (@true@ or @false@).
   | TokenString MisoString
+  -- ^ A JSON string literal (unescaped).
   | TokenNull
+  -- ^ The JSON @null@ literal.
   deriving (Eq, Show)
 ----------------------------------------------------------------------------
 number :: Lexer Double
@@ -116,6 +122,7 @@ token = oneOf
   , TokenNull <$ null
   ]
 ----------------------------------------------------------------------------
+-- | Lex a JSON input stream into a list of t'Token's, skipping whitespace.
 tokens :: Lexer [Token]
 tokens = some (many whitespace *> token)
 ----------------------------------------------------------------------------

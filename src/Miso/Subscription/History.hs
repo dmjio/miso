@@ -40,7 +40,7 @@ pushURI uri = do
   pushState (prettyURI uri)
   raisePopState
 -----------------------------------------------------------------------------
--- | Pushes a new 'Route' onto the History stack. Also raises a `popstate` event.
+-- | Pushes a new t'Miso.Router.Route' onto the History stack. Also raises a @popstate@ event.
 --
 -- Converts the t'Route' to a t'URI' internally.
 --

@@ -787,37 +787,50 @@ lens
   -> Lens record field
 lens getter setter = Lens getter (flip setter)
 ----------------------------------------------------------------------------
+-- | A t'Prism' is an optic for sum types, pairing a constructor (@_up@) with
+-- a safe destructor (@_down@).
 data Prism s a
   = Prism
   { _up :: a -> s
+    -- ^ Inject @a@ into @s@.
   , _down :: s -> Maybe a
+    -- ^ Project @a@ out of @s@, returning 'Nothing' on mismatch.
   }
 ----------------------------------------------------------------------------
+-- | Reconstruct an @s@ from an @a@ using a t'Prism'.
 review :: Prism s a -> a -> s
 review = _up
 ----------------------------------------------------------------------------
+-- | Attempt to project an @a@ out of the @MonadReader@ environment using a t'Prism'.
 preview :: MonadReader r m => Prism r a -> m (Maybe a)
 preview = asks . preview
 ----------------------------------------------------------------------------
+-- | Attempt to project an @a@ out of the @MonadState@ state using a t'Prism'.
 preuse :: MonadState s m => Prism s a -> m (Maybe a)
 preuse = gets . preview
 ----------------------------------------------------------------------------
+-- | t'Prism' targeting the 'Left' branch of 'Either'.
 _Left :: Prism (Either a b) a
 _Left = prism Left $ either Just (const Nothing)
 ----------------------------------------------------------------------------
+-- | t'Prism' targeting the 'Right' branch of 'Either'.
 _Right :: Prism (Either a b) b
 _Right = prism Right (either (const Nothing) Just)
 ----------------------------------------------------------------------------
+-- | t'Prism' targeting the 'Just' branch of 'Maybe'.
 _Just :: Prism (Maybe a) a
 _Just = prism Just Prelude.id
 ----------------------------------------------------------------------------
+-- | t'Prism' targeting the 'Nothing' branch of 'Maybe'.
 _Nothing :: Prism (Maybe a) a
 _Nothing = prism (const Nothing) Prelude.id
 ----------------------------------------------------------------------------
+-- | Operator form of 'preview': @s ^? p@ projects @a@ from @s@.
 infixl 8 ^?
-(^?) :: s -> Prism s a -> Maybe a 
+(^?) :: s -> Prism s a -> Maybe a
 (^?) = flip preview
 ----------------------------------------------------------------------------
+-- | Smart constructor for t'Prism'.
 prism :: (a -> s) -> (s -> Maybe a) -> Prism s a
 prism = Prism
 ----------------------------------------------------------------------------

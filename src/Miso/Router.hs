@@ -322,6 +322,7 @@ index specified = do
   when (specified /= "index") (fail "index")
   pure "/"
 -----------------------------------------------------------------------------
+-- | Parses a URI fragment component matching the given string.
 fragment :: MisoString -> RouteParser MisoString
 fragment specified = do
   FragmentToken frag <- indexToken
@@ -338,6 +339,7 @@ parseURI txt =
 -----------------------------------------------------------------------------
 -- | Class used to facilitate routing for miso applications
 class Router route where
+  -- | Convert a route value into a list of t'Token's used to build the URL.
   fromRoute :: route -> [Token]
   default fromRoute :: (Generic route, GRouter (Rep route)) => route -> [Token]
   fromRoute = gFromRoute . from
@@ -366,6 +368,7 @@ class Router route where
   toRoute :: MisoString -> Either RoutingError route
   toRoute input = parseRoute input routeParser
 
+  -- | The parser used to decode a URI into this route type.
   routeParser :: RouteParser route
   default routeParser :: (Generic route, GRouter (Rep route)) => RouteParser route
   routeParser = to <$> gRouteParser
@@ -583,6 +586,7 @@ pctEncoded = do
 hexDig :: Lexer Char
 hexDig = L.satisfy C.isHexDigit
 -----------------------------------------------------------------------------
+-- | Tokenizes a URI string into a list of t'Token's, or returns a lexer error.
 lexTokens :: MisoString -> Either L.LexerError [Token]
 lexTokens input =
   case L.runLexer uriLexer (L.mkStream input) of
