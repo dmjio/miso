@@ -374,13 +374,9 @@ modifyComponent
   :: ComponentId
   -> State (ComponentState parent props model action) a
   -> IO ()
-modifyComponent vcompId go = liftIO $ do
+modifyComponent vcompId go = liftIO $
   atomicModifyIORef' components $ \vcomps ->
-    case IM.lookup vcompId vcomps of
-      Nothing ->
-        (vcomps, ())
-      Just comp ->
-        (IM.insert vcompId (execState go comp) vcomps, ())
+    (IM.adjust (execState go) vcompId vcomps, ())
 ----------------------------------------------------------------------------
 propagate
   :: ComponentId
