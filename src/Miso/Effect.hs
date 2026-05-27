@@ -80,8 +80,8 @@ mkComponentInfo = ComponentInfo
 -----------------------------------------------------------------------------
 -- | This is the 'Reader r' in t'Miso.Effect'. Accessible via 'Control.Monad.Reader.ask'. It holds
 -- a phantom type for @parent@. This is used as a witness when calling the
--- 'parent' function. It gives access to 'Component' metadata such as the 'DOMRef' the
--- 'Component' was mounted on and the 'ComponentId' associated with it.
+-- 'Miso.Runtime.parent' function. It gives access to t'Miso.Types.Component' metadata such as the 'DOMRef' the
+-- t'Miso.Types.Component' was mounted on and the 'ComponentId' associated with it.
 data ComponentInfo parent props
   = ComponentInfo
   { _componentInfoId :: ComponentId
@@ -218,12 +218,12 @@ batch_ actions = sequence_
 -----------------------------------------------------------------------------
 -- | A monad for succinctly expressing model transitions in the @update@ function.
 --
--- t'Effect' is a @RWS@, where the @State@ allows modification to 'model'.
+-- t'Effect' is a @RWS@, where the @State@ allows modification to @model@.
 -- It's also a @Writer@ @Monad@, where the accumulator is a list of scheduled
 -- @IO@ actions. Multiple actions can be scheduled using 'Control.Monad.Writer.Class.tell'
 -- from the @mtl@ library and a single asynchronous action can be scheduled using 'io_'.
 --
--- An t'Effect' represents the results of an 'update' action.
+-- An t'Effect' represents the results of an @update@ action.
 --
 -- It consists of the updated model and a list of subscriptions. Each t'Sub' is
 -- run in a new thread so there is no risk of accidentally blocking the
@@ -243,8 +243,8 @@ batch_ actions = sequence_
 --       MyAction2 -> do
 --         field2 '%=' f
 --         'io_' $ do
---           'consoleLog' \"Hello\"
---           'consoleLog' \"World!\"
+--           'Miso.FFI.consoleLog' \"Hello\"
+--           'Miso.FFI.consoleLog' \"World!\"
 --   , ...
 --   }
 -- @
@@ -385,7 +385,7 @@ modifyAllIO f = censor $ \actions ->
 -- to turn events into actions.
 --
 -- @
--- 'update' FetchJSON = 'withSink' $ \\sink -> getJSON (sink . ReceivedJSON) (sink . HandleError)
+-- update FetchJSON = 'withSink' $ \\sink -> getJSON (sink . ReceivedJSON) (sink . HandleError)
 -- @
 --
 -- @since 1.9.0.0
@@ -401,8 +401,8 @@ withSink f = tell [ async f ]
 -- data Action = HelloWorld
 -- type Model  = Int
 --
--- 'update' :: Action -> 'Effect' parent Model Action
--- 'update' = \\case
+-- update :: Action -> 'Effect' parent Model Action
+-- update = \\case
 --   Click -> 'issue' HelloWorld
 -- @
 --

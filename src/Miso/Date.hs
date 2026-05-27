@@ -10,7 +10,7 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- Mutable 'Date' data structure in 'IO'.
+-- Mutable t'Date' data structure in 'IO'.
 --
 -- A JavaScript [Date](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date). This is a convenience for manipulating JavaScript data structures from Haskell.
 --
@@ -79,6 +79,8 @@ import qualified Miso.DSL as DSL
 import           Miso.FFI (callFunction)
 import           Miso.String (MisoString)
 -----------------------------------------------------------------------------
+-- | Typed wrapper around a JavaScript
+-- [Date](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date).
 newtype Date = Date JSVal deriving (FromJSVal, ToJSVal, ToObject, Eq)
 -----------------------------------------------------------------------------
 -- | Constructs a new JS [Date](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date) in t'IO'.

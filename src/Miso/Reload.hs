@@ -91,11 +91,11 @@ foreign import ccall unsafe "miso_x_clear"
 --
 -- @
 -- main :: IO ()
--- main = 'reload' 'defaultEvents' app
+-- main = 'reload' 'Miso.Event.Types.defaultEvents' app
 -- @
 --
--- N.B. This also resets the internal 'component' state. This means all currently
--- mounted components become unmounted and t'ComponentId' are reset to their
+-- N.B. This also resets the internal 'Miso.Types.component' state. This means all currently
+-- mounted components become unmounted and t'Miso.Effect.ComponentId' are reset to their
 -- original form factory.
 --
 -- If you'd like to preserve application state between calls to GHCi `:r`, see 'live'.
@@ -121,21 +121,21 @@ reload events vcomp = do
 #endif
     initComponent events Draw vcomp
 -----------------------------------------------------------------------------
--- | Live reloading. Persists all t'Component' `model` between successive GHCi reloads.
+-- | Live reloading. Persists all t'Miso.Types.Component' @model@ between successive GHCi reloads.
 --
--- This means application state should persist between GHCi reloads 
+-- This means application state should persist between GHCi reloads
 --
--- Schema changes to 'model' are currently unsupported. If you're 
--- changing fields in 'model' (adding, removing, changing a field's type), this
--- will more than likely segfault. If you change the 'view' or 'update' functions
--- it will be fine. 
+-- Schema changes to @model@ are currently unsupported. If you're
+-- changing fields in @model@ (adding, removing, changing a field's type), this
+-- will more than likely segfault. If you change the 'Miso.Types.view' or 'Miso.Types.update' functions
+-- it will be fine.
 --
--- Use 'reload' if you're changing the 'model' frequently and 'live'
--- if you're adjusting the 'view' / 'update' function logic.
+-- Use 'reload' if you're changing the @model@ frequently and 'live'
+-- if you're adjusting the 'Miso.Types.view' / 'Miso.Types.update' function logic.
 --
 -- @
 -- main :: IO ()
--- main = 'live' 'defaultEvents' app
+-- main = 'live' 'Miso.Event.Types.defaultEvents' app
 -- @
 --
 -- @since 1.9.0.0

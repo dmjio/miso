@@ -161,7 +161,7 @@ data Component parent props model action
   , eventPropagation :: Bool
   -- ^ Should events bubble up past the t'Miso.Types.Component' barrier.
   --
-  -- Defaults to t'False'
+  -- Defaults to @False@
   --
   -- @since 1.9.0.0
   , mount :: Maybe action
@@ -294,7 +294,7 @@ data LogLevel
   -- ^ Logs on all of the above
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
--- | Tag type, (e.g. 'div_', 'p_')
+-- | Tag type, (e.g. 'Miso.Html.Element.div_', 'Miso.Html.Element.p_')
 --
 -- Meant to indicate the type of element being created.
 -- Used as the first argument to @document.createElement@ for the web backend.
@@ -316,7 +316,7 @@ data SomeComponent parent
 -----------------------------------------------------------------------------
 -- | Like '+>' but operates on any 'View', not just 'Component'.
 --
--- This appends a 'Key' to any 'View'.
+-- This appends a t'Key' to any 'View'.
 --
 -- @
 -- keyed "key" ("some text" :: View model action)
@@ -359,13 +359,13 @@ vfrag = fragment
 fragment :: [View model action] -> View model action
 fragment = VFrag Nothing
 -----------------------------------------------------------------------------
--- | Like 'fragment', but keyed for efficient diffing.
+-- | Like 'Miso.Types.fragment', but keyed for efficient diffing.
 --
 -- @since 1.10.0.0
 vfrag_ :: MisoString -> [View model action] -> View model action
 vfrag_ key = VFrag (Just (Key key))
 -----------------------------------------------------------------------------
--- | Like 'fragment', but keyed for efficient diffing.
+-- | Like 'Miso.Types.fragment', but keyed for efficient diffing.
 --
 -- @since 1.10.0.0
 fragment_ :: MisoString -> [View model action] -> View model action
@@ -384,9 +384,9 @@ fragment_ key = VFrag (Just (Key key))
 (+>)
   :: forall child childAction model action . Eq child
   => MisoString
-  -- ^ 'VComp' 'key_'
+  -- ^ 'VComp' 'Miso.Property.key_'
   -> Component model () child childAction
-  -- ^ 'Component'
+  -- ^ t'Miso.Types.Component'
   -> View model action
 infixr 0 +>
 key +> comp = VComp (Just (toKey key)) (SomeComponent () comp)
@@ -406,9 +406,9 @@ key +> comp = VComp (Just (toKey key)) (SomeComponent () comp)
 mountWithProps
   :: (Eq child, Eq props)
   => props
-  -- ^ 'props' to use
+  -- ^ @props@ to use
   -> Component parent props child action
-  -- ^ 'Component' to mount
+  -- ^ t'Miso.Types.Component' to mount
   -> View parent a
 mountWithProps props comp  = VComp Nothing (SomeComponent props comp)
 -----------------------------------------------------------------------------
@@ -423,11 +423,11 @@ mountWithProps props comp  = VComp Nothing (SomeComponent props comp)
 mountWithProps_
   :: (Eq child, Eq props)
   => MisoString
-  -- ^ 'key' to use
+  -- ^ @key@ to use
   -> props
-  -- ^ 'props' to use
+  -- ^ @props@ to use
   -> Component parent props child action
-  -- ^ 'Component' to mount
+  -- ^ t'Miso.Types.Component' to mount
   -> View parent a
 mountWithProps_ key props comp  = VComp (Just (Key key)) (SomeComponent props comp)
 -----------------------------------------------------------------------------
@@ -446,7 +446,7 @@ mountWithProps_ key props comp  = VComp (Just (Key key)) (SomeComponent props co
 mount_
   :: Eq child
   => Component parent () child childAction
-  -- ^ 'Component' to mount
+  -- ^ t'Miso.Types.Component' to mount
   -> View parent action
 mount_ comp = VComp Nothing (SomeComponent () comp)
 -----------------------------------------------------------------------------

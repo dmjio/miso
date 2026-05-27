@@ -95,9 +95,11 @@ isUndefined_ffi = undefined
 freeFunction_ffi :: JSVal -> IO ()
 freeFunction_ffi = undefined
 -----------------------------------------------------------------------------
+-- | Schedules a callback to run before the next repaint.
 requestAnimationFrame :: JSVal -> IO Int
 requestAnimationFrame = undefined
 -----------------------------------------------------------------------------
+-- | Cancels a previously-scheduled 'requestAnimationFrame' callback.
 cancelAnimationFrame :: Int -> IO ()
 cancelAnimationFrame = undefined
 -----------------------------------------------------------------------------

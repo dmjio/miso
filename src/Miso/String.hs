@@ -3,7 +3,7 @@
 {-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE FlexibleInstances #-}
 -----------------------------------------------------------------------------
-{-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# OPTIONS_GHC -fno-warn-orphans -Wno-duplicate-exports #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.String

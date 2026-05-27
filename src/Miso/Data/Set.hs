@@ -10,7 +10,7 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- Mutable 'Set' data structure in 'IO'.
+-- Mutable t'Set' data structure in 'IO'.
 --
 -- A JavaScript [Set](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set). This is a convenience for manipulating JavaScript data structures from Haskell.
 --
@@ -46,6 +46,8 @@ import           Miso.DSL (jsg, JSVal, ToJSVal, FromJSVal, (!))
 import qualified Miso.DSL as DSL
 import           Miso.FFI (callFunction)
 -----------------------------------------------------------------------------
+-- | Typed wrapper around a JavaScript
+-- [Set](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set).
 newtype Set key = Set JSVal deriving (FromJSVal, ToJSVal)
 -----------------------------------------------------------------------------
 -- | Constructs a new JS [Set](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set) in t'IO'.
@@ -67,7 +69,7 @@ clear (Set m) = void (callFunction m "clear" ())
 size :: Set key -> IO Int
 size (Set m) = DSL.fromJSValUnchecked =<< m ! "size"
 -----------------------------------------------------------------------------
--- | Checks existence of 'key' in t'Set', returns t'Bool.
+-- | Checks existence of @key@ in t'Set', returns t'Bool'.
 member :: ToJSVal key => key -> Set key -> IO Bool
 member key (Set m) = DSL.fromJSValUnchecked =<< callFunction m "has" =<< DSL.toJSVal key
 -----------------------------------------------------------------------------

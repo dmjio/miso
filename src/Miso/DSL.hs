@@ -109,7 +109,10 @@ class ToJSVal a where
     gToJSVal (from x) o
     toJSVal o
 -----------------------------------------------------------------------------
+-- | Generic helper for marshaling record fields into a JavaScript t'Object'.
+-- Used by the default 'ToJSVal' implementation; not normally called directly.
 class GToJSVal (f :: Type -> Type) where
+  -- | Write the fields of @f a@ into the given t'Object'.
   gToJSVal :: f a -> Object -> IO ()
 -----------------------------------------------------------------------------
 instance GToJSVal a => GToJSVal (D1 i a) where
@@ -237,7 +240,10 @@ class FromJSVal a where
       Nothing -> error "fromJSValUnchecked: failure"
       Just y -> pure y
 -----------------------------------------------------------------------------
+-- | Generic helper for unmarshaling JavaScript t'Object' fields into Haskell record fields.
+-- Used by the default 'FromJSVal' implementation; not normally called directly.
 class GFromJSVal (f :: Type -> Type) where
+  -- | Read the fields of @f a@ from the given t'Object'.
   gFromJSVal :: Object -> IO (Maybe (f a))
 -----------------------------------------------------------------------------
 instance GFromJSVal a => GFromJSVal (D1 i a) where
@@ -492,6 +498,7 @@ infixr 2 #
   invokeFunction func o' args'
 {-# INLINABLE (#) #-}
 -----------------------------------------------------------------------------
+-- | Invoke a t'Function' with the given arguments and unmarshal the result.
 apply :: (FromJSVal a, ToArgs args) => Function -> args -> IO a
 apply (Function func) args = do
   o <- toJSVal global
@@ -514,7 +521,7 @@ create = Object <$> create_ffi
 {-# INLINABLE create #-}
 -----------------------------------------------------------------------------
 -- | Creates a new JS t'Object' populated with key-value pairs specified
--- in the list. Meant for use with 'inline' JS functionality.
+-- in the list. Meant for use with 'Miso.FFI.Internal.inline' JS functionality.
 --
 -- @
 -- update = \case

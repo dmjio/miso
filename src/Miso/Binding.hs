@@ -19,11 +19,11 @@
 --
 -- miso includes an experimental feature that allows fields of different models to be synchronized
 -- against each another in response to model changes. See 'Miso.Binding'. Note this feature is
--- experimental, it is recommended to use asynchronous Component communication (like 'broadcast') by default.
+-- experimental, it is recommended to use asynchronous Component communication (like 'Miso.Runtime.broadcast') by default.
 --
 -- This module exposes combinators to construct a 'Binding' which holds two lenses that will alter
--- t'Component' model state along the parent-child relationship using a 'Lens'. Practically, this means when
--- one t'Component' is marked as dirty, another t'Component' will also potentially will be marked as
+-- t'Miso.Types.Component' model state along the parent-child relationship using a t'Miso.Lens.Lens'. Practically, this means when
+-- one t'Miso.Types.Component' is marked as dirty, another t'Miso.Types.Component' will also potentially will be marked as
 -- dirty if they are connected along an edge ('Binding').
 --
 -- See the [miso-reactive](https://github.com/haskell-miso/miso-reactive) project for more information.
@@ -70,7 +70,7 @@ data Binding parent child
   | forall field . Bidirectional Precedence (parent -> field) (field -> parent -> parent) (child -> field) (field -> child -> child)
 -----------------------------------------------------------------------------
 -- | Data type used to express if the Child state should take precendence
--- over the parent state during 'Component' mount.
+-- over the parent state during t'Miso.Types.Component' 'Miso.Types.mount'.
 data Precedence = Child | Parent
   deriving (Eq, Show)
 -----------------------------------------------------------------------------
@@ -109,7 +109,7 @@ p <---> c = Bidirectional Parent (get_ p) (set_ p) (get_ c) (set_ c)
     get_ lens_ record = getConst (lens_ Const record)
     set_ lens_ field = runIdentity . lens_ (\_ -> Identity field)
 -----------------------------------------------------------------------------
--- | Like '<--->' but biases to inherit 'Parent' state on 'Component' 'mount'.
+-- | Like '<--->' but biases to inherit 'Parent' state on t'Miso.Types.Component' 'Miso.Types.mount'.
 --
 -- @since 1.10.0.0
 (<--->>)
@@ -121,7 +121,7 @@ l <--->> r =
     Bidirectional _ w x y z -> Bidirectional Parent w x y z
     _ -> error "impossible"
 -----------------------------------------------------------------------------
--- | Like '<--->' but biases to inherit 'Child' state on 'Component' 'mount'.
+-- | Like '<--->' but biases to inherit 'Child' state on t'Miso.Types.Component' 'Miso.Types.mount'.
 --
 -- @since 1.10.0.0
 (<<--->)
@@ -144,7 +144,7 @@ p ---> c = ParentToChild (get_ p) (set_ c)
     get_ lens_ record = getConst (lens_ Const record)
     set_ lens_ field = runIdentity . lens_ (\_ -> Identity field)
 -----------------------------------------------------------------------------
--- | Like '<-->' but biases to inherit 'Parent' state on 'Component' 'mount'.
+-- | Like '<-->' but biases to inherit 'Parent' state on t'Miso.Types.Component' 'Miso.Types.mount'.
 --
 -- @since 1.10.0.0
 (<-->>)
@@ -156,7 +156,7 @@ l <-->> r =
     Bidirectional _ w x y z -> Bidirectional Parent w x y z
     _ -> error "impossible"
 -----------------------------------------------------------------------------
--- | Like '<-->' but biases to inherit 'Child' state on 'Component' 'mount'.
+-- | Like '<-->' but biases to inherit 'Child' state on t'Miso.Types.Component' 'Miso.Types.mount'.
 --
 -- @since 1.10.0.0
 (<<-->)

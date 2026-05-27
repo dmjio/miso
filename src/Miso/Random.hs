@@ -55,7 +55,7 @@ newStdGen = do
   seed <- FFI.getRandomValue
   StdGen . Function <$> FFI.splitmix32 seed
 -----------------------------------------------------------------------------
--- | Get the next t'StdGen', extracting the value, useful with t'State'.
+-- | Get the next t'StdGen', extracting the value, useful with t'Control.Monad.State.State'.
 next :: StdGen -> (Double, StdGen)
 next (StdGen func) = unsafePerformIO $ do
   result <- apply func ()

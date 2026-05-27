@@ -75,6 +75,8 @@ value = oneOf
   , Null <$ null
   ]
 ----------------------------------------------------------------------------
+-- | Purely decode a JSON 'MisoString' into a 'Value', returning a 'Left'
+-- error string on lexical or parse failure. Used on the server-side (SSR).
 decodePure :: MisoString -> Either String Value
 decodePure = first show
   . either (Left . LexicalError) (parse value . fst)
