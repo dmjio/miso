@@ -60,6 +60,13 @@
 --
 -- * __State management__: 'Component' @model@ state can be manipulated using "Miso.Lens" or "Miso.State" in response to application events.
 --
+-- = Architecture
+--
+-- * __React__: miso implements a subset of the [React](react.dev) architecture including 'Component', Lifecycle Hooks, Virtual DOM, Event delegation,
+-- [Fragment](https://react.dev/reference/react/Fragment) and [Props](https://react.dev/learn/passing-props-to-a-component). 
+--
+-- * __Elm__: miso also implements the [Elm](https://elm-lang.org) architecture (MVU) and the 'mailbox' communication pattern.
+--
 -- = The Model-View-Update pattern
 --
 -- The core type of miso is 'Component'. The 'Component' API adheres to the [Elm](https://elm-lang.org)
@@ -69,7 +76,7 @@
 -- * __model__: This can be any user-defined type in Haskell. An 'Eq' constraint
 --   is required. We recommend using the default derived 'Eq' instance.
 --
--- * __view__: @'view' :: model -> 'View' model action@
+-- * __view__: @'view' :: props -> model -> 'View' model action@
 --   This is the templating function that is used to construct a new virtual DOM
 --   (or HTML if rendering on the server).
 --
@@ -98,7 +105,7 @@
 -- @
 -- data 'SomeComponent' parent
 --   = forall model action props . (Eq model, Eq props)
---   => 'SomeComponent' props ('Component' parent model action)
+--   => 'SomeComponent' props ('Component' parent props model action)
 -- @
 --
 -- The smart constructors:
@@ -128,15 +135,19 @@
 -- -----------------------------------------------------------------------------
 --                        * - The type of the parent Component 'model'
 --                        |    * - The type of the parent Component 'props' accessible to the child
---                        |    |     * - The type of the current Component's 'model'
---                        |    |     |   * - The type of the action that updates the 'model'
---                        |    |     |   |
+--                        |    |   * - The type of the current Component's 'model'
+--                        |    |   |   * - The type of the action that updates the 'model'
+--                        |    |   |   |
 -- counter :: 'Component' ROOT () Int Action
 -- counter = 'vcomp' m u v
 --   where
 --     m :: Int
 --     m = 0
---
+--                              * - The type of the parent Component 'model'
+--                              |   * - The type of the parent Component 'props' accessible to the child
+--                              |   |   * - The type of the current Component's 'model'
+--                              |   |   |   * - The type of the action that updates the 'model'
+--                              |   |   |   |
 --     u :: Action -> 'Effect' ROOT () Int Action
 --     u = \\case
 --       Add -> 'this' += 1
@@ -206,14 +217,14 @@
 --   => 'MisoString'
 --   -> 'Component' model () child action
 --   -> 'View' model a
--- key '+>' vcomp = 'VComp' (Just (toKey key)) ('SomeComponent' vcomp)
+-- key '+>' vcomp = 'VComp' (Just (toKey key)) ('SomeComponent' () vcomp)
 -- @
 --
 -- Practically, using this combinator looks like:
 --
 -- @
--- view :: () -> Int -> 'View' Int action
--- view x = 'div_' [ 'id_' "container" ] [ "counter" '+>' counter ]
+-- view :: props -> Int -> 'View' Int action
+-- view _ _ = 'div_' [ 'id_' "container" ] [ "counter" '+>' counter ]
 -- @
 --
 -- You'll notice the @\"counter\"@ string was specified. This is a unique 'Key'
