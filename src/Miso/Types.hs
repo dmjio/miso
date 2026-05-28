@@ -172,6 +172,11 @@ data Component parent props model action
   -- ^ action to execute during t'Miso.Types.Component' unmount phase.
   --
   -- @since 1.9.0.0
+  , props :: Maybe (props -> props -> action)
+  -- ^ action to execute when 'Component' @props@ have changed (a.k.a. @props@ phase).
+  -- Receives previous @props@ and current @props@ as arguments.
+  --
+  -- @since 1.11.0.0
   }
 -----------------------------------------------------------------------------
 -- | @mountPoint@ for t'Miso.Types.Component', e.g "body"
@@ -250,6 +255,7 @@ component m u v = Component
   , eventPropagation = False
   , mount = Nothing
   , unmount = Nothing
+  , props = Nothing
   }
 -----------------------------------------------------------------------------
 -- | Synonym for 'component'
