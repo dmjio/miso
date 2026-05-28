@@ -232,7 +232,7 @@ initialize events _componentParentId hydrate isRoot initialProps comp@Component 
         , _componentModel = initializedModel
         , _prevComponentProps = _componentProps
         , _componentPropsPhase = \oldProps newProps ->
-            case props of
+            case onPropsChanged of
               Just f -> _componentSink (f oldProps newProps)
               _ -> pure ()
         , ..
