@@ -69,6 +69,7 @@ module Miso.Svg.Property
   , min_
   , mode_
   , numOctaves_
+  , offset_
   , operator_
   , order_
   , orient_
@@ -418,6 +419,10 @@ mode_ = attr "mode"
 -- | [numOctaves](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute/numOctaves) attribute
 numOctaves_ ::  MisoString -> Attribute action
 numOctaves_ = attr "numOctaves"
+-----------------------------------------------------------------------------
+-- | [offset](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/stop) attribute
+offset_ ::  MisoString -> Attribute action
+offset_ = attr "offset"
 -----------------------------------------------------------------------------
 -- | [operator](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute/operator) attribute
 operator_ ::  MisoString -> Attribute action
