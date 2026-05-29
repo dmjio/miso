@@ -1100,8 +1100,9 @@ buildVTree events_ parentId_ vcompId hydrate snk logLevel_ = \case
         componentId_ <- fromJSValUnchecked =<< vcomp_ ! ("componentId" :: MisoString)
         currentProps <- _componentProps . (IM.! componentId_) <$> readIORef components
         when (currentProps /= newProps) $ do
-          modifyComponent componentId_ (componentProps .= newProps)
-          modifyComponent componentId_ (prevComponentProps .= currentProps)
+          modifyComponent componentId_ $ do 
+            componentProps .= newProps
+            prevComponentProps .= currentProps
           enqueueSchedule componentId_
 
     FFI.set "diffProps" diffPropsCallback vcomp_
