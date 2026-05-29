@@ -196,10 +196,10 @@ initialize events _componentParentId hydrate isRoot initialProps comp@Component 
       putMVar frame =<< fromJSValUnchecked jsval
 
   let _componentDraw = \newModel -> do
-        props <- (^. componentProps) . (IM.! _componentId) <$> readIORef components
+        currentProps <- (^. componentProps) . (IM.! _componentId) <$> readIORef components
         newVTree <-
           buildVTree events _componentParentId _componentId Draw
-            _componentSink logLevel (view props newModel)
+            _componentSink logLevel (view currentProps newModel)
         oldVTree <- liftIO (readIORef _componentVTree)
         _frame <- requestAnimationFrame rAFCallback
         _timestamp :: Double <- takeMVar frame
@@ -208,8 +208,8 @@ initialize events _componentParentId hydrate isRoot initialProps comp@Component 
         liftIO (atomicWriteIORef _componentVTree newVTree)
         FFI.flush
 
-  let _componentApplyActions = \(actions :: [action]) model_ comps props -> do 
-        let info = ComponentInfo _componentId _componentParentId _componentDOMRef props
+  let _componentApplyActions = \(actions :: [action]) model_ comps currentProps -> do
+        let info = ComponentInfo _componentId _componentParentId _componentDOMRef currentProps
         List.foldl' (\(vcomps, m, ss, dirtySet) a ->
           case runEffect (update a) info m of
             (n, sss) ->
@@ -230,6 +230,11 @@ initialize events _componentParentId hydrate isRoot initialProps comp@Component 
         , _componentModelDirty = modelCheck
         , _componentChildren = mempty
         , _componentModel = initializedModel
+        , _prevComponentProps = _componentProps
+        , _componentPropsPhase = \oldProps newProps ->
+            case onPropsChanged of
+              Just f -> _componentSink (f oldProps newProps)
+              _ -> pure ()
         , ..
         }
 
@@ -317,9 +322,10 @@ scheduler =
         | vcompId < 0 -> do
             -- props propagation, negated 'ComponentId' indicates render-phase only.
             vcomps <- liftIO (readIORef components)
-            forM_ (IM.lookup (negate vcompId) vcomps) $ \ComponentState {..} ->
+            forM_ (IM.lookup (negate vcompId) vcomps) $ \ComponentState {..} -> do
               _componentDraw _componentModel
-                             
+              _componentPropsPhase _prevComponentProps _componentProps
+
       Just (vcompId, actions) -> do
         mounted <- isMounted vcompId
         when mounted (run vcompId actions)
@@ -612,7 +618,7 @@ dequeue
 dequeue q =
   case q ^. queueSchedule of
     S.Empty -> Nothing
-    sched@(vcompId S.:<| leftover) ->
+    sched@(vcompId S.:<| _) ->
       case q ^. queue . at vcompId of
         Nothing ->
           let (_, remaining) = S.spanl (== vcompId) sched
@@ -675,6 +681,9 @@ componentBindings = lens _componentBindings $ \record field -> record { _compone
 componentProps :: Lens (ComponentState parent props model action) props
 componentProps = lens _componentProps $ \record field -> record { _componentProps = field }
 -----------------------------------------------------------------------------
+prevComponentProps :: Lens (ComponentState parent props model action) props
+prevComponentProps = lens _prevComponentProps $ \record field -> record { _prevComponentProps = field }
+-----------------------------------------------------------------------------
 -- | Hydrate avoids calling @diff@, and instead calls @hydrate@
 -- 'Draw' invokes 'Miso.Diff.diff'
 data Hydrate
@@ -691,6 +700,8 @@ data ComponentState parent props model action
   -- ^ The ID of the t'Miso.Types.Component''s parent
   , _componentProps :: props
   -- ^ The current props passed to this t'Miso.Types.Component'
+  , _prevComponentProps :: props
+  -- ^ The previous Component props passed to this t'Miso.Types.Component'
   , _componentSubThreads :: IORef (Map MisoString ThreadId)
   -- ^ Mapping of all 'Sub' in use by t'Miso.Types.Component'
   , _componentDOMRef :: DOMRef
@@ -713,6 +724,8 @@ data ComponentState parent props model action
   -- ^ Mailbox for asynchronous t'Miso.Types.Component' communication
   , _componentDraw :: model -> IO ()
   -- ^ Helper function for t'Miso.Types.Component' rendering
+  , _componentPropsPhase :: props -> props -> IO ()
+  -- ^ Helper function for t'Miso.Types.Component' props changed phase.
   , _componentModelDirty :: model -> model -> Bool
   -- ^ Model diffing
   , _componentApplyActions
@@ -1087,7 +1100,9 @@ buildVTree events_ parentId_ vcompId hydrate snk logLevel_ = \case
         componentId_ <- fromJSValUnchecked =<< vcomp_ ! ("componentId" :: MisoString)
         currentProps <- _componentProps . (IM.! componentId_) <$> readIORef components
         when (currentProps /= newProps) $ do
-          modifyComponent componentId_ (componentProps .= newProps)
+          modifyComponent componentId_ $ do 
+            componentProps .= newProps
+            prevComponentProps .= currentProps
           enqueueSchedule componentId_
 
     FFI.set "diffProps" diffPropsCallback vcomp_
