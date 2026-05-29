@@ -256,149 +256,6 @@
 --
 -- 'startApp' and 'miso' will always infer @parent@ as 'ROOT'.
 --
--- = Props
---
--- Inspired by [React props](https://react.dev/learn/passing-props-to-a-component),
--- @miso@ allows a parent 'Component' to pass read-only data down to a child 'Component'
--- via a mechanism called /props/ (short for /properties/).
---
--- == Props vs. Component-local state
---
--- * __model__: Component-local state. It is owned and mutated exclusively by the 'Component'
---   itself through its 'Miso.Types.update' function. No other 'Component' can write to it directly.
---
--- * __props__: Data /inherited/ from the @parent@ 'Component'. Props flow downward through
---   the component hierarchy and are read-only from the child's perspective. The parent decides
---   what props to pass at mount time; the child cannot mutate them. Props that change in a
---   the parent cause the child to re-render.
---
--- This mirrors the distinction in React between component state (@useState@) and props
--- received from above (@function MyComponent({ name }) { ... }@).
---
--- === When to use props
---
--- Props are best suited for /metadata/ — contextual or configuration data that the child needs
--- to know about but should not own. Good examples: a user's display name, a theme token, a
--- locale string, or a read-only identifier used to customise rendering.
---
--- If the data drives the child's own business logic — counters it increments, form fields it
--- edits, async state it manages — that data belongs in the child's @model@ instead. Putting
--- mutable business-logic state in @props@ would require the parent to own and thread through
--- every change, creating unnecessary coupling. Prefer @props@ for \"what the child should
--- know\" and @model@ for \"what the child should do\".
---
--- == Props in 'Miso.Types.view'
---
--- The 'Miso.Types.view' field of a 'Component' always takes @props@ as its first argument:
---
--- @
--- view :: props -> model -> 'View' model action
--- @
---
--- Top-level applications have no parent, so @props@ is always @()@:
---
--- @
--- view :: () -> model -> 'View' model action
--- view _props model = …
--- @
---
--- == Props in 'Effect' \/ 'Miso.Types.update'
---
--- Use 'getProps' inside the 'Effect' monad to read the current value of @props@:
---
--- @
--- update :: Action -> 'Effect' parent props Model Action
--- update = \\case
---   SomeAction -> do
---     p <- 'getProps'
---     'io_' ('consoleLog' (ms (show p)))
--- @
---
--- Alternatively, use the 'Miso.Lens.view' combinator with the 'props' lens:
---
--- @
--- update = \\case
---   SomeAction -> do
---     p <- 'Miso.Lens.view' 'props'
---     …
--- @
---
--- == 'ROOT' — the top-level 'Component'
---
--- When a 'Component' is passed to 'startApp' (or 'miso') it has no parent.
--- The @parent@ type is specialized to 'ROOT' and @props@ is fixed to @()@:
---
--- @
--- type 'App' model action = 'Component' 'ROOT' () model action
--- @
---
--- Because there is no parent to inherit from, @props@ will always be @()@ for a
--- root-level 'Component'. You can simply ignore the first argument in 'view' and
--- skip 'getProps' in 'Miso.Types.update'.
---
--- == Passing props to a child 'Component'
---
--- Use 'mountWithProps_' (keyed) or 'mountWithProps' (unkeyed) in the parent's 'view' to
--- mount a child and supply its props:
---
--- @
--- 'mountWithProps_'
---   :: ('Eq' child, 'Eq' props)
---   => 'MisoString'
---   -> props
---   -> 'Component' parent props child action
---   -> 'View' parent a
--- @
---
--- == Example: child reading parent-supplied props
---
--- The following shows a parent 'Component' that maintains a greeting string in its
--- @model@ and passes it as @props@ to a child 'Component'. The child renders the
--- greeting and can also read it from within its 'Miso.Types.update' function.
---
--- @
--- -----------------------------------------------------------------------------
--- -- The props type: what the parent shares with the child
--- newtype Greeting = Greeting 'MisoString' deriving ('Eq')
--- -----------------------------------------------------------------------------
--- -- Child component
--- --
--- --                   parent      props    model  action
--- --                   |           |        |      |
--- child :: 'Component' ParentModel Greeting ()     ChildAction
--- child = 'vcomp' () updateChild viewChild
---   where
---     viewChild :: Greeting -> () -> 'View' () ChildAction
---     viewChild (Greeting g) _ =
---       'div_' [] [ 'text' ("Hello, " <> g <> "!") ]
---
---     updateChild :: ChildAction -> 'Effect' ParentModel Greeting () ChildAction
---     updateChild = \\case
---       ReadGreeting -> do
---         Greeting g <- 'getProps'
---         'io_' ('consoleLog' g)
--- -----------------------------------------------------------------------------
--- -- Parent component: owns the greeting, passes it to the child as props
--- parent :: 'App' ParentModel ParentAction
--- parent = 'vcomp' (ParentModel "World") 'noop' viewParent
---   where
---     viewParent :: () -> ParentModel -> 'View' ParentModel ParentAction
---     viewParent _ (ParentModel g) =
---       'mountWithProps_' "child" (Greeting g) child
--- -----------------------------------------------------------------------------
--- newtype ParentModel = ParentModel 'MisoString' deriving ('Eq')
--- data ChildAction = ReadGreeting
--- data ParentAction
--- @
---
--- A few things to notice:
---
--- * The child's @parent@ type parameter is @ParentModel@. This must match the
---   parent 'Component' @model@ type — 'mountWithProps_' enforces this at compile time.
--- * 'getProps' inside the child's 'Miso.Types.update' yields a @Greeting@, not
---   the full @ParentModel@. The child only sees what the parent explicitly chose to share.
--- * The root 'App' always has @props ~ ()@; no extra plumbing is needed when calling 'startApp'.
---
 -- = 'VComp' lifecycle hooks
 --
 -- 'Component' are mounted on the fly during diffing. All t'Component` are equipped with `mount` and `unmount` hooks. This allows the defining of custom actions that will be processed in response to lifecycle events.
@@ -459,7 +316,7 @@
 --
 -- @
 -- -- Keyed fragment — survives reordering without full teardown\/remount
--- 'vfrag_' "my-key" [ 'li_' [] [ 'text' "A" ], 'li_' [] [ 'text' "B" ] ]
+-- 'vfrag_' "my-key" [ 'li_' [] [ 'text' "Item A" ], 'li_' [] [ 'text' "Item B" ] ]
 -- @
 --
 -- Fragments may be nested — a 'VFrag' child may itself be a 'VFrag'. The diff function
@@ -616,6 +473,150 @@
 -- 'ComponentInfo' provides the current 'ComponentId' the @parent@ 'ComponentId', and the 'DOMRef' ('_componentDOMRef') that the 'Component' is mounted on.
 --
 -- = 'Component' communication
+--
+-- = Props
+--
+-- Inspired by [React props](https://react.dev/learn/passing-props-to-a-component),
+-- @miso@ allows a parent 'Component' to pass read-only data down to a child 'Component'
+-- via a mechanism called /props/ (short for /properties/).
+--
+-- == Props vs. Component-local state
+--
+-- * __model__: Component-local state. It is owned and mutated exclusively by the 'Component'
+--   itself through its 'Miso.Types.update' function. No other 'Component' can write to it directly.
+--
+-- * __props__: Data /inherited/ from the @parent@ 'Component'. Props flow downward through
+--   the component hierarchy and are read-only from the child's perspective. The parent decides
+--   what props to pass at mount time; the child cannot mutate them. Props that change in a
+--   the parent cause the child to re-render.
+--
+-- This mirrors the distinction in React between component state (@useState@) and props
+-- received from above (@function MyComponent({ name }) { ... }@).
+--
+-- === When to use props
+--
+-- Props are best suited for /metadata/ — contextual or configuration data that the child needs
+-- to know about but should not own. Good examples: a user's display name, a theme token, a
+-- locale string, or a read-only identifier used to customise rendering.
+--
+-- If the data drives the child's own business logic — counters it increments, form fields it
+-- edits, async state it manages — that data belongs in the child's @model@ instead. Putting
+-- mutable business-logic state in @props@ would require the parent to own and thread through
+-- every change, creating unnecessary coupling. Prefer @props@ for \"what the child should
+-- know\" and @model@ for \"what the child should do\".
+--
+-- == Props in 'Miso.Types.view'
+--
+-- The 'Miso.Types.view' field of a 'Component' always takes @props@ as its first argument:
+--
+-- @
+-- view :: props -> model -> 'View' model action
+-- @
+--
+-- Top-level applications have no parent, so @props@ is always @()@:
+--
+-- @
+-- view :: () -> model -> 'View' model action
+-- view _props model = …
+-- @
+--
+-- == Props in 'Effect' \/ 'Miso.Types.update'
+--
+-- Use 'getProps' inside the 'Effect' monad to read the current value of @props@:
+--
+-- @
+-- update :: Action -> 'Effect' parent props Model Action
+-- update = \\case
+--   SomeAction -> do
+--     p <- 'getProps'
+--     'io_' ('consoleLog' (ms (show p)))
+-- @
+--
+-- Alternatively, use the 'Miso.Lens.view' combinator with the 'props' lens:
+--
+-- @
+-- update = \\case
+--   SomeAction -> do
+--     p <- 'Miso.Lens.view' 'props'
+--     …
+-- @
+--
+-- == 'ROOT' — the top-level 'Component'
+--
+-- When a 'Component' is passed to 'startApp' (or 'miso') it has no parent.
+-- The @parent@ type is specialized to 'ROOT' and @props@ is fixed to @()@:
+--
+-- @
+-- type 'App' model action = 'Component' 'ROOT' () model action
+-- @
+--
+-- Because there is no parent to inherit from, @props@ will always be @()@ for a
+-- root-level 'Component'. You can simply ignore the first argument in 'view' and
+-- skip 'getProps' in 'Miso.Types.update'.
+--
+-- == Passing props to a child 'Component'
+--
+-- Use 'mountWithProps_' (keyed) or 'mountWithProps' (unkeyed) in the parent's 'view' to
+-- mount a child and supply its props:
+--
+-- @
+-- 'mountWithProps_'
+--   :: ('Eq' child, 'Eq' props)
+--   => 'MisoString'
+--   -> props
+--   -> 'Component' parent props child action
+--   -> 'View' parent a
+-- @
+--
+-- == Example: child reading parent-supplied props
+--
+-- The following shows a parent 'Component' that maintains a greeting string in its
+-- @model@ and passes it as @props@ to a child 'Component'. The child renders the
+-- greeting and can also read it from within its 'Miso.Types.update' function.
+--
+-- @
+-- -----------------------------------------------------------------------------
+-- -- The props type: what the parent shares with the child
+-- newtype Greeting = Greeting 'MisoString' deriving ('Eq')
+-- -----------------------------------------------------------------------------
+-- -- Child component
+-- --
+-- --                   parent      props    model  action
+-- --                   |           |        |      |
+-- child :: 'Component' ParentModel Greeting ()     ChildAction
+-- child = 'vcomp' () updateChild viewChild
+--   where
+--     viewChild :: Greeting -> () -> 'View' () ChildAction
+--     viewChild (Greeting g) _ =
+--       'div_' [] [ 'text' ("Hello, " <> g <> "!") ]
+--
+--     updateChild :: ChildAction -> 'Effect' ParentModel Greeting () ChildAction
+--     updateChild = \\case
+--       ReadGreeting -> do
+--         Greeting g <- 'getProps'
+--         'io_' ('consoleLog' g)
+-- -----------------------------------------------------------------------------
+-- -- Parent component: owns the greeting, passes it to the child as props
+-- parent :: 'App' ParentModel ParentAction
+-- parent = 'vcomp' (ParentModel "World") 'noop' viewParent
+--   where
+--     viewParent :: () -> ParentModel -> 'View' ParentModel ParentAction
+--     viewParent _ (ParentModel g) =
+--       'mountWithProps_' "child" (Greeting g) child
+-- -----------------------------------------------------------------------------
+-- newtype ParentModel = ParentModel 'MisoString' deriving ('Eq')
+-- data ChildAction = ReadGreeting
+-- data ParentAction
+-- @
+--
+-- A few things to notice:
+--
+-- * The child's @parent@ type parameter is @ParentModel@. This must match the
+--   parent 'Component' @model@ type — 'mountWithProps_' enforces this at compile time.
+-- * 'getProps' inside the child's 'Miso.Types.update' yields a @Greeting@, not
+--   the full @ParentModel@. The child only sees what the parent explicitly chose to share.
+-- * The root 'App' always has @props ~ ()@; no extra plumbing is needed when calling 'startApp'.
+--
 --
 -- == Asynchronous communication
 --
