@@ -153,9 +153,10 @@ library
     Miso.Subscription.History
     Miso.Subscription.Keyboard
     Miso.Subscription.Mouse
-    Miso.Subscription.Window
     Miso.Subscription.OnLine
+    Miso.Subscription.RAF
     Miso.Subscription.Util
+    Miso.Subscription.Window
     Miso.Svg
     Miso.Svg.Property
     Miso.Svg.Element

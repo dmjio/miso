@@ -20,6 +20,8 @@ module Miso.Subscription
   , module Miso.Subscription.Window
     -- ** OnLine
   , module Miso.Subscription.OnLine
+    -- ** requestForAnimationFrame
+  , module Miso.Subscription.RAF
   ) where
 -----------------------------------------------------------------------------
 import Miso.Subscription.Mouse
@@ -27,4 +29,5 @@ import Miso.Subscription.Keyboard
 import Miso.Subscription.History
 import Miso.Subscription.Window
 import Miso.Subscription.OnLine
+import Miso.Subscription.RAF
 -----------------------------------------------------------------------------
