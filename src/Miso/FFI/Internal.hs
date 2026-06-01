@@ -79,6 +79,7 @@ module Miso.FFI.Internal
    , select
    , setSelectionRange
    , scrollIntoView
+   , requestFullscreen
    , alert
    , locationReload
    -- * CSS
@@ -562,6 +563,22 @@ scrollIntoView elId = do
   el <- jsg "document" # "getElementById" $ [elId]
   _ <- el # "scrollIntoView" $ ()
   pure ()
+-----------------------------------------------------------------------------
+-- | Calls @document.documentElement.requestFullscreen()@, falling back to
+-- @webkitRequestFullscreen@ for Safari.
+requestFullscreen :: IO ()
+{-# INLINABLE requestFullscreen #-}
+requestFullscreen = do
+  doc   <- jsg "document"
+  docEl <- doc ! "documentElement"
+  rfs   <- docEl ! "requestFullscreen"
+  undef <- isUndefined rfs
+  if not undef
+    then void $ docEl # "requestFullscreen" $ ()
+    else do
+      wrfs   <- docEl ! "webkitRequestFullscreen"
+      wundef <- isUndefined wrfs
+      when (not wundef) $ void $ docEl # "webkitRequestFullscreen" $ ()
 -----------------------------------------------------------------------------
 -- | Calls the @alert()@ function.
 alert :: MisoString -> IO ()

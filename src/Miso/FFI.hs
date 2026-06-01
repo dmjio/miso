@@ -101,6 +101,8 @@ module Miso.FFI
   , inline
     -- ** Scroll
   , scrollIntoView
+    -- ** Fullscreen
+  , requestFullscreen
     -- ** SplitMix32
   , splitmix32
     -- ** Math.random()
