@@ -16,6 +16,8 @@
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE CPP                        #-}
 -----------------------------------------------------------------------------
+{-# OPTIONS_GHC -Wno-orphans #-}
+-----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Types
 -- Copyright   :  (C) 2016-2026 David M. Johnson
@@ -746,6 +748,9 @@ emptyURI = URI mempty mempty mempty
 ----------------------------------------------------------------------------
 instance ToMisoString URI where
   toMisoString = prettyURI
+----------------------------------------------------------------------------
+instance ToJSON URI where
+  toJSON = toJSON . toMisoString
 ----------------------------------------------------------------------------
 -- | Pretty-prints a t'URI'.
 prettyURI :: URI -> MisoString
