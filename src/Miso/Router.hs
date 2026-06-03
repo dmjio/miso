@@ -152,6 +152,7 @@ module Miso.Router
 -----------------------------------------------------------------------------
 import qualified Data.Map.Strict as M
 import           Data.Maybe
+import           Data.Bifunctor (first)
 import           Data.Functor
 import           Data.Proxy
 import qualified Data.Char as C
@@ -162,6 +163,7 @@ import           GHC.Generics
 import           GHC.TypeLits
 -----------------------------------------------------------------------------
 import           Miso.Types hiding (model, fragment, fragment_)
+import           Miso.JSON (FromJSON (..))
 import           Miso.Util
 import qualified Miso.Html.Property as P
 import           Miso.Util.Parser hiding (NoParses)
@@ -335,6 +337,12 @@ parseURI txt =
     Left (L.LexerError err _) -> Left err
     Left (L.UnexpectedEOF eof) -> Left ("EOF: " <> ms (show eof))
     Right tokens -> Right (tokensToURI tokens)
+-----------------------------------------------------------------------------
+instance FromMisoString URI where
+    fromMisoStringEither = first fromMisoString . parseURI
+-----------------------------------------------------------------------------
+instance FromJSON URI where
+    parseJSON = either fail pure . fromMisoStringEither <=< parseJSON
 -----------------------------------------------------------------------------
 -- | Class used to facilitate routing for miso applications
 class Router route where
