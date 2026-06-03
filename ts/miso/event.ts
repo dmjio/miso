@@ -206,50 +206,43 @@ function propagateWhileAble<T>(vtree: VTree<T>, event: Event): void {
     }
   }
 }
-/* Walks down obj following the path described by `at`, then filters primitive
-       values (string, numbers and booleans). Sort of like JSON.stringify(), but
-       on an Event that is stripped of impure references.
-    */
-export function eventJSON(at: string | Array<string>, obj: any): Object[] {
-  /* If at is of type [[MisoString]] */
-  if (typeof at[0] === 'object') {
-    var ret = [];
-    for (var i: number = 0; i < at.length; i++) {
-      ret.push(eventJSON(at[i], obj));
-    }
-    return ret;
+/* Walk a sequence of property keys into an object */
+function resolvePath(obj: any, path: Array<string>): any {
+  return path.reduce((node, key) => node?.[key], obj);
+}
+
+/* True for array-like objects, but not DOM select elements */
+function isSequence(obj: any): boolean {
+  return Array.isArray(obj) || ('length' in obj && obj['localName'] !== 'select');
+}
+
+/* Safari throws TypeError reading these fields on a checkbox input:
+   https://stackoverflow.com/a/25569117/453261
+   https://html.spec.whatwg.org/multipage/input.html#do-not-apply */
+const INPUT_SKIP = new Set(['selectionDirection', 'selectionStart', 'selectionEnd']);
+
+/* Extract primitive-valued properties, walking the full prototype chain */
+function serializePrimitives(obj: any): Record<string, string | number | boolean> {
+  const out: Record<string, string | number | boolean> = {};
+  for (const key of getAllPropertyNames(obj)) {
+    if (obj['localName'] === 'input' && INPUT_SKIP.has(key)) continue;
+    const v = obj[key];
+    if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') out[key] = v;
   }
-  for (const a of at) obj = obj[a];
-  /* If obj is a list-like object */
-  var newObj;
-  if (obj instanceof Array || ('length' in obj && obj['localName'] !== 'select')) {
-    newObj = [];
-    for (var j = 0; j < obj.length; j++) {
-      newObj.push(eventJSON([], obj[j]));
-    }
-    return newObj;
+  return out;
+}
+
+/* Walks into obj via path `at`, then serializes the result.
+   `at` is either a flat key path (string[]) or a list of paths (string[][]). */
+export function eventJSON(at: Array<string> | Array<Array<string>>, obj: any): any {
+  if (at.length > 0 && Array.isArray(at[0])) {
+    return (at as Array<Array<string>>).map(path => eventJSON(path, obj));
   }
-  /* If obj is a non-list-like object */
-  newObj = {};
-  for (var key in getAllPropertyNames(obj)) {
-    /* bug in safari, throws TypeError if the following fields are referenced on a checkbox */
-    /* https://stackoverflow.com/a/25569117/453261 */
-    /* https://html.spec.whatwg.org/multipage/input.html#do-not-apply */
-    if (
-      obj['localName'] === 'input' &&
-      (key === 'selectionDirection' || key === 'selectionStart' || key === 'selectionEnd')
-    ) {
-      continue;
-    }
-    if (
-      typeof obj[key] == 'string' ||
-      typeof obj[key] == 'number' ||
-      typeof obj[key] == 'boolean'
-    ) {
-      newObj[key] = obj[key];
-    }
+  const node = resolvePath(obj, at as Array<string>);
+  if (isSequence(node)) {
+    return Array.from({ length: node.length }, (_, i) => eventJSON([], node[i]));
   }
-  return newObj;
+  return serializePrimitives(node);
 }
 /* Returns true if target is among the DOM refs owned by vtree (handles VFrag/VComp) */
 function containsDOMRef<T>(vtree: VTree<T>, target: T, context: EventContext<T>): boolean {
@@ -264,15 +257,12 @@ function containsDOMRef<T>(vtree: VTree<T>, target: T, context: EventContext<T>)
       return context.isEqual(vtree.domRef, target);
   }
 }
-/* get static and dynamic properties */
-function getAllPropertyNames(obj: Event): Object {
-  var props: Object = {},
-    i: number = 0;
+/* Collect all property names up the prototype chain */
+function getAllPropertyNames(obj: any): Set<string> {
+  const names = new Set<string>();
+  let current = obj;
   do {
-    var names = Object.getOwnPropertyNames(obj);
-    for (i = 0; i < names.length; i++) {
-      props[names[i]] = null;
-    }
-  } while ((obj = Object.getPrototypeOf(obj)));
-  return props;
+    for (const name of Object.getOwnPropertyNames(current)) names.add(name);
+  } while ((current = Object.getPrototypeOf(current)));
+  return names;
 }
