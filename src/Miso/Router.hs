@@ -14,6 +14,8 @@
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE PolyKinds                  #-}
 -----------------------------------------------------------------------------
+{-# OPTIONS_GHC -fno-warn-orphans #-}
+-----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Router
 -- Copyright   :  (C) 2016-2026 David M. Johnson
