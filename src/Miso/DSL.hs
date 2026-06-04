@@ -10,12 +10,9 @@
 {-# LANGUAGE KindSignatures       #-}
 {-# LANGUAGE DeriveGeneric        #-}
 {-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE EmptyCase            #-}
 {-# LANGUAGE LambdaCase           #-}
-{-# LANGUAGE DataKinds            #-}
 {-# LANGUAGE CPP                  #-}
-#if __GLASGOW_HASKELL__ <= 865
-{-# LANGUAGE UndecidableInstances #-}
-#endif
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.DSL
@@ -31,8 +28,12 @@ module Miso.DSL
   ( -- * Classes
     ToJSVal (..)
   , GToJSVal (..)
+  , GToJSValSum (..)
+  , GToJSValFields (..)
   , FromJSVal (..)
   , GFromJSVal (..)
+  , GFromJSValSum (..)
+  , GFromJSValFields (..)
   , ToArgs (..)
   , ToObject (..)
     -- * Types
@@ -92,7 +93,6 @@ import           Control.Monad.Trans.Maybe
 import qualified Data.Map.Strict as M
 import           Data.Map.Strict (Map)
 import           GHC.Generics
-import           GHC.TypeLits
 import           Data.Kind
 import           Prelude hiding ((!!))
 -----------------------------------------------------------------------------
@@ -104,46 +104,131 @@ import           Miso.String
 class ToJSVal a where
   toJSVal :: a -> IO JSVal
   default toJSVal :: (Generic a, GToJSVal (Rep a)) => a -> IO JSVal
-  toJSVal x = do
-    o <- create
-    gToJSVal (from x) o
-    toJSVal o
+  toJSVal = gToJSVal . from
 -----------------------------------------------------------------------------
+-- | Helper class for field-level JS serialization inside a constructor body.
+class GToJSValFields (f :: Type -> Type) where
+  gWriteFields :: f a -> Object -> IO ()
+  gPositionals :: f a -> IO [JSVal]
+  gIsRecord    :: f a -> Bool
+  gFieldCount  :: f a -> Int
+-----------------------------------------------------------------------------
+instance GToJSValFields U1 where
+  gWriteFields U1 _ = pure ()
+  gPositionals U1   = pure []
+  gIsRecord    _    = False
+  gFieldCount  _    = 0
+  {-# INLINE gWriteFields #-}
+  {-# INLINE gPositionals #-}
+  {-# INLINE gIsRecord    #-}
+  {-# INLINE gFieldCount  #-}
+-----------------------------------------------------------------------------
+instance GToJSValFields V1 where
+  gWriteFields _ _ = pure ()
+  gPositionals _   = pure []
+  gIsRecord    _   = False
+  gFieldCount  _   = 0
+  {-# INLINE gWriteFields #-}
+  {-# INLINE gPositionals #-}
+  {-# INLINE gIsRecord    #-}
+  {-# INLINE gFieldCount  #-}
+-----------------------------------------------------------------------------
+instance (GToJSValFields f, GToJSValFields g) => GToJSValFields (f :*: g) where
+  gWriteFields (x :*: y) o = gWriteFields x o >> gWriteFields y o
+  gPositionals (x :*: y)   = (++) <$> gPositionals x <*> gPositionals y
+  gIsRecord    (x :*: y)   = gIsRecord x
+  gFieldCount  (x :*: y)   = gFieldCount x + gFieldCount y
+  {-# INLINE gWriteFields #-}
+  {-# INLINE gPositionals #-}
+  {-# INLINE gIsRecord    #-}
+  {-# INLINE gFieldCount  #-}
+-----------------------------------------------------------------------------
+instance (ToJSVal a, Selector s) => GToJSValFields (S1 s (K1 i a)) where
+  gWriteFields (M1 (K1 x)) o
+    | Prelude.null name = pure ()
+    | otherwise = setField o (ms name) =<< toJSVal x
+    where name = selName (undefined :: S1 s (K1 i a) ())
+  gPositionals (M1 (K1 x))   = (:[]) <$> toJSVal x
+  gIsRecord    _              = not $ Prelude.null (selName (undefined :: S1 s (K1 i a) ()))
+  gFieldCount  _              = 1
+  {-# INLINE gWriteFields #-}
+  {-# INLINE gPositionals #-}
+  {-# INLINE gIsRecord    #-}
+  {-# INLINE gFieldCount  #-}
+-----------------------------------------------------------------------------
+-- | Generic JS serialization over a datatype's generic rep.
 class GToJSVal (f :: Type -> Type) where
-  gToJSVal :: f a -> Object -> IO ()
+  gToJSVal :: f a -> IO JSVal
 -----------------------------------------------------------------------------
-instance GToJSVal a => GToJSVal (D1 i a) where
-  gToJSVal (M1 x) = gToJSVal x
+-- | Single-constructor datatype encoding:
+--
+-- * 0 fields (nullary):  empty JS object @{}@
+-- * Record fields:       flat object @{field1:v1, ...}@
+-- * 1 positional field:  the value directly (unwrapped)
+-- * N positional fields: JS array @[v1,...,vN]@
+instance {-# OVERLAPPABLE #-} (Constructor c, GToJSValFields f)
+    => GToJSVal (D1 i (C1 c f)) where
+  gToJSVal (M1 (M1 x))
+    | gFieldCount x == 0 = toJSVal =<< create
+    | gIsRecord x = do
+        o <- create
+        gWriteFields x o
+        toJSVal o
+    | gFieldCount x == 1 = do
+        [v] <- gPositionals x
+        pure v
+    | otherwise = toJSVal_List =<< gPositionals x
   {-# INLINE gToJSVal #-}
 -----------------------------------------------------------------------------
-instance GToJSVal a => GToJSVal (C1 i a) where
-  gToJSVal (M1 x) = gToJSVal x
-  {-# INLINE gToJSVal #-}
------------------------------------------------------------------------------
-instance (GToJSVal a, GToJSVal b) => GToJSVal (a :*: b) where
-  gToJSVal (x :*: y) o = gToJSVal x o >> gToJSVal y o
-  {-# INLINE gToJSVal #-}
------------------------------------------------------------------------------
-instance (TypeError ('Text "Sum types unsupported"), GToJSVal a, GToJSVal b) => GToJSVal (a :+: b) where
-  gToJSVal = \case
-    L1 x -> gToJSVal x
-    R1 x -> gToJSVal x
-  {-# INLINE gToJSVal #-}
------------------------------------------------------------------------------
-instance (ToJSVal a, Selector s) => GToJSVal (S1 s (K1 i a)) where
-  gToJSVal (M1 (K1 x)) o =
-    setField o fieldName =<< toJSVal x
-      where
-        fieldName = ms $ selName (undefined :: S1 s (K1 i a) ())
-  {-# INLINE gToJSVal #-}
------------------------------------------------------------------------------
-instance GToJSVal U1 where
-  gToJSVal U1 _ = pure ()
+-- | Sum datatype: each constructor is encoded with a @\"tag\"@ field.
+instance {-# OVERLAPPING #-} (GToJSValSum f, GToJSValSum g)
+    => GToJSVal (D1 i (f :+: g)) where
+  gToJSVal (M1 x) = gToJSValSum x
   {-# INLINE gToJSVal #-}
 -----------------------------------------------------------------------------
 instance GToJSVal V1 where
-  gToJSVal _ _ = pure ()
+  gToJSVal v = case v of
   {-# INLINE gToJSVal #-}
+-----------------------------------------------------------------------------
+-- | Encode one arm of a sum type, including a @\"tag\"@ field.
+--
+-- * Nullary constructor:      @\"ConstructorName\"@
+-- * Record constructor:       @{\"tag\":\"Ctor\", field1:v1, ...}@
+-- * Single-field constructor: @{\"tag\":\"Ctor\", \"contents\":v}@
+-- * Multi-field constructor:  @{\"tag\":\"Ctor\", \"contents\":[v1,...,vN]}@
+class GToJSValSum (f :: Type -> Type) where
+  gToJSValSum :: f a -> IO JSVal
+-----------------------------------------------------------------------------
+instance (GToJSValSum f, GToJSValSum g) => GToJSValSum (f :+: g) where
+  gToJSValSum (L1 x) = gToJSValSum x
+  gToJSValSum (R1 x) = gToJSValSum x
+  {-# INLINE gToJSValSum #-}
+-----------------------------------------------------------------------------
+instance (Constructor c, GToJSValFields f, ToJSVal MisoString) => GToJSValSum (C1 c f) where
+  gToJSValSum (M1 x)
+    | gFieldCount x == 0 =
+        toJSVal (ms ctorName :: MisoString)
+    | gIsRecord x = do
+        o <- create
+        setField o (ms ("tag" :: String)) =<< toJSVal (ms ctorName :: MisoString)
+        gWriteFields x o
+        toJSVal o
+    | gFieldCount x == 1 = do
+        [v] <- gPositionals x
+        o   <- create
+        setField o (ms ("tag" :: String)) =<< toJSVal (ms ctorName :: MisoString)
+        setField o (ms ("contents" :: String)) v
+        toJSVal o
+    | otherwise = do
+        vs  <- gPositionals x
+        arr <- toJSVal_List vs
+        o   <- create
+        setField o (ms ("tag" :: String)) =<< toJSVal (ms ctorName :: MisoString)
+        setField o (ms ("contents" :: String)) arr
+        toJSVal o
+    where
+      ctorName = conName (undefined :: C1 c f ())
+  {-# INLINE gToJSValSum #-}
 -----------------------------------------------------------------------------
 instance ToJSVal Bool where
   toJSVal = toJSVal_Bool
@@ -230,49 +315,142 @@ instance FromJSVal Value where
 class FromJSVal a where
   fromJSVal :: JSVal -> IO (Maybe a)
   default fromJSVal :: (Generic a, GFromJSVal (Rep a)) => JSVal -> IO (Maybe a)
-  fromJSVal x = fmap to <$> gFromJSVal (Object x)
+  fromJSVal x = fmap to <$> gFromJSVal x
   fromJSValUnchecked :: JSVal -> IO a
   fromJSValUnchecked x = do
     fromJSVal x >>= \case
       Nothing -> error "fromJSValUnchecked: failure"
       Just y -> pure y
 -----------------------------------------------------------------------------
+-- | Helper class for field-level JS deserialization inside a constructor body.
+class GFromJSValFields (f :: Type -> Type) where
+  -- | Read named record fields from an 'Object'.
+  gReadFields      :: Object -> IO (Maybe (f a))
+  -- | Read positional fields from a list of 'JSVal's.
+  gReadPositionals :: [JSVal] -> IO (Maybe (f a))
+  -- | 'True' when all fields carry selector names (record syntax).
+  gIsRecordF   :: f a -> Bool
+  -- | Number of fields.
+  gFieldCountF :: f a -> Int
+-----------------------------------------------------------------------------
+instance GFromJSValFields U1 where
+  gReadFields      _ = pure (Just U1)
+  gReadPositionals _ = pure (Just U1)
+  gIsRecordF       _ = False
+  gFieldCountF     _ = 0
+  {-# INLINE gReadFields      #-}
+  {-# INLINE gReadPositionals #-}
+  {-# INLINE gIsRecordF       #-}
+  {-# INLINE gFieldCountF     #-}
+-----------------------------------------------------------------------------
+instance (GFromJSValFields f, GFromJSValFields g) => GFromJSValFields (f :*: g) where
+  gIsRecordF   (x :*: _) = gIsRecordF x
+  gFieldCountF (x :*: y) = gFieldCountF x + gFieldCountF y
+  gReadFields o = runMaybeT $
+    (:*:) <$> MaybeT (gReadFields o) <*> MaybeT (gReadFields o)
+  gReadPositionals vs = runMaybeT $
+    (:*:) <$> MaybeT (gReadPositionals (Prelude.take n vs))
+          <*> MaybeT (gReadPositionals (Prelude.drop n vs))
+    where n = gFieldCountF (undefined :: f ())
+  {-# INLINE gIsRecordF       #-}
+  {-# INLINE gFieldCountF     #-}
+  {-# INLINE gReadFields      #-}
+  {-# INLINE gReadPositionals #-}
+-----------------------------------------------------------------------------
+instance (FromJSVal a, Selector s) => GFromJSValFields (S1 s (K1 i a)) where
+  gIsRecordF   _ = not $ Prelude.null (selName (undefined :: S1 s (K1 i a) ()))
+  gFieldCountF _ = 1
+  gReadFields o  = fmap (M1 . K1) <$> (fromJSVal =<< getProp (ms name) o)
+    where name = selName (undefined :: S1 s (K1 i a) ())
+  gReadPositionals (v:_) = fmap (M1 . K1) <$> fromJSVal v
+  gReadPositionals []    = pure Nothing
+  {-# INLINE gIsRecordF       #-}
+  {-# INLINE gFieldCountF     #-}
+  {-# INLINE gReadFields      #-}
+  {-# INLINE gReadPositionals #-}
+-----------------------------------------------------------------------------
+-- | Generic JS deserialization over a datatype's generic rep.
 class GFromJSVal (f :: Type -> Type) where
-  gFromJSVal :: Object -> IO (Maybe (f a))
+  gFromJSVal :: JSVal -> IO (Maybe (f a))
 -----------------------------------------------------------------------------
-instance GFromJSVal a => GFromJSVal (D1 i a) where
-  gFromJSVal o = fmap M1 <$> gFromJSVal o
+-- | Single-constructor datatype decoding (mirrors the encoding in 'GToJSVal'):
+--
+-- * 0 fields (nullary):  always succeeds with @U1@
+-- * Record fields:       read named fields from the flat object
+-- * 1 positional field:  decode the JSVal directly as the field
+-- * N positional fields: read array elements by index
+instance {-# OVERLAPPABLE #-} (Constructor c, GFromJSValFields f)
+    => GFromJSVal (D1 i (C1 c f)) where
+  gFromJSVal x
+    | n == 0    = fmap (M1 . M1) <$> gReadPositionals []
+    | isRec     = fmap (M1 . M1) <$> gReadFields (Object x)
+    | n == 1    = fmap (M1 . M1) <$> gReadPositionals [x]
+    | otherwise = do
+        vs <- sequence [ x !! i | i <- [0 .. n - 1] ]
+        fmap (M1 . M1) <$> gReadPositionals vs
+    where
+      undef = undefined :: f ()
+      isRec = gIsRecordF undef
+      n     = gFieldCountF undef
   {-# INLINE gFromJSVal #-}
 -----------------------------------------------------------------------------
-instance GFromJSVal a => GFromJSVal (C1 i a) where
-  gFromJSVal o = fmap M1 <$> gFromJSVal o
-  {-# INLINE gFromJSVal #-}
------------------------------------------------------------------------------
-instance GFromJSVal U1 where
-  gFromJSVal _ = pure (Just U1)
+-- | Sum datatype: dispatch on the @"tag"@ field.
+instance {-# OVERLAPPING #-} (GFromJSValSum f, GFromJSValSum g)
+    => GFromJSVal (D1 i (f :+: g)) where
+  gFromJSVal x = fmap M1 <$> gFromJSValSum x
   {-# INLINE gFromJSVal #-}
 -----------------------------------------------------------------------------
 instance GFromJSVal V1 where
   gFromJSVal _ = pure Nothing
   {-# INLINE gFromJSVal #-}
 -----------------------------------------------------------------------------
-instance (GFromJSVal a, GFromJSVal b) => GFromJSVal (a :*: b) where
-  gFromJSVal o = runMaybeT $ (:*:) <$> MaybeT (gFromJSVal o) <*> MaybeT (gFromJSVal o)
-  {-# INLINE gFromJSVal #-}
+-- | Decode one arm of a sum type by matching the @"tag"@ field.
+class GFromJSValSum (f :: Type -> Type) where
+  gFromJSValSum :: JSVal -> IO (Maybe (f a))
 -----------------------------------------------------------------------------
-instance (TypeError ('Text "Sum types unsupported"), GFromJSVal a, GFromJSVal b) => GFromJSVal (a :+: b) where
-  gFromJSVal o = do
-    x <- fmap L1 <$> gFromJSVal o
-    case x of
-      Nothing -> fmap R1 <$> gFromJSVal o
-      Just y -> pure (Just y)
-  {-# INLINE gFromJSVal #-}
+instance (GFromJSValSum f, GFromJSValSum g) => GFromJSValSum (f :+: g) where
+  gFromJSValSum x = do
+    ml <- gFromJSValSum x
+    case ml of
+      Just l  -> pure (Just (L1 l))
+      Nothing -> fmap R1 <$> gFromJSValSum x
+  {-# INLINE gFromJSValSum #-}
 -----------------------------------------------------------------------------
-instance (FromJSVal a, Selector s) => GFromJSVal (S1 s (K1 i a)) where
-  gFromJSVal o = fmap (M1 . K1) <$> do fromJSVal =<< getProp (ms name) o
+instance (Constructor c, GFromJSValFields f, FromJSVal MisoString) => GFromJSValSum (C1 c f) where
+  gFromJSValSum x
+    | gFieldCountF undef == 0 = do
+        mtag <- (fromJSVal x :: IO (Maybe MisoString))
+        case mtag of
+          Just tag | tag == ms ctorName -> fmap M1 <$> gReadPositionals []
+          _                             -> pure Nothing
+    | gIsRecordF undef = do
+        tagVal <- x ! ms ("tag" :: String)
+        mtag   <- (fromJSVal tagVal :: IO (Maybe MisoString))
+        case mtag of
+          Just tag | tag == ms ctorName -> fmap M1 <$> gReadFields (Object x)
+          _                             -> pure Nothing
+    | gFieldCountF undef == 1 = do
+        tagVal <- x ! ms ("tag" :: String)
+        mtag   <- (fromJSVal tagVal :: IO (Maybe MisoString))
+        case mtag of
+          Just tag | tag == ms ctorName -> do
+            contents <- x ! ms ("contents" :: String)
+            fmap M1 <$> gReadPositionals [contents]
+          _ -> pure Nothing
+    | otherwise = do
+        tagVal <- x ! ms ("tag" :: String)
+        mtag   <- (fromJSVal tagVal :: IO (Maybe MisoString))
+        case mtag of
+          Just tag | tag == ms ctorName -> do
+            arr <- x ! ms ("contents" :: String)
+            vs  <- sequence [ arr !! i | i <- [0 .. n - 1] ]
+            fmap M1 <$> gReadPositionals vs
+          _ -> pure Nothing
     where
-      name = selName (undefined :: S1 s (K1 i a) ())
-  {-# INLINE gFromJSVal #-}
+      ctorName = conName (undefined :: C1 c f ())
+      undef    = undefined :: f ()
+      n        = gFieldCountF undef
+  {-# INLINE gFromJSValSum #-}
 -----------------------------------------------------------------------------
 instance FromJSVal Int where
   fromJSVal = fromJSVal_Int
@@ -594,10 +772,7 @@ instance ToObject JSVal where
 class ToObject a where
   toObject :: a -> IO Object
   default toObject :: (Generic a, GToJSVal (Rep a)) => a -> IO Object
-  toObject x = do
-    o <- create
-    gToJSVal (from x) o
-    pure o
+  toObject x = Object <$> gToJSVal (from x)
 -----------------------------------------------------------------------------
 instance ToJSVal a => ToObject (IO a) where
   toObject action = Object <$> (toJSVal =<< action)

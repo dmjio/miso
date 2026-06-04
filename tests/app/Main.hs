@@ -111,22 +111,22 @@ data Person = Person { name :: MisoString, age :: Int }
 -- Nullary sum
 data Color = Red | Green | Blue
   deriving stock (Generic, Show, Eq)
-  deriving anyclass (JSON.ToJSON, JSON.FromJSON)
+  deriving anyclass (JSON.ToJSON, JSON.FromJSON, ToJSVal, FromJSVal)
 ----------------------------------------------------------------------------
 -- Single-constructor record (no tag)
 data Point = Point { px :: Int, py :: Int }
   deriving stock (Generic, Show, Eq)
-  deriving anyclass (JSON.ToJSON, JSON.FromJSON)
+  deriving anyclass (JSON.ToJSON, JSON.FromJSON, ToJSVal, FromJSVal)
 ----------------------------------------------------------------------------
 -- Single-constructor newtype-like (unwrapped)
 data Wrapper = Wrapper Int
   deriving stock (Generic, Show, Eq)
-  deriving anyclass (JSON.ToJSON, JSON.FromJSON)
+  deriving anyclass (JSON.ToJSON, JSON.FromJSON, ToJSVal, FromJSVal)
 ----------------------------------------------------------------------------
 -- Single-constructor with a list field (exercises parseProd gFieldCount == 1 fix)
 data WrapperList = WrapperList [MisoString]
   deriving stock (Generic, Show, Eq)
-  deriving anyclass (JSON.ToJSON, JSON.FromJSON)
+  deriving anyclass (JSON.ToJSON, JSON.FromJSON, ToJSVal, FromJSVal)
 ----------------------------------------------------------------------------
 -- Multi-constructor sum with positional fields
 data Shape
@@ -134,14 +134,14 @@ data Shape
   | Rectangle Double Double
   | Dot
   deriving stock (Generic, Show, Eq)
-  deriving anyclass (JSON.ToJSON, JSON.FromJSON)
+  deriving anyclass (JSON.ToJSON, JSON.FromJSON, ToJSVal, FromJSVal)
 ----------------------------------------------------------------------------
 -- Multi-constructor sum with record fields
 data Animal
   = Cat { catName :: MisoString, lives :: Int }
   | Dog { dogName :: MisoString, tricks :: Int }
   deriving stock (Generic, Show, Eq)
-  deriving anyclass (JSON.ToJSON, JSON.FromJSON)
+  deriving anyclass (JSON.ToJSON, JSON.FromJSON, ToJSVal, FromJSVal)
 ----------------------------------------------------------------------------
 -- Record with Maybe field
 data Profile = Profile { handle :: MisoString, bio :: Maybe MisoString }
@@ -159,12 +159,12 @@ data NestedList
   = NestedList [MisoString]
   | EmptyNested
   deriving stock (Generic, Show, Eq)
-  deriving anyclass (JSON.ToJSON, JSON.FromJSON)
+  deriving anyclass (JSON.ToJSON, JSON.FromJSON, ToJSVal, FromJSVal)
 ----------------------------------------------------------------------------
 -- Zero-field single constructor (exercises parseProd 0-field guard)
 data Nullary = Nullary
   deriving stock (Generic, Show, Eq)
-  deriving anyclass (JSON.ToJSON, JSON.FromJSON)
+  deriving anyclass (JSON.ToJSON, JSON.FromJSON, ToJSVal, FromJSVal)
 ----------------------------------------------------------------------------
 getAge :: Person -> IO Int
 getAge = inline "return age;"
@@ -1231,6 +1231,143 @@ main = withJS $ do
         (`shouldBe` True) =<< liftIO (fromJSValUnchecked =<< getProp "foo" c)
       it "Should call eval" $ do
         (`shouldBe` (4 :: Int)) =<< liftIO (fromJSValUnchecked =<< eval "2+2")
+
+    describe "Miso.DSL generic ToJSVal/FromJSVal tests" $ do
+
+      describe "encoding structure (sum types)" $ do
+
+        -- Nullary sum → bare MisoString
+        it "Color/Red encodes as the string \"Red\"" $ do
+          v <- liftIO $ toJSVal Red
+          tag <- liftIO (fromJSVal v :: IO (Maybe MisoString))
+          tag `shouldBe` Just "Red"
+
+        it "Color/Green encodes as the string \"Green\"" $ do
+          v <- liftIO $ toJSVal Green
+          tag <- liftIO (fromJSVal v :: IO (Maybe MisoString))
+          tag `shouldBe` Just "Green"
+
+        it "Color/Blue encodes as the string \"Blue\"" $ do
+          v <- liftIO $ toJSVal Blue
+          tag <- liftIO (fromJSVal v :: IO (Maybe MisoString))
+          tag `shouldBe` Just "Blue"
+
+        -- Single-field positional sum → {"tag":"Ctor","contents":v}
+        it "Circle encodes with tag=\"Circle\" and contents=5.0" $ do
+          v   <- liftIO $ toJSVal (Circle 5.0)
+          tag <- liftIO $ fromJSVal =<< v ! "tag"
+          (tag :: Maybe MisoString) `shouldBe` Just "Circle"
+          c   <- liftIO $ fromJSVal =<< v ! "contents"
+          (c :: Maybe Double) `shouldBe` Just 5.0
+
+        -- 2-field positional sum → {"tag":"Ctor","contents":[v1,v2]}
+        it "Rectangle encodes with tag=\"Rectangle\" and contents=[3.0,4.0]" $ do
+          v    <- liftIO $ toJSVal (Rectangle 3.0 4.0)
+          tag  <- liftIO $ fromJSVal =<< v ! "tag"
+          (tag :: Maybe MisoString) `shouldBe` Just "Rectangle"
+          arr  <- liftIO $ v ! "contents"
+          c0   <- liftIO $ fromJSVal =<< arr !! 0
+          c1   <- liftIO $ fromJSVal =<< arr !! 1
+          (c0 :: Maybe Double) `shouldBe` Just 3.0
+          (c1 :: Maybe Double) `shouldBe` Just 4.0
+
+        -- Nullary constructor inside a sum → bare string "Dot"
+        it "Dot encodes as the string \"Dot\"" $ do
+          v   <- liftIO $ toJSVal Dot
+          tag <- liftIO (fromJSVal v :: IO (Maybe MisoString))
+          tag `shouldBe` Just "Dot"
+
+        -- Record sum → {"tag":"Cat","catName":..,"lives":..}
+        it "Cat encodes with tag=\"Cat\" and record fields" $ do
+          v    <- liftIO $ toJSVal (Cat "Whiskers" 9)
+          tag  <- liftIO $ fromJSVal =<< v ! "tag"
+          (tag :: Maybe MisoString) `shouldBe` Just "Cat"
+          n    <- liftIO $ fromJSVal =<< v ! "catName"
+          (n :: Maybe MisoString) `shouldBe` Just "Whiskers"
+          l    <- liftIO $ fromJSVal =<< v ! "lives"
+          (l :: Maybe Int) `shouldBe` Just 9
+
+        it "Dog encodes with tag=\"Dog\" and record fields" $ do
+          v    <- liftIO $ toJSVal (Dog "Rex" 5)
+          tag  <- liftIO $ fromJSVal =<< v ! "tag"
+          (tag :: Maybe MisoString) `shouldBe` Just "Dog"
+          n    <- liftIO $ fromJSVal =<< v ! "dogName"
+          (n :: Maybe MisoString) `shouldBe` Just "Rex"
+          t    <- liftIO $ fromJSVal =<< v ! "tricks"
+          (t :: Maybe Int) `shouldBe` Just 5
+
+        -- Single-field list constructor inside a sum → {"tag":"NestedList","contents":arr}
+        it "NestedList encodes with tag=\"NestedList\" and contents=[..]" $ do
+          v    <- liftIO $ toJSVal (NestedList ["x","y"])
+          tag  <- liftIO $ fromJSVal =<< v ! "tag"
+          (tag :: Maybe MisoString) `shouldBe` Just "NestedList"
+          arr  <- liftIO $ v ! "contents"
+          c0   <- liftIO $ fromJSVal =<< arr !! 0
+          (c0 :: Maybe MisoString) `shouldBe` Just "x"
+
+        it "EmptyNested encodes as the string \"EmptyNested\"" $ do
+          v   <- liftIO $ toJSVal EmptyNested
+          tag <- liftIO (fromJSVal v :: IO (Maybe MisoString))
+          tag `shouldBe` Just "EmptyNested"
+
+      describe "encoding structure (single-constructor)" $ do
+
+        -- Single-constructor record → flat object, no tag
+        it "Point encodes as a flat object {px,py} with no tag" $ do
+          v  <- liftIO $ toJSVal (Point 7 8)
+          xv <- liftIO $ fromJSVal =<< v ! "px"
+          yv <- liftIO $ fromJSVal =<< v ! "py"
+          (xv :: Maybe Int) `shouldBe` Just 7
+          (yv :: Maybe Int) `shouldBe` Just 8
+          -- no "tag" field
+          tagV <- liftIO $ fromJSVal =<< v ! "tag"
+          (tagV :: Maybe MisoString) `shouldBe` Nothing
+
+      describe "round-trips (sum types)" $ do
+
+        it "Round-trips all Color constructors" $ do
+          rs <- liftIO $ mapM (\c -> fromJSVal =<< toJSVal c) [Red, Green, Blue]
+          rs `shouldBe` map Just [Red, Green, Blue]
+
+        it "Round-trips all Shape constructors" $ do
+          let shapes = [Circle 1.0, Rectangle 2.0 3.0, Dot]
+          rs <- liftIO $ mapM (\s -> fromJSVal =<< toJSVal s) shapes
+          rs `shouldBe` map Just shapes
+
+        it "Round-trips Cat" $ do
+          r <- liftIO $ fromJSVal =<< toJSVal (Cat "Whiskers" 9)
+          r `shouldBe` Just (Cat "Whiskers" 9)
+
+        it "Round-trips Dog" $ do
+          r <- liftIO $ fromJSVal =<< toJSVal (Dog "Rex" 5)
+          r `shouldBe` Just (Dog "Rex" 5)
+
+        it "Round-trips NestedList" $ do
+          r <- liftIO $ fromJSVal =<< toJSVal (NestedList ["a","b","c"])
+          r `shouldBe` Just (NestedList ["a","b","c"])
+
+        it "Round-trips EmptyNested" $ do
+          r <- liftIO $ fromJSVal =<< toJSVal EmptyNested
+          r `shouldBe` Just EmptyNested
+
+      describe "round-trips (single-constructor)" $ do
+
+        it "Round-trips Point" $ do
+          r <- liftIO $ fromJSVal =<< toJSVal (Point 3 4)
+          r `shouldBe` Just (Point 3 4)
+
+        it "Round-trips Wrapper (positional 1-field)" $ do
+          r <- liftIO $ fromJSVal =<< toJSVal (Wrapper 42)
+          r `shouldBe` Just (Wrapper 42)
+
+        it "Round-trips WrapperList (positional 1-field list)" $ do
+          r <- liftIO $ fromJSVal =<< toJSVal (WrapperList ["hello", "world"])
+          r `shouldBe` Just (WrapperList ["hello", "world"])
+
+        it "Round-trips Nullary" $ do
+          r <- liftIO $ fromJSVal =<< toJSVal Nullary
+          r `shouldBe` Just Nullary
+
     describe "Marshal tests" $ do
       it "Should marshal a Double to JSString" $ do
         toMisoString (3.14 :: Double) `shouldBe` "3.14"
