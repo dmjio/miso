@@ -164,6 +164,12 @@ class ToJSON a where
   toJSON :: a -> Value
   default toJSON :: (Generic a, GToJSON (Rep a)) => a -> Value
   toJSON = genericToJSON defaultOptions
+
+  -- | Encode a list of @a@. Defaults to a JSON 'Array'; overridden by the
+  -- 'Char' instance so that @[Char]@ (i.e. 'String') serializes as a JSON
+  -- string. This mirrors aeson and avoids overlapping @ToJSON [a]@ instances.
+  toJSONList :: [a] -> Value
+  toJSONList = Array . Prelude.map toJSON
 ----------------------------------------------------------------------------
 genericToJSON :: (Generic a, GToJSON (Rep a)) => Options -> a -> Value
 genericToJSON opts = gToJSON opts . from
@@ -375,15 +381,13 @@ instance ToJSON Value where
 ----------------------------------------------------------------------------
 instance ToJSON Char where
   toJSON c = String (singleton c)
+  toJSONList = String . MS.pack
 ----------------------------------------------------------------------------
 instance ToJSON Bool where
   toJSON = Bool
 ----------------------------------------------------------------------------
-instance {-# OVERLAPPING #-} ToJSON String where
-  toJSON = toJSON . MS.pack
-----------------------------------------------------------------------------
-instance {-# OVERLAPPABLE #-} ToJSON a => ToJSON [a] where
-  toJSON = Array . Prelude.map toJSON
+instance ToJSON a => ToJSON [a] where
+  toJSON = toJSONList
 ----------------------------------------------------------------------------
 instance ToJSON v => ToJSON (M.Map MisoString v) where
   toJSON = Object . M.map toJSON
@@ -655,7 +659,7 @@ instance FromJSON LT.Text where
 instance {-# OVERLAPPING #-} FromJSON String where
   parseJSON = withText "String" (pure . MS.unpack)
 ----------------------------------------------------------------------------
-instance {-# OVERLAPPABLE #-} FromJSON a => FromJSON [a] where
+instance FromJSON a => FromJSON [a] where
   parseJSON = withArray "[a]" (mapM parseJSON)
 ----------------------------------------------------------------------------
 instance FromJSON Double where

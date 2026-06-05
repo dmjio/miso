@@ -581,6 +581,70 @@ main = withJS $ do
         JSON.encodePure (JSON.object [("ke\"y", JSON.Bool True)])
           `shouldBe` "{\"ke\\\"y\":true}"
 
+    -- toJSONList: String (i.e. [Char]) serializes as a JSON string while
+    -- other lists serialize as JSON arrays. This replaces the old
+    -- OVERLAPPING/OVERLAPPABLE ToJSON String / ToJSON [a] instances.
+    describe "Miso.JSON String vs list encoding (toJSONList) tests" $ do
+      -- String ([Char]) encodes as a JSON string, not an array of chars
+      it "encodes String as a JSON string" $ do
+        JSON.toJSON ("hello" :: String) `shouldBe` JSON.String "hello"
+      it "encodes a Char as a single-character JSON string" $ do
+        JSON.toJSON 'a' `shouldBe` JSON.String "a"
+      -- the empty String is "" (a string), not [] (an array): the Char
+      -- toJSONList specialization wins over the default Array encoding
+      it "encodes empty String as an empty JSON string, not an empty array" $ do
+        JSON.toJSON ("" :: String) `shouldBe` JSON.String ""
+      -- [a] for non-Char encodes as a JSON array (default toJSONList)
+      it "encodes [Int] as a JSON array" $ do
+        JSON.toJSON ([1,2,3] :: [Int])
+          `shouldBe` JSON.Array [JSON.Number 1, JSON.Number 2, JSON.Number 3]
+      it "encodes empty [Int] as an empty JSON array" $ do
+        JSON.toJSON ([] :: [Int]) `shouldBe` JSON.Array []
+      -- [String] is an array of JSON strings (each element via the Char path)
+      it "encodes [String] as an array of JSON strings" $ do
+        JSON.toJSON (["foo", "bar"] :: [String])
+          `shouldBe` JSON.Array [JSON.String "foo", JSON.String "bar"]
+      -- nested lists still nest as arrays
+      it "encodes [[Int]] as a JSON array of arrays" $ do
+        JSON.toJSON ([[1,2],[3]] :: [[Int]])
+          `shouldBe` JSON.Array
+            [ JSON.Array [JSON.Number 1, JSON.Number 2]
+            , JSON.Array [JSON.Number 3]
+            ]
+      -- round-trips through toJSON/fromJSON
+      it "round-trips String through toJSON/fromJSON" $ do
+        (JSON.fromJSON (JSON.toJSON ("hello world" :: String)) :: JSON.Result String)
+          `shouldBe` JSON.Success "hello world"
+      it "round-trips empty String through toJSON/fromJSON" $ do
+        (JSON.fromJSON (JSON.toJSON ("" :: String)) :: JSON.Result String)
+          `shouldBe` JSON.Success ""
+      it "round-trips [Int] through toJSON/fromJSON" $ do
+        (JSON.fromJSON (JSON.toJSON ([1,2,3] :: [Int])) :: JSON.Result [Int])
+          `shouldBe` JSON.Success [1,2,3]
+      it "round-trips [String] through toJSON/fromJSON" $ do
+        (JSON.fromJSON (JSON.toJSON (["foo","bar"] :: [String])) :: JSON.Result [String])
+          `shouldBe` JSON.Success ["foo","bar"]
+      it "round-trips [[Int]] through toJSON/fromJSON" $ do
+        (JSON.fromJSON (JSON.toJSON ([[1,2],[3]] :: [[Int]])) :: JSON.Result [[Int]])
+          `shouldBe` JSON.Success [[1,2],[3]]
+      -- full string round-trips via encodePure / decodePure
+      it "round-trips String through encodePure/decodePure" $ do
+        let s = JSON.encodePure ("a \"quoted\" string" :: String)
+            result = do
+              v <- decodePure s
+              case JSON.fromJSON v of
+                JSON.Success x -> Right (x :: String)
+                JSON.Error e   -> Left (S.unpack e)
+        result `shouldBe` Right "a \"quoted\" string"
+      it "round-trips [Int] through encodePure/decodePure" $ do
+        let s = JSON.encodePure ([1,2,3] :: [Int])
+            result = do
+              v <- decodePure s
+              case JSON.fromJSON v of
+                JSON.Success x -> Right (x :: [Int])
+                JSON.Error e   -> Left (S.unpack e)
+        result `shouldBe` Right [1,2,3]
+
     describe "Miso.Data.Map tests" $ do
       it "should construct a Map from a list and perform operations" $ do
         m <- liftIO (MDM.fromList [(1 :: Int, "foo" :: MisoString), (2 :: Int, "bar" :: MisoString)])
