@@ -926,34 +926,33 @@ function propagateWhileAble(vtree, event) {
     }
   }
 }
-function eventJSON(at, obj) {
-  if (typeof at[0] === "object") {
-    var ret = [];
-    for (var i = 0;i < at.length; i++) {
-      ret.push(eventJSON(at[i], obj));
-    }
-    return ret;
-  }
-  for (const a of at)
-    obj = obj[a];
-  var newObj;
-  if (obj instanceof Array || "length" in obj && obj["localName"] !== "select") {
-    newObj = [];
-    for (var j = 0;j < obj.length; j++) {
-      newObj.push(eventJSON([], obj[j]));
-    }
-    return newObj;
-  }
-  newObj = {};
-  for (var key in getAllPropertyNames(obj)) {
-    if (obj["localName"] === "input" && (key === "selectionDirection" || key === "selectionStart" || key === "selectionEnd")) {
+function resolvePath(obj, path) {
+  return path.reduce((node, key) => node?.[key], obj);
+}
+function isSequence(obj) {
+  return Array.isArray(obj) || "length" in obj && obj["localName"] !== "select";
+}
+var INPUT_SKIP = new Set(["selectionDirection", "selectionStart", "selectionEnd"]);
+function serializePrimitives(obj) {
+  const out = {};
+  for (const key of getAllPropertyNames(obj)) {
+    if (obj["localName"] === "input" && INPUT_SKIP.has(key))
       continue;
-    }
-    if (typeof obj[key] == "string" || typeof obj[key] == "number" || typeof obj[key] == "boolean") {
-      newObj[key] = obj[key];
-    }
+    const v = obj[key];
+    if (typeof v === "string" || typeof v === "number" || typeof v === "boolean")
+      out[key] = v;
   }
-  return newObj;
+  return out;
+}
+function eventJSON(at, obj) {
+  if (at.length > 0 && Array.isArray(at[0])) {
+    return at.map((path) => eventJSON(path, obj));
+  }
+  const node = resolvePath(obj, at);
+  if (isSequence(node)) {
+    return Array.from({ length: node.length }, (_, i) => eventJSON([], node[i]));
+  }
+  return serializePrimitives(node);
 }
 function containsDOMRef(vtree, target, context) {
   switch (vtree.type) {
@@ -969,14 +968,13 @@ function containsDOMRef(vtree, target, context) {
   }
 }
 function getAllPropertyNames(obj) {
-  var props = {}, i = 0;
+  const names = new Set;
+  let current = obj;
   do {
-    var names = Object.getOwnPropertyNames(obj);
-    for (i = 0;i < names.length; i++) {
-      props[names[i]] = null;
-    }
-  } while (obj = Object.getPrototypeOf(obj));
-  return props;
+    for (const name of Object.getOwnPropertyNames(current))
+      names.add(name);
+  } while (current = Object.getPrototypeOf(current));
+  return names;
 }
 
 // ts/miso/context/dom.ts
