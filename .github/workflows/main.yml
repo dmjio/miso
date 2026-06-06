@@ -45,7 +45,7 @@ jobs:
 
      - name: (JS) Miso GHCJS (GHCJS 8.6)
        run: nix-build -A miso-ghcjs
-       
+
      - name: Nix garbage collection
        run: cabal clean && nix-collect-garbage -d
 
@@ -63,19 +63,19 @@ jobs:
 
      - name: (JS) Miso GHCJS (GHC 9.12.2)
        run: nix-build -A miso-ghcjs-9122
-       
+
      - name: Nix garbage collection
        run: cabal clean && nix-collect-garbage -d
 
      - name: (x86) Miso GHC (GHC 9.12.2)
        run: nix-build -A miso-ghc-9122
-       
+
      - name: Nix garbage collection
        run: cabal clean && nix-collect-garbage -d
 
      - name: (JS) Miso sample app (GHCJS 8.6)
        run: nix-build -A sample-app-js
-       
+
      - name: Nix garbage collection
        run: cabal clean && nix-collect-garbage -d
 
@@ -132,11 +132,9 @@ jobs:
      - name: Bun build prod
        run: bun run build && bun run prod
 
-     - name: (JS) Miso GHCJS (GHC 9.12.2)
-       run: nix-build -A miso-ghcjs-9122
-
-     - name: Nix garbage collection
-       run: cabal clean && nix-collect-garbage -d
+     # dmj: JS backend not working on Darwin (wasm-ld issue)
+     # - name: (JS) Miso GHCJS (GHC 9.12.2)
+     #   run: nix-build -A miso-ghcjs-9122
 
      - name: (x86) Miso GHC (GHC 9.12.2)
        run: nix-build -A miso-ghc-9122
@@ -144,17 +142,11 @@ jobs:
      - name: Nix garbage collection
        run: cabal clean && nix-collect-garbage -d
 
-     - name: (JS) Miso sample app (GHC 9.12.2)
-       run: nix-build -A sample-app-js-9122
+     # - name: (JS) Miso sample app (GHC 9.12.2)
+     #   run: nix-build -A sample-app-js-9122
 
-     - name: Nix garbage collection
-       run: cabal clean && nix-collect-garbage -d
-
-     - name: (JS) Miso integration tests
-       run: nix-build -A playwright-js && ./result/bin/playwright
-
-     - name: Nix garbage collection
-       run: cabal clean && nix-collect-garbage -d
+     # - name: (JS) Miso integration tests
+     #   run: nix-build -A playwright-js && ./result/bin/playwright
 
      - name: (WASM) Miso integration tests
        run: nix-build -A playwright-wasm && ./result/bin/playwright
