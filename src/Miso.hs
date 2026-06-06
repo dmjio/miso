@@ -893,6 +893,9 @@ module Miso
   , sync_
   , for
   -- ** JS file embedding
+#if __GLASGOW_HASKELL__ >= 865
+  , entryPoint
+#endif
 #ifdef WASM
   , evalFile
 #endif
@@ -942,6 +945,9 @@ module Miso
   ) where
 -----------------------------------------------------------------------------
 import           Miso.Binding
+#if __GLASGOW_HASKELL__ >= 865
+import           Miso.Boot (entryPoint)
+#endif
 import           Miso.DSL
 import           Miso.Effect
 import           Miso.Event
