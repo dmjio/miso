@@ -18,8 +18,22 @@ import Miso.Event (pointerDecoder, PointerEvent)
 import Miso.Subscription.Window (windowSub)
 import Miso.Effect (Sub)
 -----------------------------------------------------------------------------
--- | Captures mouse coordinates as they occur and writes them to
--- an event sink.
-mouseSub :: (PointerEvent -> action) -> Sub action
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/Element/pointermove_event>
+--
+-- Subscribes to global @pointermove@ events, capturing the full t'PointerEvent'
+-- payload on every pointer movement.
+--
+-- @
+-- app :: Component ROOT () Model Action
+-- app = (component initialModel update view)
+--   { subs = [ mouseSub MouseMoved ] }
+--
+-- data Action = MouseMoved PointerEvent
+-- @
+--
+mouseSub
+  :: (PointerEvent -> action)
+  -- ^ Callback invoked with the t'PointerEvent' on every pointer move
+  -> Sub action
 mouseSub = windowSub "pointermove" pointerDecoder
 -----------------------------------------------------------------------------

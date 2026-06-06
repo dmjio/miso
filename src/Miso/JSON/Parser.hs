@@ -75,7 +75,11 @@ value = oneOf
   , Null <$ null
   ]
 ----------------------------------------------------------------------------
-decodePure :: MisoString -> Either String Value
+-- | Parse a JSON t'MisoString' into a t'Value'. Used for server-side rendering.
+decodePure
+  :: MisoString
+  -- ^ Raw JSON text to parse
+  -> Either String Value
 decodePure = first show
   . either (Left . LexicalError) (parse value . fst)
   . runLexer tokens

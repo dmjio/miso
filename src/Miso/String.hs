@@ -56,25 +56,50 @@ type MisoString = Text
 type MisoString = JSString
 #endif
 ----------------------------------------------------------------------------
--- | Convenience class for creating `MisoString` from other string-like types
+-- | Class for types that can be converted into a t'MisoString'.
+--
+-- Instances exist for 'String', @Text@, @ByteString@, numeric types, and more.
 class ToMisoString str where
-  -- | Convert a type into 'MisoString'
-  toMisoString :: str -> MisoString
+  -- | Convert a value to a t'MisoString'.
+  toMisoString
+    :: str
+    -- ^ Value to convert
+    -> MisoString
 ----------------------------------------------------------------------------
--- | Class used to parse a 'MisoString'. Like a safe 'Read' for 'MisoString'
+-- | Class for types that can be parsed from a t'MisoString'.
+-- Analogous to a safe 'Read' specialised to t'MisoString'.
 class FromMisoString t where
-  fromMisoStringEither :: MisoString -> Either String t
+  -- | Attempt to parse a t'MisoString', returning @'Left' err@ on failure.
+  fromMisoStringEither
+    :: MisoString
+    -- ^ Input string to parse
+    -> Either String t
 ----------------------------------------------------------------------------
--- | Reads a 'MisoString', throws an error when decoding
--- fails. Use `fromMisoStringEither` as a safe alternative.
-fromMisoString :: FromMisoString a => MisoString -> a
+-- | Parse a t'MisoString', throwing a runtime error on failure.
+-- Use 'fromMisoStringEither' for a safe alternative.
+fromMisoString
+  :: FromMisoString a
+  => MisoString
+  -- ^ String to parse
+  -> a
 fromMisoString s =
   case fromMisoStringEither s of
     Left error_ -> error ("fromMisoString: " <> error_)
     Right x  -> x
 ----------------------------------------------------------------------------
--- | Convenience function, shorthand for `toMisoString`
-ms :: ToMisoString str => str -> MisoString
+-- | Shorthand alias for 'toMisoString'.
+--
+-- @
+-- ms (42 :: Int)    -- "42"
+-- ms True           -- "True"
+-- ms ("hello" :: String)  -- "hello"
+-- @
+--
+ms
+  :: ToMisoString str
+  => str
+  -- ^ Value to convert to a t'MisoString'
+  -> MisoString
 ms = toMisoString
 ----------------------------------------------------------------------------
 instance ToMisoString a => ToMisoString (Maybe a) where

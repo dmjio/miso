@@ -13,9 +13,40 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- This module defines t'Effect', t'Sub' and t'Sink' types, which are used with the
--- 'Miso.Types.update' function and 'Miso.Types.subs' field of the t'Miso.Types.Component'.
+-- This module defines the t'Effect', t'Sub', and t'Sink' types used to
+-- express state transitions and side effects in Miso applications.
 --
+-- == Overview
+--
+-- The t'Effect' type is a @RWS@ monad that threads through three concerns:
+--
+--   * __Reader__: 'ComponentInfo' provides access to the current component's
+--     identifier, parent identifier, DOM reference, and @props@.
+--   * __Writer__: a list of 'Schedule' values that describe 'IO' actions to
+--     be executed (either asynchronously via 'io'\/'io_'\/'withSink', or
+--     synchronously via 'sync'\/'sync_').
+--   * __State__: the component @model@, updated with the usual @put@\/@modify@
+--     operations from @mtl@.
+--
+-- The 'update' field of a t'Miso.Types.Component' has type
+-- @action -> t'Effect' parent props model action@.  Each action is dispatched
+-- to 'update', which may change the model and\/or enqueue 'IO' work.
+--
+-- == Subscriptions
+--
+-- A t'Sub' is a long-running background computation that can push actions into
+-- the component's event queue via its t'Sink' argument.  Subscriptions are
+-- registered in the 'subs' field of a t'Miso.Types.Component' and are started
+-- once on mount and torn down on unmount.
+--
+-- == Scheduling
+--
+-- By default, every 'IO' action enqueued by 'io', 'io_', 'withSink', or
+-- 'batch' is executed __asynchronously__ in a separate thread.  Use 'sync' or
+-- 'sync_' when you need the action to complete before the next render, but be
+-- aware this will block the render thread for that component.
+--
+-- @since 1.9.0.0
 ----------------------------------------------------------------------------
 module Miso.Effect
   ( -- ** Effect
@@ -66,28 +97,47 @@ import           Control.Monad.RWS (RWS, put, tell, execRWS, censor, MonadReader
 import           Miso.DSL.FFI
 import           Miso.Lens
 -----------------------------------------------------------------------------
--- | Smart constructor for t'ComponentInfo'
+-- | Smart constructor for t'ComponentInfo'.
+--
+-- Builds a 'ComponentInfo' value from its constituent pieces.  This is
+-- primarily used by the Miso runtime when initialising a component; you
+-- rarely need to call it directly.
 mkComponentInfo
   :: ComponentId
-  -- ^ 'ComponentId'
+  -- ^ 'ComponentId' of this component
   -> ComponentId
-  -- ^ @parent@ 'ComponentId'
+  -- ^ 'ComponentId' of this component's parent (same value as the child when
+  --   the component is the root)
   -> DOMRef
-  -- ^ 'DOMRef'
+  -- ^ DOM node that the component is mounted on
   -> props
+  -- ^ Current @props@ passed from the parent component
   -> ComponentInfo parent props
 mkComponentInfo = ComponentInfo
 -----------------------------------------------------------------------------
--- | This is the 'Reader r' in t'Miso.Effect'. Accessible via 'Control.Monad.Reader.ask'. It holds
--- a phantom type for @parent@. This is used as a witness when calling the
--- 'parent' function. It gives access to 'Component' metadata such as the 'DOMRef' the
--- 'Component' was mounted on and the 'ComponentId' associated with it.
+-- | The @Reader@ environment carried by the t'Effect' monad.
+--
+-- 'ComponentInfo' is accessible inside an 'update' handler via
+-- 'Control.Monad.Reader.ask' (or the convenience lenses 'componentInfoId',
+-- 'componentInfoParentId', 'componentInfoDOMRef', and 'componentInfoProps' /
+-- 'props').
+--
+-- The phantom @parent@ type parameter acts as a witness that ties this
+-- component to a specific parent type, which is used when communicating
+-- upward through the component tree.
+--
+-- @since 1.9.0.0
 data ComponentInfo parent props
   = ComponentInfo
   { _componentInfoId :: ComponentId
+  -- ^ Unique identifier of this component instance
   , _componentInfoParentId :: ComponentId
+  -- ^ Unique identifier of the parent component (equals '_componentInfoId'
+  --   for a root component)
   , _componentInfoDOMRef :: DOMRef
+  -- ^ Reference to the DOM node this component is mounted on
   , _componentInfoProps :: props
+  -- ^ Current @props@ supplied by the parent component
   }
 -----------------------------------------------------------------------------
 -- | Lens for accessing the t'ComponentId' from t'ComponentInfo'.
@@ -169,20 +219,61 @@ props = componentInfoProps
 getProps :: MonadReader (ComponentInfo parent props) m => m props
 getProps = Miso.Lens.view props
 -----------------------------------------------------------------------------
--- | 'ComponentId' of the current t'Miso.Types.Component'
+-- | Opaque numeric identifier assigned to each mounted t'Miso.Types.Component'
+-- instance by the Miso runtime.
+--
+-- 'ComponentId' values are unique for the lifetime of a component and are
+-- used internally for routing messages and managing the component tree.
+-- You can read the current component's 'ComponentId' with:
+--
+-- @
+-- myId <- 'Miso.Lens.view' 'componentInfoId'
+-- @
 type ComponentId = Int
 -----------------------------------------------------------------------------
--- | Type synonym for constructing subscriptions.
+-- | A long-running background computation that feeds actions into a
+-- component's event queue.
 --
--- For example usage see "Miso.Subscription"
+-- A 'Sub' receives a t'Sink' and is free to call it zero or more times, at
+-- any point in time (e.g. in response to a timer, a WebSocket message, or
+-- a browser event).  Subscriptions are started once when a component mounts
+-- and are cancelled when the component unmounts.
 --
--- The 'Sink' function is used to write to the global event queue.
+-- __Example__ — a 15 Hz animation tick:
+--
+-- @
+-- import Control.Concurrent (threadDelay)
+-- import Control.Monad (forever)
+--
+-- tickSub :: Sub Action
+-- tickSub sink = forever $ do
+--   threadDelay 66667
+--   sink Tick
+-- @
+--
+-- Register subscriptions via the 'Miso.Types.subs' field of a
+-- t'Miso.Types.Component'.  For more examples see "Miso.Subscription".
 type Sub action = Sink action -> IO ()
 -----------------------------------------------------------------------------
--- | Function to write to the global event queue for processing by the scheduler.
+-- | A callback that enqueues an @action@ for processing by the component's
+-- 'Miso.Types.update' function.
+--
+-- Calling a 'Sink' is thread-safe and may be done from any 'IO' context,
+-- including FFI callbacks and 'Sub' computations.
 type Sink action = action -> IO ()
 -----------------------------------------------------------------------------
--- | Smart constructor for an 'Effect' with exactly one action.
+-- | Schedule a single asynchronous 'IO' action that produces the next @action@,
+-- and simultaneously set the new @model@.
+--
+-- This operator is intended as a concise way to write simple update branches:
+--
+-- @
+-- update = \\case
+--   Fetch -> myModel '<#' (FetchResult '<$>' fetchData)
+-- @
+--
+-- The @model@ is placed on the left and the @IO@ computation on the right
+-- (mnemonic: the hash @#@ looks like a network/queue symbol).
 infixl 0 <#
 (<#) :: model -> IO action -> Effect parent props model action
 (<#) m action = put m >> tell [ async $ \f -> f =<< action ]
@@ -190,7 +281,14 @@ infixl 0 <#
 async :: (Sink action -> IO ()) -> Schedule action
 async = Schedule Async
 -----------------------------------------------------------------------------
--- | `Effect` smart constructor, flipped
+-- | Flipped version of '<#'.
+--
+-- Puts the 'IO' action on the left and the new @model@ on the right:
+--
+-- @
+-- update = \\case
+--   Fetch -> (FetchResult '<$>' fetchData) '#>' myModel
+-- @
 infixr 0 #>
 (#>) :: IO action -> model -> Effect parent props model action
 (#>) = flip (<#)
@@ -263,15 +361,27 @@ type Effect parent props model action = RWS (ComponentInfo parent props) [Schedu
 -- @since 1.9.0.0
 data Schedule action = Schedule Synchronicity (Sink action -> IO ())
 -----------------------------------------------------------------------------
--- | Type to represent a DOM reference
+-- | An opaque reference to a live DOM node.
+--
+-- 'DOMRef' values are handed out by the runtime when a component is mounted
+-- and are stored inside 'ComponentInfo'.  They can be passed to FFI
+-- functions that expect a JavaScript object representing a DOM element.
 type DOMRef = JSVal
 -----------------------------------------------------------------------------
--- | Internal function used to unwrap an @Effect@
+-- | Unwrap an t'Effect' computation into a @(model, [Schedule action])@ pair.
+--
+-- This is an __internal__ function used by the Miso runtime to evaluate the
+-- result of an 'update' call.  Application code should not need to call this
+-- directly.
 runEffect
     :: Effect parent props model action
+    -- ^ The effect to run
     -> ComponentInfo parent props
+    -- ^ Reader environment (component metadata)
     -> model
+    -- ^ Initial model (state seed)
     -> (model, [Schedule action])
+    -- ^ Updated model and list of scheduled 'IO' actions
 runEffect = execRWS
 -----------------------------------------------------------------------------
 -- | Turn a 'Sub' that consumes actions of type @a@ into a 'Sub' that consumes
@@ -420,11 +530,19 @@ issue action = tell [ async $ \f -> f action ]
 noop :: action -> Effect parent props model action
 noop = const (pure ())
 -----------------------------------------------------------------------------
--- | Type to indicate if effects should be handled asynchronously
--- or synchronously.
+-- | Indicates whether a scheduled 'IO' action should run on the render thread
+-- (synchronously) or in a background thread (asynchronously).
 --
+-- Most 'IO' in Miso is 'Async'.  Only use 'Sync' (via 'sync' \/ 'sync_') when
+-- the result of the action must be available before the next render cycle,
+-- and be aware that blocking the render thread will delay the next paint.
+--
+-- During component unmounting, all remaining effects are flushed
+-- synchronously regardless of this flag.
 data Synchronicity
   = Async
+  -- ^ Run the action in a background thread (default)
   | Sync
+  -- ^ Run the action on the render thread before the next paint
   deriving (Show, Eq)
 -----------------------------------------------------------------------------

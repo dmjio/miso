@@ -18,12 +18,23 @@ import           Miso.Effect (Sub)
 import           Miso.Subscription.Util (createSub)
 import qualified Miso.FFI.Internal as FFI
 -----------------------------------------------------------------------------
--- | Returns 'Sub' for the navigator.onLine API.
--- Fires action with 'True' when the browser goes online, and 'False' when it goes offline.
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/Navigator/onLine>
 --
--- <https://developer.mozilla.org/en-US/docs/Web/API/Navigator/onLine>
+-- Subscribes to browser online/offline status changes.
+-- Fires the action with 'True' when the browser goes online and 'False' when it goes offline.
 --
-onLineSub :: (Bool -> action) -> Sub action
+-- @
+-- app :: Component ROOT () Model Action
+-- app = (component initialModel update view)
+--   { subs = [ onLineSub NetworkStatus ] }
+--
+-- data Action = NetworkStatus Bool
+-- @
+--
+onLineSub
+  :: (Bool -> action)
+  -- ^ Callback invoked with 'True' on @online@ and 'False' on @offline@ events
+  -> Sub action
 onLineSub f sink = createSub acquire release sink
   where
     release (cb1, cb2) = do

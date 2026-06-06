@@ -214,12 +214,16 @@ data LensCore field record
 type Lens' s a = forall (f :: Type -> Type). Functor f => (a -> f a) -> s -> f s
 ----------------------------------------------------------------------------
 -- | Convert from 'Miso.miso' t'Lens' to van Laarhoven t'Lens''
-toVL :: Lens record field -> Lens' record field
+toVL
+  :: Lens record field
+  -- ^ Miso t'Lens' to convert
+  -> Lens' record field
 toVL Lens {..} = \f record -> flip _set record <$> f (_get record)
 ----------------------------------------------------------------------------
--- | Convert from 'Miso.miso' t'Lens' to van Laarhoven t'Lens''
+-- | Convert from van Laarhoven t'Lens'' to 'Miso.miso' t'Lens'
 fromVL
   :: Lens' record field
+  -- ^ Van Laarhoven lens to convert
   -> Lens record field
 fromVL lens_ = Lens {..}
   where
@@ -246,12 +250,26 @@ instance Category LensCore where
 -- setName person newName = person & name .~ newName
 -- @
 infixr 4 .~
-(.~) :: Lens record field -> field -> record -> record
+(.~)
+  :: Lens record field
+  -- ^ Lens targeting the field to update
+  -> field
+  -- ^ New value to assign
+  -> record
+  -- ^ Record to update
+  -> record
 (.~) _lens = _set _lens
 ----------------------------------------------------------------------------
 -- | Synonym for '(.~)'
 --
-set :: Lens record field -> field -> record -> record
+set
+  :: Lens record field
+  -- ^ Lens targeting the field to update
+  -> field
+  -- ^ New value to assign
+  -> record
+  -- ^ Record to update
+  -> record
 set = (.~)
 ----------------------------------------------------------------------------
 -- | Set an options field on a record
@@ -266,7 +284,14 @@ set = (.~)
 -- setName person newName = person & name ?~ newName
 -- @
 infixr 4 ?~
-(?~) :: Lens record (Maybe field) -> field -> record -> record
+(?~)
+  :: Lens record (Maybe field)
+  -- ^ Lens targeting a 'Maybe' field
+  -> field
+  -- ^ Value to wrap in 'Just' and assign
+  -> record
+  -- ^ Record to update
+  -> record
 (?~) _lens f r = r & _lens .~ Just f
 ----------------------------------------------------------------------------
 -- | Modify a field on a record by applying a function to it.
@@ -281,11 +306,25 @@ infixr 4 ?~
 -- increment counter = counter & value %~ (+1)
 -- @
 infixr 4 %~
-(%~) :: Lens record field -> (field -> field) -> record -> record
+(%~)
+  :: Lens record field
+  -- ^ Lens targeting the field to modify
+  -> (field -> field)
+  -- ^ Modification function applied to the current value
+  -> record
+  -- ^ Record to update
+  -> record
 (%~) _lens f record = _set _lens (f (record ^. _lens)) record
 ----------------------------------------------------------------------------
 -- | Synonym for '(%~)'
-over :: Lens record field -> (field -> field) -> record -> record
+over
+  :: Lens record field
+  -- ^ Lens targeting the field to modify
+  -> (field -> field)
+  -- ^ Modification function applied to the current value
+  -> record
+  -- ^ Record to update
+  -> record
 over = (%~)
 ----------------------------------------------------------------------------
 -- | Read a field from a record using a t'Lens'
@@ -301,7 +340,12 @@ over = (%~)
 -- getName = person ^. name
 -- @
 infixl 8 ^.
-(^.) :: record -> Lens record field -> field
+(^.)
+  :: record
+  -- ^ Record to read from
+  -> Lens record field
+  -- ^ Lens targeting the field to retrieve
+  -> field
 (^.) = flip _get
 ----------------------------------------------------------------------------
 -- | Increment a @Num field => field@ on a record using a t'Lens'
@@ -316,7 +360,15 @@ infixl 8 ^.
 -- birthday person = person & age +~ 1
 -- @
 infixr 4 +~
-(+~) :: Num field => Lens record field -> field -> record -> record
+(+~)
+  :: Num field
+  => Lens record field
+  -- ^ Lens targeting the numeric field
+  -> field
+  -- ^ Amount to add
+  -> record
+  -- ^ Record to update
+  -> record
 (+~) _lens x record = record & _lens %~ (+x)
 ----------------------------------------------------------------------------
 -- | Multiply a @Num@eric field on a record using a t'Lens'
@@ -331,7 +383,15 @@ infixr 4 +~
 -- expand circle = circle & radius *~ 10
 -- @
 infixr 4 *~
-(*~) :: Num field => Lens record field -> field -> record -> record
+(*~)
+  :: Num field
+  => Lens record field
+  -- ^ Lens targeting the numeric field
+  -> field
+  -- ^ Factor to multiply by
+  -> record
+  -- ^ Record to update
+  -> record
 (*~) _lens x record = record & _lens %~ (*x)
 ----------------------------------------------------------------------------
 -- | Divide a @Fractional@ field on a record using a t'Lens'
@@ -346,7 +406,15 @@ infixr 4 *~
 -- shrink circle = circle & radius //~ 10
 -- @
 infixr 4 //~
-(//~) :: Fractional field => Lens record field -> field -> record -> record
+(//~)
+  :: Fractional field
+  => Lens record field
+  -- ^ Lens targeting the fractional field
+  -> field
+  -- ^ Divisor
+  -> record
+  -- ^ Record to update
+  -> record
 (//~) _lens x record = record & _lens %~ (/x)
 ----------------------------------------------------------------------------
 -- | Increment a @Num@eric field on a record using a t'Lens'
@@ -361,7 +429,15 @@ infixr 4 //~
 -- timeTravel person = person & age -~ 1
 -- @
 infixr 4 -~
-(-~) :: Num field => Lens record field -> field -> record -> record
+(-~)
+  :: Num field
+  => Lens record field
+  -- ^ Lens targeting the numeric field
+  -> field
+  -- ^ Amount to subtract
+  -> record
+  -- ^ Record to update
+  -> record
 (-~) _lens x record = record & _lens %~ subtract x
 ----------------------------------------------------------------------------
 -- | Monoidally append a field in a record using a t'Lens'
@@ -380,7 +456,15 @@ infixr 4 -~
 -- @
 --
 infixr 4 <>~
-(<>~) :: Monoid field => Lens record field -> field -> record -> record
+(<>~)
+  :: Monoid field
+  => Lens record field
+  -- ^ Lens targeting the monoidal field
+  -> field
+  -- ^ Value to append via '(<>)'
+  -> record
+  -- ^ Record to update
+  -> record
 (<>~) _lens x record = record & _lens %~ (<> x)
 ----------------------------------------------------------------------------
 -- | Execute a monadic action in @MonadState@ that returns a field. Sets the
@@ -403,7 +487,13 @@ infixr 4 <>~
 --
 -- will store the result in field focused by the t'Lens'.
 infixr 2 <~
-(<~) :: MonadState record m => Lens record field -> m field -> m ()
+(<~)
+  :: MonadState record m
+  => Lens record field
+  -- ^ Lens targeting the field to assign
+  -> m field
+  -- ^ Monadic action whose result is assigned to the field
+  -> m ()
 l <~ mb = do
   b <- mb
   l .= b
@@ -423,11 +513,23 @@ l <~ mb = do
 --   value %= (+1)
 -- @
 infix 4 %=
-(%=) :: MonadState record m => Lens record field -> (field -> field) -> m ()
+(%=)
+  :: MonadState record m
+  => Lens record field
+  -- ^ Lens targeting the field to modify
+  -> (field -> field)
+  -- ^ Modification function applied to the current value
+  -> m ()
 (%=) _lens f = modify (\r -> r & _lens %~ f)
 ----------------------------------------------------------------------------
 -- | Synonym for '(%=)'
-modifying :: MonadState record m => Lens record field -> (field -> field) -> m ()
+modifying
+  :: MonadState record m
+  => Lens record field
+  -- ^ Lens targeting the field to modify
+  -> (field -> field)
+  -- ^ Modification function applied to the current value
+  -> m ()
 modifying = (%=)
 ----------------------------------------------------------------------------
 -- | Modify the field of a record in @MonadState@ using a t'Lens', then
@@ -450,7 +552,13 @@ modifying = (%=)
 --   io_ $ consoleLog (ms result)
 -- @
 infix 4 <%=
-(<%=) :: MonadState record m => Lens record field -> (field -> field) -> m field
+(<%=)
+  :: MonadState record m
+  => Lens record field
+  -- ^ Lens targeting the field to modify
+  -> (field -> field)
+  -- ^ Modification function applied to the current value
+  -> m field
 l <%= f = do
   l %= f
   use l
@@ -474,7 +582,13 @@ l <%= f = do
 --   io_ $ consoleLog (ms result) -- x
 -- @
 infix 4 <.=
-(<.=) :: MonadState record m => Lens record field -> field -> m field
+(<.=)
+  :: MonadState record m
+  => Lens record field
+  -- ^ Lens targeting the field to assign
+  -> field
+  -- ^ New value to assign
+  -> m field
 l <.= b = do
   l .= b
   return b
@@ -498,7 +612,13 @@ l <.= b = do
 --   io_ $ consoleLog (ms result) -- Just 1
 -- @
 infix 4 <?=
-(<?=) :: MonadState record m => Lens record (Maybe field) -> field -> m field
+(<?=)
+  :: MonadState record m
+  => Lens record (Maybe field)
+  -- ^ Lens targeting a 'Maybe' field
+  -> field
+  -- ^ Value to wrap in 'Just' and assign
+  -> m field
 l <?= b = do
   l ?= b
   return b
@@ -525,7 +645,13 @@ l <?= b = do
 --   io_ $ consoleLog $ ms previousValue -- prints value at x
 -- @
 infix 4 <<.=
-(<<.=) :: MonadState record m => Lens record field -> field -> m field
+(<<.=)
+  :: MonadState record m
+  => Lens record field
+  -- ^ Lens targeting the field to assign
+  -> field
+  -- ^ New value to assign
+  -> m field
 l <<.= b = do
   old <- use l
   l .= b
@@ -550,7 +676,11 @@ l <<.= b = do
 --   io_ $ consoleLog (ms x) -- prints model value
 -- @
 ----------------------------------------------------------------------------
-view :: MonadReader record m => Lens record field -> m field
+view
+  :: MonadReader record m
+  => Lens record field
+  -- ^ Lens targeting the field to read
+  -> m field
 view lens_ = asks (^. lens_)
 ----------------------------------------------------------------------------
 -- | Modifies the field of a record in @MonadState@ using a t'Lens'.
@@ -574,7 +704,13 @@ view lens_ = asks (^. lens_)
 --   io_ $ consoleLog (ms result) -- prints previous value of 2
 -- @
 infix 4 <<%=
-(<<%=) :: MonadState record m => Lens record field -> (field -> field) -> m field
+(<<%=)
+  :: MonadState record m
+  => Lens record field
+  -- ^ Lens targeting the field to modify
+  -> (field -> field)
+  -- ^ Modification function applied to the current value
+  -> m field
 l <<%= f = do
   old <- use l
   l %= f
@@ -595,11 +731,23 @@ l <<%= f = do
 -- update' (SetValue v) = value .= v
 -- @
 infix 4 .=
-(.=) :: MonadState record m => Lens record field -> field -> m ()
+(.=)
+  :: MonadState record m
+  => Lens record field
+  -- ^ Lens targeting the field to assign
+  -> field
+  -- ^ New value to assign
+  -> m ()
 (.=) _lens f = modify (\r -> r & _lens .~ f)
 ----------------------------------------------------------------------------
 -- | Synonym for '(.=)'
-assign :: MonadState record m => Lens record field -> field -> m ()
+assign
+  :: MonadState record m
+  => Lens record field
+  -- ^ Lens targeting the field to assign
+  -> field
+  -- ^ New value to assign
+  -> m ()
 assign = (.=)
 ----------------------------------------------------------------------------
 -- | Retrieves the value of a field in a record using a t'Lens' inside @MonadState@
@@ -621,7 +769,11 @@ assign = (.=)
 --   result <- use value
 --   io_ $ consoleLog (ms result) -- prints the value of x
 -- @
-use :: MonadState record m => Lens record field -> m field
+use
+  :: MonadState record m
+  => Lens record field
+  -- ^ Lens targeting the field to read
+  -> m field
 use _lens = gets (^. _lens)
 ----------------------------------------------------------------------------
 -- | Sets the value of a field in a record using a t'Lens' inside a @MonadState@
@@ -640,7 +792,13 @@ use _lens = gets (^. _lens)
 -- update (AssignValue x) = value ?= x
 -- @
 infix 4 ?=
-(?=) :: MonadState record m => Lens record (Maybe field) -> field -> m ()
+(?=)
+  :: MonadState record m
+  => Lens record (Maybe field)
+  -- ^ Lens targeting a 'Maybe' field
+  -> field
+  -- ^ Value to wrap in 'Just' and assign
+  -> m ()
 (?=) _lens value = _lens .= Just value
 ----------------------------------------------------------------------------
 -- | Alters the @Just@ value of a field in a record using a t'Lens' inside a @MonadState@
@@ -659,7 +817,13 @@ infix 4 ?=
 --
 -- @
 infix 4 %?=
-(%?=) :: MonadState record m => Lens record (Maybe field) -> (field -> field) -> m ()
+(%?=)
+  :: MonadState record m
+  => Lens record (Maybe field)
+  -- ^ Lens targeting a 'Maybe' field
+  -> (field -> field)
+  -- ^ Modification function applied when the value is 'Just'
+  -> m ()
 (%?=) _lens f = _lens %= \case
   Nothing -> Nothing
   Just x -> Just (f x)
@@ -680,7 +844,13 @@ infix 4 %?=
 -- update (IncrementBy x) = value += x
 -- @
 infix 4 +=
-(+=) :: (MonadState record m, Num field)  => Lens record field -> field -> m ()
+(+=)
+  :: (MonadState record m, Num field)
+  => Lens record field
+  -- ^ Lens targeting the numeric field
+  -> field
+  -- ^ Amount to add
+  -> m ()
 (+=) _lens f = modify (\r -> r & _lens +~ f)
 ----------------------------------------------------------------------------
 -- | Multiplies the value of a @Num@eric field of a record using a t'Lens'
@@ -699,7 +869,13 @@ infix 4 +=
 -- update (MultiplyBy x) = value *= x
 -- @
 infix 4 *=
-(*=) :: (MonadState record m, Num field)  => Lens record field -> field -> m ()
+(*=)
+  :: (MonadState record m, Num field)
+  => Lens record field
+  -- ^ Lens targeting the numeric field
+  -> field
+  -- ^ Factor to multiply by
+  -> m ()
 (*=) _lens f = modify (\r -> r & _lens *~ f)
 ----------------------------------------------------------------------------
 -- | Divides the value of a @Fractional@ field of a record using a t'Lens'
@@ -718,7 +894,13 @@ infix 4 *=
 -- update (DivideBy x) = value //= x
 -- @
 infix 4 //=
-(//=) :: (MonadState record m, Fractional field)  => Lens record field -> field -> m ()
+(//=)
+  :: (MonadState record m, Fractional field)
+  => Lens record field
+  -- ^ Lens targeting the fractional field
+  -> field
+  -- ^ Divisor
+  -> m ()
 (//=) _lens f = modify (\r -> r & _lens %~ (/ f))
 ----------------------------------------------------------------------------
 -- | Subtracts the value of a @Num@eric field of a record using a t'Lens'
@@ -737,7 +919,13 @@ infix 4 //=
 -- update (SubtractBy x) = value -= x
 -- @
 infix 4 -=
-(-=) :: (MonadState record m, Num field) => Lens record field -> field -> m ()
+(-=)
+  :: (MonadState record m, Num field)
+  => Lens record field
+  -- ^ Lens targeting the numeric field
+  -> field
+  -- ^ Amount to subtract
+  -> m ()
 (-=) _lens f = modify (\r -> r & _lens -~ f)
 ---------------------------------------------------------------------------------
 -- | t'Lens' that operates on the first element of a tuple
@@ -783,7 +971,9 @@ this = _id
 --
 lens
   :: (record -> field)
+  -- ^ Getter: extracts the field from the record
   -> (record -> field -> record)
+  -- ^ Setter: returns a new record with the field updated
   -> Lens record field
 lens getter setter = Lens getter (flip setter)
 ----------------------------------------------------------------------------
@@ -793,13 +983,29 @@ data Prism s a
   , _down :: s -> Maybe a
   }
 ----------------------------------------------------------------------------
-review :: Prism s a -> a -> s
+-- | Extract a value from a t'Prism' constructor.
+review
+  :: Prism s a
+  -- ^ Prism to construct with
+  -> a
+  -- ^ Value to inject
+  -> s
 review = _up
 ----------------------------------------------------------------------------
-preview :: MonadReader r m => Prism r a -> m (Maybe a)
+-- | Attempt to match a t'Prism' on a value in 'MonadReader'.
+preview
+  :: MonadReader r m
+  => Prism r a
+  -- ^ Prism to match
+  -> m (Maybe a)
 preview = asks . preview
 ----------------------------------------------------------------------------
-preuse :: MonadState s m => Prism s a -> m (Maybe a)
+-- | Attempt to match a t'Prism' on a value in 'MonadState'.
+preuse
+  :: MonadState s m
+  => Prism s a
+  -- ^ Prism to match
+  -> m (Maybe a)
 preuse = gets . preview
 ----------------------------------------------------------------------------
 _Left :: Prism (Either a b) a
@@ -815,10 +1021,22 @@ _Nothing :: Prism (Maybe a) a
 _Nothing = prism (const Nothing) Prelude.id
 ----------------------------------------------------------------------------
 infixl 8 ^?
-(^?) :: s -> Prism s a -> Maybe a 
+-- | Attempt to match a t'Prism', returning 'Nothing' if it does not match.
+(^?)
+  :: s
+  -- ^ Value to match against
+  -> Prism s a
+  -- ^ Prism to apply
+  -> Maybe a
 (^?) = flip preview
 ----------------------------------------------------------------------------
-prism :: (a -> s) -> (s -> Maybe a) -> Prism s a
+-- | Smart constructor for t'Prism'.
+prism
+  :: (a -> s)
+  -- ^ Constructor: injects a value into the sum type
+  -> (s -> Maybe a)
+  -- ^ Destructor: attempts to extract the focused variant
+  -> Prism s a
 prism = Prism
 ----------------------------------------------------------------------------
 -- | Class for getting and setting values across various container types.

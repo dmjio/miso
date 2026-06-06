@@ -43,12 +43,20 @@ instance ToJSVal Event where
     flip (FFI.set "capture") o =<< toJSVal capture
     toJSVal o
 -----------------------------------------------------------------------------
--- | Entry point for event delegation
+-- | <https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Scripting/Event_bubbling#event_delegation>
+--
+-- Installs the miso event delegation layer on a mount point element.
+-- All events listed in the t'Events' map are captured at the mount point
+-- and dispatched through the virtual DOM tree.
 delegator
   :: JSVal
+  -- ^ The DOM element to use as the event delegation root (typically @\<body\>@)
   -> IORef VTree
+  -- ^ Mutable reference to the current virtual DOM tree, used for event routing
   -> Events
+  -- ^ Map of DOM event names to the t'Phase' in which they should be delegated
   -> Bool
+  -- ^ When @True@, enables debug logging of event dispatch
   -> IO ()
 delegator mountPointElement vtreeRef es debug = do
   evts <- toJSVal (uncurry Event <$> M.toList es)

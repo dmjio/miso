@@ -34,13 +34,12 @@ import Miso.Event.Types
 import Miso.JSON
 import Miso.String
 -----------------------------------------------------------------------------
--- | Data type representing path (consisting of field names) within event object
--- where a decoder should be applied.
+-- | Path (or paths) within the browser event object where a decoder is applied.
 data DecodeTarget
   = DecodeTarget [MisoString]
-  -- ^ Specify single path within Event object, where a decoder should be applied.
+  -- ^ Single dot-separated path into the event object (e.g. @["target", "value"]@).
   | DecodeTargets [[MisoString]]
-  -- ^ Specify multiple paths withing Event object, where decoding should be attempted. The first path where decoding suceeds is the one taken.
+  -- ^ Multiple candidate paths; the first path where decoding succeeds is used.
 -----------------------------------------------------------------------------
 -- | `ToJSVal` instance for t'DecodeTarget'.
 instance ToJSVal DecodeTarget where
@@ -57,8 +56,20 @@ data Decoder a
     -- ^ Location in DOM of where to decode
   }
 -----------------------------------------------------------------------------
--- | Smart constructor for building a t'Decoder'.
-at :: [MisoString] -> (Value -> Parser a) -> Decoder a
+-- | Smart constructor for a t'Decoder' that targets a single path.
+--
+-- @
+-- -- Decode the value of an input element:
+-- myDecoder :: Decoder MisoString
+-- myDecoder = ["target"] \`at\` (withObject "target" $ \o -> o .: "value")
+-- @
+--
+at
+  :: [MisoString]
+  -- ^ Path into the event object (empty list means the root event object)
+  -> (Value -> Parser a)
+  -- ^ JSON parser for the value at that path
+  -> Decoder a
 at decodeAt decoder = Decoder {decodeAt = DecodeTarget decodeAt, ..}
 -----------------------------------------------------------------------------
 -- | Empty t'Decoder' for use with events like "click" that do not

@@ -49,7 +49,14 @@ import           Miso.Types
 -----------------------------------------------------------------------------
 -- | Low-level helper used to construct 'MATHML' 'node' in 'Miso.Types.View'.
 -- Most View helpers in this module are defined in terms of it.
-nodeMathml :: MisoString -> [Attribute action] -> [View model action] -> View model action
+nodeMathml
+  :: MisoString
+  -- ^ MathML element tag name (e.g. @"math"@, @"mfrac"@, @"msqrt"@)
+  -> [Attribute action]
+  -- ^ List of MathML attributes and event handlers
+  -> [View model action]
+  -- ^ Child nodes
+  -> View model action
 nodeMathml nodeName = node MATHML nodeName
 -----------------------------------------------------------------------------
 -- | [\<annotation-xml\>](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Element/annotation-xml)

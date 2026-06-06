@@ -411,11 +411,19 @@ ppx x = MS.ms x <> "ppx"
 --   ]
 -- @
 --
-selector_ :: MisoString -> [Style] -> Styles
+selector_
+  :: MisoString
+  -- ^ CSS selector (e.g. @".name"@, @"#id"@, @"div > p"@)
+  -> [Style]
+  -- ^ List of CSS property declarations
+  -> Styles
 selector_ k v = Styles (k,v)
 -----------------------------------------------------------------------------
 -- | Smart constructor for t'StyleSheet'
-sheet_ :: [Styles] -> StyleSheet
+sheet_
+  :: [Styles]
+  -- ^ List of CSS rule blocks to include in the stylesheet
+  -> StyleSheet
 sheet_ = StyleSheet
 -----------------------------------------------------------------------------
 -- | @style_@ is an attribute that will set the @style@
@@ -427,7 +435,10 @@ sheet_ = StyleSheet
 --
 -- <https://developer.mozilla.org/en-US/docs/Web/CSS>
 --
-style_ :: [Style] -> Attribute action
+style_
+  :: [Style]
+  -- ^ List of CSS property declarations to apply as inline styles
+  -> Attribute action
 style_ = MT.Styles . M.fromList
 -----------------------------------------------------------------------------
 -- | Set "style" property
@@ -435,7 +446,10 @@ style_ = MT.Styles . M.fromList
 -- > view m = div_ [ styleInline_ "background-color:red;color:blue;" ] [ "foo" ]
 --
 -- https://developer.mozilla.org/en-US/docs/Web/CSS
-styleInline_ ::  MisoString -> Attribute action
+styleInline_
+  :: MisoString
+  -- ^ Raw CSS string (e.g. @"background-color:red;color:blue;"@)
+  -> Attribute action
 styleInline_ = textProp "style"
 -----------------------------------------------------------------------------
 -- | Renders a t'Styles' to a t'MisoString'
@@ -476,7 +490,10 @@ renderStyles indent (Media name frames) = MS.intercalate " "
 -----------------------------------------------------------------------------
 -- | Render t'StyleSheet' as 'MisoString'
 --
-renderStyleSheet :: StyleSheet -> MisoString
+renderStyleSheet
+  :: StyleSheet
+  -- ^ Stylesheet to render
+  -> MisoString
 renderStyleSheet styleSheet = MS.intercalate "\n"
   [ renderStyles 0 styles
   | styles <- getStyleSheet styleSheet
@@ -502,7 +519,12 @@ renderStyleSheet styleSheet = MS.intercalate "\n"
 --  ]
 -- @
 --
-keyframes_ :: MisoString -> [(MisoString, [Style])] -> Styles
+keyframes_
+  :: MisoString
+  -- ^ Animation name (e.g. @"slide-in"@)
+  -> [(MisoString, [Style])]
+  -- ^ Keyframe stops: selector (e.g. @"from"@, @"to"@, @pct 50@) paired with styles
+  -> Styles
 keyframes_ = KeyFrame
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/@media
@@ -518,7 +540,12 @@ keyframes_ = KeyFrame
 --   ]
 -- @
 --
-media_ :: MisoString -> [(MisoString, [Style])] -> Styles
+media_
+  :: MisoString
+  -- ^ Media query string (e.g. @"screen and (min-width: 480px)"@)
+  -> [(MisoString, [Style])]
+  -- ^ Rules within the media query: selector paired with styles
+  -> Styles
 media_ = Media
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/align-content

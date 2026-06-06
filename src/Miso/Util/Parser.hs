@@ -48,7 +48,12 @@ data ParseError a token
   deriving (Show, Eq)
 ----------------------------------------------------------------------------
 -- | Executes a parser against a series of tokens.
-parse :: Parser token a -> [token] -> Either (ParseError a token) a
+parse
+  :: Parser token a
+  -- ^ Parser to run
+  -> [token]
+  -- ^ Input token stream
+  -> Either (ParseError a token) a
 parse _ [] = Left EmptyStream
 parse parser tokens =
   case runParserT parser () tokens of
@@ -104,9 +109,12 @@ anyToken = Parser $ \_ input ->
     t : ts -> [(t, ts)]
     _ -> []
 ----------------------------------------------------------------------------
--- | Succeeds for any token for which the predicate @f@ returns 'True'.
+-- | Succeeds for any token for which the predicate returns 'True'.
 -- Returns the parsed token.
-satisfy :: (a -> Bool) -> ParserT r [a] [] a
+satisfy
+  :: (a -> Bool)
+  -- ^ Predicate the next token must satisfy
+  -> ParserT r [a] [] a
 satisfy f = do
   t <- anyToken
   guard (f t)
@@ -114,15 +122,22 @@ satisfy f = do
 ----------------------------------------------------------------------------
 -- | Succeeds if the next token in the stream matches the given one.
 -- Returns the parsed token.
-token_ :: Eq token => token -> Parser token token
+token_
+  :: Eq token
+  => token
+  -- ^ Token to match exactly
+  -> Parser token token
 token_ t = satisfy (==t)
 ----------------------------------------------------------------------------
 -- | Returns all input from a parser
 allTokens :: ParserT r a [] a
 allTokens = Parser $ \_ input -> [(input, input)]
 ----------------------------------------------------------------------------
--- | Modifies tokens
-modifyTokens :: (t -> t) -> ParserT r t [] ()
+-- | Applies a transformation to the remaining token stream.
+modifyTokens
+  :: (t -> t)
+  -- ^ Function to transform the remaining tokens
+  -> ParserT r t [] ()
 modifyTokens f = Parser $ \_ input -> [((), f input)]
 ----------------------------------------------------------------------------
 -- | Retrieves read-only state from a Parser
@@ -136,8 +151,11 @@ peek = Parser $ \_ tokens ->
     [] -> []
     (x:xs) -> [(x, x:xs)]
 ----------------------------------------------------------------------------
--- | Parser combinator that always fails
-errorOut :: errorToken -> ParserT r errorToken [] ()
+-- | Parser combinator that always fails, injecting the given value as the error token.
+errorOut
+  :: errorToken
+  -- ^ Error token to inject into the failure result
+  -> ParserT r errorToken [] ()
 errorOut x = Parser $ \_ _ -> [((),x)]
 ----------------------------------------------------------------------------
 -- | Parser combinator that only succeeds if there are no more tokens.

@@ -368,41 +368,72 @@ instance (ToJSVal a, ToJSVal b, ToJSVal c, ToJSVal d, ToJSVal e, ToJSVal f) => T
     toJSVal_List [ u_, v_, w_, x_, y_, z_ ]
   {-# INLINE toJSVal #-}
 -----------------------------------------------------------------------------
--- | Retrieves a field from globalThis
-jsg :: MisoString -> IO JSVal
+-- | Retrieves a field from @globalThis@.
+jsg
+  :: MisoString
+  -- ^ Property name to look up on @globalThis@
+  -> IO JSVal
 jsg key = global ! key
 {-# INLINABLE jsg #-}
 -----------------------------------------------------------------------------
--- | Invokes a function with a specified argument list
-jsgf :: ToArgs args => MisoString -> args -> IO JSVal
+-- | Invokes a global function by name with the given arguments.
+jsgf
+  :: ToArgs args
+  => MisoString
+  -- ^ Name of the global function to invoke
+  -> args
+  -- ^ Arguments to pass to the function
+  -> IO JSVal
 jsgf name = global # name
 {-# INLINABLE jsgf #-}
 -----------------------------------------------------------------------------
--- | Invokes a function with no argument
-jsg0 :: MisoString -> IO JSVal
+-- | Invokes a global function by name with no arguments.
+jsg0
+  :: MisoString
+  -- ^ Name of the global function to invoke
+  -> IO JSVal
 jsg0 name = jsgf name ([] :: [JSVal])
 {-# INLINABLE jsg0 #-}
 -----------------------------------------------------------------------------
--- | Invokes a function with 1 argument
-jsg1 :: ToJSVal arg => MisoString -> arg -> IO JSVal
+-- | Invokes a global function by name with 1 argument.
+jsg1
+  :: ToJSVal arg
+  => MisoString
+  -- ^ Name of the global function to invoke
+  -> arg
+  -- ^ First argument
+  -> IO JSVal
 jsg1 name arg = jsgf name [arg]
 {-# INLINABLE jsg1 #-}
 -----------------------------------------------------------------------------
--- | Invokes a function with 2 arguments
-jsg2 :: (ToJSVal arg1, ToJSVal arg2) => MisoString -> arg1 -> arg2 -> IO JSVal
+-- | Invokes a global function by name with 2 arguments.
+jsg2
+  :: (ToJSVal arg1, ToJSVal arg2)
+  => MisoString
+  -- ^ Name of the global function to invoke
+  -> arg1
+  -- ^ First argument
+  -> arg2
+  -- ^ Second argument
+  -> IO JSVal
 jsg2 name arg1 arg2 = do
   arg1_ <- toJSVal arg1
   arg2_ <- toJSVal arg2
   jsgf name [arg1_, arg2_]
 {-# INLINABLE jsg2 #-}
 -----------------------------------------------------------------------------
--- | Invokes a function with 3 arguments
-jsg3 :: (ToJSVal arg1, ToJSVal arg2, ToJSVal arg3)
-     => MisoString
-     -> arg1
-     -> arg2
-     -> arg3
-     -> IO JSVal
+-- | Invokes a global function by name with 3 arguments.
+jsg3
+  :: (ToJSVal arg1, ToJSVal arg2, ToJSVal arg3)
+  => MisoString
+  -- ^ Name of the global function to invoke
+  -> arg1
+  -- ^ First argument
+  -> arg2
+  -- ^ Second argument
+  -> arg3
+  -- ^ Third argument
+  -> IO JSVal
 jsg3 name arg1 arg2 arg3 = do
   arg1_ <- toJSVal arg1
   arg2_ <- toJSVal arg2
@@ -410,14 +441,20 @@ jsg3 name arg1 arg2 arg3 = do
   jsgf name [arg1_, arg2_, arg3_]
 {-# INLINABLE jsg3 #-}
 -----------------------------------------------------------------------------
--- | Invokes a function with 4 arguments
-jsg4 :: (ToJSVal arg1, ToJSVal arg2, ToJSVal arg3, ToJSVal arg4)
-     => MisoString
-     -> arg1
-     -> arg2
-     -> arg3
-     -> arg4
-     -> IO JSVal
+-- | Invokes a global function by name with 4 arguments.
+jsg4
+  :: (ToJSVal arg1, ToJSVal arg2, ToJSVal arg3, ToJSVal arg4)
+  => MisoString
+  -- ^ Name of the global function to invoke
+  -> arg1
+  -- ^ First argument
+  -> arg2
+  -- ^ Second argument
+  -> arg3
+  -- ^ Third argument
+  -> arg4
+  -- ^ Fourth argument
+  -> IO JSVal
 jsg4 name arg1 arg2 arg3 arg4 = do
   arg1_ <- toJSVal arg1
   arg2_ <- toJSVal arg2
@@ -426,15 +463,22 @@ jsg4 name arg1 arg2 arg3 arg4 = do
   jsgf name [arg1_, arg2_, arg3_, arg4_]
 {-# INLINABLE jsg4 #-}
 -----------------------------------------------------------------------------
--- | Invokes a function with 5 arguments
-jsg5 :: (ToJSVal arg1, ToJSVal arg2, ToJSVal arg3, ToJSVal arg4, ToJSVal arg5)
-     => MisoString
-     -> arg1
-     -> arg2
-     -> arg3
-     -> arg4
-     -> arg5
-     -> IO JSVal
+-- | Invokes a global function by name with 5 arguments.
+jsg5
+  :: (ToJSVal arg1, ToJSVal arg2, ToJSVal arg3, ToJSVal arg4, ToJSVal arg5)
+  => MisoString
+  -- ^ Name of the global function to invoke
+  -> arg1
+  -- ^ First argument
+  -> arg2
+  -- ^ Second argument
+  -> arg3
+  -- ^ Third argument
+  -> arg4
+  -- ^ Fourth argument
+  -> arg5
+  -- ^ Fifth argument
+  -> IO JSVal
 jsg5 name arg1 arg2 arg3 arg4 arg5 = do
   arg1_ <- toJSVal arg1
   arg2_ <- toJSVal arg2
@@ -444,37 +488,70 @@ jsg5 name arg1 arg2 arg3 arg4 arg5 = do
   jsgf name [arg1_, arg2_, arg3_, arg4_, arg5_]
 {-# INLINABLE jsg5 #-}
 -----------------------------------------------------------------------------
--- | Sets a field on an Object at a specified field
-setField :: (ToObject o, ToJSVal v) => o -> MisoString -> v -> IO ()
+-- | Sets a named field on a JS t'Object'.
+setField
+  :: (ToObject o, ToJSVal v)
+  => o
+  -- ^ Object to mutate
+  -> MisoString
+  -- ^ Field name
+  -> v
+  -- ^ Value to assign
+  -> IO ()
 setField o k v = do
   o' <- toJSVal =<< toObject o
   v' <- toJSVal v
   setProp_ffi k v' o'
 {-# INLINABLE setField #-}
 -----------------------------------------------------------------------------
--- | Sets a field on an Object at a specified index
+-- | Sets a field on a JS t'Object' at a numeric index.
 infixr 1 <##
-(<##) :: (ToObject o, ToJSVal v) => o -> Int -> v -> IO ()
+(<##)
+  :: (ToObject o, ToJSVal v)
+  => o
+  -- ^ Object to mutate
+  -> Int
+  -- ^ Zero-based index to set
+  -> v
+  -- ^ Value to assign
+  -> IO ()
 (<##) o k v = do
   o' <- toJSVal =<< toObject o
   v' <- toJSVal v
   setPropIndex_ffi k v' o'
 {-# INLINABLE (<##) #-}
 -----------------------------------------------------------------------------
--- | Retrieves a property from an Object
-(!) :: ToObject o => o -> MisoString -> IO JSVal
+-- | Retrieves a named property from a JS t'Object'.
+(!)
+  :: ToObject o
+  => o
+  -- ^ Object to read from
+  -> MisoString
+  -- ^ Property name to look up
+  -> IO JSVal
 (!) = flip getProp
 {-# INLINABLE (!) #-}
 -----------------------------------------------------------------------------
--- | Lists the properties on a JS Object.
-listProps :: Object -> IO [MisoString]
+-- | Lists the property keys on a JS t'Object'.
+listProps
+  :: Object
+  -- ^ Object to inspect
+  -> IO [MisoString]
 listProps (Object jsval) = do
   keys <- fromJSValUnchecked =<< listProps_ffi jsval
   forM keys fromJSValUnchecked
 {-# INLINABLE listProps #-}
 -----------------------------------------------------------------------------
--- | Calls a JS function on an t'Object' at a field with specified arguments.
-call :: (ToObject obj, ToObject this, ToArgs args) => obj -> this -> args -> IO JSVal
+-- | Calls a JS function with an explicit @this@ context and arguments.
+call
+  :: (ToObject obj, ToObject this, ToArgs args)
+  => obj
+  -- ^ The function to call
+  -> this
+  -- ^ The @this@ context to bind
+  -> args
+  -- ^ Arguments to pass
+  -> IO JSVal
 call o this args = do
   o' <- toJSVal =<< toObject o
   this' <- toJSVal =<< toObject this
@@ -482,9 +559,17 @@ call o this args = do
   invokeFunction o' this' args'
 {-# INLINABLE call #-}
 -----------------------------------------------------------------------------
--- | Calls a JS function on an t'Object' at a field with specified arguments.
+-- | Calls a named method on a JS t'Object' with arguments.
 infixr 2 #
-(#) :: (ToObject object, ToArgs args) => object -> MisoString -> args -> IO JSVal
+(#)
+  :: (ToObject object, ToArgs args)
+  => object
+  -- ^ Object on which to call the method
+  -> MisoString
+  -- ^ Method name
+  -> args
+  -- ^ Arguments to pass
+  -> IO JSVal
 (#) o k args = do
   o' <- toJSVal =<< toObject o
   func <- getProp_ffi k o'
@@ -492,7 +577,14 @@ infixr 2 #
   invokeFunction func o' args'
 {-# INLINABLE (#) #-}
 -----------------------------------------------------------------------------
-apply :: (FromJSVal a, ToArgs args) => Function -> args -> IO a
+-- | Applies a t'Function' to arguments, returning the decoded result.
+apply
+  :: (FromJSVal a, ToArgs args)
+  => Function
+  -- ^ JavaScript function to call
+  -> args
+  -- ^ Arguments to pass
+  -> IO a
 apply (Function func) args = do
   o <- toJSVal global
   fromJSValUnchecked =<< do
@@ -500,8 +592,14 @@ apply (Function func) args = do
       toJSVal (toArgs args)
 {-# INLINABLE apply #-}
 -----------------------------------------------------------------------------
--- | Instantiates a new JS t'Object'.
-new :: (ToObject constructor, ToArgs args) => constructor -> args -> IO JSVal
+-- | Instantiates a new JS t'Object' using @new@.
+new
+  :: (ToObject constructor, ToArgs args)
+  => constructor
+  -- ^ Constructor function to invoke with @new@
+  -> args
+  -- ^ Arguments to pass to the constructor
+  -> IO JSVal
 new constr args = do
   obj <- toJSVal =<< toObject constr
   argv <- toJSVal =<< toArgs args
@@ -524,7 +622,11 @@ create = Object <$> create_ffi
 --    pure ()
 -- @
 --
-createWith :: ToJSVal val => [(MisoString, val)] -> IO Object
+createWith
+  :: ToJSVal val
+  => [(MisoString, val)]
+  -- ^ Key-value pairs to populate the object with
+  -> IO Object
 createWith kvs = do
   o <- create
   forM_ kvs $ \(k,v) ->
@@ -532,13 +634,27 @@ createWith kvs = do
   pure o
 {-# INLINABLE createWith #-}
 -----------------------------------------------------------------------------
--- | Sets a property on a JS t'Object'
-setProp :: ToJSVal val => MisoString -> val -> Object -> IO ()
+-- | Sets a named property on a JS t'Object'.
+setProp
+  :: ToJSVal val
+  => MisoString
+  -- ^ Property name
+  -> val
+  -- ^ Value to assign
+  -> Object
+  -- ^ Object to mutate
+  -> IO ()
 setProp k v (Object o) = flip (setProp_ffi k) o =<< toJSVal v
 {-# INLINABLE setProp #-}
 -----------------------------------------------------------------------------
--- | Retrieves a property from a JS t'Object'
-getProp :: ToObject o => MisoString -> o -> IO JSVal
+-- | Retrieves a named property from a JS t'Object'.
+getProp
+  :: ToObject o
+  => MisoString
+  -- ^ Property name to look up
+  -> o
+  -- ^ Object to read from
+  -> IO JSVal
 getProp k v = getProp_ffi k =<< toJSVal (toObject v)
 {-# INLINABLE getProp #-}
 -----------------------------------------------------------------------------
@@ -549,7 +665,10 @@ getProp k v = getProp_ffi k =<< toJSVal (toObject v)
 --
 -- Consider using the more performant and secure (isolated) `inline` function.
 --
-eval :: MisoString -> IO JSVal
+eval
+  :: MisoString
+  -- ^ JavaScript expression or statement to evaluate
+  -> IO JSVal
 eval = eval_ffi
 {-# INLINABLE eval #-}
 -----------------------------------------------------------------------------
@@ -693,8 +812,11 @@ instance (ToJSVal arg1, ToJSVal arg2, ToJSVal arg3, ToJSVal arg4, ToJSVal arg5, 
     return [rarg1, rarg2, rarg3, rarg4, rarg5, rarg6]
   {-# INLINE toArgs #-}
 ----------------------------------------------------------------------------
--- | Frees references to a callback
-freeFunction :: Function -> IO ()
+-- | Releases a t'Function' callback, freeing its resources.
+freeFunction
+  :: Function
+  -- ^ Callback to release
+  -> IO ()
 freeFunction (Function x) = freeFunction_ffi x
 {-# INLINABLE freeFunction #-}
 -----------------------------------------------------------------------------
@@ -706,18 +828,32 @@ instance FromJSVal Object where
   fromJSVal = pure . Just . Object
   {-# INLINE fromJSVal #-}
 -----------------------------------------------------------------------------
--- | Lookup a property based on its index
-(!!) :: ToObject object => object -> Int -> IO JSVal
+-- | Retrieves a property from a JS t'Object' by numeric index.
+(!!)
+  :: ToObject object
+  => object
+  -- ^ Object to read from
+  -> Int
+  -- ^ Zero-based index to look up
+  -> IO JSVal
 (!!) o k = getPropIndex_ffi k =<< toJSVal =<< toObject o
 {-# INLINABLE (!!) #-}
 -----------------------------------------------------------------------------
--- | Checks if a t'JSVal' is undefined
-isUndefined :: ToJSVal val => val -> IO Bool
+-- | Returns 'True' if the given t'JSVal' is @undefined@.
+isUndefined
+  :: ToJSVal val
+  => val
+  -- ^ JavaScript value to test
+  -> IO Bool
 isUndefined val = isUndefined_ffi <$> toJSVal val
 {-# INLINABLE isUndefined #-}
 -----------------------------------------------------------------------------
--- | Checks if a t'JSVal' is null
-isNull :: ToJSVal val => val -> IO Bool
+-- | Returns 'True' if the given t'JSVal' is @null@.
+isNull
+  :: ToJSVal val
+  => val
+  -- ^ JavaScript value to test
+  -> IO Bool
 isNull val = isNull_ffi <$> toJSVal val
 {-# INLINABLE isNull #-}
 -----------------------------------------------------------------------------

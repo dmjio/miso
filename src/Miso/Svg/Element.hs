@@ -90,7 +90,14 @@ import           Miso.Types  hiding (text_)
 --
 -- > document.createElementNS('http://www.w3.org/2000/svg', 'circle');
 --
-nodeSvg :: MisoString -> [Attribute action] -> [View model action] -> View model action
+nodeSvg
+  :: MisoString
+  -- ^ SVG element tag name (e.g. @"circle"@, @"rect"@, @"path"@)
+  -> [Attribute action]
+  -- ^ List of SVG attributes and event handlers
+  -> [View model action]
+  -- ^ Child nodes
+  -> View model action
 nodeSvg nodeName = node SVG nodeName
 -----------------------------------------------------------------------------
 -- | [\<svg\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/svg)

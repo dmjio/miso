@@ -27,9 +27,23 @@ import Language.Haskell.TH
 import Miso.Util (compose)
 import Miso.Lens (this, lens, Lens)
 -----------------------------------------------------------------------------
--- | Automatically generates Haskell lenses via template-haskell.
+-- | Automatically generates t'Lens' definitions for all record fields
+-- prefixed with @_@ in the given type.
 --
-makeLenses :: Name -> Q [Dec]
+-- @
+-- {-# LANGUAGE TemplateHaskell #-}
+--
+-- data Model = Model { _count :: Int, _name :: MisoString }
+--
+-- $(makeLenses ''Model)
+-- -- generates:
+-- --   count :: Lens Model Int
+-- --   name  :: Lens Model MisoString
+-- @
+makeLenses
+  :: Name
+  -- ^ Type name whose record fields to derive lenses for
+  -> Q [Dec]
 makeLenses name = do
   reify name >>= \case
     TyConI (NewtypeD _ _ _ _ con _) -> do
@@ -71,8 +85,26 @@ makeLenses name = do
         recName = mkName "record"
         fieldName = mkName "field"
 -----------------------------------------------------------------------------
--- | Automatically generates classy lenses via template-haskell.
-makeClassy :: Name -> Q [Dec]
+-- | Automatically generates a @Has\<Type\>@ typeclass and t'Lens' definitions
+-- via Template Haskell, allowing lenses to be used with any type that embeds
+-- the target record.
+--
+-- @
+-- {-# LANGUAGE TemplateHaskell #-}
+--
+-- data Config = Config { _host :: MisoString, _port :: Int }
+--
+-- $(makeClassy ''Config)
+-- -- generates:
+-- --   class HasConfig c where
+-- --     config :: Lens c Config
+-- --     host   :: Lens c MisoString
+-- --     port   :: Lens c Int
+-- @
+makeClassy
+  :: Name
+  -- ^ Type name to generate the @Has\<Type\>@ class for
+  -> Q [Dec]
 makeClassy name = do
   reify name >>= \case
     TyConI (NewtypeD _ _ _ _ con _) -> do

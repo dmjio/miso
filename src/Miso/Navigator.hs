@@ -59,17 +59,16 @@ getUserMedia UserMedia {..} successful errorful =
       (sink . successful)
       (sink . errorful)
 -----------------------------------------------------------------------------
--- | Get access to the user's clipboard.
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/Clipboard/writeText>
 --
--- <https://developer.mozilla.org/en-US/docs/Web/API/Navigator/clipboard>
---
+-- Copies text to the system clipboard.
 copyClipboard
   :: MisoString
-  -- ^ Options
+  -- ^ Text to write to the clipboard
   -> action
-  -- ^ Successful callback
+  -- ^ Action dispatched on success
   -> (JSVal -> action)
-  -- ^ Errorful callback
+  -- ^ Action dispatched with the error object on failure
   -> Effect parent props model action
 copyClipboard txt successful errorful =
   withSink $ \sink ->
@@ -87,26 +86,29 @@ isOnLine
   -> Effect parent props model action
 isOnLine action = io (action <$> FFI.isOnLine)
 -----------------------------------------------------------------------------
--- | Type for dealing with 'navigator.mediaDevices.getUserMedia'
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia>
 --
--- <https://developer.mozilla.org/en-US/docs/Web/API/Navigator/mediaDevices>
---
+-- Constraints controlling which media devices are requested.
 data UserMedia
   = UserMedia
-  { audio, video :: Bool
+  { audio :: Bool
+  -- ^ @True@ to request microphone access
+  , video :: Bool
+  -- ^ @True@ to request camera access
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
 -- | Default t'UserMedia'
 userMedia :: UserMedia
 userMedia = UserMedia True True
 -----------------------------------------------------------------------------
--- | Geolocation fetching
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/Geolocation/getCurrentPosition>
 --
--- <https://developer.mozilla.org/en-US/docs/Web/API/Navigator/geolocation>
---
+-- Requests the device's current geographic position.
 geolocation
   :: (Geolocation -> action)
+  -- ^ Success callback receiving the t'Geolocation' result
   -> (GeolocationError -> action)
+  -- ^ Error callback receiving a t'GeolocationError'
   -> Effect parent props model action
 geolocation successful errorful = do
   withSink $ \sink ->
@@ -124,11 +126,16 @@ instance FromJSVal GeolocationError where
     msg <- fromJSVal =<< (v ! "message")
     pure (GeolocationError <$> code <*> msg)
 -----------------------------------------------------------------------------
--- | Geolocation error code
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/GeolocationPositionError/code>
+--
+-- Numeric error code returned by the Geolocation API.
 data GeolocationErrorCode
   = PERMISSION_DENIED
+  -- ^ The user denied permission to use geolocation
   | POSITION_UNAVAILABLE
+  -- ^ The position could not be determined
   | TIMEOUT
+  -- ^ The request timed out before a position was obtained
   deriving (Enum, Show, Eq)
 -----------------------------------------------------------------------------
 instance FromJSVal GeolocationErrorCode where
@@ -139,10 +146,15 @@ instance FromJSVal GeolocationErrorCode where
       3 -> pure (Just TIMEOUT)
       _ -> pure Nothing
 -----------------------------------------------------------------------------
--- | Geolocation holds latitude, longitude and accuracy, among others.
+-- | Result from the Geolocation API.
 data Geolocation
   = Geolocation
-  { latitude, longitude, accuracy :: Double
+  { latitude :: Double
+  -- ^ Latitude in decimal degrees
+  , longitude :: Double
+  -- ^ Longitude in decimal degrees
+  , accuracy :: Double
+  -- ^ Accuracy of the position in metres
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
 instance FromJSVal Geolocation where

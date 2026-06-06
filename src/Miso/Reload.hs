@@ -104,7 +104,9 @@ foreign import ccall unsafe "miso_x_clear"
 reload
   :: Eq model
   => Events
+  -- ^ Delegated DOM event map (typically 'defaultEvents')
   -> App model action
+  -- ^ Root application component to mount
   -> IO ()
 reload events vcomp = do
 #ifdef WASM
@@ -142,7 +144,9 @@ reload events vcomp = do
 live
   :: Eq model
   => Events
+  -- ^ Delegated DOM event map (typically 'defaultEvents')
   -> App model action
+  -- ^ Root application component; its model will be restored from the previous GHCi session
   -> IO ()
 live events vcomp = do
   exists <- x_exists

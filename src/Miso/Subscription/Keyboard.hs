@@ -30,16 +30,20 @@ import           Miso.Effect (Sub)
 import           Miso.Subscription.Util (createSub)
 import qualified Miso.FFI.Internal as FFI
 -----------------------------------------------------------------------------
--- | Type for arrow keys currently pressed.
+-- | Directional state derived from arrow (or WASD) key presses.
 --
---  * 37 left arrow  ( x = -1 )
---  * 38 up arrow    ( y =  1 )
---  * 39 right arrow ( x =  1 )
---  * 40 down arrow  ( y = -1 )
+-- Each component is @-1@, @0@, or @1@:
+--
+--  * 37 left arrow  (@arrowX = -1@)
+--  * 39 right arrow (@arrowX =  1@)
+--  * 38 up arrow    (@arrowY =  1@)
+--  * 40 down arrow  (@arrowY = -1@)
 data Arrows
  = Arrows
  { arrowX :: !Int
+ -- ^ Horizontal direction: @-1@ (left), @0@ (none), @1@ (right)
  , arrowY :: !Int
+ -- ^ Vertical direction: @-1@ (down), @0@ (none), @1@ (up)
  } deriving (Show, Eq)
 -----------------------------------------------------------------------------
 -- | Helper function to convert keys currently pressed to @Arrows@, given a
@@ -59,25 +63,67 @@ toArrows (up, down, left, right) set' = Arrows
   } where
       check = any (`S.member` set')
 -----------------------------------------------------------------------------
--- | Maps t'Arrows' onto a Keyboard subscription.
-arrowsSub :: (Arrows -> action) -> Sub action
+-- | Subscribes to arrow key events (37–40) and delivers an t'Arrows' value
+-- indicating which directions are currently pressed.
+--
+-- @
+-- app = (component m u v) { subs = [ arrowsSub ArrowsChanged ] }
+-- data Action = ArrowsChanged Arrows
+-- @
+--
+arrowsSub
+  :: (Arrows -> action)
+  -- ^ Callback invoked with the current directional state on every keydown/keyup
+  -> Sub action
 arrowsSub = directionSub ([38], [40], [37], [39])
 -----------------------------------------------------------------------------
--- | Maps t'Arrows' onto a Keyboard subscription for directions (W+A+S+D keys).
-wasdSub :: (Arrows -> action) -> Sub action
+-- | Like 'arrowsSub' but maps the WASD keys (W=up, S=down, A=left, D=right)
+-- to an t'Arrows' value.
+--
+-- @
+-- app = (component m u v) { subs = [ wasdSub DirectionChanged ] }
+-- @
+--
+wasdSub
+  :: (Arrows -> action)
+  -- ^ Callback invoked with the current directional state on every keydown/keyup
+  -> Sub action
 wasdSub = directionSub ([87], [83], [65], [68])
 -----------------------------------------------------------------------------
--- | Maps a specified list of keys to directions (up, down, left, right).
--- The Ints represent [keyCode](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/keyCode)s for each direction.
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/keyCode>
+--
+-- Subscribes to keyboard events and maps a custom set of keyCodes to
+-- directional t'Arrows' values.
+--
+-- @
+-- -- Map numpad keys to directions
+-- numpadSub :: (Arrows -> action) -> Sub action
+-- numpadSub = directionSub ([104], [98], [100], [102])
+-- @
+--
 directionSub
   :: ([Int], [Int], [Int], [Int])
+  -- ^ Tupled lists of keyCodes for @(up, down, left, right)@
   -> (Arrows -> action)
+  -- ^ Callback invoked with the current directional state
   -> Sub action
 directionSub dirs = keyboardSub . (. toArrows dirs)
 -----------------------------------------------------------------------------
--- | Returns 'Sub' for keyboard events.
--- The callback will be called with the Set of currently pressed @keyCode@s.
-keyboardSub :: (IntSet -> action) -> Sub action
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/keyCode>
+--
+-- Subscribes to @keydown@, @keyup@, and @blur@ events on @window@, delivering
+-- the full set of currently pressed keyCodes on every change.
+-- Clears the set when the window loses focus, preventing stuck keys.
+--
+-- @
+-- app = (component m u v) { subs = [ keyboardSub KeysChanged ] }
+-- data Action = KeysChanged IntSet
+-- @
+--
+keyboardSub
+  :: (IntSet -> action)
+  -- ^ Callback invoked with the current pressed-key set on every keydown/keyup/blur
+  -> Sub action
 keyboardSub f sink = createSub acquire release sink
   where
     release (cb1, cb2, cb3) = do

@@ -252,23 +252,51 @@ getUTCMonth date = call0 date "getUTCMonth"
 getUTCSeconds :: Date -> IO Int
 getUTCSeconds date = call0 date "getUTCSeconds"
 -----------------------------------------------------------------------------
--- | Sets the day of the month.
+-- | <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/setDate>
 --
-setDate :: Int -> Date -> IO Double
+-- Sets the day of the month.
+setDate
+  :: Int
+  -- ^ Day of the month (1–31)
+  -> Date
+  -- ^ Date to mutate
+  -> IO Double
 setDate day (Date d) = DSL.fromJSValUnchecked =<< callFunction d "setDate" [day]
 -----------------------------------------------------------------------------
--- | Sets the full year, with optional month and day.
+-- | <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/setFullYear>
 --
-setFullYear :: Int -> Maybe Int -> Maybe Int -> Date -> IO Double
+-- Sets the full year, with optional month and day.
+setFullYear
+  :: Int
+  -- ^ Four-digit year
+  -> Maybe Int
+  -- ^ Optional month (0–11)
+  -> Maybe Int
+  -- ^ Optional day of the month (1–31)
+  -> Date
+  -- ^ Date to mutate
+  -> IO Double
 setFullYear year month day (Date d) = do
   y <- DSL.toJSVal year
   m <- traverse DSL.toJSVal month
   d' <- traverse DSL.toJSVal day
   callArgs (Date d) "setFullYear" (catMaybes [Just y, m, d'])
 -----------------------------------------------------------------------------
--- | Sets the hour, with optional minutes, seconds, and milliseconds.
+-- | <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/setHours>
 --
-setHours :: Int -> Maybe Int -> Maybe Int -> Maybe Int -> Date -> IO Double
+-- Sets the hour, with optional minutes, seconds, and milliseconds.
+setHours
+  :: Int
+  -- ^ Hour (0–23)
+  -> Maybe Int
+  -- ^ Optional minutes (0–59)
+  -> Maybe Int
+  -- ^ Optional seconds (0–59)
+  -> Maybe Int
+  -- ^ Optional milliseconds (0–999)
+  -> Date
+  -- ^ Date to mutate
+  -> IO Double
 setHours hours minutes seconds millis (Date d) = do
   h <- DSL.toJSVal hours
   m <- traverse DSL.toJSVal minutes
@@ -276,58 +304,124 @@ setHours hours minutes seconds millis (Date d) = do
   ms <- traverse DSL.toJSVal millis
   callArgs (Date d) "setHours" (catMaybes [Just h, m, s, ms])
 -----------------------------------------------------------------------------
--- | Sets the milliseconds.
+-- | <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/setMilliseconds>
 --
-setMilliseconds :: Int -> Date -> IO Double
+-- Sets the milliseconds.
+setMilliseconds
+  :: Int
+  -- ^ Milliseconds (0–999)
+  -> Date
+  -- ^ Date to mutate
+  -> IO Double
 setMilliseconds ms (Date d) = DSL.fromJSValUnchecked =<< callFunction d "setMilliseconds" [ms]
 -----------------------------------------------------------------------------
--- | Sets the minutes, with optional seconds and milliseconds.
+-- | <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/setMinutes>
 --
-setMinutes :: Int -> Maybe Int -> Maybe Int -> Date -> IO Double
+-- Sets the minutes, with optional seconds and milliseconds.
+setMinutes
+  :: Int
+  -- ^ Minutes (0–59)
+  -> Maybe Int
+  -- ^ Optional seconds (0–59)
+  -> Maybe Int
+  -- ^ Optional milliseconds (0–999)
+  -> Date
+  -- ^ Date to mutate
+  -> IO Double
 setMinutes minutes seconds millis (Date d) = do
   m <- DSL.toJSVal minutes
   s <- traverse DSL.toJSVal seconds
   ms <- traverse DSL.toJSVal millis
   callArgs (Date d) "setMinutes" (catMaybes [Just m, s, ms])
 -----------------------------------------------------------------------------
--- | Sets the month, with optional day of the month.
+-- | <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/setMonth>
 --
-setMonth :: Int -> Maybe Int -> Date -> IO Double
+-- Sets the month, with optional day of the month.
+setMonth
+  :: Int
+  -- ^ Month (0–11)
+  -> Maybe Int
+  -- ^ Optional day of the month (1–31)
+  -> Date
+  -- ^ Date to mutate
+  -> IO Double
 setMonth month day (Date d) = do
   m <- DSL.toJSVal month
   d' <- traverse DSL.toJSVal day
   callArgs (Date d) "setMonth" (catMaybes [Just m, d'])
 -----------------------------------------------------------------------------
--- | Sets the seconds, with optional milliseconds.
+-- | <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/setSeconds>
 --
-setSeconds :: Int -> Maybe Int -> Date -> IO Double
+-- Sets the seconds, with optional milliseconds.
+setSeconds
+  :: Int
+  -- ^ Seconds (0–59)
+  -> Maybe Int
+  -- ^ Optional milliseconds (0–999)
+  -> Date
+  -- ^ Date to mutate
+  -> IO Double
 setSeconds seconds millis (Date d) = do
   s <- DSL.toJSVal seconds
   ms <- traverse DSL.toJSVal millis
   callArgs (Date d) "setSeconds" (catMaybes [Just s, ms])
 -----------------------------------------------------------------------------
--- | Sets the time in milliseconds since epoch.
+-- | <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/setTime>
 --
-setTime :: Double -> Date -> IO Double
+-- Sets the time in milliseconds since epoch.
+setTime
+  :: Double
+  -- ^ Milliseconds since Unix epoch
+  -> Date
+  -- ^ Date to mutate
+  -> IO Double
 setTime time (Date d) = DSL.fromJSValUnchecked =<< callFunction d "setTime" [time]
 -----------------------------------------------------------------------------
--- | Sets the UTC day of the month.
+-- | <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/setUTCDate>
 --
-setUTCDate :: Int -> Date -> IO Double
+-- Sets the UTC day of the month.
+setUTCDate
+  :: Int
+  -- ^ UTC day of the month (1–31)
+  -> Date
+  -- ^ Date to mutate
+  -> IO Double
 setUTCDate day (Date d) = DSL.fromJSValUnchecked =<< callFunction d "setUTCDate" [day]
 -----------------------------------------------------------------------------
--- | Sets the UTC full year, with optional month and day.
+-- | <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/setUTCFullYear>
 --
-setUTCFullYear :: Int -> Maybe Int -> Maybe Int -> Date -> IO Double
+-- Sets the UTC full year, with optional month and day.
+setUTCFullYear
+  :: Int
+  -- ^ Four-digit UTC year
+  -> Maybe Int
+  -- ^ Optional UTC month (0–11)
+  -> Maybe Int
+  -- ^ Optional UTC day of the month (1–31)
+  -> Date
+  -- ^ Date to mutate
+  -> IO Double
 setUTCFullYear year month day (Date d) = do
   y <- DSL.toJSVal year
   m <- traverse DSL.toJSVal month
   d' <- traverse DSL.toJSVal day
   callArgs (Date d) "setUTCFullYear" (catMaybes [Just y, m, d'])
 -----------------------------------------------------------------------------
--- | Sets the UTC hour, with optional minutes, seconds, and milliseconds.
+-- | <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/setUTCHours>
 --
-setUTCHours :: Int -> Maybe Int -> Maybe Int -> Maybe Int -> Date -> IO Double
+-- Sets the UTC hour, with optional minutes, seconds, and milliseconds.
+setUTCHours
+  :: Int
+  -- ^ UTC hour (0–23)
+  -> Maybe Int
+  -- ^ Optional UTC minutes (0–59)
+  -> Maybe Int
+  -- ^ Optional UTC seconds (0–59)
+  -> Maybe Int
+  -- ^ Optional UTC milliseconds (0–999)
+  -> Date
+  -- ^ Date to mutate
+  -> IO Double
 setUTCHours hours minutes seconds millis (Date d) = do
   h <- DSL.toJSVal hours
   m <- traverse DSL.toJSVal minutes
@@ -335,31 +429,63 @@ setUTCHours hours minutes seconds millis (Date d) = do
   ms <- traverse DSL.toJSVal millis
   callArgs (Date d) "setUTCHours" (catMaybes [Just h, m, s, ms])
 -----------------------------------------------------------------------------
--- | Sets the UTC milliseconds.
+-- | <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/setUTCMilliseconds>
 --
-setUTCMilliseconds :: Int -> Date -> IO Double
+-- Sets the UTC milliseconds.
+setUTCMilliseconds
+  :: Int
+  -- ^ UTC milliseconds (0–999)
+  -> Date
+  -- ^ Date to mutate
+  -> IO Double
 setUTCMilliseconds ms (Date d) = DSL.fromJSValUnchecked =<< callFunction d "setUTCMilliseconds" [ms]
 -----------------------------------------------------------------------------
--- | Sets the UTC minutes, with optional seconds and milliseconds.
+-- | <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/setUTCMinutes>
 --
-setUTCMinutes :: Int -> Maybe Int -> Maybe Int -> Date -> IO Double
+-- Sets the UTC minutes, with optional seconds and milliseconds.
+setUTCMinutes
+  :: Int
+  -- ^ UTC minutes (0–59)
+  -> Maybe Int
+  -- ^ Optional UTC seconds (0–59)
+  -> Maybe Int
+  -- ^ Optional UTC milliseconds (0–999)
+  -> Date
+  -- ^ Date to mutate
+  -> IO Double
 setUTCMinutes minutes seconds millis (Date d) = do
   m <- DSL.toJSVal minutes
   s <- traverse DSL.toJSVal seconds
   ms <- traverse DSL.toJSVal millis
   callArgs (Date d) "setUTCMinutes" (catMaybes [Just m, s, ms])
 -----------------------------------------------------------------------------
--- | Sets the UTC month, with optional day of the month.
+-- | <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/setUTCMonth>
 --
-setUTCMonth :: Int -> Maybe Int -> Date -> IO Double
+-- Sets the UTC month, with optional day of the month.
+setUTCMonth
+  :: Int
+  -- ^ UTC month (0–11)
+  -> Maybe Int
+  -- ^ Optional UTC day of the month (1–31)
+  -> Date
+  -- ^ Date to mutate
+  -> IO Double
 setUTCMonth month day (Date d) = do
   m <- DSL.toJSVal month
   d' <- traverse DSL.toJSVal day
   callArgs (Date d) "setUTCMonth" (catMaybes [Just m, d'])
 -----------------------------------------------------------------------------
--- | Sets the UTC seconds, with optional milliseconds.
+-- | <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/setUTCSeconds>
 --
-setUTCSeconds :: Int -> Maybe Int -> Date -> IO Double
+-- Sets the UTC seconds, with optional milliseconds.
+setUTCSeconds
+  :: Int
+  -- ^ UTC seconds (0–59)
+  -> Maybe Int
+  -- ^ Optional UTC milliseconds (0–999)
+  -> Date
+  -- ^ Date to mutate
+  -> IO Double
 setUTCSeconds seconds millis (Date d) = do
   s <- DSL.toJSVal seconds
   ms <- traverse DSL.toJSVal millis

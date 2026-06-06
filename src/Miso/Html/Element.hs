@@ -155,9 +155,16 @@ import           Miso.Types
 -----------------------------------------------------------------------------
 import           Miso.Svg.Element (svg_)
 -----------------------------------------------------------------------------
--- | Low-level helper used to construct 'HTML' 'node' in 'Miso.Types.View'.
+-- | Low-level helper used to construct an HTML node in t'View'.
 -- Almost all functions in this module, like 'div_', 'table_' etc. are defined in terms of it.
-nodeHtml :: MisoString -> [Attribute action] -> [View model action] -> View model action
+nodeHtml
+  :: MisoString
+  -- ^ HTML tag name (e.g. @"div"@, @"span"@)
+  -> [Attribute action]
+  -- ^ List of attributes and event handlers
+  -> [View model action]
+  -- ^ Child nodes
+  -> View model action
 nodeHtml nodeName = node HTML nodeName
 -----------------------------------------------------------------------------
 -- | [\<div\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/div)
