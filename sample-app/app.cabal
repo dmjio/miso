@@ -29,6 +29,10 @@ common options
      ld-options:
        -sEXPORTED_RUNTIME_METHODS=HEAP8
 
+     if os(darwin) || os(osx)
+       ld-options:
+         -sWASM=0
+
 executable app
   import:
     options

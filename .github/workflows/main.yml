@@ -9,7 +9,7 @@ env:
   ACTIONS_ALLOW_UNSECURE_COMMANDS: true
 
 jobs:
-  build:
+  build-linux:
     runs-on: ubuntu-latest
     steps:
      - uses: ners/simply-nix@main
@@ -45,7 +45,7 @@ jobs:
 
      - name: (JS) Miso GHCJS (GHCJS 8.6)
        run: nix-build -A miso-ghcjs
-       
+
      - name: Nix garbage collection
        run: cabal clean && nix-collect-garbage -d
 
@@ -63,19 +63,19 @@ jobs:
 
      - name: (JS) Miso GHCJS (GHC 9.12.2)
        run: nix-build -A miso-ghcjs-9122
-       
+
      - name: Nix garbage collection
        run: cabal clean && nix-collect-garbage -d
 
      - name: (x86) Miso GHC (GHC 9.12.2)
        run: nix-build -A miso-ghc-9122
-       
+
      - name: Nix garbage collection
        run: cabal clean && nix-collect-garbage -d
 
      - name: (JS) Miso sample app (GHCJS 8.6)
        run: nix-build -A sample-app-js
-       
+
      - name: Nix garbage collection
        run: cabal clean && nix-collect-garbage -d
 
@@ -99,3 +99,54 @@ jobs:
 
      - name: (GHCJS) Miso integration tests
        run: nix-build -A playwright-ghcjs && ./result/bin/playwright
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+     - uses: actions/checkout@v3.5.3
+     - name: Cancel Previous Runs
+       uses: styfle/cancel-workflow-action@0.9.1
+       with:
+         access_token: ${{ github.token }}
+     - uses: cachix/install-nix-action@v31
+       with:
+         extra_nix_config: |
+           experimental-features = nix-command flakes
+     - uses: cachix/cachix-action@v16
+       with:
+         name: haskell-miso-cachix
+         authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+
+     - name: Nix channel update
+       run: nix-channel --update
+
+     - name: Cabal install
+       run: nix-env -iA pkgs.cabal-install -f .
+
+     - name: Bun install
+       run: nix-env -iA bun -f . && bun install
+
+     - name: Miso.ts tests
+       run: bun run test
+
+     - name: Bun build prod
+       run: bun run build && bun run prod
+
+     # dmj: JS backend not working on Darwin (wasm-ld issue)
+     # - name: (JS) Miso GHCJS (GHC 9.12.2)
+     #   run: nix-build -A miso-ghcjs-9122
+
+     - name: (x86) Miso GHC (GHC 9.12.2)
+       run: nix-build -A miso-ghc-9122
+
+     - name: Nix garbage collection
+       run: cabal clean && nix-collect-garbage -d
+
+     # - name: (JS) Miso sample app (GHC 9.12.2)
+     #   run: nix-build -A sample-app-js-9122
+
+     # - name: (JS) Miso integration tests
+     #   run: nix-build -A playwright-js && ./result/bin/playwright
+
+     - name: (WASM) Miso integration tests
+       run: nix-build -A playwright-wasm && ./result/bin/playwright
