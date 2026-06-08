@@ -133,21 +133,21 @@
 -- import qualified Miso.Html.Event as HE
 -- import qualified Miso.Html.Property as HP
 -- -----------------------------------------------------------------------------
---                        * - The type of the parent Component 'model'
---                        |    * - The type of the parent Component 'props' accessible to the child
---                        |    |   * - The type of the current Component's 'model'
---                        |    |   |   * - The type of the action that updates the 'model'
---                        |    |   |   |
+--                       * - The type of the parent Component 'model'
+--                       |    * - The type of the parent Component 'props' accessible to the child
+--                       |    |   * - The type of the current Component's 'model'
+--                       |    |   |   * - The type of the action that updates the 'model'
+--                       |    |   |   |
 -- counter :: 'Component' ROOT () Int Action
 -- counter = 'vcomp' m u v
 --   where
 --     m :: Int
 --     m = 0
---                              * - The type of the parent Component 'model'
---                              |   * - The type of the parent Component 'props' accessible to the child
---                              |   |   * - The type of the current Component's 'model'
---                              |   |   |   * - The type of the action that updates the 'model'
---                              |   |   |   |
+--                             * - The type of the parent Component 'model'
+--                             |   * - The type of the parent Component 'props' accessible to the child
+--                             |   |   * - The type of the current Component's 'model'
+--                             |   |   |   * - The type of the action that updates the 'model'
+--                             |   |   |   |
 --     u :: Action -> 'Effect' ROOT () Int Action
 --     u = \\case
 --       Add -> 'this' += 1
@@ -288,8 +288,8 @@
 --   Highlight domRef -> 'io_' $ do
 --     ['js'| hljs.highlight(${domRef}) |]
 --
--- view :: model -> 'View' model Action
--- view x =
+-- view :: props -> model -> 'View' model Action
+-- view _ x =
 --   'code_'
 --   [ 'onCreatedWith' Highlight
 --   ]
@@ -581,8 +581,8 @@
 -- -----------------------------------------------------------------------------
 -- -- Child component
 -- --
--- --                   parent      props    model  action
--- --                   |           |        |      |
+-- --                  parent      props    model  action
+-- --                  |           |        |      |
 -- child :: 'Component' ParentModel Greeting ()     ChildAction
 -- child = 'vcomp' () updateChild viewChild
 --   where
@@ -787,8 +787,8 @@
 --  where
 --    app = counter
 -- #ifdef INTERACTIVE
---      { 'scripts' = [ 'Src' "https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js" ]
---      , 'styles' = [ 'Href' "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" ]
+--      { 'scripts' = [ 'Src' "https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js" (False :: CacheBust) ]
+--      , 'styles' = [ 'Href' "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" (False :: CacheBust)  ]
 --      }
 -- #endif
 -- @
@@ -832,7 +832,7 @@
 --
 -- @
 -- main :: IO ()
--- main = 'prerender' 'defaultEvents' $ ('vcomp' () 'noop' $ \\() -> "hello world") { 'logLevel' = 'DebugPrerender' }
+-- main = 'prerender' 'defaultEvents' $ ('vcomp' () 'noop' $ \\_ () -> "hello world") { 'logLevel' = 'DebugPrerender' }
 -- @
 --
 -- Assuming the JS / WASM payload and @index.html@ are delivered together from the web server, the console should output below
