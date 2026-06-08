@@ -33,51 +33,106 @@ import           Miso.JSON (ToJSON(..), Object)
 -----------------------------------------------------------------------------
 import           Miso.Types
 -----------------------------------------------------------------------------
--- | @prop k v@ is an attribute that will set the attribute @k@ of the DOM
--- node associated with the vnode to @v@.
-prop :: ToJSON a => MisoString -> a -> Attribute action
+-- | Set an attribute @k@ on a DOM node to value @v@.
+--
+-- @
+-- div_ [ prop "id" "foo", prop "tabIndex" (1 :: Int) ] []
+-- @
+prop
+  :: ToJSON a
+  => MisoString
+  -- ^ Attribute name
+  -> a
+  -- ^ Attribute value (encoded to JSON)
+  -> Attribute action
 prop k v = Property k (toJSON v)
 -----------------------------------------------------------------------------
--- | Set field to 'Bool' value
-boolProp :: MisoString -> Bool -> Attribute action
+-- | Set a DOM attribute to a 'Bool' value.
+boolProp
+  :: MisoString
+  -- ^ Attribute name
+  -> Bool
+  -- ^ Boolean value
+  -> Attribute action
 boolProp = prop
 -----------------------------------------------------------------------------
--- | Set field to 'String' value
-stringProp ::  MisoString -> String -> Attribute action
+-- | Set a DOM attribute to a 'String' value.
+stringProp
+  :: MisoString
+  -- ^ Attribute name
+  -> String
+  -- ^ String value
+  -> Attribute action
 stringProp = prop
 -----------------------------------------------------------------------------
--- | Set field to 'MisoString' value
-textProp ::  MisoString -> MisoString -> Attribute action
+-- | Set a DOM attribute to a t'MisoString' value.
+textProp
+  :: MisoString
+  -- ^ Attribute name
+  -> MisoString
+  -- ^ Text value
+  -> Attribute action
 textProp = prop
 -----------------------------------------------------------------------------
--- | Set field to t'Object' value
-objectProp ::  MisoString -> Object -> Attribute action
+-- | Set a DOM attribute to a JSON t'Object' value.
+objectProp
+  :: MisoString
+  -- ^ Attribute name
+  -> Object
+  -- ^ JSON object value
+  -> Attribute action
 objectProp = prop
 -----------------------------------------------------------------------------
--- | Set field to 'Int' value
-intProp ::  MisoString -> Int -> Attribute action
+-- | Set a DOM attribute to an 'Int' value.
+intProp
+  :: MisoString
+  -- ^ Attribute name
+  -> Int
+  -- ^ Integer value
+  -> Attribute action
 intProp = prop
 -----------------------------------------------------------------------------
--- | Set field to 'Integer' value
-integerProp ::  MisoString -> Integer -> Attribute action
+-- | Set a DOM attribute to an 'Integer' value.
+integerProp
+  :: MisoString
+  -- ^ Attribute name
+  -> Integer
+  -- ^ Integer value
+  -> Attribute action
 integerProp = prop
 -----------------------------------------------------------------------------
--- | Set field to 'Double' value
-doubleProp ::  MisoString -> Double -> Attribute action
+-- | Set a DOM attribute to a 'Double' value.
+doubleProp
+  :: MisoString
+  -- ^ Attribute name
+  -> Double
+  -- ^ Double value
+  -> Attribute action
 doubleProp = prop
 -----------------------------------------------------------------------------
--- | Set 'Miso.Types.Key' on 'VNode'.
-keyProp :: ToKey key => key -> Attribute action
+-- | Set the t'Key' used for virtual DOM reconciliation on a t'VNode'.
+keyProp
+  :: ToKey key
+  => key
+  -- ^ Unique key for this node
+  -> Attribute action
 keyProp key = prop "key" (toKey key)
 -----------------------------------------------------------------------------
--- | Synonym for 'keyProp'
--- Allows a user to specify a t'Key' inside of an '[Attribute action]'
-key_ :: ToKey key => key -> Attribute action
+-- | Synonym for 'keyProp'.
+-- Allows specifying a t'Key' inside an @['Attribute' action]@ list.
+key_
+  :: ToKey key
+  => key
+  -- ^ Unique key for this node
+  -> Attribute action
 key_ = keyProp
 -----------------------------------------------------------------------------
--- | Smart constructor for specifying 'class'
+-- | Set multiple CSS classes at once using a list of class names.
 --
 -- @since 1.9.0.0
-classList :: [MisoString] -> Attribute action
+classList
+  :: [MisoString]
+  -- ^ List of CSS class names to apply
+  -> Attribute action
 classList = ClassList
 -----------------------------------------------------------------------------

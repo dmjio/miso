@@ -34,25 +34,37 @@ import Prelude hiding (fail)
 import Control.Monad.Fail (MonadFail (..))
 #endif
 ----------------------------------------------------------------------------
+-- | A JSON value as described in [RFC 8259](https://datatracker.ietf.org/doc/html/rfc8259).
 data Value
   = Number Double
+  -- ^ A JSON number (64-bit floating point)
   | Bool Bool
+  -- ^ A JSON boolean (@true@ or @false@)
   | String MisoString
+  -- ^ A JSON string
   | Array [Value]
+  -- ^ A JSON array
   | Object (Map MisoString Value)
+  -- ^ A JSON object (key-value map)
   | Null
+  -- ^ The JSON @null@ value
   deriving (Show, Eq)
 ----------------------------------------------------------------------------
 instance IsString Value where
   fromString = String . fromString
 ----------------------------------------------------------------------------
+-- | A key-value pair used to build JSON objects with 'Miso.JSON.object'.
 type Pair = (MisoString, Value)
 ----------------------------------------------------------------------------
+-- | A JSON object: a map from t'MisoString' keys to t'Value's.
 type Object = Map MisoString Value
 ----------------------------------------------------------------------------
+-- | The result of a JSON parse or decode operation.
 data Result a
   = Success a
+  -- ^ Successful parse result
   | Error MisoString
+  -- ^ Parse failure with an error message
   deriving (Show, Eq)
 ----------------------------------------------------------------------------
 instance Functor Result where

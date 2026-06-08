@@ -39,9 +39,13 @@ import           Miso.String hiding (intercalate)
 import qualified Miso.String as MS
 import           Miso.Types
 ----------------------------------------------------------------------------
--- | Class for rendering HTML
+-- | Class for rendering a Miso t'Miso.Types.View' tree to HTML for server-side rendering.
 class ToHtml a where
-  toHtml :: a -> L.ByteString
+  -- | Serialize to an HTML t'Data.ByteString.Lazy.ByteString'.
+  toHtml
+    :: a
+    -- ^ Value to render as HTML
+    -> L.ByteString
 ----------------------------------------------------------------------------
 -- | Render a @Miso.Types.View@ to a @L.ByteString@
 instance ToHtml (Miso.Types.View m a) where

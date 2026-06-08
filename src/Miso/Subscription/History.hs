@@ -34,21 +34,43 @@ import           Miso.Router
 import           Miso.Effect (Sub)
 import           Miso.Subscription.Util
 -----------------------------------------------------------------------------
--- | Pushes a new URI onto the History stack. Also raises a `popstate` event.
-pushURI :: URI -> IO ()
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/History/pushState>
+--
+-- Pushes a new t'URI' onto the browser History stack and dispatches a @popstate@
+-- event so that 'uriSub' / 'routerSub' subscribers are notified.
+pushURI
+  :: URI
+  -- ^ New URI to push onto the history stack
+  -> IO ()
 pushURI uri = do
   pushState (prettyURI uri)
   raisePopState
 -----------------------------------------------------------------------------
--- | Pushes a new 'Route' onto the History stack. Also raises a `popstate` event.
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/History/pushState>
 --
--- Converts the t'Route' to a t'URI' internally.
+-- Like 'pushURI' but accepts a typed route value from a 'Router' instance.
+-- Converts the route to a t'URI' before pushing.
 --
-pushRoute :: Router route => route -> IO ()
+-- @
+-- update = \case
+--   GoToProfile uid -> io_ (pushRoute (ProfileRoute uid))
+-- @
+--
+pushRoute
+  :: Router route
+  => route
+  -- ^ Typed route to convert to a t'URI' and push onto the history stack
+  -> IO ()
 pushRoute = pushURI . toURI
 -----------------------------------------------------------------------------
--- | Replaces current URI on stack. Also raises a `popstate` event.
-replaceURI :: URI -> IO ()
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/History/replaceState>
+--
+-- Replaces the current entry in the browser History stack with the given t'URI'
+-- and dispatches a @popstate@ event so subscribers are notified.
+replaceURI
+  :: URI
+  -- ^ Replacement URI for the current history entry
+  -> IO ()
 replaceURI uri = do
   replaceState (prettyURI uri)
   raisePopState
@@ -67,29 +89,59 @@ back = void $ getHistory # "back" $ ()
 forward :: IO ()
 forward = void $ getHistory # "forward" $ ()
 -----------------------------------------------------------------------------
--- | Jumps to a specific position in history.
-go :: Int -> IO ()
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/History/go>
+--
+-- Jumps to a specific relative position in the session history.
+-- Positive values move forward, negative values move backward.
+go
+  :: Int
+  -- ^ Relative position in history (@1@ = forward, @-1@ = backward, @0@ = reload)
+  -> IO ()
 go n = void $ getHistory # "go" $ [n]
 -----------------------------------------------------------------------------
--- | Subscription for t'URI' changes, uses the History API.
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/Window/popstate_event>
 --
--- This returns a new t'URI' whenever `go`, `back`, `forward`, `pushState`
--- or `replaceState` have been called.
+-- Subscribes to @popstate@ events via the History API, delivering the current
+-- t'URI' whenever navigation occurs (@go@, @back@, @forward@, @pushState@,
+-- or @replaceState@).
 --
-uriSub :: (URI -> action) -> Sub action
+-- @
+-- app = (component m u v) { subs = [ uriSub URIChanged ] }
+-- data Action = URIChanged URI
+-- @
+--
+uriSub
+  :: (URI -> action)
+  -- ^ Callback invoked with the new t'URI' on every navigation event
+  -> Sub action
 uriSub f sink = createSub acquire release sink
   where
     release = FFI.windowRemoveEventListener "popstate"
     acquire = FFI.windowAddEventListener "popstate" $ \_ ->
       (sink =<< f <$> getURI)
 -----------------------------------------------------------------------------
--- | Subscription for @popstate@ events, from the History API, mapped
--- to a user-defined 'Router'.
-routerSub :: Router route => (Either RoutingError route -> action) -> Sub action
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/Window/popstate_event>
+--
+-- Like 'uriSub' but parses the t'URI' into a typed route using the supplied
+-- 'Router' instance. The callback receives a 'Left' t'RoutingError' if parsing
+-- fails, or a 'Right' route value on success.
+--
+-- @
+-- app = (component m u v) { subs = [ routerSub RouteChanged ] }
+-- data Action = RouteChanged (Either RoutingError MyRoute)
+-- @
+--
+routerSub
+  :: Router route
+  => (Either RoutingError route -> action)
+  -- ^ Callback invoked with the parsed route (or error) on every navigation event
+  -> Sub action
 routerSub f = uriSub $ \uri -> f (route uri)
 -----------------------------------------------------------------------------
--- | Retrieves the current relative URI by inspecting @pathname@, @search@
--- and @hash@.
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/Location>
+--
+-- Reads the current page URI from @window.location@ by combining
+-- @pathname@, @search@, and @hash@.
 getURI :: IO URI
 getURI = do
   location <- jsg "window" ! "location"

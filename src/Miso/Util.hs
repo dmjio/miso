@@ -39,13 +39,24 @@ import           Prelude hiding ((.))
 --      withFoldable (model ^. mSomeMaybeVal) $ \\someVal ->
 --         p_ [] [ text $ "Hey, look at this value: " <> ms (show someVal) ]
 -- @
-withFoldable :: Foldable t => t a -> (a -> b) -> [b]
+withFoldable
+  :: Foldable t
+  => t a
+  -- ^ Container of values to map over (e.g. @Maybe a@, @[a]@)
+  -> (a -> b)
+  -- ^ Function applied to each element
+  -> [b]
 withFoldable ta f = map f (toList ta)
 -----------------------------------------------------------------------------
 -- | Conditionally includes views.
 -- Hides the 'Miso.Types.View's if the condition is False. Shows them when the condition
 -- is True.
-conditionalViews :: Bool -> [view] -> [view]
+conditionalViews
+  :: Bool
+  -- ^ When 'True', the views are included; when 'False', an empty list is returned
+  -> [view]
+  -- ^ Views to conditionally include
+  -> [view]
 conditionalViews condition views =
     if condition
     then views
@@ -61,7 +72,15 @@ oneOf = foldr (<|>) empty
 -- test :: Parser a -> Parser a
 -- test = enclosed (char '(') (char ')')
 -- @
-enclosed :: Applicative f => f a -> f b -> f c -> f c
+enclosed
+  :: Applicative f
+  => f a
+  -- ^ Left delimiter (e.g. @char '('@)
+  -> f b
+  -- ^ Right delimiter (e.g. @char ')'@)
+  -> f c
+  -- ^ Inner parser/applicative whose result is returned
+  -> f c
 enclosed l r x = l *> x <* r
 ----------------------------------------------------------------------------
 -- | Allow the specification of default values during parsing / lexing
@@ -71,7 +90,13 @@ enclosed l r x = l *> x <* r
 -- test :: Parser MisoString
 -- test = optionalDefault "foo" (string "bar")
 -- @
-optionalDefault :: Alternative f => b -> f b -> f b
+optionalDefault
+  :: Alternative f
+  => b
+  -- ^ Default value returned when @p@ fails
+  -> f b
+  -- ^ Parser to attempt
+  -> f b
 optionalDefault def p = fromMaybe def <$> optional p
 ----------------------------------------------------------------------------
 -- | Combinator for testing parsing / lexing failure on any input.
@@ -90,7 +115,13 @@ exists p = isJust <$> optional p
 -- test :: Parser [Int]
 -- test = sepBy1 (char ',') number
 -- @
-sepBy1 :: Alternative m => m sep -> m a -> m [a]
+sepBy1
+  :: Alternative m
+  => m sep
+  -- ^ Separator parser (result discarded)
+  -> m a
+  -- ^ Element parser
+  -> m [a]
 sepBy1 sep p = (:) <$> p <*> many (sep *> p)
 ----------------------------------------------------------------------------
 -- | Interleaves one parser combinator with another, may not have any successful
@@ -100,7 +131,13 @@ sepBy1 sep p = (:) <$> p <*> many (sep *> p)
 -- test :: Parser [Int]
 -- test = sepBy (char ',') number
 -- @
-sepBy :: Alternative m => m sep -> m a -> m [a]
+sepBy
+  :: Alternative m
+  => m sep
+  -- ^ Separator parser (result discarded)
+  -> m a
+  -- ^ Element parser
+  -> m [a]
 sepBy sep p = sepBy1 sep p <|> pure []
 ----------------------------------------------------------------------------
 -- | Successfully parses the arguments between another combinator
@@ -110,12 +147,28 @@ sepBy sep p = sepBy1 sep p <|> pure []
 -- test = between (char '*') number number
 -- -- 5*5
 -- @
-between :: Applicative f => f a -> f b -> f c -> f (b, c)
+between
+  :: Applicative f
+  => f a
+  -- ^ Separator between the two element parsers
+  -> f b
+  -- ^ Left element parser
+  -> f c
+  -- ^ Right element parser
+  -> f (b, c)
 between c l r = (,) <$> l <*> (c *> r)
 ----------------------------------------------------------------------------
--- | Tuple constructor, useful for constructing key-value pairs.
+-- | Tuple constructor, useful for constructing CSS property key-value pairs.
 --
-(=:) :: k -> v -> (k, v)
+-- @
+-- style_ [ "display" =: "flex", "color" =: "red" ]
+-- @
+(=:)
+  :: k
+  -- ^ Key
+  -> v
+  -- ^ Value
+  -> (k, v)
 k =: v = (k,v)
 ----------------------------------------------------------------------------
 -- | Function composition generalized to 'Category'
@@ -124,6 +177,12 @@ k =: v = (k,v)
 -- test :: Int -> Int
 -- test = (+1) \`compose\` (+1)
 -- @
-compose :: Category cat => cat a b -> cat b c -> cat a c
+compose
+  :: Category cat
+  => cat a b
+  -- ^ First morphism to apply
+  -> cat b c
+  -- ^ Second morphism to apply after the first
+  -> cat a c
 compose = flip (.)
 ----------------------------------------------------------------------------

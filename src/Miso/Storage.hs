@@ -33,57 +33,69 @@ import           Control.Monad (void)
 import           Miso.DSL
 import           Miso.String (MisoString)
 -----------------------------------------------------------------------------
--- | Retrieves a value stored under the given key in session storage.
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/Storage/getItem>
+--
+-- Retrieves a value from @sessionStorage@, returning 'Nothing' if the key does not exist.
 getSessionStorage
   :: MisoString
+  -- ^ Storage key to look up
   -> IO (Maybe MisoString)
 getSessionStorage key = do
   fromJSValUnchecked =<< flip getItem key =<< sessionStorage
 -----------------------------------------------------------------------------
--- | Retrieves a value stored under the given key in local storage.
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/Storage/getItem>
+--
+-- Retrieves a value from @localStorage@, returning 'Nothing' if the key does not exist.
 getLocalStorage
   :: MisoString
+  -- ^ Storage key to look up
   -> IO (Maybe MisoString)
 getLocalStorage key =
   fromJSValUnchecked =<< flip getItem key =<< localStorage
 -----------------------------------------------------------------------------
--- | Sets the value of a key in local storage.
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/Storage/setItem>
 --
--- @setLocalStorage key value@ sets the value of @key@ to @value@.
+-- Stores a value under the given key in @localStorage@, creating or overwriting the entry.
 setLocalStorage
   :: MisoString
+  -- ^ Key to store the value under
   -> MisoString
+  -- ^ Value to persist
   -> IO ()
 setLocalStorage key value = do
   s <- localStorage
   setItem s key value
 -----------------------------------------------------------------------------
--- | Sets the value of a key in session storage.
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/Storage/setItem>
 --
--- @setSessionStorage key value@ sets the value of @key@ to @value@.
+-- Stores a value under the given key in @sessionStorage@, creating or overwriting the entry.
 setSessionStorage
   :: MisoString
+  -- ^ Key to store the value under
   -> MisoString
+  -- ^ Value to persist
   -> IO ()
 setSessionStorage key value = do
   s <- sessionStorage
   setItem s key value
 -----------------------------------------------------------------------------
--- | Removes an item from local storage.
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/Storage/removeItem>
 --
--- @removeLocalStorage key@ removes the value of @key@.
+-- Removes the entry for the given key from @localStorage@. No-op if the key does not exist.
 removeLocalStorage
   :: MisoString
+  -- ^ Key to remove
   -> IO ()
 removeLocalStorage key = do
   s <- localStorage
   removeItem s key
 -----------------------------------------------------------------------------
--- | Removes an item from session storage.
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/Storage/removeItem>
 --
--- @removeSessionStorage key@ removes the value of @key@.
+-- Removes the entry for the given key from @sessionStorage@. No-op if the key does not exist.
 removeSessionStorage
   :: MisoString
+  -- ^ Key to remove
   -> IO ()
 removeSessionStorage key = do
   s <- sessionStorage

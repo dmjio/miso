@@ -45,8 +45,12 @@ newtype StdGen = StdGen Function
 -- | An initial 'Seed' value, useful for simulations or reproducing test failures
 type Seed = Int
 -----------------------------------------------------------------------------
--- | Like 'Miso.Random.newStdGen' but takes a t'Seed' as an argument and is pure.
-mkStdGen :: Seed -> StdGen
+-- | Like 'newStdGen' but takes an explicit t'Seed' and is pure.
+-- Useful for reproducible tests or simulations.
+mkStdGen
+  :: Seed
+  -- ^ Initial seed value
+  -> StdGen
 mkStdGen seed = StdGen $ Function $ unsafePerformIO $ FFI.splitmix32 (fromIntegral seed)
 -----------------------------------------------------------------------------
 -- | Create a new t'StdGen', defaulting to a random t'Seed'.
@@ -55,8 +59,12 @@ newStdGen = do
   seed <- FFI.getRandomValue
   StdGen . Function <$> FFI.splitmix32 seed
 -----------------------------------------------------------------------------
--- | Get the next t'StdGen', extracting the value, useful with t'State'.
-next :: StdGen -> (Double, StdGen)
+-- | Advance the generator and extract the next random 'Double' in @[0, 1)@.
+-- Returns the value paired with the (same, stateful) generator.
+next
+  :: StdGen
+  -- ^ Current generator state
+  -> (Double, StdGen)
 next (StdGen func) = unsafePerformIO $ do
   result <- apply func ()
   pure (result, StdGen func)
@@ -72,17 +80,23 @@ globalStdGen = unsafePerformIO $ do
 getStdGen :: IO StdGen
 getStdGen = readIORef globalStdGen
 -----------------------------------------------------------------------------
--- | Set the `globalStdGen`
-setStdGen :: StdGen -> IO ()
+-- | Replace the 'globalStdGen' with a new generator.
+setStdGen
+  :: StdGen
+  -- ^ New generator to store globally
+  -> IO ()
 setStdGen = atomicWriteIORef globalStdGen
 -----------------------------------------------------------------------------
--- | Generate n amount of random numbers. Uses the global PRNG 'globalStdGen'.
+-- | Generate @n@ random 'Double' values in @[0, 1)@ using the global PRNG 'globalStdGen'.
 --
 -- @
--- replicateRM 10 :: IO [Double]
+-- values <- replicateRM 10  -- [Double], length 10
 -- @
 --
-replicateRM :: Int -> IO [Double]
+replicateRM
+  :: Int
+  -- ^ Number of random values to generate
+  -> IO [Double]
 replicateRM n = do
   atomicModifyIORef globalStdGen $ \gen -> do
     swap $ flip runState gen $ replicateM n (state next)

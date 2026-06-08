@@ -132,12 +132,29 @@ import           System.IO.Unsafe (unsafePerformIO)
 #endif
 
 ----------------------------------------------------------------------------
+-- | Construct a JSON key-value t'Pair' for use with 'object'.
+--
+-- @
+-- import Miso.JSON
+--
+-- value :: Value
+-- value = object [ "name" .= ("Alice" :: MisoString), "age" .= (30 :: Int) ]
+-- @
 infixr 8 .=
-(.=) :: ToJSON v => MisoString -> v -> Pair
+(.=)
+  :: ToJSON v
+  => MisoString
+  -- ^ JSON key
+  -> v
+  -- ^ Value to encode as JSON
+  -> Pair
 k .= v  = (k, toJSON v)
 ----------------------------------------------------------------------------
--- | Create a 'Value' from a list of name\/value 'Pair's.
-object :: [Pair] -> Value
+-- | Create a t'Value' from a list of name\/value t'Pair's.
+object
+  :: [Pair]
+  -- ^ Key-value pairs forming the JSON object
+  -> Value
 object = Object . M.fromList
 ----------------------------------------------------------------------------
 -- | The empty JSON 'Object' (i.e. @{}@).
@@ -148,16 +165,43 @@ emptyObject = Object mempty
 emptyArray :: Value
 emptyArray = Array mempty
 ----------------------------------------------------------------------------
-(.:) :: FromJSON a => Object -> MisoString -> Parser a
+-- | Retrieve a required field from a JSON object, failing if absent.
+(.:)
+  :: FromJSON a
+  => Object
+  -- ^ JSON object to look up in
+  -> MisoString
+  -- ^ Key to retrieve
+  -> Parser a
 m .: k = maybe (pfail ("Key not found: " <> k)) parseJSON (M.lookup k m)
 ----------------------------------------------------------------------------
-(.:?) :: FromJSON a => Object -> MisoString -> Parser (Maybe a)
+-- | Retrieve an optional field from a JSON object, returning 'Nothing' if absent.
+(.:?)
+  :: FromJSON a
+  => Object
+  -- ^ JSON object to look up in
+  -> MisoString
+  -- ^ Key to retrieve
+  -> Parser (Maybe a)
 m .:? k = maybe (pure Nothing) parseJSON (M.lookup k m)
 ----------------------------------------------------------------------------
-(.:!) :: FromJSON a => Object -> MisoString -> Parser (Maybe a)
+-- | Retrieve an optional field, returning 'Nothing' for both absent and null.
+(.:!)
+  :: FromJSON a
+  => Object
+  -- ^ JSON object to look up in
+  -> MisoString
+  -- ^ Key to retrieve
+  -> Parser (Maybe a)
 m .:! k = maybe (pure Nothing) (fmap Just . parseJSON) (M.lookup k m)
 ----------------------------------------------------------------------------
-(.!=) :: Parser (Maybe a) -> a -> Parser a
+-- | Provide a default value when an optional field is 'Nothing'.
+(.!=)
+  :: Parser (Maybe a)
+  -- ^ Parser that may return 'Nothing'
+  -> a
+  -- ^ Default value if 'Nothing'
+  -> Parser a
 mv .!= def = fmap (maybe def id) mv
 ----------------------------------------------------------------------------
 class ToJSON a where
@@ -171,7 +215,14 @@ class ToJSON a where
   toJSONList :: [a] -> Value
   toJSONList = Array . Prelude.map toJSON
 ----------------------------------------------------------------------------
-genericToJSON :: (Generic a, GToJSON (Rep a)) => Options -> a -> Value
+-- | Generic 'ToJSON' implementation driven by t'Options'.
+genericToJSON
+  :: (Generic a, GToJSON (Rep a))
+  => Options
+  -- ^ Encoding options (field label modifiers, tag handling, etc.)
+  -> a
+  -- ^ Value to encode
+  -> Value
 genericToJSON opts = gToJSON opts . from
 ----------------------------------------------------------------------------
 data Options
@@ -199,7 +250,18 @@ defaultOptions = Options
   , omitNothingFields      = False
   }
 ----------------------------------------------------------------------------
-camelTo2 :: Char -> String -> String
+-- | Convert a camelCase identifier to a delimited lowercase string.
+--
+-- @
+-- camelTo2 '_' "fooBarBaz"  == "foo_bar_baz"
+-- camelTo2 '-' "htmlParser" == "html-parser"
+-- @
+camelTo2
+  :: Char
+  -- ^ Separator character (e.g. @\'_\'@ or @\'-\'@)
+  -> String
+  -- ^ camelCase identifier to convert
+  -> String
 camelTo2 c = Prelude.map toLower . go2 . go1
     where go1 "" = ""
           go1 (x:u:l:xs) | isUpper u && isLower l = x : c : u : l : go1 xs
@@ -458,13 +520,25 @@ instance Alternative Parser where
 ----------------------------------------------------------------------------
 instance MonadPlus Parser
 ----------------------------------------------------------------------------
-parseMaybe :: (a -> Parser b) -> a -> Maybe b
+-- | Run a parser, returning 'Nothing' on failure.
+parseMaybe
+  :: (a -> Parser b)
+  -- ^ Parser to run
+  -> a
+  -- ^ Value to parse
+  -> Maybe b
 parseMaybe m v =
   case parseEither m v of
     Left _ -> Nothing
-    Right r -> Just r 
+    Right r -> Just r
 ----------------------------------------------------------------------------
-parseEither :: (a -> Parser b) -> a -> Either MisoString b
+-- | Run a parser, returning @'Left' err@ on failure or @'Right' result@ on success.
+parseEither
+  :: (a -> Parser b)
+  -- ^ Parser to run
+  -> a
+  -- ^ Value to parse
+  -> Either MisoString b
 parseEither m v = unParser (m v)
 ----------------------------------------------------------------------------
 pfail :: MisoString -> Parser a
@@ -481,7 +555,14 @@ class FromJSON a where
 class GFromJSON (f :: Type -> Type) where
   gParseJSON :: Options -> Value -> Parser (f a)
 ----------------------------------------------------------------------------
-genericParseJSON :: (Generic a, GFromJSON (Rep a)) => Options -> Value -> Parser a
+-- | Generic 'FromJSON' implementation driven by t'Options'.
+genericParseJSON
+  :: (Generic a, GFromJSON (Rep a))
+  => Options
+  -- ^ Decoding options (field label modifiers, tag handling, etc.)
+  -> Value
+  -- ^ JSON value to decode
+  -> Parser a
 genericParseJSON opts value = to <$> gParseJSON opts value
 ----------------------------------------------------------------------------
 instance GFromJSONRep f => GFromJSON (D1 m f) where
@@ -754,27 +835,73 @@ instance FromJSON Char where
 instance FromJSON v => FromJSON (Map MisoString v) where
   parseJSON = withObject "FromJSON v => Map MisoString v" $ mapM parseJSON
 ----------------------------------------------------------------------------
-withBool :: MisoString -> (Bool -> Parser a) -> Value -> Parser a
+-- | Parse a JSON boolean, failing with a type mismatch if the value is not a 'Bool'.
+withBool
+  :: MisoString
+  -- ^ Context label for error messages
+  -> (Bool -> Parser a)
+  -- ^ Continuation receiving the boolean
+  -> Value
+  -- ^ JSON value to match
+  -> Parser a
 withBool _        f (Bool arr) = f arr
 withBool expected _ v          = typeMismatch expected v
 ----------------------------------------------------------------------------
-withText :: MisoString -> (MisoString -> Parser a) -> Value -> Parser a
+-- | Parse a JSON string, failing with a type mismatch if the value is not a 'String'.
+withText
+  :: MisoString
+  -- ^ Context label for error messages
+  -> (MisoString -> Parser a)
+  -- ^ Continuation receiving the string
+  -> Value
+  -- ^ JSON value to match
+  -> Parser a
 withText _        f (String txt) = f txt
 withText expected _ v            = typeMismatch expected v
 ----------------------------------------------------------------------------
-withArray :: MisoString -> ([Value] -> Parser a) -> Value -> Parser a
+-- | Parse a JSON array, failing with a type mismatch if the value is not an 'Array'.
+withArray
+  :: MisoString
+  -- ^ Context label for error messages
+  -> ([Value] -> Parser a)
+  -- ^ Continuation receiving the list of values
+  -> Value
+  -- ^ JSON value to match
+  -> Parser a
 withArray _        f (Array lst) = f lst
 withArray expected _ v           = typeMismatch expected v
 ----------------------------------------------------------------------------
-withObject :: MisoString -> (Object -> Parser a) -> Value -> Parser a
+-- | Parse a JSON object, failing with a type mismatch if the value is not an 'Object'.
+withObject
+  :: MisoString
+  -- ^ Context label for error messages
+  -> (Object -> Parser a)
+  -- ^ Continuation receiving the object
+  -> Value
+  -- ^ JSON value to match
+  -> Parser a
 withObject _        f (Object obj) = f obj
 withObject expected _ v            = typeMismatch expected v
 ----------------------------------------------------------------------------
-withNumber :: MisoString -> (Double -> Parser a) -> Value -> Parser a
+-- | Parse a JSON number, failing with a type mismatch if the value is not a 'Number'.
+withNumber
+  :: MisoString
+  -- ^ Context label for error messages
+  -> (Double -> Parser a)
+  -- ^ Continuation receiving the number
+  -> Value
+  -- ^ JSON value to match
+  -> Parser a
 withNumber _        f (Number n) = f n
 withNumber expected _ v          = typeMismatch expected v
 ----------------------------------------------------------------------------
-typeMismatch :: MisoString -> Value -> Parser a
+-- | Produce a parse failure message for a type mismatch.
+typeMismatch
+  :: MisoString
+  -- ^ Expected type name
+  -> Value
+  -- ^ Actual value received
+  -> Parser a
 typeMismatch expected actual =
   pfail
     ( "typeMismatch: Expected " <> expected <> " but encountered " <> case actual of
@@ -786,6 +913,10 @@ typeMismatch expected actual =
         Null -> "Null"
     )
 ----------------------------------------------------------------------------
+-- | Encode a value to a JSON t'MisoString'.
+--
+-- On the client, delegates to @JSON.stringify()@ for efficiency.
+-- On the server, falls back to the pure 'encodePure' implementation.
 #ifdef VANILLA
 encode :: ToJSON a => a -> MisoString
 encode = encodePure
@@ -799,7 +930,11 @@ encode x = unsafePerformIO $ jsonStringify =<< toJSVal_Value (toJSON x)
 -- This can be used on the server or the client, it is more efficient to
 -- use 'encode' on the client (since it relies on @JSON.stringify()@).
 --
-encodePure :: ToJSON a => a -> MisoString
+encodePure
+  :: ToJSON a
+  => a
+  -- ^ Value to serialize as JSON
+  -> MisoString
 encodePure = ms . toJSON
 ----------------------------------------------------------------------------
 instance FromMisoString Value where
@@ -845,6 +980,7 @@ instance ToMisoString Value where
         MS.intercalate "," [ "\"" <> escapeJSONString k <> "\"" <> ":" <> ms v | (k,v) <- M.toList o ]
       <> "}"
 ----------------------------------------------------------------------------
+-- | Decode a JSON t'MisoString' to a Haskell value, returning 'Nothing' on failure.
 #ifdef VANILLA
 decode :: FromJSON a => MisoString -> Maybe a
 decode s
@@ -876,18 +1012,22 @@ foreign import javascript unsafe
   encodePretty_ffi :: JSVal -> Int -> IO MisoString
 #endif
 -----------------------------------------------------------------------------
+-- | Pretty-print a value as an indented JSON t'MisoString' using t'Config'.
 #ifdef VANILLA
 encodePretty' :: ToJSON a => Config -> a -> MisoString
 encodePretty' = error "encodePretty': not implemented"
 -----------------------------------------------------------------------------
+-- | Pretty-print a value as an indented JSON t'MisoString' using 'defConfig'.
 encodePretty :: ToJSON a => a -> MisoString
 encodePretty _ = error "encodePretty: not implemented"
 -----------------------------------------------------------------------------
 #else
 -----------------------------------------------------------------------------
+-- | Pretty-print a value as an indented JSON t'MisoString' using t'Config'.
 encodePretty' :: ToJSON a => Config -> a -> MisoString
 encodePretty' (Config s) x = unsafePerformIO (flip encodePretty_ffi s =<< toJSVal_Value (toJSON x))
 -----------------------------------------------------------------------------
+-- | Pretty-print a value as an indented JSON t'MisoString' using 'defConfig'.
 encodePretty :: ToJSON a => a -> MisoString
 encodePretty = encodePretty' defConfig
 #endif
@@ -946,6 +1086,7 @@ jsonParse :: MisoString -> IO JSVal
 jsonParse _ = error "jsonParse: not implemented"
 #endif
 -----------------------------------------------------------------------------
+-- | Decode a JSON t'MisoString', returning @'Left' err@ on failure or @'Right' result@ on success.
 #ifdef VANILLA
 eitherDecode :: FromJSON a => MisoString -> Either MisoString a
 eitherDecode string =
@@ -966,7 +1107,12 @@ eitherDecode string = unsafePerformIO $ do
         Error err -> Left err)
 #endif
 ----------------------------------------------------------------------------
-fromJSON :: FromJSON a => Value -> Result a
+-- | Convert a t'Value' to a Haskell type, returning a t'Result'.
+fromJSON
+  :: FromJSON a
+  => Value
+  -- ^ JSON value to convert
+  -> Result a
 fromJSON value =
   case parseEither parseJSON value of
     Left s -> Error s

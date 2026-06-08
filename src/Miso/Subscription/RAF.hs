@@ -30,11 +30,25 @@ import           Miso.DSL
 import           Miso.Effect (Sub)
 import           Miso.Subscription.Util (createSub)
 ----------------------------------------------------------------------------
--- | A 'Sub' for 60FPS animations when using 'requestForAnimationFrame'.
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame>
 --
--- The 'Double' returned is a [DOMHighResTimeStamp](https://developer.mozilla.org/en-US/docs/Web/API/DOMHighResTimeStamp) expressed in milliseconds.
+-- A 'Sub' that fires on every animation frame (~60 FPS), suitable for canvas-based
+-- animations and games. The callback receives a
+-- [DOMHighResTimeStamp](https://developer.mozilla.org/en-US/docs/Web/API/DOMHighResTimeStamp)
+-- in milliseconds.
 --
-rAFSub :: (Double -> action) -> Sub action
+-- @
+-- app :: Component ROOT () Model Action
+-- app = (component initialModel update view)
+--   { subs = [ rAFSub Tick ] }
+--
+-- data Action = Tick Double   -- DOMHighResTimeStamp in ms
+-- @
+--
+rAFSub
+  :: (Double -> action)
+  -- ^ Callback invoked each frame with the current timestamp in milliseconds
+  -> Sub action
 rAFSub toAction sink = createSub acquire release sink
   where
     acquire = do

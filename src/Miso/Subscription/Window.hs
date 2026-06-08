@@ -31,23 +31,55 @@ import           Miso.String
 import           Miso.Subscription.Util
 import           Miso.Canvas (Coord)
 -----------------------------------------------------------------------------
--- | Captures window coordinates changes as they occur and writes them to
--- an event sink.
-windowCoordsSub :: (Coord -> action) -> Sub action
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/Element/pointermove_event>
+--
+-- Subscribes to global pointer move events and extracts the @clientX@ / @clientY@
+-- coordinates as a t'Coord' pair.
+--
+-- @
+-- app = (component m u v) { subs = [ windowCoordsSub MouseAt ] }
+-- data Action = MouseAt Coord
+-- @
+--
+windowCoordsSub
+  :: (Coord -> action)
+  -- ^ Callback invoked with the @(clientX, clientY)@ coordinate on every pointer move
+  -> Sub action
 windowCoordsSub f = windowPointerMoveSub (f . client)
 -----------------------------------------------------------------------------
--- | @windowSub eventName decoder toAction@ provides a subscription
--- to listen to [window level events](https://developer.mozilla.org/en-US/docs/Web/API/Window#events).
-windowSub :: MisoString -> Decoder r -> (r -> action) -> Sub action
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/Window#events>
+--
+-- Generic subscription for any window-level DOM event.
+-- Uses a 'Decoder' to extract the desired fields from the raw JS event object.
+--
+-- @
+-- -- Subscribe to window resize events, decoding the inner width/height:
+-- windowSub "resize" sizeDecoder WindowResized
+-- @
+--
+windowSub
+  :: MisoString
+  -- ^ DOM event name (e.g. @"resize"@, @"scroll"@, @"pointermove"@)
+  -> Decoder r
+  -- ^ Decoder for extracting data from the event object
+  -> (r -> action)
+  -- ^ Callback that wraps the decoded value into an action
+  -> Sub action
 windowSub = windowSubWithOptions defaultOptions
 -----------------------------------------------------------------------------
--- | @windowSubWithOptions options eventName decoder toAction@ provides a
--- subscription to listen to [window level events](https://developer.mozilla.org/en-US/docs/Web/API/Window#events).
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/Window#events>
+--
+-- Like 'windowSub' but accepts 'Options' to control @stopPropagation@ and
+-- @preventDefault@ behaviour on the underlying event listener.
 windowSubWithOptions
   :: Options
+  -- ^ Event listener options controlling propagation and default behaviour
   -> MisoString
+  -- ^ DOM event name (e.g. @"resize"@, @"scroll"@)
   -> Decoder result
+  -- ^ Decoder for extracting data from the event object
   -> (result -> action)
+  -- ^ Callback that wraps the decoded value into an action
   -> Sub action
 windowSubWithOptions Options{..} eventName Decoder {..} toAction sink =
   createSub acquire release sink
@@ -66,8 +98,14 @@ windowSubWithOptions Options{..} eventName Decoder {..} toAction sink =
               when _preventDefault (FFI.eventPreventDefault e)
               sink (toAction r)
 -----------------------------------------------------------------------------
--- | @window.addEventListener ("pointermove", (event) => handle(event))@
--- A 'Sub' to handle t'PointerEvent's on window.
-windowPointerMoveSub :: (PointerEvent -> action) -> Sub action
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/Element/pointermove_event>
+--
+-- Subscribes to global @pointermove@ events, delivering the full t'PointerEvent'
+-- payload. Prefer 'windowCoordsSub' if you only need coordinates.
+--
+windowPointerMoveSub
+  :: (PointerEvent -> action)
+  -- ^ Callback invoked with the full t'PointerEvent' on every pointer move
+  -> Sub action
 windowPointerMoveSub = windowSub "pointermove" pointerDecoder
 -----------------------------------------------------------------------------

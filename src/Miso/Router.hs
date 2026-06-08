@@ -227,20 +227,36 @@ data Token
   | IndexToken
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
--- | Smart constructor for building a 'QueryParamToken'
-toQueryParam :: ToMisoString s => MisoString -> s -> Token
+-- | Build a t'Token' representing a URL query parameter.
+toQueryParam
+  :: ToMisoString s
+  => MisoString
+  -- ^ Query parameter key
+  -> s
+  -- ^ Query parameter value
+  -> Token
 toQueryParam k v = QueryParamToken k (Just (ms v))
 -----------------------------------------------------------------------------
--- | Smart constructor for building a capture variable
-toCapture :: ToMisoString string => string -> Token
+-- | Build a t'Token' representing a URL path capture segment.
+toCapture
+  :: ToMisoString string
+  => string
+  -- ^ Capture value to encode as a path segment
+  -> Token
 toCapture = CaptureOrPathToken . ms
 -----------------------------------------------------------------------------
--- | Smart constructor for building a path fragment
-toPath :: MisoString -> Token
+-- | Build a t'Token' representing a literal URL path segment.
+toPath
+  :: MisoString
+  -- ^ Path segment string (e.g. @"widget"@)
+  -> Token
 toPath = CaptureOrPathToken
 -----------------------------------------------------------------------------
--- | Converts a list of @[Token]@ into an actual @URI@.
-tokensToURI :: [Token] -> URI
+-- | Assembles a t'URI' from a list of routing t'Token's.
+tokensToURI
+  :: [Token]
+  -- ^ Tokens produced by 'fromRoute' or 'lexTokens'
+  -> URI
 tokensToURI tokens = URI
   { uriPath =
       case tokens of
@@ -313,8 +329,11 @@ capture = do
     Left msg -> fail (fromMisoString (ms msg))
     Right token -> pure token
 -----------------------------------------------------------------------------
--- | Combinator for parsing a path out of a URI
-path :: MisoString -> RouteParser MisoString
+-- | Combinator that matches an exact path segment in the URI.
+path
+  :: MisoString
+  -- ^ Expected path segment (e.g. @"widget"@)
+  -> RouteParser MisoString
 path specified = do
   CaptureOrPathToken parsed <- captureOrPathToken
   when (specified /= parsed) (fail "path")
@@ -332,8 +351,12 @@ fragment specified = do
   when (specified /= frag) (fail "fragment")
   pure frag
 -----------------------------------------------------------------------------
--- | URI parsing
-parseURI :: MisoString -> Either MisoString URI
+-- | Parse a URI string into a t'URI' value.
+-- Returns @'Left' err@ with an error message if the input is not a valid URI.
+parseURI
+  :: MisoString
+  -- ^ URI string to parse (e.g. @"/widget/10?foo=bar"@)
+  -> Either MisoString URI
 parseURI txt =
   case lexTokens txt of
     Left (L.LexerError err _) -> Left err
@@ -397,11 +420,20 @@ class Router route where
 -- @
 --
 -----------------------------------------------------------------------------
-runRouter :: MisoString -> RouteParser route -> Either RoutingError route
+-- | Run a 'RouteParser' against a URI string.
+runRouter
+  :: MisoString
+  -- ^ URI string to parse (e.g. @"/widget/10"@)
+  -> RouteParser route
+  -- ^ Parser to apply to the URI
+  -> Either RoutingError route
 runRouter = parseRoute
 -----------------------------------------------------------------------------
--- | Convenience for specifying multiple routes
-routes :: [ RouteParser route ] -> RouteParser route
+-- | Combines a list of route parsers, succeeding on the first match.
+routes
+  :: [RouteParser route]
+  -- ^ Alternative parsers to try in order
+  -> RouteParser route
 routes = foldr (<|>) empty
 -----------------------------------------------------------------------------
 -- | Generic deriving for 'Router'
@@ -521,7 +553,7 @@ indexToken = satisfy $ \case
   IndexToken {} -> True
   _ -> False
 -----------------------------------------------------------------------------
--- | Lexing for a URI
+-- | Lexer that tokenises a URI string into a list of t'Token's.
 uriLexer :: Lexer [Token]
 uriLexer = do
   tokens <- some lexer
@@ -593,7 +625,11 @@ pctEncoded = do
 hexDig :: Lexer Char
 hexDig = L.satisfy C.isHexDigit
 -----------------------------------------------------------------------------
-lexTokens :: MisoString -> Either L.LexerError [Token]
+-- | Lex a URI string into a list of t'Token's.
+lexTokens
+  :: MisoString
+  -- ^ URI string to tokenise
+  -> Either L.LexerError [Token]
 lexTokens input =
   case L.runLexer uriLexer (L.mkStream input) of
     Right (tokens, _) -> Right tokens

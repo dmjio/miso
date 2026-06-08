@@ -18,8 +18,19 @@ import qualified Miso.FFI.Internal as FFI
 import           Miso.Types
 import           Miso.DSL
 -----------------------------------------------------------------------------
--- | Hydration of a t'VTree'
-hydrate :: LogLevel -> DOMRef -> VTree -> IO Bool
+-- | Hydrates a t'VTree' from the existing server-rendered DOM.
+--
+-- Walks the actual DOM under @domRef@ and populates the virtual tree
+-- from the real DOM nodes instead of performing an initial render.
+-- Returns 'True' if hydration succeeded, 'False' if a mismatch was detected.
+hydrate
+  :: LogLevel
+  -- ^ Logging verbosity; 'DebugHydrate' or 'DebugAll' enables hydration logs
+  -> DOMRef
+  -- ^ The DOM element containing server-rendered HTML to hydrate from
+  -> VTree
+  -- ^ The initial virtual DOM tree (should match the server-rendered HTML)
+  -> IO Bool
 hydrate loggingLevel domRef vtree = do
   jval <- toJSVal vtree
   fromJSValUnchecked =<<

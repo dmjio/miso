@@ -161,7 +161,10 @@ peek = Lexer $ \ys ->
         Just (z,zs) -> (Just z, Stream (MS.singleton z <> zs) l)
 ----------------------------------------------------------------------------
 -- | Predicate combinator that consumes matching input
-satisfy :: (Char -> Bool) -> Lexer Char
+satisfy
+  :: (Char -> Bool)
+  -- ^ Predicate the next character must satisfy
+  -> Lexer Char
 satisfy predicate = Lexer $ \ys ->
   case ys of
     Stream s l ->
@@ -173,7 +176,12 @@ satisfy predicate = Lexer $ \ys ->
 ----------------------------------------------------------------------------
 -- | Smart constructor for t'LexerError'
 -- If the input is empty, an 'UnexpectedEOF' is issued.
-unexpected :: MisoString -> Location -> LexerError
+unexpected
+  :: MisoString
+  -- ^ Remaining input at the point of failure
+  -> Location
+  -- ^ Source location of the failure
+  -> LexerError
 unexpected xs loc | MS.null xs = UnexpectedEOF loc
 unexpected cs loc = LexerError cs loc
 ----------------------------------------------------------------------------
@@ -182,7 +190,10 @@ getInput :: Lexer Stream
 getInput = Lexer $ \s -> Right (s, s)
 ----------------------------------------------------------------------------
 -- | Overrides current t'Stream' in t'Lexer' to user-specified t'Stream'.
-putInput :: Stream -> Lexer ()
+putInput
+  :: Stream
+  -- ^ New input stream to use
+  -> Lexer ()
 putInput s = Lexer $ \_ -> Right ((), s)
 ----------------------------------------------------------------------------
 -- | Retrieves the current t'Stream' t'Location'
@@ -190,25 +201,40 @@ getLocation :: Lexer Location
 getLocation = Lexer $ \(Stream s l) -> pure (l, Stream s l)
 ----------------------------------------------------------------------------
 -- | Sets the current t'Stream' t'Location'
-setLocation :: Location -> Lexer ()
+setLocation
+  :: Location
+  -- ^ New source location to set
+  -> Lexer ()
 setLocation l = Lexer $ \(Stream s _) -> pure ((), Stream s l)
 ----------------------------------------------------------------------------
 -- | Modifies a t'Stream'
-modifyInput :: (Stream -> Stream) -> Lexer ()
+modifyInput
+  :: (Stream -> Stream)
+  -- ^ Transformation to apply to the current stream
+  -> Lexer ()
 modifyInput f = do
   s <- getInput
   putInput (f s)
 ----------------------------------------------------------------------------
 -- | Lexer combinator for matching a 'Char'
-char :: Char -> Lexer Char
+char
+  :: Char
+  -- ^ Character to match exactly
+  -> Lexer Char
 char c = satisfy (== c)
 ----------------------------------------------------------------------------
 -- | Lexer combinator for matching a 'String'
-string' :: String -> Lexer String
+string'
+  :: String
+  -- ^ String to match exactly (character by character)
+  -> Lexer String
 string' = traverse char
 ----------------------------------------------------------------------------
 -- | Lexer combinator for matching a 'MisoString'
-string :: MisoString -> Lexer MisoString
+string
+  :: MisoString
+  -- ^ Prefix string to match exactly
+  -> Lexer MisoString
 string prefix = Lexer $ \s ->
   case s of
     Stream ys l
@@ -218,7 +244,11 @@ string prefix = Lexer $ \s ->
           Left (unexpected ys l)
 ----------------------------------------------------------------------------
 -- | Lexer combinator for executing a t'Lexer' with annotated t'Location' information
-withLocation :: ToMisoString token => Lexer token -> Lexer (Located token)
+withLocation
+  :: ToMisoString token
+  => Lexer token
+  -- ^ Lexer whose result to annotate with source location
+  -> Lexer (Located token)
 withLocation lexer = do
   result <- lexer
   let

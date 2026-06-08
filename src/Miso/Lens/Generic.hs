@@ -33,7 +33,21 @@ import GHC.TypeLits (ErrorMessage (..), Symbol, TypeError)
 import Miso.Lens (Lens, lens)
 -----------------------------------------------------------------------------
 
-class Generic s => HasLens (name :: Symbol) s a | name s -> a where 
+-- | Class for deriving a t'Lens' from a record field name at the type level.
+--
+-- Instances are automatically provided for any 'Generic' record via
+-- 'GHC.Records.HasField'. Use with @OverloadedLabels@:
+--
+-- @
+-- {-# LANGUAGE OverloadedLabels #-}
+--
+-- data Model = Model { _count :: Int } deriving (Generic, Eq)
+--
+-- update :: Action -> Effect parent Model Action
+-- update Increment = #_count %= (+1)
+-- @
+class Generic s => HasLens (name :: Symbol) s a | name s -> a where
+  -- | Retrieve a t'Lens' for the field named @name@.
   getLens :: Lens s a
 
 instance 
@@ -45,8 +59,14 @@ instance
 instance HasLens name s a => IsLabel name (Lens s a)
   where fromLabel = getLens @name
 
+-- | Retrieve a t'Lens' for the field @name@ using type-application syntax.
+--
+-- @
+-- count :: Lens Model Int
+-- count = field @"_count"
+-- @
 {-# INLINE field #-}
-field :: forall name s a. HasLens name s a => Lens s a 
+field :: forall name s a. HasLens name s a => Lens s a
 field = fromLabel @name
 
 class GSet (name :: Symbol) typ f where

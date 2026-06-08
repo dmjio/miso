@@ -42,51 +42,67 @@ import qualified Miso.FFI.Internal as FFI
 import           Miso.Types (Attribute (On), LogLevel(..), DOMRef, VTree(..))
 import           Miso.String (MisoString, ms)
 -----------------------------------------------------------------------------
--- | Convenience wrapper for @onWithOptions defaultOptions@.
+-- | Attaches an event listener that fires during the browser bubble phase.
+-- Convenience wrapper for @'onWithOptions' 'BUBBLE' 'defaultOptions'@.
 --
--- > let clickHandler = on "click" emptyDecoder $ \() -> Action
--- > in button_ [ clickHandler, class_ "add" ] [ text_ "+" ]
+-- @
+-- let clickHandler = on "click" emptyDecoder $ \() _ -> Action
+-- in button_ [ clickHandler, class_ "add" ] [ text_ "+" ]
+-- @
 --
--- This is used to define events that are triggered during the browser
--- bubble phase.
---
-on :: MisoString
-   -> Decoder r
-   -> (r -> DOMRef -> action)
-   -> Attribute action
+on
+  :: MisoString
+  -- ^ DOM event name (e.g. @"click"@, @"input"@, @"keydown"@)
+  -> Decoder r
+  -- ^ Decoder for extracting data from the event object
+  -> (r -> DOMRef -> action)
+  -- ^ Callback receiving the decoded value and the target DOM element reference
+  -> Attribute action
 on = onWithOptions BUBBLE defaultOptions
 -----------------------------------------------------------------------------
--- | Convenience wrapper for @onWithOptions (True :: Capture)@.
+-- | Like 'on' but fires during the browser capture phase instead of the bubble phase.
+-- Convenience wrapper for @'onWithOptions' 'CAPTURE' 'defaultOptions'@.
 --
--- > let clickHandler = onCapture "click" emptyDecoder $ \() -> Action
--- > in button_ [ clickHandler, class_ "add" ] [ text_ "+" ]
+-- @
+-- let clickHandler = onCapture "click" emptyDecoder $ \() _ -> Action
+-- in button_ [ clickHandler, class_ "add" ] [ text_ "+" ]
+-- @
 --
--- This is used to define events that are triggered during the browser
--- capture phase.
---
-onCapture 
-   :: MisoString
-   -> Decoder r
-   -> (r -> DOMRef -> action)
-   -> Attribute action
+onCapture
+  :: MisoString
+  -- ^ DOM event name (e.g. @"click"@, @"input"@)
+  -> Decoder r
+  -- ^ Decoder for extracting data from the event object
+  -> (r -> DOMRef -> action)
+  -- ^ Callback receiving the decoded value and the target DOM element reference
+  -> Attribute action
 onCapture = onWithOptions CAPTURE defaultOptions
 -----------------------------------------------------------------------------
--- | @onWithOptions opts eventName decoder toAction@ is an attribute
--- that will set the event handler of the associated DOM node to a function that
--- decodes its argument using @decoder@, converts it to an action
--- using @toAction@ and then feeds that action back to the @update@ function.
+-- | Full-control event attribute constructor. Sets an event handler on the
+-- associated DOM node that decodes the event object, converts the result to
+-- an action via @toAction@, and dispatches it to the @update@ function.
 --
--- @opts@ can be used to disable further event propagation.
+-- Use 'on' / 'onCapture' for the common cases.
 --
--- > let clickHandler = onWithOptions defaultOptions "click" emptyDecoder $ \() -> Action
--- > in button_ [ clickHandler, class_ "add" ] [ text_ "+" ]
+-- @
+-- -- Prevent default and stop propagation on a form submit:
+-- let submitHandler =
+--       onWithOptions BUBBLE (defaultOptions { _preventDefault = True })
+--         "submit" emptyDecoder $ \() _ -> FormSubmitted
+-- in form_ [ submitHandler ] [ ... ]
+-- @
 --
 onWithOptions
   :: Phase
+  -- ^ Whether to listen during the @'CAPTURE'@ or @'BUBBLE'@ phase
   -> Options
+  -- ^ Event options controlling @preventDefault@ and @stopPropagation@
   -> MisoString
+  -- ^ DOM event name (e.g. @"click"@, @"submit"@)
   -> Decoder r
+  -- ^ Decoder for extracting data from the event object
   -> (r -> DOMRef -> action)
+  -- ^ Callback receiving the decoded value and the target DOM element reference
   -> Attribute action
 onWithOptions phase options eventName Decoder{..} toAction =
   On $ \sink (VTree n) logLevel events -> do
@@ -118,65 +134,79 @@ onWithOptions phase options eventName Decoder{..} toAction =
     FFI.set "options" jsOptions eventHandlerObject
     FFI.set eventName eo (Object eventObj)
 -----------------------------------------------------------------------------
--- | @onCreated action@ is an event that gets called after the actual DOM
--- element is created.
+-- | Lifecycle hook fired after the DOM element is inserted into the document.
 --
 -- @since 1.9.0.0
 --
-onCreated :: action -> Attribute action
+onCreated
+  :: action
+  -- ^ Action to dispatch once the DOM node has been created
+  -> Attribute action
 onCreated action =
   On $ \sink (VTree object) _ _ -> do
     callback <- FFI.syncCallback (sink action)
     FFI.set "onCreated" callback object
 -----------------------------------------------------------------------------
--- | Like @onCreated action@ but passes along the `DOMRef`
+-- | Like 'onCreated' but passes the t'DOMRef' of the created element to the callback.
 --
 -- @since 1.9.0.0
 --
-onCreatedWith :: (DOMRef -> action) -> Attribute action
+onCreatedWith
+  :: (DOMRef -> action)
+  -- ^ Callback receiving the t'DOMRef' of the newly created DOM node
+  -> Attribute action
 onCreatedWith action =
   On $ \sink (VTree object) _ _ -> do
     callback <- FFI.syncCallback1 (sink . action)
     FFI.set "onCreated" callback object
 -----------------------------------------------------------------------------
--- | @onDestroyed action@ is an event that gets called after the DOM element
--- is removed from the DOM.
+-- | Lifecycle hook fired after the DOM element is removed from the document.
 --
 -- @since 1.9.0.0
 --
-onDestroyed :: action -> Attribute action
+onDestroyed
+  :: action
+  -- ^ Action to dispatch once the DOM node has been removed
+  -> Attribute action
 onDestroyed action =
   On $ \sink (VTree object) _ _ -> do
     callback <- FFI.syncCallback (sink action)
     FFI.set "onDestroyed" callback object
 -----------------------------------------------------------------------------
--- | @onBeforeDestroyed action@ is an event that gets called before the DOM element
--- is removed from the DOM.
+-- | Lifecycle hook fired just before the DOM element is removed from the document.
 --
 -- @since 1.9.0.0
 --
-onBeforeDestroyed :: action -> Attribute action
+onBeforeDestroyed
+  :: action
+  -- ^ Action to dispatch just before the DOM node is removed
+  -> Attribute action
 onBeforeDestroyed action =
   On $ \sink (VTree object) _ _ -> do
     callback <- FFI.syncCallback (sink action)
     FFI.set "onBeforeDestroyed" callback object
 -----------------------------------------------------------------------------
--- | Like @onBeforeDestroyed@ but passes along the `DOMRef`
+-- | Like 'onBeforeDestroyed' but passes the t'DOMRef' of the element to the callback.
 --
 -- @since 1.9.0.0
 --
-onBeforeDestroyedWith :: (DOMRef -> action) -> Attribute action
+onBeforeDestroyedWith
+  :: (DOMRef -> action)
+  -- ^ Callback receiving the t'DOMRef' of the DOM node about to be removed
+  -> Attribute action
 onBeforeDestroyedWith action =
   On $ \sink (VTree object) _ _ -> do
     callback <- FFI.syncCallback1 (sink . action)
     FFI.set "onBeforeDestroyed" callback object
 -----------------------------------------------------------------------------
--- | @onBeforeCreated action@ is an event that gets called before the DOM element
--- is created on the DOM.
+-- | Lifecycle hook fired just before the DOM element is inserted into the document.
 --
 -- @since 1.9.0.0
 --
-onBeforeCreated :: action -> Attribute action
+onBeforeCreated
+  :: action
+  -- ^ Action to dispatch just before the DOM node is created
+  -> Attribute action
 onBeforeCreated action =
   On $ \sink (VTree object) _ _ -> do
     callback <- FFI.syncCallback (sink action)

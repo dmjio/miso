@@ -59,24 +59,54 @@ newtype Array value = Array JSVal deriving (FromJSVal, ToJSVal, ToObject)
 new :: IO (Array value)
 new = Array <$> DSL.new (jsg "Array") ([] :: [JSVal])
 -----------------------------------------------------------------------------
--- | Inserts a value into the t'Array' by value.
-insert :: ToJSVal value => Int -> value -> Array value -> IO ()
+-- | <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array>
+--
+-- Sets the element at the given index.
+insert
+  :: ToJSVal value
+  => Int
+  -- ^ Zero-based index to write to
+  -> value
+  -- ^ Value to store at the index
+  -> Array value
+  -- ^ Array to mutate
+  -> IO ()
 insert key value (Array m) = do
   _ <- (DSL.Object m) DSL.<## key $ value
   pure ()
 -----------------------------------------------------------------------------
--- | Inserts a value into the t'Array' by value.
-push :: ToJSVal value => value -> Array value -> IO ()
+-- | <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/push>
+--
+-- Appends a value to the end of the t'Array'.
+push
+  :: ToJSVal value
+  => value
+  -- ^ Value to append
+  -> Array value
+  -- ^ Array to mutate
+  -> IO ()
 push value (Array m) = do
   _ <- callFunction m "push" [value]
   pure ()
 -----------------------------------------------------------------------------
--- | Look up a value in the array by key.
-lookup :: FromJSVal value => Int -> Array value -> IO (Maybe value)
+-- | Look up an element by zero-based index, returning 'Nothing' if out of bounds.
+lookup
+  :: FromJSVal value
+  => Int
+  -- ^ Zero-based index to read
+  -> Array value
+  -- ^ Array to read from
+  -> IO (Maybe value)
 lookup key m = DSL.fromJSValUnchecked =<< m DSL.!! key
 -----------------------------------------------------------------------------
--- | Look up a value in the array by key.
-(!?) :: FromJSVal value => Int -> Array value -> IO value
+-- | Look up an element by zero-based index, throwing an error if out of bounds.
+(!?)
+  :: FromJSVal value
+  => Int
+  -- ^ Zero-based index to read
+  -> Array value
+  -- ^ Array to read from
+  -> IO value
 (!?) key m =
   lookup key m >>= \case
     Nothing ->
@@ -92,20 +122,44 @@ size (Array m) = DSL.fromJSValUnchecked =<< m ! "length"
 null :: Array value -> IO Bool
 null m = (== 0) <$> size m
 -----------------------------------------------------------------------------
--- | Checks existence of 'value' in t'Array', returns t'Bool.
-member :: ToJSVal value => value -> Array value -> IO Bool
+-- | <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/includes>
+--
+-- Tests whether the t'Array' contains a given value.
+member
+  :: ToJSVal value
+  => value
+  -- ^ Value to search for
+  -> Array value
+  -- ^ Array to check
+  -> IO Bool
 member value (Array m) = DSL.fromJSValUnchecked =<< callFunction m "includes" =<< DSL.toJSVal value
 -----------------------------------------------------------------------------
--- | Splices an array. See [splice](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/splice).
-splice :: ToJSVal value => Int -> Int -> [value] -> Array value -> IO (Array value)
+-- | <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/splice>
+--
+-- Removes and/or inserts elements at a given position, returning the removed elements.
+splice
+  :: ToJSVal value
+  => Int
+  -- ^ Start index (zero-based) at which to begin modifying the array
+  -> Int
+  -- ^ Number of existing elements to remove
+  -> [value]
+  -- ^ Elements to insert at the start position
+  -> Array value
+  -- ^ Array to splice in-place
+  -> IO (Array value)
 splice start deleteCount xs (Array m) = do
   s <- DSL.toJSVal start
   d <- DSL.toJSVal deleteCount
   args <- mapM DSL.toJSVal xs
   Array <$> do callFunction m "splice" $ [s,d] ++ args
 -----------------------------------------------------------------------------
--- | Construct a t'Array' from a list of value value pairs.
-fromList :: ToJSVal value => [value] -> IO (Array value)
+-- | Construct a t'Array' from a Haskell list.
+fromList
+  :: ToJSVal value
+  => [value]
+  -- ^ Initial elements
+  -> IO (Array value)
 fromList xs = do
   m <- new
   forM_ (zip [0..] xs) $ \(k,v) ->
@@ -135,9 +189,16 @@ pop (Array arr) = DSL.fromJSValUnchecked =<< callFunction arr "pop" ([] :: [JSVa
 shift :: FromJSVal a => Array a -> IO (Maybe a)
 shift (Array arr) = DSL.fromJSValUnchecked =<< callFunction arr "shift" ([] :: [JSVal])
 -----------------------------------------------------------------------------
--- | Adds one or more elements to the beginning of an array.
+-- | <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/unshift>
 --
-unshift :: ToJSVal a => a -> Array a -> IO Int
+-- Adds an element to the beginning of the t'Array', returning the new length.
+unshift
+  :: ToJSVal a
+  => a
+  -- ^ Element to prepend
+  -> Array a
+  -- ^ Array to mutate
+  -> IO Int
 unshift x (Array arr) = DSL.fromJSValUnchecked =<< callFunction arr "unshift" [x]
 -----------------------------------------------------------------------------
 -- | Reverses an array in-place.

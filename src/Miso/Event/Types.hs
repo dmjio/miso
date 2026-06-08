@@ -46,11 +46,19 @@ import qualified Data.Map.Strict as M
 import           Miso.DSL
 import           Miso.String (MisoString, ms)
 -----------------------------------------------------------------------------
--- | Type useful for both KeyCode and additional key press information.
+-- | Keyboard event payload containing the key code and modifier key state.
 data KeyInfo
   = KeyInfo
   { keyCode :: !KeyCode
-  , shiftKey, metaKey, ctrlKey, altKey :: !Bool
+  -- ^ The numeric key code (@keyCode@, @which@, or @charCode@)
+  , shiftKey :: !Bool
+  -- ^ @True@ when the Shift key was held during the event
+  , metaKey :: !Bool
+  -- ^ @True@ when the Meta (Cmd on macOS, Windows key on Windows) was held
+  , ctrlKey :: !Bool
+  -- ^ @True@ when the Control key was held
+  , altKey :: !Bool
+  -- ^ @True@ when the Alt (Option on macOS) key was held
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
 -- | Type used for Keyboard events.
@@ -63,35 +71,45 @@ newtype KeyCode = KeyCode Int
 newtype Checked = Checked Bool
   deriving (Show, Eq, Ord, FromJSON)
 -----------------------------------------------------------------------------
--- | Type used for Pointer events.
--- <https://w3c.github.io/pointerevents>
+-- | <https://w3c.github.io/pointerevents>
+--
+-- Payload for pointer events (@pointerdown@, @pointermove@, @pointerup@, etc.).
 data PointerEvent
   = PointerEvent
   { pointerType :: PointerType
+  -- ^ Hardware type producing the event (@mouse@, @pen@, @touch@, or unknown)
   , pointerId :: Int
+  -- ^ Unique identifier for this pointer (stable across a single press/release sequence)
   , isPrimary :: Bool
+  -- ^ @True@ when this is the primary pointer in a multi-touch sequence
   , client :: (Double, Double)
-  -- ^ clientX, clientY
+  -- ^ @(clientX, clientY)@ — coordinates relative to the viewport
   , screen :: (Double, Double)
-  -- ^ screenX, screenY
+  -- ^ @(screenX, screenY)@ — coordinates relative to the screen
   , offset :: (Double, Double)
-  -- ^ offsetX, offsetY
-  , page :: (Double,Double)
-  -- ^ pageX, pageY
-  , tilt :: (Double,Double)
-  -- ^ tiltX, tiltY
+  -- ^ @(offsetX, offsetY)@ — coordinates relative to the target element
+  , page :: (Double, Double)
+  -- ^ @(pageX, pageY)@ — coordinates relative to the document
+  , tilt :: (Double, Double)
+  -- ^ @(tiltX, tiltY)@ — stylus tilt angles in degrees
   , pressure :: Double
+  -- ^ Normalised pressure in the range @[0, 1]@
   , button :: Int
-  -- ^ https://w3c.github.io/pointerevents/#the-button-property
+  -- ^ <https://w3c.github.io/pointerevents/#the-button-property> — which button was pressed
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
--- | Pointer type
--- <https://developer.mozilla.org/en-US/docs/Web/API/PointerEvent/pointerType>
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/PointerEvent/pointerType>
+--
+-- Hardware type responsible for a t'PointerEvent'.
 data PointerType
   = MousePointerType
+  -- ^ Event produced by a mouse
   | PenPointerType
+  -- ^ Event produced by a pen or stylus
   | TouchPointerType
+  -- ^ Event produced by a touch contact
   | UnknownPointerType MisoString
+  -- ^ Unrecognised pointer type, containing the raw string from the browser
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 instance FromJSON PointerType where
@@ -101,11 +119,13 @@ instance FromJSON PointerType where
     "pen"   -> pure PenPointerType
     x       -> pure (UnknownPointerType (ms x))
 -----------------------------------------------------------------------------
--- | t'Options' for handling event propagation.
+-- | Options controlling browser event propagation behaviour.
 data Options
   = Options
   { _preventDefault :: Bool
+  -- ^ When @True@, calls @event.preventDefault()@ to suppress the browser's default action
   , _stopPropagation :: Bool
+  -- ^ When @True@, calls @event.stopPropagation()@ to prevent the event from bubbling further
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
 instance Monoid Options where
@@ -143,10 +163,14 @@ defaultOptions
   , _stopPropagation = False
   }
 -----------------------------------------------------------------------------
--- | Convenience type for Events
+-- | Map from DOM event name to the t'Phase' in which it should be delegated.
+-- Passed to the @events@ field of t'Miso.Types.Component'.
 type Events = M.Map MisoString Phase
 -----------------------------------------------------------------------------
--- | Default delegated events
+-- | The minimal set of delegated events used by most applications:
+-- @blur@, @change@, @click@, @contextmenu@, @dblclick@, @focus@, @input@, @select@, @submit@.
+--
+-- Combine with 'keyboardEvents', 'mouseEvents', 'pointerEvents', etc. using '(<>)'.
 defaultEvents :: Events
 defaultEvents = M.fromList
   [ ("blur", CAPTURE)
@@ -255,10 +279,15 @@ touchEvents = M.fromList
   , ("touchend", BUBBLE)
   ]
 -----------------------------------------------------------------------------
--- | Phase during which event listener is invoked.
+-- | The DOM event phase in which the delegated listener fires.
 --
 -- @since 1.9.0.0
-data Phase = CAPTURE | BUBBLE deriving (Eq, Show)
+data Phase
+  = CAPTURE
+  -- ^ Fire during the capture phase (before the event reaches the target element)
+  | BUBBLE
+  -- ^ Fire during the bubble phase (after the target element handles the event)
+  deriving (Eq, Show)
 -----------------------------------------------------------------------------
 instance ToJSVal Phase where
   toJSVal = \case
