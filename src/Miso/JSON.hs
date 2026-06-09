@@ -130,7 +130,6 @@ import           Numeric (showHex)
 import           Control.Monad.Trans.Maybe
 import           System.IO.Unsafe (unsafePerformIO)
 #endif
-
 ----------------------------------------------------------------------------
 infixr 8 .=
 (.=) :: ToJSON v => MisoString -> v -> Pair
@@ -236,7 +235,7 @@ instance GToFields V1 where
 instance (GToFields f, GToFields g) => GToFields (f :*: g) where
   gToFields opts (x :*: y) = combineFields (gToFields opts x) (gToFields opts y)
 ----------------------------------------------------------------------------
-instance (Selector m, GToFields f) => GToFields (S1 m f) where
+instance {-# OVERLAPPABLE #-} (Selector m, GToFields f) => GToFields (S1 m f) where
   gToFields opts (M1 x) =
     let n = selName (M1 undefined :: S1 m f ())
     in if null n
