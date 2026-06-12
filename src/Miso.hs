@@ -110,13 +110,13 @@
 --
 -- The smart constructors:
 --
--- * 'node', 'vnode'
--- * 'text', 'vtext'
--- * 'component', 'vcomp'
--- * 'fragment_', 'fragment', 'vfrag', 'vfrag_'
--- * ('+>')
+-- * 'node', 'vnode' — build a 'VNode'
+-- * 'text', 'vtext' — build a 'VText'
+-- * 'component', 'vcomp' — build a 'VComp' ('vcomp' is a synonym for 'component')
+-- * 'fragment', 'vfrag', 'fragment_', 'vfrag_' — build a 'VFrag'
+-- * ('+>') — key and mount a child 'Component'
 --
--- are used to build 'VNode', 'VText', 'VFrag' and 'VComp' respectively. A list of all the smart constructors defined in terms of 'node' (e.g. 'Miso.Html.Element.div_') can be found in "Miso.Html.Element".
+-- A full list of element smart constructors built on 'node' (e.g. 'Miso.Html.Element.div_') can be found in "Miso.Html.Element".
 --
 -- = Your first t'Component'
 --
@@ -533,10 +533,10 @@
 --
 -- @
 -- data 'Attribute' action
---   = 'Property' MisoString Value        -- ^ DOM property (key/value)
---   | 'ClassList' [MisoString]           -- ^ CSS class list
---   | 'On' (Sink action -> ...)          -- ^ Event handler
---   | 'Styles' (Map MisoString MisoString) -- ^ Inline style map
+--   = 'Property' 'MisoString' 'Miso.JSON.Value'          -- ^ DOM property (key/value)
+--   | 'ClassList' ['MisoString']                         -- ^ CSS class list
+--   | 'On' ('Sink' action -> ...)                        -- ^ Event handler
+--   | 'Styles' ('Data.Map.Strict.Map' 'MisoString' 'MisoString') -- ^ Inline style map
 -- @
 --
 -- In practice you never construct these directly. Use the smart constructors from
@@ -544,12 +544,12 @@
 --
 -- @
 -- 'div_'
---   [ 'id_' "container"          -- textProp "id"
---   , 'className' "card active"  -- textProp "class"
---   , 'classList' ["card", "active"] -- ClassList (alternative)
---   , 'disabled_' True           -- boolProp "disabled"
---   , 'onClick' MyAction         -- On event handler
---   , 'style_' [ 'CSS.display' "flex" ]  -- Styles map
+--   [ 'id_' "container"                    -- textProp "id"
+--   , 'className' "card active"            -- textProp "class"
+--   , 'classList' ["card", "active"]       -- ClassList (alternative)
+--   , 'disabled_'                          -- boolProp "disabled" True
+--   , 'onClick' MyAction                   -- On event handler
+--   , 'Miso.CSS.style_' [ 'Miso.CSS.display' "flex" ] -- Styles map
 --   ]
 --   []
 -- @
@@ -864,11 +864,11 @@
 -- 'onLineSub' f sink = 'Miso.Subscription.Util.createSub' acquire release sink
 --   where
 --     release (cb1, cb2) = do
---       FFI.windowRemoveEventListener "online" cb1
---       FFI.windowRemoveEventListener "offline" cb2
+--       'Miso.FFI.windowRemoveEventListener' "online"  cb1
+--       'Miso.FFI.windowRemoveEventListener' "offline" cb2
 --     acquire = do
---       cb1 <- FFI.windowAddEventListener "online" (const $ sink (f True))
---       cb2 <- FFI.windowAddEventListener "offline" (const $ sink (f False))
+--       cb1 <- 'Miso.FFI.windowAddEventListener' "online"  (const $ sink (f True))
+--       cb2 <- 'Miso.FFI.windowAddEventListener' "offline" (const $ sink (f False))
 --       pure (cb1, cb2)
 -- @
 --
@@ -1484,7 +1484,7 @@
 --
 -- == Static prerendering
 --
--- miso provides the 'prerender' and 'miso' functions to facilitate static prerendering. Any page can be generated from a miso 'View' using the 'Miso.Render.toHtml' instance.
+-- miso provides the 'prerender' and 'miso' functions to facilitate static prerendering. Any page can be generated from a miso 'View' using the 'Miso.Html.Render.toHtml' instance.
 --
 -- A simple example of static prerendering would be an @index.html@ page with some HTML
 --
