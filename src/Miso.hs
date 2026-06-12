@@ -47,7 +47,7 @@
 --
 -- * __Components__: A 'Component' can be considered an instance of a @miso@ application. A 'Component'
 --   contains user-defined state, logic for updating this state, and a function
---   for creating UI templates from this user-defined state. 'Component' can nest other 'Component' because @miso@
+--   for creating UI templates from this user-defined state. 'Component' can nest other 'Component' because it
 --   is defined recursively.
 --
 -- * __Custom renderers__: The underlying DOM operations are able to be abstracted.
@@ -301,6 +301,122 @@
 --
 -- As a convention, the @*with@ variant of 'VNode' lifecycle hooks (e.g. 'Miso.Event.onCreatedWith') provide the target 'DOMRef' in the callback function (shown above).
 --
+-- = 'VNode' (Element nodes)
+--
+-- A 'VNode' represents a [DOM element node](https://developer.mozilla.org/en-US/docs/Web/API/Element) — the most common kind of virtual DOM node.
+-- It carries a 'Namespace', a tag name, a list of 'Attribute' values, and a list of child 'View' nodes:
+--
+-- @
+-- 'VNode' 'HTML' "div" [ 'id_' "container" ] [ "Hello, world!" ]
+-- @
+--
+-- In practice you will rarely construct 'VNode' directly. Instead use the element smart constructors
+-- from "Miso.Html.Element", which fix the namespace and tag for you:
+--
+-- @
+-- 'div_'    [ 'id_' "container" ] [ "Hello, world!" ]
+-- 'button_' [ 'onClick' DoSomething ] [ "Click me" ]
+-- 'h1_'     [ 'className' "title" ] [ 'text' (ms pageTitle) ]
+-- @
+--
+-- For elements not covered by "Miso.Html.Element", use 'node' (or its synonym 'vnode') directly:
+--
+-- @
+-- 'node' 'HTML' "details" [] [ 'node' 'HTML' "summary" [] [ "More info" ] ]
+-- @
+--
+-- SVG and MathML elements use the 'SVG' and 'MATHML' namespaces respectively,
+-- and are covered by the smart constructors in "Miso.Svg.Element" and "Miso.Mathml.Element".
+--
+-- Unlike 'VComp' and 'VFrag', 'VNode' has a one-to-one correspondence with a physical DOM element:
+-- each 'VNode' in the virtual DOM maps to exactly one element in the browser.
+--
+-- The smart constructors for 'VNode' are:
+--
+-- * 'node'  — raw constructor, takes 'Namespace', tag, attributes, children
+-- * 'vnode' — synonym for 'node'
+-- * All combinators in "Miso.Html.Element", "Miso.Svg.Element", "Miso.Mathml.Element"
+--
+-- = 'VText' (Text nodes)
+--
+-- A 'VText' node represents a [DOM text node](https://developer.mozilla.org/en-US/docs/Web/API/Text).
+-- Unlike 'VComp' and 'VFrag', 'VText' has a one-to-one correspondence with a physical DOM node:
+-- each 'VText' in the virtual DOM maps to exactly one @Text@ node in the browser.
+--
+-- The simplest way to produce a 'VText' is via the 'IsString' instance on @'View' model action@.
+-- String literals inside a child list are automatically promoted to 'VText' nodes without
+-- any extra imports:
+--
+-- @
+-- 'div_' [] [ "Hello, world!" ]
+-- @
+--
+-- For dynamic content, use the 'text' smart constructor with a 'MisoString':
+--
+-- @
+-- 'div_' [] [ 'text' (ms userName) ]
+-- @
+--
+-- == HTML Encoding
+--
+-- When compiling with the @ssr@ flag (server-side rendering), 'text' automatically
+-- HTML-encodes its argument — @\<@, @\>@, @&@, @\"@, and @\'@ are replaced with their
+-- respective HTML entities. This prevents accidental XSS when rendering user-supplied
+-- strings on the server.
+--
+-- @
+-- -- SSR output: &lt;b&gt;bold&lt;\/b&gt;
+-- 'text' "\<b\>bold\<\/b\>"
+-- @
+--
+-- To embed pre-rendered or trusted content without escaping, use 'textRaw'. It is a
+-- no-op on the client and bypasses encoding on the server:
+--
+-- @
+-- 'textRaw' "\<b\>bold\<\/b\>"   -- server and client: \<b\>bold\<\/b\>
+-- @
+--
+-- == Concatenating Multiple Strings
+--
+-- 'text_' accepts a list of 'MisoString' values and joins them with a single space,
+-- which is useful when building text from multiple pieces without manual concatenation:
+--
+-- @
+-- -- Renders: Hello world
+-- 'div_' [] [ 'text_' [ "Hello", "world" ] ]
+-- @
+--
+-- == Keyed Text Nodes
+--
+-- A 'VText' may optionally carry a 'Key'. Keyed text nodes participate in the same
+-- reconciliation algorithm as keyed 'VNode' and 'VFrag' nodes. Providing a stable key
+-- lets the differ identify the node across renders, preventing unnecessary DOM text node
+-- replacement when sibling order changes.
+--
+-- @
+-- 'ul_' [] (map renderItem items)
+--
+-- renderItem :: Item -> 'View' model Action
+-- renderItem item = 'li_' [] [ 'textKey' (itemId item) (itemLabel item) ]
+-- @
+--
+-- 'keyed' can also attach a key to any existing 'View', including a 'VText' produced
+-- by a string literal or 'text':
+--
+-- @
+-- 'keyed' "greeting" ("Hello!" :: 'View' model action)
+-- @
+--
+-- The smart constructors for 'VText' are:
+--
+-- * 'text'     — single string, HTML-encoded on the server
+-- * 'vtext'    — synonym for 'text'
+-- * 'textRaw'  — single string, never HTML-encoded
+-- * 'text_'    — list of strings joined with a space
+-- * 'textKey'  — single keyed string
+-- * 'textKey_' — list of keyed strings joined with a space
+-- * 'keyed'    — attach a key to any 'View', including 'VText'
+--
 -- = 'VFrag' (Fragment nodes)
 --
 -- Similar to the [React Fragment](https://react.dev/reference/react/Fragment) API (@\<Fragment\>@ or @\<\>\<\/\>@ syntax), and to @DocumentFragment@ in the browser DOM API. @miso@ provides a 'VFrag' constructor for grouping together sibling nodes without introducing an extra wrapper element in the DOM.
@@ -383,7 +499,7 @@
 --
 -- * Defining event handlers
 --
--- Users can define their own event handlers using the 'Miso.Event.on' combinator. By default this will define an event in the 'Miso.Event.Types.BUBBLE' phase. See 'Miso.Event.onCapture' for handling events during the 'Miso.Event.Types.CAPTURE' phase. See the the module "Miso.Html.Event" for many predefined events.
+-- Users can define their own event handlers using the 'Miso.Event.on' combinator. By default this will define an event in the 'Miso.Event.Types.BUBBLE' phase. See 'Miso.Event.onCapture' for handling events during the 'Miso.Event.Types.CAPTURE' phase. See the module "Miso.Html.Event" for many predefined events.
 --
 -- @
 -- 'onChangeWith' :: ('MisoString' -> 'DOMRef' -> action) -> 'Attribute' action
@@ -413,12 +529,55 @@
 --
 -- = Attributes / Properties
 --
--- The 'Attribute' type allows us to define web handlers that map browser events to
--- Haskell data types (e.g. 'Miso.Html.Event.onClick'), along with specifying properties on DOM elements
--- (like 'Miso.Html.Property.className' and 'Miso.Html.Property.id_'). See "Miso.Property" and "Miso.Html.Property" for more information.
+-- The 'Attribute' type carries everything that can be attached to a DOM element:
 --
 -- @
--- 'div_' [ 'id_' "some-id", 'className' "some-class" ] [ ]
+-- data 'Attribute' action
+--   = 'Property' MisoString Value        -- ^ DOM property (key/value)
+--   | 'ClassList' [MisoString]           -- ^ CSS class list
+--   | 'On' (Sink action -> ...)          -- ^ Event handler
+--   | 'Styles' (Map MisoString MisoString) -- ^ Inline style map
+-- @
+--
+-- In practice you never construct these directly. Use the smart constructors from
+-- "Miso.Html.Property", "Miso.Html.Event", "Miso.Property", and "Miso.CSS":
+--
+-- @
+-- 'div_'
+--   [ 'id_' "container"          -- textProp "id"
+--   , 'className' "card active"  -- textProp "class"
+--   , 'classList' ["card", "active"] -- ClassList (alternative)
+--   , 'disabled_' True           -- boolProp "disabled"
+--   , 'onClick' MyAction         -- On event handler
+--   , 'style_' [ 'CSS.display' "flex" ]  -- Styles map
+--   ]
+--   []
+-- @
+--
+-- == Custom properties
+--
+-- Use 'prop' (or the typed variants 'textProp', 'boolProp', 'intProp', 'doubleProp',
+-- 'objectProp') from "Miso.Property" to set arbitrary DOM properties:
+--
+-- @
+-- 'prop' "data-index" (42 :: Int)      -- sets element.data-index = 42
+-- 'textProp' "placeholder" "Search…"  -- sets element.placeholder
+-- 'boolProp' "checked" True            -- sets element.checked = true
+-- @
+--
+-- Note that DOM /properties/ and HTML /attributes/ are distinct. Miso sets
+-- properties on the DOM node object (e.g. @node.checked@) rather than the
+-- HTML attribute (e.g. @setAttribute("checked", ...)@). This matches what
+-- the browser actually exposes in JavaScript and avoids common pitfalls with
+-- boolean attributes.
+--
+-- == Keys
+--
+-- 'key_' (and its alias 'keyProp') attaches a reconciliation key to any element.
+-- See the @'Key'@ section for details.
+--
+-- @
+-- 'li_' [ 'key_' (itemId item) ] [ 'text' (itemLabel item) ]
 -- @
 --
 -- = 'Effect'
@@ -473,6 +632,12 @@
 -- 'ComponentInfo' provides the current 'ComponentId' the @parent@ 'ComponentId', and the 'DOMRef' ('_componentDOMRef') that the 'Component' is mounted on.
 --
 -- = 'Component' communication
+--
+-- Miso provides three mechanisms for 'Component' to exchange data:
+--
+-- * __Props__ — synchronous, parent-to-child read-only data passed at mount time (see below).
+-- * __Async mailbox__ — message-passing via 'mail' / 'broadcast' / 'checkMail'; any 'Component' can send a t'Miso.JSON.Value' to any other by 'ComponentId'.
+-- * __PubSub__ ("Miso.PubSub") — publish\/subscribe for fan-out messaging across unrelated 'Component'.
 --
 -- = Props
 --
@@ -709,15 +874,149 @@
 --
 -- = (2D/3D) Canvas support
 --
---  Miso has full 2D and 3D canvas support. See the "Miso.Canvas" module, the [miso-canvas](https://github.com/haskell-miso/miso-canvas2d) example, along with the [three-miso](https://github.com/haskell-miso/three-miso) package.
+-- Miso has full 2D and 3D canvas support via "Miso.Canvas". See also the
+-- [miso-canvas](https://github.com/haskell-miso/miso-canvas2d) example and the
+-- [three-miso](https://github.com/haskell-miso/three-miso) package for Three.js integration.
+--
+-- == The 'Canvas' monad
+--
+-- Drawing commands run in the 'Canvas' monad, which is a 'ReaderT' over a
+-- @CanvasContext2D@ (the raw JavaScript @CanvasRenderingContext2D@):
+--
+-- @
+-- type 'Canvas' a = 'ReaderT' 'CanvasContext2D' IO a
+-- @
+--
+-- == Embedding a canvas in the view
+--
+-- Use the 'canvas' smart constructor.
+-- It takes an /init/ callback (runs once on mount, returns state) and a
+-- /draw/ callback (runs on every render with the current state):
+--
+-- @
+-- 'canvas'
+--   [ HP.'width_' "800", HP.'height_' "480" ]
+--   (\\_ -> pure ())                   -- init: no per-canvas state
+--   (\\() -> drawScene myModel)        -- draw: closure over current model
+-- @
+--
+-- 'canvas_' is the variant that threads no init state at all (always passes @()@).
+--
+-- == Drawing commands
+--
+-- Common 2D primitives:
+--
+-- @
+-- drawScene :: Model -> 'Canvas' ()
+-- drawScene model = do
+--   'clearRect' (0, 0, 800, 480)
+--   'fillStyle' ('RGB' 30 144 255)
+--   'beginPath' ()
+--   'arc' (400, 240, 50, 0, 2 * pi)
+--   'fill' ()
+--   'font' "24px sans-serif"
+--   'fillText' ("Score: " \<\> ms (score model), 10, 30)
+-- @
+--
+-- Available primitives include: 'clearRect', 'fillRect', 'strokeRect',
+-- 'beginPath', 'closePath', 'moveTo', 'lineTo', 'arc', 'arcTo',
+-- 'fill', 'stroke', 'fillText', 'drawImage', 'drawImage''.
+--
+-- Style setters: 'fillStyle', 'strokeStyle', 'lineWidth', 'font'.
+-- 'fillStyle' and 'strokeStyle' accept a 'StyleArg' — use 'color' from "Miso.Canvas"
+-- (not "Miso.CSS") to construct one from a t'Miso.CSS.Color.Color' value.
+-- See the __Canonical Import Pattern__ section for how to avoid the name collision
+-- between 'Miso.Canvas.color' and 'Miso.CSS.color'.
 --
 -- = 'Control.Monad.State.State' management
 --
---  A simple 'Miso.Lens.Lens' implementation is included with miso, this was done for convenience, to minimize dependencies, reduce payload size, and provide a simpler interface. See "Miso.Lens". This is a simple lens formulation that exposes many common 'MonadState' lenses (e.g. @'+='@) that work in the 'Effect' monad. "Miso.Lens" is not required for use, any lens library will also work with miso.
+-- Miso bundles a lightweight lens library in "Miso.Lens" to minimise dependencies
+-- and payload size. Any lens library (optics, lens) also works — "Miso.Lens" is not required.
+--
+-- == Basic lens operations
+--
+-- @
+-- 'Miso.Lens.view' l      -- read a field   (MonadReader)
+-- 'set'  l v    -- write a field
+-- 'over' l f    -- modify a field
+-- r '^.' l      -- infix read
+-- r '&' l '.~' v  -- infix write
+-- @
+--
+-- == 'MonadState' operators (for use inside 'Effect')
+--
+-- @
+-- l '+=' n   -- increment a numeric field
+-- l '-=' n   -- decrement
+-- l '*=' n   -- multiply
+-- @
+--
+-- == 'this' — the identity lens
+--
+-- When the model /is/ the field (e.g. the model is a plain @Int@), use 'this':
+--
+-- @
+-- update = \\case
+--   Increment -> 'this' '+=' 1
+--   Decrement -> 'this' '-=' 1
+-- @
+--
+-- == Generating lenses
+--
+-- Three approaches, pick one:
+--
+-- * __Template Haskell__ ("Miso.Lens.TH"): 'makeLenses' / 'makeClassy' splice lenses for each record field.
+-- * __Generics__ ("Miso.Lens.Generic"): 'field' \/ 'HasLens' derive lenses without TH.
+-- * __Hand-written__: construct a 'Lens' directly using the @Lens s a@ synonym.
+--
+-- @
+-- {-# LANGUAGE TemplateHaskell #-}
+-- import Miso.Lens.TH (makeLenses)
+--
+-- data Model = Model { _count :: Int, _name :: MisoString }
+-- makeLenses ''Model
+--
+-- update = \\case
+--   Increment -> count '+=' 1
+--   Rename n  -> name '.~' n
+-- @
 --
 -- = HTML
 --
--- Miso's virtual DOM DSL ('Miso.Types.View') type can be repurposed to render HTML. See the "Miso.Html.Render" module for more information. This uses the 'Miso.Html.Render.ToHtml' class.
+-- Miso's 'View' type doubles as an HTML serialiser via the 'ToHtml' class in
+-- "Miso.Html.Render". This is used for server-side rendering (SSR): build a
+-- 'View' with the normal DSL and render it to a lazy 'Data.ByteString.Lazy.ByteString'
+-- on the server.
+--
+-- @
+-- class 'ToHtml' a where
+--   'toHtml' :: a -> 'Data.ByteString.Lazy.ByteString'
+-- @
+--
+-- Instances are provided for @'View' m a@ and @['View' m a]@:
+--
+-- @
+-- import Miso.Html.Render (toHtml)
+--
+-- pageHtml :: 'Data.ByteString.Lazy.ByteString'
+-- pageHtml = 'toHtml' $ 'div_' [ 'id_' "root" ] [ "Hello, world!" ]
+-- @
+--
+-- This is typically wired into a Servant (or WAI) handler on the server:
+--
+-- @
+-- import Servant
+-- import Miso.Html.Render (toHtml)
+--
+-- type API = Get '[HTML] 'Data.ByteString.Lazy.ByteString'
+--
+-- server :: Server API
+-- server = pure (toHtml myView)
+-- @
+--
+-- On the client, pass the matching 'Component' to 'miso' (instead of 'startApp')
+-- so it hydrates the server-rendered markup rather than redrawing from scratch.
+-- See the __Prerendering__ section for the full flow.
 --
 -- = JavaScript EDSL
 --
@@ -752,29 +1051,261 @@
 --
 -- = Routing
 --
--- miso exposes its own internal router. See "Miso.Router" for more information. The router is inspired by both the [servant](https://hackage.haskell.org/package/servant) and the [web-routes](https://hackage.haskell.org/package/web-routes) package. The router has its own 'Sub' called 'Miso.Router.routerSub' meant for easy integration with the History API.
+-- Miso includes a client-side router in "Miso.Router" inspired by
+-- [servant](https://hackage.haskell.org/package/servant) and
+-- [web-routes](https://hackage.haskell.org/package/web-routes).
+-- Routes are defined as Servant-style types and matched against the browser URI.
+--
+-- == Defining routes
+--
+-- Routes are Servant-style type-level expressions. A @Route@ sum type
+-- mirrors the type, with one constructor per branch:
+--
+-- > {-# LANGUAGE DataKinds #-}
+-- >
+-- > import Servant.API
+-- > import Miso.Router
+-- >
+-- > -- type Routes = Home :<|> ("about" :> About) :<|> ("user" :> Capture "id" Int :> UserPage)
+-- >
+-- > data Route = Home | About | UserPage Int
+--
+-- == Subscribing to URI changes
+--
+-- 'routerSub' fires your action whenever the browser URI changes, delivering
+-- either the matched route or a 'RoutingError':
+--
+-- @
+-- 'subs' = [ 'routerSub' HandleRoute ]
+--
+-- update = \\case
+--   HandleRoute (Right route) -> 'modify' (\\m -> m { currentRoute = route })
+--   HandleRoute (Left _)      -> 'modify' (\\m -> m { currentRoute = NotFound })
+-- @
+--
+-- 'uriSub' is the lower-level variant that delivers the raw 'URI' instead of
+-- a parsed route.
+--
+-- == Navigating programmatically
+--
+-- @
+-- 'pushURI'   uri    -- push a URI onto the History stack
+-- 'pushRoute' route  -- like pushURI but takes a typed route (via 'Router' class)
+-- @
+--
+-- == Parsing a URI manually
+--
+-- @
+-- 'runRouter' "\/user\/42" myParser  -- Right (UserPage 42) or Left RoutingError
+-- 'parseURI'  "\/about"              -- Right URI or Left error
+-- @
 --
 -- = 'MisoString'
 --
--- miso includes its own string type named t'MisoString'. This is the preferred string type to use
--- in order to maximize application performance. Since strings are ubiquitous in applications we
--- want to minimize the copying of these strings between the JS and Haskell heaps. t'MisoString' accomplishes this.
--- t'MisoString' is a synonym for t'JSString' when using the JS / WASM backends. When using vanilla GHC
--- it is t'Data.Text'. See "Miso.String" for more information.
+-- t'MisoString' is miso's canonical string type, chosen to minimise copying between
+-- the Haskell and JavaScript heaps:
 --
--- For string conversions see the 'ms', 'fromMisoString' functions and 'ToMisoString' / 'FromMisoString' classes.
+-- * __JS / WASM backends__: t'MisoString' is @JSString@, a direct reference to a
+--   JavaScript string — no marshalling cost when passing to the DOM or FFI.
+-- * __Server / vanilla GHC__ (@ssr@ flag): t'MisoString' is t'Data.Text'.
 --
--- t'MisoString' is also used in the "Miso.Util.Lexer" and "Miso.Util.Parser" modules.
+-- Use t'MisoString' anywhere you would otherwise reach for 'String' or 'Text' in a
+-- miso application. See "Miso.String" for the full API.
+--
+-- == Converting to 'MisoString'
+--
+-- The 'ms' function (shorthand for 'toMisoString') converts any type with a
+-- 'ToMisoString' instance:
+--
+-- @
+-- ms "hello"          -- String    -> MisoString
+-- ms (42 :: Int)      -- Int       -> MisoString
+-- ms (3.14 :: Double) -- Double    -> MisoString
+-- ms myText           -- Data.Text -> MisoString
+-- @
+--
+-- 'ToMisoString' instances are provided for 'String', t'Data.Text.Text',
+-- t'Data.Text.Lazy.Text', t'Data.ByteString.ByteString', 'Int', 'Word',
+-- 'Double', 'Float', and 'Char'.
+--
+-- == Converting from 'MisoString'
+--
+-- 'fromMisoString' parses a t'MisoString' back into another type (throws on failure).
+-- Use 'fromMisoStringEither' for a safe variant:
+--
+-- @
+-- fromMisoString "42"     :: Int     -- 42
+-- fromMisoString "3.14"   :: Double  -- 3.14
+-- fromMisoStringEither s  :: Either String Int
+-- @
+--
+-- 'FromMisoString' instances are provided for 'String', t'Data.Text.Text',
+-- t'Data.Text.Lazy.Text', t'Data.ByteString.ByteString', 'Int', 'Word',
+-- 'Double', and 'Float'.
+--
+-- == Multiline literals
+--
+-- "Miso.String.QQ" provides a QuasiQuoter for multiline t'MisoString' literals:
+--
+-- @
+-- {-# LANGUAGE QuasiQuotes #-}
+--
+-- import Miso.String.QQ (misoString)
+--
+-- snippet :: MisoString
+-- snippet = [misoString|
+--   line one
+--   line two
+-- |]
+-- @
+--
+-- t'MisoString' is also the element type used throughout "Miso.Util.Lexer" and
+-- "Miso.Util.Parser".
 --
 -- = JSON
 --
--- "Miso.JSON" is a [microaeson](https://hackage.haskell.org/package/microaeson)
--- implementation that uses t'MisoString'. This is done for performance reasons and to minimize the dependency burden. "Miso.JSON" is used
--- in "Miso.Event.Decoder", "Miso.Fetch", "Miso.WebSocket" modules respectively.
+-- "Miso.JSON" is a [microaeson](https://hackage.haskell.org/package/microaeson)-inspired
+-- JSON library specialised to t'MisoString'. On the JS\/WASM backends it delegates
+-- encoding and decoding to the JavaScript runtime (@JSON.stringify@ \/ @JSON.parse@)
+-- for performance. On the server (@ssr@ flag) it uses a pure Haskell implementation.
+-- "Miso.JSON" is used internally by "Miso.Event.Decoder", "Miso.Fetch", and "Miso.WebSocket".
+--
+-- == 'Value'
+--
+-- The JSON 'Value' type mirrors the JSON specification:
+--
+-- @
+-- data 'Value'
+--   = 'Number' 'Double'
+--   | 'Bool'   'Bool'
+--   | 'String' 'MisoString'
+--   | 'Array'  ['Value']
+--   | 'Object' ('Map' 'MisoString' 'Value')
+--   | 'Null'
+-- @
+--
+-- == Encoding
+--
+-- Encode any 'ToJSON' instance to a t'MisoString':
+--
+-- @
+-- 'encode' value        -- uses JS runtime on client, pure on server
+-- 'encodePure' value    -- always uses pure Haskell implementation
+-- @
+--
+-- == Decoding
+--
+-- @
+-- 'decode' s            :: Maybe a      -- returns Nothing on failure
+-- 'eitherDecode' s      :: Either MisoString a
+-- @
+--
+-- == 'ToJSON' \/ 'FromJSON'
+--
+-- Derive instances via @GHC.Generics@:
+--
+-- @
+-- {-# LANGUAGE DeriveGeneric #-}
+--
+-- import GHC.Generics
+-- import Miso.JSON
+--
+-- data User = User { name :: MisoString, age :: Int }
+--   deriving (Generic)
+--
+-- instance ToJSON   User
+-- instance FromJSON User
+-- @
+--
+-- Use 'genericToJSON' \/ 'genericParseJSON' with 'Options' to customise field and
+-- constructor names. 'camelTo2' is provided for converting @camelCase@ to
+-- @snake_case@ (or any separator):
+--
+-- @
+-- instance ToJSON User where
+--   toJSON = 'genericToJSON' 'defaultOptions' { 'fieldLabelModifier' = 'camelTo2' \'_\' }
+-- @
+--
+-- == Building and Parsing Objects
+--
+-- @
+-- -- Build
+-- 'object' [ "name" '.=' ms "Alice", "age" '.=' (30 :: Int) ]
+--
+-- -- Parse (inside a 'withObject' callback or event decoder)
+-- 'withObject' "User" $ \\o -> User
+--   \<$\> o '.:' "name"     -- required field
+--   \<*\> o '.:' "age"
+--
+-- o '.:?' "nickname"    -- optional field → Maybe a
+-- o '.:!' "nickname"    -- optional field, explicit null → Maybe a
+-- p '.!=' "anon"        -- provide a default for a Maybe parser
+-- @
+--
+-- == Pretty-Printing
+--
+-- @
+-- 'encodePretty'  value          -- indented with 'defConfig' (2-space indent)
+-- 'encodePretty'' config value   -- indented with custom 'Config'
+-- @
+--
+-- == @miso-aeson@
+--
+-- If you prefer to use the [aeson](https://hackage.haskell.org/package/aeson) library directly,
+-- the [miso-aeson](https://github.com/haskell-miso/miso-aeson) package provides a compatibility
+-- shim that bridges @aeson@\'s 'Data.Aeson.ToJSON' \/ 'Data.Aeson.FromJSON' instances with miso\'s
+-- event decoder and fetch API, so existing @aeson@-derived instances can be used without rewriting them.
 --
 -- = Styles
 --
--- Miso prescribes no exact CSS style usage. It is up to the user's discretion on how best to handle styles in their application. Inline styles, external stylesheets and the "Miso.CSS" DSL can all be used. See also [miso-ui](https://ui.haskell-miso.org) for an example of what is possible.
+-- Miso does not prescribe a single CSS strategy. Three approaches work out of the box:
+--
+-- == 1. Structured DSL ("Miso.CSS")
+--
+-- 'style_' takes a list of @'Style'@ values (which are @(MisoString, MisoString)@ pairs).
+-- Miso manages individual properties on the DOM node, merging and diffing them efficiently:
+--
+-- @
+-- import qualified Miso.CSS as CSS
+-- import           Miso.CSS.Color (RGB(..))
+--
+-- 'div_'
+--   [ CSS.'style_'
+--       [ CSS.'display' "flex"
+--       , CSS.'flexDirection' "column"
+--       , CSS.'backgroundColor' (RGB 30 30 30)
+--       , CSS.'color' (RGB 255 255 255)
+--       ]
+--   ]
+--   []
+-- @
+--
+-- Custom properties can be constructed with the '=:' operator (re-exported from "Miso.Util"):
+--
+-- @
+-- "user-select" '=:' "none"
+-- @
+--
+-- == 2. Inline string ('CSS.styleInline_')
+--
+-- For simple or dynamic style strings, 'styleInline_' sets the element's @style@
+-- attribute as a raw string:
+--
+-- @
+-- CSS.'styleInline_' "display:flex; gap:8px; padding:16px"
+-- @
+--
+-- == 3. External stylesheets
+--
+-- Link external CSS files from the @\<head\>@ via the 'styles' field on 'Component'
+-- (see the __Development__ section), or include them in your HTML template directly.
+-- This is the most common approach for production apps using Tailwind, Bootstrap, etc.
+--
+-- See [miso-ui](https://ui.haskell-miso.org) for a larger example.
+--
+-- __Name collision note__: if you use both "Miso.Canvas" and "Miso.CSS" in the same
+-- module, always qualify "Miso.CSS" — both export a 'color' function with different types.
+-- See the __Canonical Import Pattern__ section.
 --
 -- = Development
 --
@@ -787,8 +1318,8 @@
 --  where
 --    app = counter
 -- #ifdef INTERACTIVE
---      { 'scripts' = [ 'Src' "https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js" (False :: CacheBust) ]
---      , 'styles' = [ 'Href' "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" (False :: CacheBust)  ]
+--      { 'scripts' = [ 'Src' "https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js" ('False' :: 'CacheBust') ]
+--      , 'styles' = [ 'Href' "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" ('False' :: 'CacheBust')  ]
 --      }
 -- #endif
 -- @
@@ -797,9 +1328,8 @@
 --
 -- = Debugging
 --
--- Sometimes things can go wrong. Common errors like using `onClick` but not listening for the the 'click' event are common.
--- These are errors that cannot be caught statically. These can be detected by enabling 'DebugAll'. Currently, debugging event delegation
--- and page hydration is supported.
+-- Sometimes things can go wrong. Common errors like using `onClick` but not listening for the 'click' event are common.
+-- These are errors that cannot be caught statically (unless we use a dependently-typed language like [Idris](https://idris-lang.org)). These can be detected by enabling 'DebugAll'. Currently, debugging event delegation and page hydration is supported.
 --
 -- * 'DebugHydrate'
 -- * 'DebugEvents'
@@ -810,8 +1340,29 @@
 --
 -- = Internals
 --
--- Internally miso uses a global event queue and a scheduler to process all events raised by 'Component' throughout the lifetime of
--- an application. Events are processed in FIFO order, batched by the 'Component' that raised them.
+-- Internally miso uses a global event queue and a scheduler to process all
+-- events raised by 'Component' throughout the lifetime of an application.
+-- Events are processed in FIFO order, batched by the 'Component' that raised them.
+--
+-- * __Event queue__: All actions dispatched via a 'Sink' (from event handlers,
+--   subscriptions, or 'io' callbacks) are enqueued and drained by the scheduler.
+--
+-- * __Scheduler__: The scheduler pulls actions off the queue one batch at a time,
+--   runs the 'update' function for each, collects the resulting 'IO' work, and
+--   executes it. Rendering (VDOM diff + patch) is triggered after each batch.
+--
+-- * __'Waiter'__: A 'Miso.Concurrent.Waiter' is a synchronization primitive used
+--   internally to coordinate the event loop — it blocks the scheduler thread until
+--   new work arrives, avoiding busy-waiting.
+--
+-- * __Event delegation__: Rather than attaching listeners to individual DOM nodes,
+--   miso attaches a single capture and a single bubble listener to @\<body\>@.
+--   Incoming events are routed through the virtual DOM tree to the matching handler.
+--   This minimises listener churn when the VDOM is patched.
+--
+-- * __VDOM diffing__: The diff algorithm in "Miso.Diff" compares old and new
+--   'View' trees and emits the minimal set of DOM mutations. Keyed children (see
+--   the @'Key'@ section) allow O(n) list reconciliation instead of O(n²).
 --
 -- = Prerendering
 --
