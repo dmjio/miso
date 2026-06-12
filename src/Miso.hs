@@ -1000,7 +1000,12 @@
 --   Rename n  -> #name '.~' n                     -- via OverloadedLabels
 -- @
 --
--- * __Hand-written__: construct a 'Lens' directly using the @'Lens' s a@ synonym.
+-- * __Hand-written__: construct a 'Lens' directly using 'lens' and the @'Lens' s a@ synonym.
+--
+-- @
+-- name :: 'Lens' Person 'MisoString'
+-- name = 'lens' _name $ \\p n -> p { _name = n }
+-- @
 --
 -- = HTML
 --
