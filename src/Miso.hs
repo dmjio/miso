@@ -1195,13 +1195,13 @@
 -- The JSON t'Miso.JSON.Value' type mirrors the JSON specification:
 --
 -- @
--- data Value
---   = Number Double
---   | Bool   Bool
---   | String MisoString
---   | Array  [Value]
---   | Object (Map MisoString Value)
---   | Null
+-- data 'Miso.JSON.Value'
+--   = 'Miso.JSON.Number' 'Double'
+--   | 'Miso.JSON.Bool'   'Bool'
+--   | 'Miso.JSON.String' 'MisoString'
+--   | 'Miso.JSON.Array'  ['Miso.JSON.Value']
+--   | 'Miso.JSON.Object' 'Miso.JSON.Object'
+--   | 'Miso.JSON.Null'
 -- @
 --
 -- == Encoding
