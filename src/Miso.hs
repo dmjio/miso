@@ -1028,16 +1028,18 @@
 -- pageHtml = 'toHtml' $ 'div_' [ 'id_' "root" ] [ "Hello, world!" ]
 -- @
 --
--- This is typically wired into a Servant (or WAI) handler on the server:
+-- This is typically wired into a Servant handler on the server using the
+-- [servant-miso-html](https://github.com/haskell-miso/servant-miso-html) package,
+-- which provides an @HTML@ content-type that serialises 'View' and 'Component'
+-- values directly — no manual 'ByteString' conversion needed:
 --
 -- @
--- import Servant
--- import Miso.Html.Render (toHtml)
+-- import Servant.Miso.Html (HTML)
 --
--- type API = Get '[HTML] 'Data.ByteString.Lazy.ByteString'
---
--- server :: Server API
--- server = pure (toHtml myView)
+-- type Home    = \"home\"    :\> Get '[HTML] (Component model action)
+-- type About   = \"about\"   :\> Get '[HTML] (View model action)
+-- type Contact = \"contact\" :\> Get '[HTML] [View model action]
+-- type API = Home :\<|\> About :\<|\> Contact
 -- @
 --
 -- On the client, pass the matching 'Component' to 'miso' (instead of 'startApp')
