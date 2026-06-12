@@ -1511,30 +1511,34 @@
 -- client can hydrate from a meaningful initial state rather than a blank model.
 -- The @-fssr@ Cabal flag must be enabled when compiling the server.
 --
--- The 'hydrateModel' field on 'Component' accepts an optional @IO model@ action
--- that is run once during hydration to load the initial model (e.g. by reading
--- JSON embedded in the page). It is ignored on subsequent remounts.
+-- The 'hydrateModel' field on 'Component' is @Maybe (IO model)@. When set, the
+-- action runs once at hydration time to produce the initial model; it is ignored
+-- on subsequent remounts. A typical pattern embeds the model as JSON in the
+-- server response and reads it back on the client via the JS DSL:
 --
 -- @
--- -- Server: embed the model as JSON in the HTML response
--- serverView :: model -> 'View' model action
--- serverView m =
---   'div_' []
---     [ 'script_' [ 'id_' "initial-model" ] [ 'textRaw' ('encode' m) ]
---     , appView m
---     ]
---
--- -- Client: read it back during hydration
--- myComp :: 'App' model Action
+-- myComp :: 'App' Model Action
 -- myComp = ('vcomp' defaultModel updateFn viewFn)
 --   { 'hydrateModel' = Just $ do
---       json <- 'Miso.FFI.getElementById' "initial-model" >>= 'Miso.FFI.getBody'
---       pure $ 'fromMisoString' json
+--       val <- 'Miso.DSL.jsg' "window" 'Miso.DSL.!' "__initialModel__"
+--       'Miso.DSL.fromJSValUnchecked' val
 --   }
 -- @
 --
--- When 'hydrateModel' is @Nothing@, hydration uses the static 'model' field — this
--- is equivalent to static prerendering.
+-- On the server, populate @window.__initialModel__@ by embedding the JSON
+-- in a @\<script\>@ tag alongside the rendered HTML:
+--
+-- @
+-- serverView :: Model -> 'View' Model Action
+-- serverView m =
+--   'div_' []
+--     [ 'script_' [] [ 'textRaw' ("window.__initialModel__ = " \<\> 'encode' m) ]
+--     , appView m
+--     ]
+-- @
+--
+-- When 'hydrateModel' is @Nothing@, the static 'model' field is used instead —
+-- equivalent to static prerendering.
 --
 -----------------------------------------------------------------------------
 module Miso
