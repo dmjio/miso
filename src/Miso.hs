@@ -1190,18 +1190,18 @@
 -- for performance. On the server (@ssr@ flag) it uses a pure Haskell implementation.
 -- "Miso.JSON" is used internally by "Miso.Event.Decoder", "Miso.Fetch", and "Miso.WebSocket".
 --
--- == 'Value'
+-- == 'Miso.JSON.Value'
 --
--- The JSON 'Value' type mirrors the JSON specification:
+-- The JSON t'Miso.JSON.Value' type mirrors the JSON specification:
 --
 -- @
--- data 'Value'
---   = 'Number' 'Double'
---   | 'Bool'   'Bool'
---   | 'String' 'MisoString'
---   | 'Array'  ['Value']
---   | 'Object' ('Map' 'MisoString' 'Value')
---   | 'Null'
+-- data Value
+--   = Number Double
+--   | Bool   Bool
+--   | String MisoString
+--   | Array  [Value]
+--   | Object (Map MisoString Value)
+--   | Null
 -- @
 --
 -- == Encoding
@@ -1323,10 +1323,6 @@
 --
 -- See [miso-ui](https://ui.haskell-miso.org) for a larger example.
 --
--- __Name collision note__: if you use both "Miso.Canvas" and "Miso.CSS" in the same
--- module, always qualify "Miso.CSS" — both export a 'color' function with different types.
--- See the __Canonical Import Pattern__ section.
---
 -- = Development
 --
 -- When developing miso applications interactively it is possible to append 'styles' and 'scripts' to the @\<head\>@ portion of
@@ -1382,7 +1378,7 @@
 --
 -- * __VDOM diffing__: The diff algorithm in "Miso.Diff" compares old and new
 --   'View' trees and emits the minimal set of DOM mutations. Keyed children (see
---   the @'Key'@ section) allow O(n) list reconciliation instead of O(n²).
+--   the 'Key' section) significantly speed up child list reconciliation.
 --
 -- = Prerendering
 --
