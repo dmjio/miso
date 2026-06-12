@@ -966,8 +966,6 @@
 -- Three approaches, pick one:
 --
 -- * __Template Haskell__ ("Miso.Lens.TH"): 'makeLenses' / 'makeClassy' splice lenses for each record field.
--- * __Generics__ ("Miso.Lens.Generic"): 'field' \/ 'HasLens' derive lenses without TH.
--- * __Hand-written__: construct a 'Lens' directly using the @Lens s a@ synonym.
 --
 -- @
 -- {-# LANGUAGE TemplateHaskell #-}
@@ -980,6 +978,28 @@
 --   Increment -> count '+=' 1
 --   Rename n  -> name '.~' n
 -- @
+--
+-- * __Generics__ ("Miso.Lens.Generic"): 'field' \/ 'HasLens' derive lenses at compile time
+--   using @GHC.Generics@ — no TH splice required. Requires @TypeApplications@ and,
+--   optionally, @OverloadedLabels@ for the @#field@ shorthand.
+--
+-- @
+-- {-# LANGUAGE DataKinds          #-}
+-- {-# LANGUAGE DeriveGeneric      #-}
+-- {-# LANGUAGE OverloadedLabels   #-}
+-- {-# LANGUAGE TypeApplications   #-}
+-- import GHC.Generics (Generic)
+-- import Miso.Lens.Generic (field)
+--
+-- data Model = Model { count :: Int, name :: MisoString }
+--   deriving (Eq, Generic)
+--
+-- update = \\case
+--   Increment -> 'field' \@\"count\" '+=' 1          -- via TypeApplications
+--   Rename n  -> #name '.~' n                     -- via OverloadedLabels
+-- @
+--
+-- * __Hand-written__: construct a 'Lens' directly using the @'Lens' s a@ synonym.
 --
 -- = HTML
 --
