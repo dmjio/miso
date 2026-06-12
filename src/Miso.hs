@@ -1137,51 +1137,84 @@
 --
 -- = Routing
 --
--- Miso includes a client-side router in "Miso.Router" inspired by
--- [servant](https://hackage.haskell.org/package/servant) and
--- [web-routes](https://hackage.haskell.org/package/web-routes).
--- Routes are defined as Servant-style types and matched against the browser URI.
+-- "Miso.Router" provides a reversible, type-safe client-side router. A @Route@
+-- type encodes URL structure; the 'Router' class converts between routes and
+-- 'URI' values in both directions. Use it with 'Miso.Subscription.History.routerSub'
+-- or 'Miso.Subscription.History.uriSub' to react to browser navigation.
 --
--- == Defining routes
+-- == Defining a 'Router' with Generics
 --
--- Routes are Servant-style type-level expressions. A @Route@ sum type
--- mirrors the type, with one constructor per branch:
+-- Derive 'Router' via @GHC.Generics@ — constructor names become path segments
+-- (camel-case uses only the first hump). Use t'Capture', t'Path', t'QueryParam',
+-- and t'QueryFlag' as constructor fields to describe the URL shape:
 --
--- > {-# LANGUAGE DataKinds #-}
--- >
--- > import Servant.API
--- > import Miso.Router
--- >
--- > data Route = Home | About | UserPage Int
+-- @
+-- {-# LANGUAGE DeriveGeneric  #-}
+-- {-# LANGUAGE DeriveAnyClass #-}
+--
+-- import GHC.Generics
+-- import Miso.Router
+--
+-- data Route
+--   = Index                                                      -- matches "/"
+--   | About                                                      -- matches "/about"
+--   | Widget (Capture "id" Int) (QueryParam "tab" MisoString)   -- matches "/widget/42?tab=info"
+--   deriving stock    (Show, Eq, Generic)
+--   deriving anyclass Router
+-- @
+--
+-- The router is /reversible/ — 'prettyRoute' re-serialises any route back to a URL:
+--
+-- @
+-- 'prettyRoute' (Widget (Capture 42) (QueryParam (Just "info")))
+-- -- "\/widget\/42?tab=info"
+-- @
+--
+-- == Defining a 'Router' manually
+--
+-- For full control, implement 'routeParser' and 'fromRoute' directly:
+--
+-- @
+-- data Route = Widget Int
+--
+-- instance Router Route where
+--   routeParser = routes [ Widget \<$\> ('path' "widget" *\> 'capture') ]
+--   fromRoute (Widget n) = [ 'toPath' "widget", 'toCapture' n ]
+-- @
 --
 -- == Subscribing to URI changes
 --
--- 'routerSub' fires your action whenever the browser URI changes, delivering
--- either the matched route or a 'RoutingError':
+-- 'Miso.Subscription.History.routerSub' listens to @popstate@ events and delivers
+-- the parsed route (or a 'RoutingError') to your @update@ function:
 --
 -- @
--- 'subs' = [ 'routerSub' HandleRoute ]
+-- app = ('vcomp' m u v) { 'subs' = [ 'routerSub' HandleRoute ] }
 --
 -- update = \\case
---   HandleRoute (Right route) -> 'modify' (\\m -> m { currentRoute = route })
---   HandleRoute (Left _)      -> 'modify' (\\m -> m { currentRoute = NotFound })
+--   HandleRoute (Right Index)       -> 'modify' (\\m -> m { page = HomePage })
+--   HandleRoute (Right About)       -> 'modify' (\\m -> m { page = AboutPage })
+--   HandleRoute (Left _)            -> 'modify' (\\m -> m { page = NotFound })
 -- @
 --
--- 'uriSub' is the lower-level variant that delivers the raw 'URI' instead of
--- a parsed route.
+-- 'Miso.Subscription.History.uriSub' is the lower-level variant — it delivers
+-- the raw 'URI' without parsing, useful when you want to handle routing yourself.
 --
 -- == Navigating programmatically
 --
 -- @
--- 'pushURI'   uri    -- push a URI onto the History stack
--- 'pushRoute' route  -- like pushURI but takes a typed route (via 'Router' class)
+-- 'pushURI'    uri    -- push a raw 'URI' onto the History stack
+-- 'pushRoute'  route  -- push a typed route (serialised via 'Router')
+-- 'replaceURI' uri    -- replace the current history entry
+-- 'back'              -- go back one entry
+-- 'forward'           -- go forward one entry
 -- @
 --
--- == Parsing a URI manually
+-- == Type-safe links in views
+--
+-- 'Miso.Router.href_' produces a type-safe @href@ attribute from any route:
 --
 -- @
--- 'runRouter' "\/user\/42" myParser  -- Right (UserPage 42) or Left RoutingError
--- 'parseURI'  "\/about"              -- Right URI or Left error
+-- 'button_' [ 'Miso.Router.href_' (Widget (Capture 10) (QueryParam Nothing)) ] [ "Go to widget 10" ]
 -- @
 --
 -- = 'MisoString'
