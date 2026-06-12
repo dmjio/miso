@@ -785,23 +785,47 @@
 --
 -- == Asynchronous communication
 --
--- 'Component' are able to communicate asynchronously via a message-passing system.
--- The miso runtime exposes a few primitives to allow t'Component' communication.
+-- Every 'Component' has a 'mailbox' — a slot that receives t'Miso.JSON.Value' messages
+-- sent by other components. Messages are dispatched asynchronously via the event queue.
 --
--- * 'broadcast'
--- * 'mail'
--- * 'mailParent'
--- * 'mailChildren'
--- * 'mailAncestors'
+-- === Sending
 --
--- All t'Component' have a 'mailbox' that can receive messages (as t'Miso.JSON.Value') from other t'Component'.
--- This is meant to be used with the 'checkMail' function. The 'mail' function allows a 'Component' to send a specific message (as 'Value') to another t'Component' via its t'ComponentId'.
--- The 'ComponentId' can be found in the 'Effect' monad. Using 'ask' will return a t'ComponentInfo'. The 'Component' receiving
--- the message will find it in its 'mailbox'.
+-- * 'mail' @componentId msg@ — send to a specific 'ComponentId' (obtained via 'ask' inside 'Effect')
+-- * 'mailParent' @msg@ — send to the direct parent
+-- * 'mailChildren' @msg@ — send to all immediate children
+-- * 'mailAncestors' @msg@ — walk up the hierarchy, delivering to every ancestor
+-- * 'broadcast' @msg@ — deliver to every mounted 'Component' except the sender
 --
--- * "Miso.PubSub"
+-- === Receiving with 'checkMail'
 --
--- miso has support for the publisher / subscriber concurrency pattern. See the "Miso.PubSub" module for more information.
+-- Wire up the 'mailbox' field on 'Component' using 'checkMail', which handles
+-- JSON parsing and routes to success\/error actions:
+--
+-- @
+-- data Action
+--   = ReceivedMsg MyMsg
+--   | MailError   MisoString
+--
+-- myComp :: 'Component' parent props model Action
+-- myComp = ('vcomp' m u v)
+--   { 'mailbox' = 'checkMail' ReceivedMsg MailError }
+-- @
+--
+-- === Looking up a 'ComponentId'
+--
+-- Inside 'Effect', use 'ask' to obtain a t'ComponentInfo':
+--
+-- @
+-- update = \\case
+--   SendMsg targetId -> do
+--     'io_' ('mail' targetId ("hello" :: 'MisoString'))
+--   GetMyId -> do
+--     info <- 'ask'
+--     let myId = '_componentInfoId' info
+--     ...
+-- @
+--
+-- * "Miso.PubSub" — publish\/subscribe pattern for fan-out messaging across unrelated components.
 --
 -- == Synchronous communication
 --
@@ -1048,34 +1072,68 @@
 --
 -- = JavaScript EDSL
 --
--- Miso provides a Javascript DSL (inspired by [jsaddle](https://hackage.haskell.org/package/jsaddle)) via "Miso.DSL".
--- See the 'Miso.DSL.ToJSVal' / 'Miso.DSL.FromJSVal' typeclasses when marshaling to and from Haskell to JavaScript. See also the 'Miso.DSL.jsg'
--- function for accessing JavaScript objects that exist in the global scope.
+-- "Miso.DSL" provides a JavaScript DSL inspired by [jsaddle](https://hackage.haskell.org/package/jsaddle)
+-- for interacting with the browser from Haskell.
+--
+-- == Key operators
+--
+-- * '(Miso.DSL.!)' — property access: @obj '!' "key"@ reads @obj.key@
+-- * '(Miso.DSL.#)' — method call: @obj '#' "method" args@ calls @obj.method(args)@
+-- * 'Miso.DSL.jsg' — access a global JS variable by name
+-- * 'Miso.DSL.jsgf' — call a global JS function by name with arguments
 --
 -- @
--- document :: 'JSVal' <- 'jsg' "document" :: IO 'JSVal'
--- len :: 'Int' <- 'fromJSValUnchecked' =<< (document ! "body" ! "children" ! "length")
+-- -- Read document.body.children.length
+-- document <- 'Miso.DSL.jsg' "document"
+-- len :: 'Int' <- 'Miso.DSL.fromJSValUnchecked' =<< (document 'Miso.DSL.!' "body" 'Miso.DSL.!' "children" 'Miso.DSL.!' "length")
+--
+-- -- Call console.log("hello")
+-- console <- 'Miso.DSL.jsg' "console"
+-- console 'Miso.DSL.#' "log" $ ["hello" :: 'MisoString']
 -- @
+--
+-- == Marshalling
+--
+-- 'Miso.DSL.ToJSVal' converts Haskell values to 'Miso.DSL.JSVal' for passing into JavaScript.
+-- 'Miso.DSL.FromJSVal' converts 'Miso.DSL.JSVal' back to Haskell.
+-- 'Miso.DSL.fromJSValUnchecked' throws on failure; use 'Miso.DSL.fromJSVal' for a safe @Maybe@ variant.
 --
 -- = QuasiQuotation (@inline-js@)
 --
--- Along with "Miso.DSL", a JavaScript QuasiQuoter is now included (See "Miso.FFI.QQ"). This makes it easy to
--- integrate miso with any third-party JavaScript library. The bindings in scope can be used inside the QuasiQuoter, which
--- will utilize their 'Miso.DSL.ToJSVal' instances. When returning values from the QuasiQuoter, the 'Miso.DSL.FromJSVal' instance will
--- be used Haskell.
+-- "Miso.FFI.QQ" provides the 'Miso.FFI.QQ.js' QuasiQuoter for embedding inline JavaScript
+-- directly in Haskell source. Any Haskell binding in scope can be interpolated into
+-- the JavaScript body with @${varName}@ syntax — miso uses the binding's 'Miso.DSL.ToJSVal'
+-- instance to marshal it across the boundary at runtime.
 --
 -- @
---
 -- {-# LANGUAGE QuasiQuotes #-}
 --
--- import Miso.FFI.QQ ('js')
+-- import Miso.FFI.QQ ('Miso.FFI.QQ.js')
 --
+-- -- Fire-and-forget: pass a value to a JS library
 -- update :: Action -> 'Effect' parent props model Action
 -- update = \\case
---   Log msg -> io_ [js| console.log(${msg}) |]
+--   Log msg -> 'io_' ['Miso.FFI.QQ.js'| console.log(${msg}) |]
 --
 -- data Action = Log MisoString
 -- @
+--
+-- == Returning values from JavaScript
+--
+-- The return type is inferred from the call site via 'Miso.DSL.FromJSVal'.
+-- Use an explicit type annotation or a @do@-binding to drive inference:
+--
+-- @
+-- fac :: Int -> IO Int
+-- fac n = ['Miso.FFI.QQ.js'|
+--   let x = 1;
+--   for (let i = 1; i <= ${n}; i++) { x *= i; }
+--   return x;
+-- |]
+-- @
+--
+-- Haskell variables referenced inside the quoter must be in scope at the splice
+-- site; the compiler will report an error if a @${name}@ has no corresponding binding.
 --
 -- = Routing
 --
@@ -1418,10 +1476,34 @@
 --
 -- == Dynamic prerendering
 --
--- More advanced usage of prerendering entails sharing the @model@ between the server and client. In such scenarios the 'hydateModel' function should be specified inside the t'Component'.
--- The SSR flag (`-fssr`) must be specified when using this feature.
+-- Dynamic prerendering shares @model@ state between the server and client so the
+-- client can hydrate from a meaningful initial state rather than a blank model.
+-- The @-fssr@ Cabal flag must be enabled when compiling the server.
 --
--- 'hydrateModel' is used to load initial data into a Component's 'model' that is necessary for hydration.
+-- The 'hydrateModel' field on 'Component' accepts an optional @IO model@ action
+-- that is run once during hydration to load the initial model (e.g. by reading
+-- JSON embedded in the page). It is ignored on subsequent remounts.
+--
+-- @
+-- -- Server: embed the model as JSON in the HTML response
+-- serverView :: model -> 'View' model action
+-- serverView m =
+--   'div_' []
+--     [ 'script_' [ 'id_' "initial-model" ] [ 'textRaw' ('encode' m) ]
+--     , appView m
+--     ]
+--
+-- -- Client: read it back during hydration
+-- myComp :: 'App' model Action
+-- myComp = ('vcomp' defaultModel updateFn viewFn)
+--   { 'hydrateModel' = Just $ do
+--       json <- 'Miso.FFI.getElementById' "initial-model" >>= 'Miso.FFI.getBody'
+--       pure $ 'fromMisoString' json
+--   }
+-- @
+--
+-- When 'hydrateModel' is @Nothing@, hydration uses the static 'model' field — this
+-- is equivalent to static prerendering.
 --
 -----------------------------------------------------------------------------
 module Miso
