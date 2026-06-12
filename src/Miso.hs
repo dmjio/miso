@@ -878,53 +878,54 @@
 -- [miso-canvas](https://github.com/haskell-miso/miso-canvas2d) example and the
 -- [three-miso](https://github.com/haskell-miso/three-miso) package for Three.js integration.
 --
--- == The 'Canvas' monad
+-- == The 'Miso.Canvas.Canvas' monad
 --
--- Drawing commands run in the 'Canvas' monad, which is a 'ReaderT' over a
+-- Drawing commands run in the 'Miso.Canvas.Canvas' monad, which is a 'ReaderT' over a
 -- @CanvasContext2D@ (the raw JavaScript @CanvasRenderingContext2D@):
 --
 -- @
--- type 'Canvas' a = 'ReaderT' 'CanvasContext2D' IO a
+-- type Canvas a = ReaderT CanvasContext2D IO a
 -- @
 --
 -- == Embedding a canvas in the view
 --
--- Use the 'canvas' smart constructor.
+-- Use the 'Miso.Canvas.canvas' smart constructor.
 -- It takes an /init/ callback (runs once on mount, returns state) and a
 -- /draw/ callback (runs on every render with the current state):
 --
 -- @
--- 'canvas'
+-- 'Miso.Canvas.canvas'
 --   [ HP.'width_' "800", HP.'height_' "480" ]
 --   (\\_ -> pure ())                   -- init: no per-canvas state
 --   (\\() -> drawScene myModel)        -- draw: closure over current model
 -- @
 --
--- 'canvas_' is the variant that threads no init state at all (always passes @()@).
+-- 'Miso.Canvas.canvas_' is the variant that threads no init state at all (always passes @()@).
 --
 -- == Drawing commands
 --
 -- Common 2D primitives:
 --
 -- @
--- drawScene :: Model -> 'Canvas' ()
+-- drawScene :: Model -> 'Miso.Canvas.Canvas' ()
 -- drawScene model = do
---   'clearRect' (0, 0, 800, 480)
---   'fillStyle' ('RGB' 30 144 255)
---   'beginPath' ()
---   'arc' (400, 240, 50, 0, 2 * pi)
---   'fill' ()
---   'font' "24px sans-serif"
---   'fillText' ("Score: " \<\> ms (score model), 10, 30)
+--   'Miso.Canvas.clearRect' (0, 0, 800, 480)
+--   'Miso.Canvas.fillStyle' ('Miso.CSS.Color.RGB' 30 144 255)
+--   'Miso.Canvas.beginPath' ()
+--   'Miso.Canvas.arc' (400, 240, 50, 0, 2 * pi)
+--   'Miso.Canvas.fill' ()
+--   'Miso.Canvas.font' "24px sans-serif"
+--   'Miso.Canvas.fillText' ("Score: " \<\> ms (score model), 10, 30)
 -- @
 --
--- Available primitives include: 'clearRect', 'fillRect', 'strokeRect',
--- 'beginPath', 'closePath', 'moveTo', 'lineTo', 'arc', 'arcTo',
--- 'fill', 'stroke', 'fillText', 'drawImage', 'drawImage''.
+-- Available primitives include: 'Miso.Canvas.clearRect', 'Miso.Canvas.fillRect', 'Miso.Canvas.strokeRect',
+-- 'Miso.Canvas.beginPath', 'Miso.Canvas.closePath', 'Miso.Canvas.moveTo', 'Miso.Canvas.lineTo',
+-- 'Miso.Canvas.arc', 'Miso.Canvas.arcTo', 'Miso.Canvas.fill', 'Miso.Canvas.stroke',
+-- 'Miso.Canvas.fillText', 'Miso.Canvas.drawImage', 'Miso.Canvas.drawImage''.
 --
--- Style setters: 'fillStyle', 'strokeStyle', 'lineWidth', 'font'.
--- 'fillStyle' and 'strokeStyle' accept a 'StyleArg' — use 'color' from "Miso.Canvas"
--- (not "Miso.CSS") to construct one from a t'Miso.CSS.Color.Color' value.
+-- Style setters: 'Miso.Canvas.fillStyle', 'Miso.Canvas.strokeStyle', 'Miso.Canvas.lineWidth', 'Miso.Canvas.font'.
+-- 'Miso.Canvas.fillStyle' and 'Miso.Canvas.strokeStyle' accept a 'Miso.Canvas.StyleArg' — use
+-- 'Miso.Canvas.color' (not 'Miso.CSS.color') to construct one from a t'Miso.CSS.Color.Color' value.
 -- See the __Canonical Import Pattern__ section for how to avoid the name collision
 -- between 'Miso.Canvas.color' and 'Miso.CSS.color'.
 --
@@ -936,11 +937,11 @@
 -- == Basic lens operations
 --
 -- @
--- 'Miso.Lens.view' l      -- read a field   (MonadReader)
--- 'set'  l v    -- write a field
--- 'over' l f    -- modify a field
--- r '^.' l      -- infix read
--- r '&' l '.~' v  -- infix write
+-- 'Miso.Lens.view' l   -- read a field (MonadReader)
+-- 'set'  l v           -- write a field
+-- 'over' l f           -- modify a field
+-- r '^.' l             -- infix read
+-- r '&' l '.~' v       -- infix write
 -- @
 --
 -- == 'MonadState' operators (for use inside 'Effect')
