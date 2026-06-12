@@ -1152,8 +1152,6 @@
 -- > import Servant.API
 -- > import Miso.Router
 -- >
--- > -- type Routes = Home :<|> ("about" :> About) :<|> ("user" :> Capture "id" Int :> UserPage)
--- >
 -- > data Route = Home | About | UserPage Int
 --
 -- == Subscribing to URI changes
