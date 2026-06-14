@@ -628,6 +628,7 @@
 -- * 'mailParent'
 -- * 'mailChildren'
 -- * 'mailAncestors'
+-- * 'mailDescendants'
 --
 -- All t'Component' have a 'mailbox' that can receive messages (as t'Miso.JSON.Value') from other t'Component'.
 -- This is meant to be used with the 'checkMail' function. The 'mail' function allows a 'Component' to send a specific message (as 'Value') to another t'Component' via its t'ComponentId'.
@@ -878,6 +879,7 @@ module Miso
   , parent
   , mailParent
   , mailChildren
+  , mailDescendants
   , mailAncestors
   , broadcast
     -- ** Subscriptions

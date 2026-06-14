@@ -52,6 +52,7 @@ module Miso.Runtime
   , mailParent
   , mailChildren
   , mailAncestors
+  , mailDescendants
   -- ** WebSocket
   , websocketConnect
   , websocketConnectJSON
@@ -1407,6 +1408,32 @@ mailChildren msg = do
   io_ $ do
     ComponentState {..} <- (IM.! _componentInfoId) <$> readIORef components
     forM_ (IS.toList _componentChildren) (flip mail msg)
+-----------------------------------------------------------------------------
+-- | Send any @ToJSON message => message@ to all descendants t'Miso.Types.Component' mailbox
+--
+-- Unlike 'mailChildren', this is relevant for all descendants 'Component'.
+--
+-- @
+-- mailDescendants ("test message" :: MisoString) :: Effect parent props model action
+-- @
+--
+-- @since 1.12.0.0
+mailDescendants
+  :: ToJSON message
+  => message
+  -- ^ Message to send
+  -> Effect parent props model action
+mailDescendants msg = do
+  ComponentInfo {..} <- ask
+  io_ $ do
+    cs <- (IM.! _componentInfoId) <$> readIORef components
+    forM_ (IS.toList (_componentChildren cs)) $ \child -> do
+      visit =<< (IM.! child) <$> readIORef components
+  where
+    visit ComponentState {..} = do
+      mail _componentId msg
+      forM_ (IS.toList _componentChildren) $ \child -> do
+        visit =<< (IM.! child) <$> readIORef components
 ----------------------------------------------------------------------------
 -- | Helper function for processing @Mail@ from 'mail'.
 --
