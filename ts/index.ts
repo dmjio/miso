@@ -21,6 +21,7 @@ import {
   getRandomValues,
   splitmix32,
   delegateEvent,
+  recreateNode,
 } from './miso';
 
 import {
@@ -43,6 +44,7 @@ globalThis['miso'] = {
     callFocus,
     callSelect,
     callSetSelectionRange,
+    recreateNode,
     eventJSON,
     fetchCore,
     eventSourceConnect,

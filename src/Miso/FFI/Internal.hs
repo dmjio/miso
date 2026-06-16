@@ -66,6 +66,7 @@ module Miso.FFI.Internal
    , getProperty
    , callFunction
    , castJSVal
+   , recreateNode
    -- * Events
    , delegator
    , dispatchEvent
@@ -1185,4 +1186,9 @@ unmountComponent :: Int -> IO ()
 unmountComponent vcompId = do
   comp <- getComponentContext
   void $ comp # "unmountComponent" $ [vcompId]
+-----------------------------------------------------------------------------
+-- | Destroys and recreates DOM node. Used to get rid of event
+-- listeners when reloading in an interactive session.
+recreateNode :: JSVal -> IO JSVal
+recreateNode node = jsg "miso" # "recreateNode" $ [node]
 -----------------------------------------------------------------------------

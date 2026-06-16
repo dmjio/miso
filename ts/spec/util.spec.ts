@@ -1,4 +1,4 @@
-import { populateClass, callFocus, callBlur, callSelect, callSetSelectionRange, fetchCore, websocketConnect, websocketClose, websocketSend, eventSourceConnect, eventSourceClose } from '../miso/util';
+import { populateClass, callFocus, callBlur, callSelect, callSetSelectionRange, fetchCore, websocketConnect, websocketClose, websocketSend, eventSourceConnect, eventSourceClose, recreateNode } from '../miso/util';
 import { vnode } from '../miso/smart';
 import { VNode } from '../miso/types';
 import { test, expect, describe, afterEach, beforeAll, mock } from 'bun:test';
@@ -642,6 +642,46 @@ describe('WebSocket tests', () => {
     expect(sendCalled).toBe(false);
 
     websocketClose(socket);
+  });
+});
+
+describe('recreateNode tests', () => {
+  test('Should replace node with clone when no next sibling', () => {
+    const parent = document.createElement('div');
+    const child = document.createElement('span');
+    child.id = 'original';
+    parent.appendChild(child);
+    document.body.appendChild(parent);
+
+    recreateNode(child);
+
+    expect(parent.children.length).toBe(1);
+    expect(parent.children[0].id).toBe('original');
+    expect(parent.children[0]).not.toBe(child);
+  });
+
+  test('Should insert clone before next sibling', () => {
+    const parent = document.createElement('div');
+    const child = document.createElement('span');
+    child.id = 'original';
+    const sibling = document.createElement('span');
+    sibling.id = 'sibling';
+    parent.appendChild(child);
+    parent.appendChild(sibling);
+    document.body.appendChild(parent);
+
+    recreateNode(child);
+
+    expect(parent.children.length).toBe(2);
+    expect(parent.children[0].id).toBe('original');
+    expect(parent.children[1].id).toBe('sibling');
+    expect(parent.children[0]).not.toBe(child);
+  });
+
+  test('Should do nothing when node has no parent', () => {
+    const orphan = document.createElement('div');
+    orphan.id = 'orphan';
+    expect(() => recreateNode(orphan)).not.toThrow();
   });
 });
 

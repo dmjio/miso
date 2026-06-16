@@ -123,6 +123,7 @@ import           GHC.Conc (ThreadStatus(ThreadDied, ThreadFinished), threadStatu
 import           Prelude hiding ((.))
 import           System.IO.Unsafe (unsafePerformIO)
 import           System.Mem.StableName (makeStableName)
+import           System.Mem (performMajorGC)
 #ifdef BENCH
 import           Text.Printf
 #endif
@@ -777,7 +778,7 @@ newtype Topic a = Topic MisoString
 --   | Subscribe
 --   | Unsubscribe
 --
--- update_ :: Action -> Effect Int Action
+-- update_ :: Action -> Effect parent props Int Action
 -- update_ = \case
 --   Unsubscribe ->
 --     unsubscribe arithmetic
@@ -975,6 +976,41 @@ componentIds = unsafePerformIO $ newIORef topLevelComponentId
 -----------------------------------------------------------------------------
 freshComponentId :: IO ComponentId
 freshComponentId = atomicModifyIORef' componentIds $ \y -> (y + 1, y)
+-----------------------------------------------------------------------------
+-- | 'cleanup' is used to remove previous application state (when using miso w/ GHCi).
+--
+-- As seen in <https://try.haskell-miso.org>
+--
+-- * Detect if previous 'Component' tree is present.
+-- * Unmount in descending order (top-level 'Component' removed last), invoking finalizers
+-- * Kill the scheduler thread (a new one is created on ':r').
+-- * Erase all 'Component'
+-- * Erase 'Queue'
+-- * Reset 'componentId'
+-- * Recreate 'DOMRef', GCs previous event listeners in JS.
+-- * Yield to the scheduler (unwind thread stacks).
+-- * Perform major garbage collection (cleans out old state).
+--
+-- This GC should remove the previous 'Notify' / 'MVar' as well since the 'sink'
+-- closure should go out of scope.
+--
+cleanup :: DOMRef -> IO DOMRef
+cleanup domRef = do
+  vcomps <- readIORef components
+  if IM.size vcomps > 0
+    then do
+      forM_ (IM.toDescList vcomps) $ \(_, vcomp_) ->
+        unmountComponent vcomp_
+      killThread =<< readIORef schedulerThread
+      atomicWriteIORef componentIds topLevelComponentId
+      atomicWriteIORef globalQueue mempty
+      atomicWriteIORef components mempty
+      newNode <- FFI.recreateNode domRef
+      yield
+      performMajorGC
+      pure newNode
+    else
+      pure domRef
 -----------------------------------------------------------------------------
 -- | componentMap
 --
@@ -1428,12 +1464,12 @@ mailDescendants msg = do
   io_ $ do
     cs <- (IM.! _componentInfoId) <$> readIORef components
     forM_ (IS.toList (_componentChildren cs)) $ \child -> do
-      visit =<< (IM.! child) <$> readIORef components
+      walk =<< (IM.! child) <$> readIORef components
   where
-    visit ComponentState {..} = do
+    walk ComponentState {..} = do
       mail _componentId msg
       forM_ (IS.toList _componentChildren) $ \child -> do
-        visit =<< (IM.! child) <$> readIORef components
+        walk =<< (IM.! child) <$> readIORef components
 ----------------------------------------------------------------------------
 -- | Helper function for processing @Mail@ from 'mail'.
 --
@@ -1998,14 +2034,27 @@ initComponent
   -> Hydrate
   -> Component parent () model action
   -> IO ()
-initComponent events hydrate vcomp_@Component {..} = withJS $ do
-  root <- Diff.mountElement (getMountPoint mountPoint)
-  void $ initialize events rootComponentId hydrate True () vcomp_ (pure root)
+initComponent events hydrate vcomp_@Component {..} = do
+  withJS $ do
+    root <- Diff.mountElement (getMountPoint mountPoint)
+    newRoot <- cleanup root
+    void $ initialize events rootComponentId hydrate True () vcomp_ (pure newRoot)
+    tid <- forkIO scheduler
 #if __GLASGOW_HASKELL__ > 865
-  flip labelThread "scheduler" =<< forkIO scheduler
-#else
-  void (forkIO scheduler)
+    labelThread tid "scheduler"
 #endif
+    atomicWriteIORef schedulerThread =<< forkIO scheduler
+----------------------------------------------------------------------------
+-- | Global variable to hold the scheduler thread
+--
+-- N.B. 'undefined' is safe here, it will always get populated.
+-- Also, we use this in 'cleanup' when interactive mode (GHCi) is detected
+-- in that circumstance 'schedulerThread' will always be populated. It's an
+-- invariant.
+--
+schedulerThread :: IORef ThreadId
+{-# NOINLINE schedulerThread #-}
+schedulerThread = unsafePerformIO (newIORef undefined)
 ----------------------------------------------------------------------------
 -- | Load miso's javascript.
 --

@@ -265,6 +265,22 @@ function getLastDOMRef(tree) {
       return tree.domRef;
   }
 }
+function recreateNode(mount) {
+  const parent = mount.parentNode;
+  const nextSibling = mount.nextSibling;
+  const nodeId = mount.id;
+  const newNode = document.createElement(mount.tagName);
+  if (parent) {
+    parent.removeChild(mount);
+  }
+  if (nextSibling && parent) {
+    parent.insertBefore(newNode, nextSibling);
+  } else if (parent) {
+    parent.appendChild(newNode);
+  }
+  newNode.id = nodeId;
+  return newNode;
+}
 
 // ts/miso/dom.ts
 function diff(c, n, parent, context) {
@@ -1254,6 +1270,7 @@ globalThis["miso"] = {
   callFocus,
   callSelect,
   callSetSelectionRange,
+  recreateNode,
   eventJSON,
   fetchCore,
   eventSourceConnect,

@@ -22,7 +22,8 @@ import {
    mathRandom,
    getRandomValues,
    splitmix32,
-   getDOMRef
+   getDOMRef,
+   recreateNode
 } from './miso/util';
 
 import {
@@ -114,6 +115,7 @@ export {
   splitmix32,
   delegateEvent,
   getDOMRef,
+  recreateNode,
 
   /* Types */
   VTree,
