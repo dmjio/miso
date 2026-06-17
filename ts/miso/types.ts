@@ -111,7 +111,7 @@ export type EventCapture = {
 */
 
 export type EventContext<T> = {
-  addEventListener : (mount : T, event : string, listener : any, capture : boolean) => void;
+  addEventListener : (mount : T, event : string, listener : any, capture : boolean, signal: AbortSignal) => void;
   isEqual : (n1: T, n2: T) => boolean;
   getTarget : (e: Event) => T;
   parentNode : (node: T) => T;

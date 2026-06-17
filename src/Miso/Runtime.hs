@@ -85,7 +85,6 @@ module Miso.Runtime
   , rootComponentId
   , componentId
   , modifyComponent
-  , resetComponentState
   , componentModel
   -- ** Scheduler
   , scheduler
@@ -116,13 +115,11 @@ import qualified Data.IntMap.Strict as IM
 import           Data.IORef (IORef, newIORef, atomicModifyIORef', readIORef, atomicWriteIORef)
 import qualified Data.Sequence as S
 import           Data.Sequence (Seq)
-#if __GLASGOW_HASKELL__ > 865
-import           GHC.Conc (labelThread)
-#endif
 import           GHC.Conc (ThreadStatus(ThreadDied, ThreadFinished), threadStatus)
 import           Prelude hiding ((.))
 import           System.IO.Unsafe (unsafePerformIO)
 import           System.Mem.StableName (makeStableName)
+import           System.Mem (performMajorGC)
 #ifdef BENCH
 import           Text.Printf
 #endif
@@ -166,8 +163,8 @@ initialize
   -> IO (ComponentState parent props model action)
 initialize events _componentParentId hydrate isRoot initialProps comp@Component {..} getComponentMountPoint = do
   _componentId <- freshComponentId
-  let _componentProps = initialProps
   let
+    _componentProps = initialProps
     _componentSink = \action -> liftIO $ do
       atomicModifyIORef' globalQueue (\q -> (enqueue _componentId action q, ()))
       notify globalWaiter
@@ -777,7 +774,7 @@ newtype Topic a = Topic MisoString
 --   | Subscribe
 --   | Unsubscribe
 --
--- update_ :: Action -> Effect Int Action
+-- update_ :: Action -> Effect parent props Int Action
 -- update_ = \case
 --   Unsubscribe ->
 --     unsubscribe arithmetic
@@ -912,7 +909,7 @@ unsubscribe (Topic topicName) = do
 -- arithmetic :: Topic Message
 -- arithmetic = topic "arithmetic"
 --
--- server :: Component () Action
+-- server :: Component parent props () Action
 -- server = component () update_ $ \() ->
 --   div_
 --   []
@@ -922,7 +919,7 @@ unsubscribe (Topic topicName) = do
 --   , component_ (client_ "client 1")
 --   , component_ (client_ "client 2")
 --   ] where
---       update_ :: Action -> Effect parent () Action
+--       update_ :: Action -> Effect parent props () Action
 --       update_ = \case
 --         AddOne ->
 --           publish arithmetic Increment
@@ -976,6 +973,50 @@ componentIds = unsafePerformIO $ newIORef topLevelComponentId
 freshComponentId :: IO ComponentId
 freshComponentId = atomicModifyIORef' componentIds $ \y -> (y + 1, y)
 -----------------------------------------------------------------------------
+-- | 'cleanup' is used to remove previous application state (when using miso w/ GHCi).
+--
+-- As seen in <https://try.haskell-miso.org>
+--
+-- * Detect if previous 'Component' tree is present.
+-- * Unmount in descending order (top-level 'Component' removed last), invoking finalizers
+-- * Kill the scheduler thread (a new one is created on ':r').
+-- * Erase all 'Component'
+-- * Erase 'Queue'
+-- * Reset 'componentId'
+-- * Recreate 'DOMRef', GCs previous event listeners in JS.
+-- * Yield to the scheduler (unwind thread stacks).
+-- * Perform major garbage collection (cleans out old state).
+--
+-- This GC should remove the previous 'Notify' / 'MVar' as well since the 'sink'
+-- closure should go out of scope.
+--
+cleanup :: Bool -> DOMRef -> IO ()
+cleanup live domRef = do
+  vcomps <- readIORef components
+  when (IM.size vcomps > 0) $ do
+    killThread =<< readIORef schedulerThread
+    if live
+      then do
+        -- In hot reload we want to reset subs and connections, and free lifecycle hooks
+        forM_ (IM.toDescList vcomps) $ \(_, cs@ComponentState{..}) -> do
+          mapM_ killThread =<< readIORef _componentSubThreads
+          finalizeWebSockets _componentId
+          finalizeEventSources _componentId
+          freeLifecycleHooks cs
+      else do
+        -- We can do a full unmount if we're not doing hot reload
+        forM_ (IM.toDescList vcomps) $ \(_, vcomp_) ->
+          unmountComponent vcomp_
+    atomicWriteIORef componentIds topLevelComponentId
+    atomicWriteIORef globalQueue mempty
+    when (not live) (atomicWriteIORef components mempty)
+    abort <- domRef ! "abort"
+    isnull <- isNull abort
+    when (not isnull) $ do
+      void $ (domRef # "abort") ()
+    yield
+    performMajorGC
+-----------------------------------------------------------------------------
 -- | componentMap
 --
 -- This is a global t'Miso.Types.Component' @Map@ that holds the state of all currently
@@ -1017,7 +1058,9 @@ drain ComponentState {..} = do
 unloadScripts :: ComponentState parent props model action -> IO ()
 unloadScripts ComponentState {..} = do
   head_ <- FFI.getHead
-  forM_ _componentScripts (FFI.removeChild head_)
+  forM_ _componentScripts $ \domRef -> do
+    contains <- fromJSValUnchecked =<< do head_ # "contains" $ [domRef]
+    when contains (FFI.removeChild head_ domRef)
 -----------------------------------------------------------------------------
 -- | Helper to drop all lifecycle and mounting hooks if defined.
 freeLifecycleHooks :: ComponentState parent props model action -> IO ()
@@ -1031,26 +1074,16 @@ unmountComponent
   :: ComponentState parent props model action
   -> IO ()
 unmountComponent cs@ComponentState {..} = do
-  liftIO (mapM_ killThread =<< readIORef _componentSubThreads)
+  mapM_ killThread =<< readIORef _componentSubThreads
   drain cs
   finalizeWebSockets _componentId
   finalizeEventSources _componentId
   unloadScripts cs
   freeLifecycleHooks cs
-  liftIO $ do
-    modifyComponent _componentParentId $ do
-      children.at _componentId .= Nothing
-    atomicModifyIORef' components $ \m -> (IM.delete _componentId m, ())
+  modifyComponent _componentParentId $ do
+    children.at _componentId .= Nothing
+  atomicModifyIORef' components $ \m -> (IM.delete _componentId m, ())
   FFI.unmountComponent _componentId
------------------------------------------------------------------------------
-resetComponentState :: IO () -> IO ()
-resetComponentState clear = do
-  cs <- atomicModifyIORef' components $ \vcomps -> (mempty, vcomps)
-  atomicWriteIORef globalQueue mempty
-  atomicWriteIORef componentIds topLevelComponentId
-  atomicWriteIORef subIds 0
-  forM_ cs unmountComponent
-  clear
 -----------------------------------------------------------------------------
 -- | Internal function for construction of a Virtual DOM.
 --
@@ -1428,12 +1461,12 @@ mailDescendants msg = do
   io_ $ do
     cs <- (IM.! _componentInfoId) <$> readIORef components
     forM_ (IS.toList (_componentChildren cs)) $ \child -> do
-      visit =<< (IM.! child) <$> readIORef components
+      walk =<< (IM.! child) <$> readIORef components
   where
-    visit ComponentState {..} = do
+    walk ComponentState {..} = do
       mail _componentId msg
       forM_ (IS.toList _componentChildren) $ \child -> do
-        visit =<< (IM.! child) <$> readIORef components
+        walk =<< (IM.! child) <$> readIORef components
 ----------------------------------------------------------------------------
 -- | Helper function for processing @Mail@ from 'mail'.
 --
@@ -1996,16 +2029,26 @@ initComponent
   :: (Eq parent, Eq model)
   => Events
   -> Hydrate
+  -> Bool
   -> Component parent () model action
   -> IO ()
-initComponent events hydrate vcomp_@Component {..} = withJS $ do
-  root <- Diff.mountElement (getMountPoint mountPoint)
-  void $ initialize events rootComponentId hydrate True () vcomp_ (pure root)
-#if __GLASGOW_HASKELL__ > 865
-  flip labelThread "scheduler" =<< forkIO scheduler
-#else
-  void (forkIO scheduler)
-#endif
+initComponent events hydrate live vcomp_@Component {..} = do
+  withJS $ do
+    root <- Diff.mountElement (getMountPoint mountPoint)
+    cleanup live root
+    void $ initialize events rootComponentId hydrate True () vcomp_ (pure root)
+    atomicWriteIORef schedulerThread =<< forkIO scheduler
+----------------------------------------------------------------------------
+-- | Global variable to hold the scheduler thread
+--
+-- N.B. 'undefined' is safe here, it will always get populated.
+-- Also, we use this in 'cleanup' when interactive mode (GHCi) is detected
+-- in that circumstance 'schedulerThread' will always be populated. It's an
+-- invariant.
+--
+schedulerThread :: IORef ThreadId
+{-# NOINLINE schedulerThread #-}
+schedulerThread = unsafePerformIO (newIORef undefined)
 ----------------------------------------------------------------------------
 -- | Load miso's javascript.
 --

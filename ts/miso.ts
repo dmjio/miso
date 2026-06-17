@@ -22,7 +22,7 @@ import {
    mathRandom,
    getRandomValues,
    splitmix32,
-   getDOMRef
+   getDOMRef,
 } from './miso/util';
 
 import {

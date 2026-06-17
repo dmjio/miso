@@ -23,7 +23,7 @@ describe('EventContext tests', () => {
     const listener = () => { clicked = true; };
     const div = document.createElement('div');
 
-    eventContext.addEventListener(div as DOMRef, 'click', listener, false);
+    eventContext.addEventListener(div as DOMRef, 'click', listener, false, null);
     div.click();
 
     expect(clicked).toBe(true);
@@ -34,7 +34,7 @@ describe('EventContext tests', () => {
     const listener = () => { clickCount++; };
     const div = document.createElement('div');
 
-    eventContext.addEventListener(div as DOMRef, 'click', listener, false);
+    eventContext.addEventListener(div as DOMRef, 'click', listener, false, null);
     div.click();
     expect(clickCount).toBe(1);
 
