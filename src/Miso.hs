@@ -5,7 +5,6 @@
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE TemplateHaskell           #-}
 -----------------------------------------------------------------------------
-{-# OPTIONS_GHC -Wno-duplicate-exports #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso
@@ -62,7 +61,7 @@
 --
 -- = Architecture
 --
--- * __React__: miso implements a subset of the [React](react.dev) architecture including 'Component', Lifecycle Hooks, Virtual DOM, Event delegation,
+-- * __React__: miso implements a subset of the [React](https://react.dev) architecture including 'Component', Lifecycle Hooks, Virtual DOM, Event delegation,
 -- [Fragment](https://react.dev/reference/react/Fragment) and [Props](https://react.dev/learn/passing-props-to-a-component). 
 --
 -- * __Elm__: miso also implements the [Elm](https://elm-lang.org) architecture (MVU) and the 'mailbox' communication pattern.
@@ -275,7 +274,7 @@
 -- These are convenient for initializing and deinitializing third-party libraries (as seen below with [highlight.js](https://highlightjs.org/))
 --
 -- @
--- {-# LANGUAGE QuasiQuotes -#}
+-- {-# LANGUAGE QuasiQuotes #-}
 -- {-# LANGUAGE MultilineStrings -#}
 --
 -- import Miso
@@ -460,7 +459,7 @@
 -- == 'Sink'
 --
 -- @
--- type 'Sink' a => a -> 'IO' ()
+-- type 'Sink' action = action -> 'IO' ()
 -- @
 --
 -- The 'Sink' function allows one to write any @action@ to the global event queue. See 'withSink' for more information.
@@ -471,8 +470,6 @@
 --
 -- The 'MonadReader' instances allows the retrieval of 'ComponentInfo' within 'Effect'.
 -- 'ComponentInfo' provides the current 'ComponentId' the @parent@ 'ComponentId', and the 'DOMRef' ('_componentDOMRef') that the 'Component' is mounted on.
---
--- = 'Component' communication
 --
 -- = Props
 --
@@ -844,7 +841,7 @@
 --
 -- == Dynamic prerendering
 --
--- More advanced usage of prerendering entails sharing the @model@ between the server and client. In such scenarios the 'hydateModel' function should be specified inside the t'Component'.
+-- More advanced usage of prerendering entails sharing the @model@ between the server and client. In such scenarios the 'hydrateModel' function should be specified inside the t'Component'.
 -- The SSR flag (`-fssr`) must be specified when using this feature.
 --
 -- 'hydrateModel' is used to load initial data into a Component's 'model' that is necessary for hydration.
@@ -867,7 +864,6 @@ module Miso
   , (+>)
   , mount_
     -- ** View
-  , vcomp
   , vnode
   , vtext
     -- ** Sink
@@ -953,7 +949,6 @@ import qualified Miso.FFI.Internal as FFI
 import           Miso.Property
 import           Miso.PubSub
 import           Miso.Reload
-import           Miso.Router
 import           Miso.Runtime
 import           Miso.State
 import           Miso.Storage
@@ -968,7 +963,7 @@ import           Miso.Util
 --
 -- @
 -- main :: 'IO' ()
--- main = 'miso' 'defaultEvents' (\\uri -> app uri))
+-- main = 'miso' 'defaultEvents' app
 -- @
 miso
   :: Eq model
@@ -978,8 +973,8 @@ miso
   -- ^ The Component application, with the current URI as an argument
   -> IO ()
 miso events f = do
-  vcomp_ <- f <$> getURI
-  initComponent events Hydrate False vcomp_ { mountPoint = Nothing }
+  comp <- f <$> getURI
+  initComponent events Hydrate False comp { mountPoint = Nothing }
 ----------------------------------------------------------------------------
 -- | Like 'miso', except discards the 'URI' argument.
 --
