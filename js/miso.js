@@ -784,7 +784,7 @@ function swap(os, l, r) {
 // ts/miso/event.ts
 function delegator(mount, events, getVTree, debug, context) {
   const controller = "AbortController" in globalThis ? new AbortController : { signal: null, abort: null };
-  mount["abort"] = controller.abort;
+  mount["abort"] = controller.abort?.bind(controller);
   for (const event of events) {
     context.addEventListener(mount, event.name, function(e) {
       listener(e, mount, getVTree, debug, context);

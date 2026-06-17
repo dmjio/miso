@@ -10,7 +10,7 @@ export function delegator<T> (
 ): void {
 
   const controller = 'AbortController' in globalThis ? new AbortController() : { signal: null, abort: null };
-  mount['abort'] = controller.abort;
+  mount['abort'] = controller.abort?.bind(controller);
 
   for (const event of events) {
    context.addEventListener (
