@@ -71,7 +71,7 @@ It makes heavy use of the [GHC JavaScript FFI](https://ghc.gitlab.haskell.org/gh
 - [Contributors](#contributors-)
 - [Partnerships](#partnerships-)
 - [Backers](#backers)
-- [organizations](#organizations)
+- [Organizations](#organizations)
 - [History](#history-)
 - [License](#license)
 
