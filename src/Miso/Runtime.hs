@@ -2037,10 +2037,6 @@ initComponent events hydrate vcomp_@Component {..} = do
     root <- Diff.mountElement (getMountPoint mountPoint)
     cleanup root
     void $ initialize events rootComponentId hydrate True () vcomp_ (pure root)
-    tid <- forkIO scheduler
-#if __GLASGOW_HASKELL__ > 865
-    labelThread tid "scheduler"
-#endif
     atomicWriteIORef schedulerThread =<< forkIO scheduler
 ----------------------------------------------------------------------------
 -- | Global variable to hold the scheduler thread

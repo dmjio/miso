@@ -49,10 +49,6 @@ module Miso.Reload
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad
-#if __GLASGOW_HASKELL__ > 865
-import           GHC.Conc.Sync (threadLabel)
-import           GHC.Conc (listThreads, killThread)
-#endif
 -----------------------------------------------------------------------------
 #ifdef WASM
 import           Miso.DSL.TH.File (evalFile)
@@ -61,7 +57,7 @@ import           Miso.DSL ((!), jsg, setField)
 import qualified Miso.FFI.Internal as FFI
 import           Miso.Types (Component(..), Events, App)
 import           Miso.String (MisoString)
-import           Miso.Runtime (componentModel, initComponent, topLevelComponentId, resetComponentState, Hydrate(..))
+import           Miso.Runtime (componentModel, initComponent, topLevelComponentId, Hydrate(..))
 import           Miso.Runtime.Internal (components)
 -----------------------------------------------------------------------------
 import           Miso.Lens
@@ -106,20 +102,7 @@ reload
   => Events
   -> App model action
   -> IO ()
-reload events vcomp = do
-#ifdef WASM
-    $(evalFile MISO_JS_PATH)
-#endif
-    resetComponentState clearPage
-#if __GLASGOW_HASKELL__ > 865
-    threads <- listThreads
-    forM_ threads $ \threadId -> do
-      threadLabel threadId >>= \case
-        Just "scheduler" ->
-          killThread threadId
-        _ -> pure ()
-#endif
-    initComponent events Draw vcomp
+reload events vcomp = initComponent events Draw vcomp
 -----------------------------------------------------------------------------
 -- | Live reloading. Persists all t'Component' `model` between successive GHCi reloads.
 --
@@ -148,14 +131,6 @@ live events vcomp = do
   exists <- x_exists
   if exists == 1
     then do
-#if __GLASGOW_HASKELL__ > 865
-      threads <- listThreads
-      forM_ threads $ \threadId -> do
-        threadLabel threadId >>= \case
-          Just "scheduler" ->
-            killThread threadId
-          _ -> pure ()
-#endif
       -- clearPage (perform this with the context)
       clearPage
 
