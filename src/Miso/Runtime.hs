@@ -163,8 +163,8 @@ initialize
   -> IO (ComponentState parent props model action)
 initialize events _componentParentId hydrate isRoot initialProps comp@Component {..} getComponentMountPoint = do
   _componentId <- freshComponentId
-  let _componentProps = initialProps
   let
+    _componentProps = initialProps
     _componentSink = \action -> liftIO $ do
       atomicModifyIORef' globalQueue (\q -> (enqueue _componentId action q, ()))
       notify globalWaiter
@@ -995,12 +995,21 @@ cleanup live domRef = do
   vcomps <- readIORef components
   when (IM.size vcomps > 0) $ do
     killThread =<< readIORef schedulerThread
-    when (not live) $ do
-      forM_ (IM.toDescList vcomps) $ \(_, vcomp_) ->
-        unmountComponent vcomp_
+    if live
+      then do
+        -- In hot reload we want to reset subs and connections, and free lifecycle hooks
+        forM_ (IM.toDescList vcomps) $ \(_, cs@ComponentState{..}) -> do
+          mapM_ killThread =<< readIORef _componentSubThreads
+          finalizeWebSockets _componentId
+          finalizeEventSources _componentId
+          freeLifecycleHooks cs
+      else do
+        -- We can do a full unmount if we're not doing hot reload
+        forM_ (IM.toDescList vcomps) $ \(_, vcomp_) ->
+          unmountComponent vcomp_
     atomicWriteIORef componentIds topLevelComponentId
     atomicWriteIORef globalQueue mempty
-    atomicWriteIORef components mempty
+    when (not live) (atomicWriteIORef components mempty)
     abort <- domRef ! "abort"
     isnull <- isNull abort
     when (not isnull) $ do
