@@ -1004,9 +1004,14 @@ cleanup domRef = do
     atomicWriteIORef componentIds topLevelComponentId
     atomicWriteIORef globalQueue mempty
     atomicWriteIORef components mempty
+    FFI.consoleLog "fetching abort!"
     abort <- domRef ! "abort"
+    FFI.consoleLog' abort
     isnull <- isNull abort
-    when (not isnull) $ void $ (domRef # "abort") ()
+    when (not isnull) $ do
+      FFI.consoleLog "invoking abort!"
+      void $ (domRef # "abort") ()
+    FFI.consoleLog "yielding!"
     yield
     performMajorGC
 -----------------------------------------------------------------------------
