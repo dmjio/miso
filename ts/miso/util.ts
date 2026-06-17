@@ -327,22 +327,3 @@ export function getLastDOMRef<T>(tree: VTree<T>): T | null {
 
 // Alias — kept for backwards-compatible public API.
 export function getDOMRef<T>(tree: VTree<T>): T | null { return getFirstDOMRef(tree); }
-
-/* Recreate DOM node, used to remove event listeners during an interactive session
- */
-export function recreateNode (mount: Element) : Element {
-    const parent = mount.parentNode;
-    const nextSibling = mount.nextSibling;
-    const nodeId = mount.id;
-    const newNode = document.createElement(mount.tagName) as Element
-    if (parent) {
-      parent.removeChild(mount);
-    }
-    if (nextSibling && parent) {
-        parent.insertBefore(newNode, nextSibling);
-    } else if (parent) {
-        parent.appendChild(newNode);
-    }
-    newNode.id = nodeId;
-    return newNode;
-}

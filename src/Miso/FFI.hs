@@ -31,7 +31,6 @@ module Miso.FFI
   , callFunction
   , castJSVal
   , removeChild
-  , recreateNode
     -- ** Styles
   , addStyle
   , addStyleSheet
