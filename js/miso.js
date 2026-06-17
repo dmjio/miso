@@ -783,10 +783,12 @@ function swap(os, l, r) {
 
 // ts/miso/event.ts
 function delegator(mount, events, getVTree, debug, context) {
+  const controller = "AbortController" in globalThis ? new AbortController : { signal: null, abort: null };
+  mount["abort"] = controller.abort;
   for (const event of events) {
     context.addEventListener(mount, event.name, function(e) {
       listener(e, mount, getVTree, debug, context);
-    }, event.capture);
+    }, event.capture, controller.signal);
   }
 }
 function listener(e, mount, getVTree, debug, context) {
@@ -997,8 +999,12 @@ function getAllPropertyNames(obj) {
 
 // ts/miso/context/dom.ts
 var eventContext = {
-  addEventListener: (mount, event, listener2, capture) => {
-    mount.addEventListener(event, listener2, capture);
+  addEventListener: (mount, event, listener2, capture, signal) => {
+    const options = { capture };
+    if (signal) {
+      options["signal"] = signal;
+    }
+    mount.addEventListener(event, listener2, options);
   },
   delegator: (mount, events, getVTree, debug, ctx) => {
     delegator(mount, events, getVTree, debug, ctx);

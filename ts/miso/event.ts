@@ -9,6 +9,9 @@ export function delegator<T> (
   context: EventContext<T>,
 ): void {
 
+  const controller = 'AbortController' in globalThis ? new AbortController() : { signal: null, abort: null };
+  mount['abort'] = controller.abort;
+
   for (const event of events) {
    context.addEventListener (
       mount,
@@ -17,9 +20,11 @@ export function delegator<T> (
         listener(e, mount, getVTree, debug, context);
       },
       event.capture,
+      controller.signal,
     );
   }
 }
+
 /* the event listener shared by both delegator and undelegator */
 function listener<T>(e: Event | [Event], mount: T, getVTree: ((callback: (vtree: VTree<T>) => void) => void), debug: boolean, context: EventContext<T>): void {
   getVTree(function (vtree: VTree<T>) {

@@ -15,9 +15,13 @@ import { getFirstDOMRef } from '../util';
 import { delegator } from '../event';
 
 export const eventContext : EventContext<DOMRef> = {
-  addEventListener : (mount: DOMRef, event: string, listener, capture: boolean) : void => {
-    mount.addEventListener(event, listener, capture);
-  },
+    addEventListener : (mount: DOMRef, event: string, listener, capture: boolean, signal: AbortSignal) : void => {
+        const options = { capture };
+        if (signal) {
+          options['signal'] = signal;
+        }
+        mount.addEventListener(event, listener, options);
+    },
   delegator :
      (mount: DOMRef,
       events: Array<EventCapture>,

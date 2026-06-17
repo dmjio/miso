@@ -913,7 +913,7 @@ unsubscribe (Topic topicName) = do
 -- arithmetic :: Topic Message
 -- arithmetic = topic "arithmetic"
 --
--- server :: Component () Action
+-- server :: Component parent props () Action
 -- server = component () update_ $ \() ->
 --   div_
 --   []
@@ -923,7 +923,7 @@ unsubscribe (Topic topicName) = do
 --   , component_ (client_ "client 1")
 --   , component_ (client_ "client 2")
 --   ] where
---       update_ :: Action -> Effect parent () Action
+--       update_ :: Action -> Effect parent props () Action
 --       update_ = \case
 --         AddOne ->
 --           publish arithmetic Increment
@@ -994,23 +994,21 @@ freshComponentId = atomicModifyIORef' componentIds $ \y -> (y + 1, y)
 -- This GC should remove the previous 'Notify' / 'MVar' as well since the 'sink'
 -- closure should go out of scope.
 --
-cleanup :: DOMRef -> IO DOMRef
+cleanup :: DOMRef -> IO ()
 cleanup domRef = do
   vcomps <- readIORef components
-  if IM.size vcomps > 0
-    then do
-      forM_ (IM.toDescList vcomps) $ \(_, vcomp_) ->
-        unmountComponent vcomp_
-      killThread =<< readIORef schedulerThread
-      atomicWriteIORef componentIds topLevelComponentId
-      atomicWriteIORef globalQueue mempty
-      atomicWriteIORef components mempty
-      newNode <- FFI.recreateNode domRef
-      yield
-      performMajorGC
-      pure newNode
-    else
-      pure domRef
+  when (IM.size vcomps > 0) $ do
+    forM_ (IM.toDescList vcomps) $ \(_, vcomp_) ->
+      unmountComponent vcomp_
+    killThread =<< readIORef schedulerThread
+    atomicWriteIORef componentIds topLevelComponentId
+    atomicWriteIORef globalQueue mempty
+    atomicWriteIORef components mempty
+    abort <- domRef ! "abort"
+    isnull <- isNull abort
+    when (not isnull) $ void $ (domRef # "abort") ()
+    yield
+    performMajorGC
 -----------------------------------------------------------------------------
 -- | componentMap
 --
@@ -1067,16 +1065,15 @@ unmountComponent
   :: ComponentState parent props model action
   -> IO ()
 unmountComponent cs@ComponentState {..} = do
-  liftIO (mapM_ killThread =<< readIORef _componentSubThreads)
+  mapM_ killThread =<< readIORef _componentSubThreads
   drain cs
   finalizeWebSockets _componentId
   finalizeEventSources _componentId
   unloadScripts cs
   freeLifecycleHooks cs
-  liftIO $ do
-    modifyComponent _componentParentId $ do
-      children.at _componentId .= Nothing
-    atomicModifyIORef' components $ \m -> (IM.delete _componentId m, ())
+  modifyComponent _componentParentId $ do
+    children.at _componentId .= Nothing
+  atomicModifyIORef' components $ \m -> (IM.delete _componentId m, ())
   FFI.unmountComponent _componentId
 -----------------------------------------------------------------------------
 resetComponentState :: IO () -> IO ()
@@ -2037,8 +2034,8 @@ initComponent
 initComponent events hydrate vcomp_@Component {..} = do
   withJS $ do
     root <- Diff.mountElement (getMountPoint mountPoint)
-    newRoot <- cleanup root
-    void $ initialize events rootComponentId hydrate True () vcomp_ (pure newRoot)
+    cleanup root
+    void $ initialize events rootComponentId hydrate True () vcomp_ (pure root)
     tid <- forkIO scheduler
 #if __GLASGOW_HASKELL__ > 865
     labelThread tid "scheduler"
