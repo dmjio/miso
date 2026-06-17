@@ -102,16 +102,16 @@ reload
   => Events
   -> App model action
   -> IO ()
-reload events vcomp = initComponent events Draw vcomp
+reload events vcomp = clearPage >> initComponent events Draw False vcomp
 -----------------------------------------------------------------------------
 -- | Live reloading. Persists all t'Component' `model` between successive GHCi reloads.
 --
--- This means application state should persist between GHCi reloads 
+-- This means application state should persist between GHCi reloads
 --
--- Schema changes to 'model' are currently unsupported. If you're 
+-- Schema changes to 'model' are currently unsupported. If you're
 -- changing fields in 'model' (adding, removing, changing a field's type), this
 -- will more than likely segfault. If you change the 'view' or 'update' functions
--- it will be fine. 
+-- it will be fine.
 --
 -- Use 'reload' if you're changing the 'model' frequently and 'live'
 -- if you're adjusting the 'view' / 'update' function logic.
@@ -145,8 +145,8 @@ live events vcomp = do
 
       -- Perform initial draw, this will fetch the model from the old component state
       -- and overwrite the old state with the new state for everything else.
-      initComponent events Draw initialVComp
-      
+      initComponent events Draw True initialVComp
+
       -- Don't forget to flush (native mobile needs this too)
       FFI.flush
 
@@ -159,7 +159,7 @@ live events vcomp = do
       $(evalFile MISO_JS_PATH)
 #endif
       x_store =<< newStablePtr components
-      void (initComponent events Draw vcomp)
+      void (initComponent events Draw False vcomp)
 -----------------------------------------------------------------------------
 clearPage :: IO ()
 clearPage = do

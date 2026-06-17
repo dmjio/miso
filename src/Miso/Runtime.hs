@@ -85,7 +85,6 @@ module Miso.Runtime
   , rootComponentId
   , componentId
   , modifyComponent
-  , resetComponentState
   , componentModel
   -- ** Scheduler
   , scheduler
@@ -116,9 +115,6 @@ import qualified Data.IntMap.Strict as IM
 import           Data.IORef (IORef, newIORef, atomicModifyIORef', readIORef, atomicWriteIORef)
 import qualified Data.Sequence as S
 import           Data.Sequence (Seq)
-#if __GLASGOW_HASKELL__ > 865
-import           GHC.Conc (labelThread)
-#endif
 import           GHC.Conc (ThreadStatus(ThreadDied, ThreadFinished), threadStatus)
 import           Prelude hiding ((.))
 import           System.IO.Unsafe (unsafePerformIO)
@@ -994,13 +990,14 @@ freshComponentId = atomicModifyIORef' componentIds $ \y -> (y + 1, y)
 -- This GC should remove the previous 'Notify' / 'MVar' as well since the 'sink'
 -- closure should go out of scope.
 --
-cleanup :: DOMRef -> IO ()
-cleanup domRef = do
+cleanup :: Bool -> DOMRef -> IO ()
+cleanup live domRef = do
   vcomps <- readIORef components
   when (IM.size vcomps > 0) $ do
-    forM_ (IM.toDescList vcomps) $ \(_, vcomp_) ->
-      unmountComponent vcomp_
     killThread =<< readIORef schedulerThread
+    when (not live) $ do
+      forM_ (IM.toDescList vcomps) $ \(_, vcomp_) ->
+        unmountComponent vcomp_
     atomicWriteIORef componentIds topLevelComponentId
     atomicWriteIORef globalQueue mempty
     atomicWriteIORef components mempty
@@ -1052,7 +1049,9 @@ drain ComponentState {..} = do
 unloadScripts :: ComponentState parent props model action -> IO ()
 unloadScripts ComponentState {..} = do
   head_ <- FFI.getHead
-  forM_ _componentScripts (FFI.removeChild head_)
+  forM_ _componentScripts $ \domRef -> do
+    contains <- fromJSValUnchecked =<< do head_ # "contains" $ [domRef]
+    when contains (FFI.removeChild head_ domRef)
 -----------------------------------------------------------------------------
 -- | Helper to drop all lifecycle and mounting hooks if defined.
 freeLifecycleHooks :: ComponentState parent props model action -> IO ()
@@ -1076,15 +1075,6 @@ unmountComponent cs@ComponentState {..} = do
     children.at _componentId .= Nothing
   atomicModifyIORef' components $ \m -> (IM.delete _componentId m, ())
   FFI.unmountComponent _componentId
------------------------------------------------------------------------------
-resetComponentState :: IO () -> IO ()
-resetComponentState clear = do
-  cs <- atomicModifyIORef' components $ \vcomps -> (mempty, vcomps)
-  atomicWriteIORef globalQueue mempty
-  atomicWriteIORef componentIds topLevelComponentId
-  atomicWriteIORef subIds 0
-  forM_ cs unmountComponent
-  clear
 -----------------------------------------------------------------------------
 -- | Internal function for construction of a Virtual DOM.
 --
@@ -2030,12 +2020,13 @@ initComponent
   :: (Eq parent, Eq model)
   => Events
   -> Hydrate
+  -> Bool
   -> Component parent () model action
   -> IO ()
-initComponent events hydrate vcomp_@Component {..} = do
+initComponent events hydrate live vcomp_@Component {..} = do
   withJS $ do
     root <- Diff.mountElement (getMountPoint mountPoint)
-    cleanup root
+    cleanup live root
     void $ initialize events rootComponentId hydrate True () vcomp_ (pure root)
     atomicWriteIORef schedulerThread =<< forkIO scheduler
 ----------------------------------------------------------------------------
