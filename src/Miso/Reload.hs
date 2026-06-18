@@ -155,9 +155,6 @@ live events vcomp = do
       x_store =<< newStablePtr components
     else do
       -- This means it is initial load, just store the pointer.
-#ifdef WASM
-      $(evalFile MISO_JS_PATH)
-#endif
       x_store =<< newStablePtr components
       void (initComponent events Draw False vcomp)
 -----------------------------------------------------------------------------
