@@ -27,19 +27,23 @@
   </a>
 </p>
 
-**miso** is a component-oriented [Haskell](https://www.haskell.org/) library for building web and [mobile](https://github.com/dmjio/miso-native) applications. It is pure by default; side effects are introduced explicitly through the `Effect` type. The library is designed in the spirit of [Elm](http://elm-lang.org/) and draws inspiration from [React](http://react.dev/) including [Component](https://react.dev/reference/react/Component), [Fragment](https://react.dev/reference/react/Fragment) and [Props](https://react.dev/learn/passing-props-to-a-component).
+**miso** is a [Haskell](https://www.haskell.org/) library for building web and [mobile](https://github.com/dmjio/miso-native) applications. It is inspired by both [Elm](http://elm-lang.org/) and [React](http://react.dev/). See the [docs](https://haddocks.haskell-miso.org/miso/Miso.html). Try it [live](https://try.haskell-miso.org).
 
 ## Key features
 
-- [Virtual DOM](https://en.wikipedia.org/wiki/Virtual_DOM) with a recursive diffing and patching algorithm
+- [Virtual DOM](https://en.wikipedia.org/wiki/Virtual_DOM) with recursive diffing and patching algorithm
 - Attribute and property normalization, event delegation, and event batching
-- SVG, 2D Canvas, and WebGL (via [three.js](https://threejs.org)) rendering
+- Model-View-Update paradigm
+- Pure by default 
+- SVG, 2D Canvas, and WebGL (via [three.js](https://threejs.org))
 - [Fetch](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API), [Server-Sent Events](https://github.com/haskell-miso/miso-sse), and [WebSocket](https://github.com/haskell-miso/miso-websocket) support
 - Type-safe client-side routing
-- An extensible subscription-based subsystem for long-running effects
+- An extensible subscription system for long-running effects and third-party library integration
+- Lifecycle hooks (`onCreated`, `onDestroyed`, `mount`, `unmount`)
 - [Reactive](https://github.com/haskell-miso/miso-reactive) extensions for fine-grained reactivity
+- [Component](https://react.dev/reference/react/Component), [Fragment](https://react.dev/reference/react/Fragment) and [Props](https://react.dev/learn/passing-props-to-a-component) features.
 
-It makes heavy use of the [GHC JavaScript FFI](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/wasm.html#javascript-ffi-in-the-wasm-backend) and maintains minimal dependencies, and can be considered a shallow [embedded domain-specific language](https://wiki.haskell.org/Embedded_domain_specific_language) for modern web programming. Compilation targets include [JavaScript](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/javascript.html) and [WebAssembly](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/wasm.html) via [GHC](https://www.haskell.org/ghc/). Hot reload is provided through [WASM browser mode](https://www.tweag.io/blog/2025-04-17-wasm-ghci-browser/) integrated with [ghciwatch](https://github.com/MercuryTechnologies/ghciwatch).
+It makes heavy use of the [GHC JavaScript FFI](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/wasm.html#javascript-ffi-in-the-wasm-backend) and maintains minimal dependencies. It can be considered a shallow [embedded domain-specific language](https://wiki.haskell.org/Embedded_domain_specific_language) for modern web programming. Compilation targets include [JavaScript](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/javascript.html) and [WebAssembly](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/wasm.html) via [GHC](https://www.haskell.org/ghc/). Hot reload is provided through [WASM browser mode](https://www.tweag.io/blog/2025-04-17-wasm-ghci-browser/) integrated with [ghciwatch](https://github.com/MercuryTechnologies/ghciwatch).
 
 > [!TIP]
 > See the [Haskell miso organization](https://github.com/haskell-miso) on GitHub for the full ecosystem of packages and examples 🍜
