@@ -1,5 +1,6 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE LambdaCase            #-}
+{-# LANGUAGE TemplateHaskellQuotes #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Lens.TH
@@ -45,14 +46,13 @@ makeLenses name = do
     _ -> pure []
   where
     processFieldNames fieldNames = concat
-      [ mkFields fName (ConT name) fieldType
+      [ mkFields fieldName (ConT name) fieldType
       | (fieldName, _, fieldType) <- fieldNames
-      , let fName = nameBase fieldName
-      , listToMaybe fName == Just '_'
+      , listToMaybe (nameBase fieldName) == Just '_'
       ]
     mkFields fieldName conType fieldType =
      let -- dmj: drops '_' prefix
-       lensName = mkName (drop 1 fieldName)
+       lensName = mkName (drop 1 (nameBase fieldName))
      in
        [ FunD lensName
          [ Clause [] (NormalB (mkLens fieldName)) []
@@ -62,14 +62,14 @@ makeLenses name = do
     concatMapM f xs =
       concat <$> mapM f xs
     mkLensType conType =
-      AppT (AppT (ConT (mkName "Lens")) conType)
-    mkLens n =
-      AppE (AppE (VarE (mkName "lens")) (VarE (mkName n)))
-        $ LamE [ VarP recName, VarP fieldName ]
-        $ RecUpdE (VarE recName) [ (mkName n, VarE fieldName) ]
+      AppT (AppT (ConT ''Lens) conType)
+    mkLens fieldName =
+      AppE (AppE (VarE 'lens) (VarE fieldName))
+        $ LamE [ VarP recName, VarP fieldVar ]
+        $ RecUpdE (VarE recName) [ (fieldName, VarE fieldVar) ]
       where
         recName = mkName "record"
-        fieldName = mkName "field"
+        fieldVar = mkName "field"
 -----------------------------------------------------------------------------
 -- | Automatically generates classy lenses via template-haskell.
 makeClassy :: Name -> Q [Dec]
@@ -95,29 +95,28 @@ makeClassy name = do
       | otherwise = []
     processFieldNames fieldNames =
         [ InstanceD Nothing [] instanceName
-          [ ValD (VarP (mkName baseNameLower)) (NormalB (VarE (mkName "this"))) []
+          [ ValD (VarP (mkName baseNameLower)) (NormalB (VarE 'this)) []
             -- instance HasFoo Foo where foo = this
           ]
         , ClassD [] (mkName $ "Has" <> nameBase name)
             [ PlainTV (mkName baseNameLower) BndrReq
             ] [] $ reverse $ concat
-            [ mkFields fName (VarT (mkName baseNameLower)) fieldType
+            [ mkFields fieldName (VarT (mkName baseNameLower)) fieldType
             | (fieldName, _, fieldType) <- fieldNames
-            , let fName = nameBase fieldName
-            , listToMaybe fName == Just '_'
+            , listToMaybe (nameBase fieldName) == Just '_'
             ] ++
             [ SigD
-                (mkName baseNameLower) 
+                (mkName baseNameLower)
                 (AppT
                    (AppT
-                      (ConT (mkName "Lens"))
+                      (ConT ''Lens)
                       (VarT (mkName baseNameLower)))
                       (ConT name))
             ]
         ]
     mkFields fieldName varType fieldType =
       let -- dmj: drops '_' prefix
-        lensName = mkName (drop 1 fieldName)
+        lensName = mkName (drop 1 (nameBase fieldName))
       in
         [ FunD lensName
           [ Clause [] (NormalB (wrapMkLens fieldName)) []
@@ -129,14 +128,14 @@ makeClassy name = do
     concatMapM f xs =
       concat <$> mapM f xs
     mkLensType varType x =
-      AppT (AppT (ConT (mkName "Lens")) varType) x
-    wrapMkLens n =
-      AppE (AppE (VarE (mkName "compose")) (mkLens n)) (VarE (mkName baseNameLower))
-    mkLens n
-      = AppE (AppE (VarE (mkName "lens")) (VarE (mkName n)))
-      $ LamE [ VarP recName, VarP fieldName ]
-      $ RecUpdE (VarE recName) [ (mkName n, VarE fieldName) ]
+      AppT (AppT (ConT ''Lens) varType) x
+    wrapMkLens fieldName =
+      AppE (AppE (VarE 'compose) (mkLens fieldName)) (VarE (mkName baseNameLower))
+    mkLens fieldName
+      = AppE (AppE (VarE 'lens) (VarE fieldName))
+      $ LamE [ VarP recName, VarP fieldVar ]
+      $ RecUpdE (VarE recName) [ (fieldName, VarE fieldVar) ]
       where
         recName = mkName "record"
-        fieldName = mkName "field"
+        fieldVar = mkName "field"
 -------------------------------------------------------------------------------
