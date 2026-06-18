@@ -180,7 +180,11 @@ initialize events _componentParentId hydrate isRoot initialProps comp@Component 
             -- hot reload scenario, let it flow
             pure (cs ^. componentModel)
       _ -> pure model
-  _componentScripts <- (++) <$> renderScripts scripts <*> renderStyles styles
+  _componentScripts <-
+    IM.lookup _componentId <$> readIORef components >>= \case
+      Nothing -> (++) <$> renderScripts scripts <*> renderStyles styles
+      Just cs -> pure (_componentScripts cs) -- hot reload scenario, reuse already mounted scripts
+      
   _componentDOMRef <- getComponentMountPoint
   _componentIsDirty <- pure False
   _componentVTree <- liftIO $ newIORef (VTree (Object jsNull))
