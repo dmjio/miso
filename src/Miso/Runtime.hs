@@ -177,15 +177,13 @@ initialize events _componentParentId hydrate isRoot initialProps maybeKey comp@C
       (Hydrate, Just m) -> m
       (Draw, _) -> do
         vcomps <- readIORef components
-        case IM.lookup _componentId vcomps of
-          Just cs -> pure (cs ^. componentModel)
-          Nothing ->
-            case maybeKey of
-              Nothing -> pure model
-              Just k  -> pure $ fromMaybe model $ listToMaybe
-                [ cs ^. componentModel
-                | cs <- IM.elems vcomps
-                , _componentKey cs == Just k ]
+        case maybeKey of
+          Just k  -> pure $ fromMaybe model $ listToMaybe
+            [ cs ^. componentModel
+            | cs <- IM.elems vcomps
+            , cs ^. componentKey == Just k
+            ]
+          Nothing -> pure model
       _ -> pure model
   _componentScripts <-
     IM.lookup _componentId <$> readIORef components >>= \case
