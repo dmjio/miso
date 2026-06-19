@@ -25,7 +25,8 @@ module Miso.Runtime.Internal
   , componentIds
   , rootComponentId
   , ComponentState(..)
+  , schedulerThread
   ) where
 ----------------------------------------------------------------------------
-import Miso.Runtime (components, ComponentState(..), componentIds, rootComponentId)
+import Miso.Runtime (components, ComponentState(..), componentIds, rootComponentId, schedulerThread)
 ----------------------------------------------------------------------------
