@@ -1011,6 +1011,7 @@ cleanup :: Bool -> DOMRef -> IO ()
 cleanup live domRef = do
   vcomps <- readIORef components
   when (IM.size vcomps > 0) $ do
+    killThread =<< readIORef schedulerThread
     if live
       then do
         -- In hot reload we want to reset subs and connections, and free lifecycle hooks
