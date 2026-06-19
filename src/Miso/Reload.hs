@@ -105,7 +105,7 @@ reload events vcomp = do
   when (exists == 1) $ do
     (_, oldSchedulerRef) <- deRefStablePtr =<< x_get
     killThread =<< readIORef oldSchedulerRef
-  x_clear
+    x_clear
   clearPage
   void (initComponent events Draw False vcomp)
   x_store =<< newStablePtr (components, schedulerThread)
