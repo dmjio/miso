@@ -48,17 +48,15 @@ module Miso.Reload
   , live
   ) where
 -----------------------------------------------------------------------------
+import           Control.Concurrent
 import           Control.Monad
 -----------------------------------------------------------------------------
-#ifdef WASM
-import           Miso.DSL.TH.File (evalFile)
-#endif
 import           Miso.DSL ((!), jsg, setField)
 import qualified Miso.FFI.Internal as FFI
 import           Miso.Types (Component(..), Events, App)
 import           Miso.String (MisoString)
 import           Miso.Runtime (componentModel, initComponent, topLevelComponentId, Hydrate(..))
-import           Miso.Runtime.Internal (components)
+import           Miso.Runtime.Internal (components, schedulerThread)
 -----------------------------------------------------------------------------
 import           Miso.Lens
 -----------------------------------------------------------------------------
@@ -102,7 +100,15 @@ reload
   => Events
   -> App model action
   -> IO ()
-reload events vcomp = clearPage >> initComponent events Draw False vcomp
+reload events vcomp = do
+  exists <- x_exists
+  when (exists == 1) $ do
+    (_, oldSchedulerRef) <- deRefStablePtr =<< x_get
+    killThread =<< readIORef oldSchedulerRef
+  x_clear
+  clearPage
+  void (initComponent events Draw False vcomp)
+  x_store =<< newStablePtr (components, schedulerThread)
 -----------------------------------------------------------------------------
 -- | Live reloading. Persists all t'Component' `model` between successive GHCi reloads.
 --
@@ -131,12 +137,14 @@ live events vcomp = do
   exists <- x_exists
   if exists == 1
     then do
-      -- clearPage (perform this with the context)
-      clearPage
+      -- clearBody (only clear the body)
+      clearBody
 
       -- Deref old state, update new state, set pointer in C heap.
-      _oldState <- readIORef =<< deRefStablePtr =<< x_get
+      (oldComponentsRef, oldSchedulerRef) <- deRefStablePtr =<< x_get
+      killThread =<< readIORef oldSchedulerRef
 
+      _oldState <- readIORef oldComponentsRef
       let oldModel = (_oldState IM.! topLevelComponentId) ^. componentModel
           initialVComp = vcomp { model = oldModel }
 
@@ -150,18 +158,20 @@ live events vcomp = do
       -- Don't forget to flush (native mobile needs this too)
       FFI.flush
 
-      -- Clear and set static ptr to use new state
+      -- Clear and set static ptr to use new state (new CAF state)
       x_clear
-      x_store =<< newStablePtr components
+      x_store =<< newStablePtr (components, schedulerThread)
     else do
       -- This means it is initial load, just store the pointer.
-      x_store =<< newStablePtr components
       void (initComponent events Draw False vcomp)
+      x_store =<< newStablePtr (components, schedulerThread)
 -----------------------------------------------------------------------------
-clearPage :: IO ()
-clearPage = do
+clearPage, clearBody, clearHead :: IO ()
+clearPage = clearBody >> clearHead
+clearBody = do
   body_ <- jsg "document" ! ("body" :: MisoString)
   setField body_ "innerHTML" ("" :: MisoString)
+clearHead = do
   head_ <- jsg "document" ! ("head" :: MisoString)
   setField head_ "innerHTML" ("" :: MisoString)
 -----------------------------------------------------------------------------

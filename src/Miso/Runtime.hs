@@ -81,6 +81,7 @@ module Miso.Runtime
   , arrayBuffer
   -- ** Internal Component state
   , components
+  , schedulerThread
   , componentIds
   , rootComponentId
   , componentId
@@ -157,11 +158,13 @@ initialize
   -- ^ Is the root node being rendered?
   -> props
   -- ^ Initial props for this component
+  -> Maybe Key
+  -- ^ Optional key for stable hot-reload model recovery
   -> Component parent props model action
   -> IO DOMRef
   -- ^ Callback function is used for obtaining the t'Miso.Types.Component' 'DOMRef'.
   -> IO (ComponentState parent props model action)
-initialize events _componentParentId hydrate isRoot initialProps comp@Component {..} getComponentMountPoint = do
+initialize events _componentParentId hydrate isRoot initialProps maybeKey comp@Component {..} getComponentMountPoint = do
   _componentId <- freshComponentId
   let
     _componentProps = initialProps
@@ -173,12 +176,16 @@ initialize events _componentParentId hydrate isRoot initialProps comp@Component 
     case (hydrate, hydrateModel) of
       (Hydrate, Just m) -> m
       (Draw, _) -> do
-        IM.lookup _componentId <$> readIORef components >>= \case
+        vcomps <- readIORef components
+        case IM.lookup _componentId vcomps of
+          Just cs -> pure (cs ^. componentModel)
           Nothing ->
-            pure model
-          Just cs ->
-            -- hot reload scenario, let it flow
-            pure (cs ^. componentModel)
+            case maybeKey of
+              Nothing -> pure model
+              Just k  -> pure $ fromMaybe model $ listToMaybe
+                [ cs ^. componentModel
+                | cs <- IM.elems vcomps
+                , _componentKey cs == Just k ]
       _ -> pure model
   _componentScripts <-
     IM.lookup _componentId <$> readIORef components >>= \case
@@ -226,6 +233,7 @@ initialize events _componentParentId hydrate isRoot initialProps comp@Component 
 
   let vcomponent = ComponentState
         { _componentEvents = events
+        , _componentKey = maybeKey
         , _componentMailbox = mailbox
         , _componentBindings = bindings
         , _componentTopics = mempty
@@ -662,6 +670,9 @@ globalQueue = unsafePerformIO (newIORef emptyQueue)
 componentId :: Lens (ComponentState parent props model action) ComponentId
 componentId = lens _componentId $ \record field -> record { _componentId = field }
 -----------------------------------------------------------------------------
+componentKey :: Lens (ComponentState parent props model action) (Maybe Key)
+componentKey = lens _componentKey $ \record field -> record { _componentKey = field }
+-----------------------------------------------------------------------------
 parentId :: Lens (ComponentState parent props model action) ComponentId
 parentId = lens _componentParentId $ \record field -> record { _componentParentId = field }
 -----------------------------------------------------------------------------
@@ -698,6 +709,8 @@ data ComponentState parent props model action
   = ComponentState
   { _componentId :: ComponentId
   -- ^ The ID of the current t'Miso.Types.Component'
+  , _componentKey :: Maybe Key
+  -- ^ Optional key for stable hot-reload model recovery
   , _componentParentId :: ComponentId
   -- ^ The ID of the t'Miso.Types.Component''s parent
   , _componentProps :: props
@@ -998,7 +1011,6 @@ cleanup :: Bool -> DOMRef -> IO ()
 cleanup live domRef = do
   vcomps <- readIORef components
   when (IM.size vcomps > 0) $ do
-    killThread =<< readIORef schedulerThread
     if live
       then do
         -- In hot reload we want to reset subs and connections, and free lifecycle hooks
@@ -1112,7 +1124,7 @@ buildVTree events_ parentId_ vcompId hydrate snk logLevel_ = \case
 
     mountCallback <- do
       syncCallback1' $ \parent_ -> do
-        ComponentState {..} <- initialize events_ vcompId hydrate False newProps app (pure parent_)
+        ComponentState {..} <- initialize events_ vcompId hydrate False newProps maybeKey app (pure parent_)
         modifyComponent vcompId (children %= IS.insert _componentId)
         vtree <- toJSVal =<< readIORef _componentVTree
         FFI.set "parent" vcomp_ (Object vtree)
@@ -1251,8 +1263,8 @@ setAttrs vnode_@(Object jval) attrs snk logLevel events =
 -- | Registers components in the global state
 registerComponent :: MonadIO m => ComponentState parent props model action -> m ()
 registerComponent componentState = liftIO $
-  atomicModifyIORef' components $ \cs ->
-    (IM.insert (_componentId componentState) componentState cs, ())
+  atomicModifyIORef' components $ \vcomps' ->
+    (IM.insert (_componentId componentState) componentState vcomps', ())
 -----------------------------------------------------------------------------
 -- | Renders styles
 --
@@ -2040,7 +2052,7 @@ initComponent events hydrate live vcomp_@Component {..} = do
   withJS $ do
     root <- Diff.mountElement (getMountPoint mountPoint)
     cleanup live root
-    void $ initialize events rootComponentId hydrate True () vcomp_ (pure root)
+    void $ initialize events rootComponentId hydrate True () Nothing vcomp_ (pure root)
     atomicWriteIORef schedulerThread =<< forkIO scheduler
 ----------------------------------------------------------------------------
 -- | Global variable to hold the scheduler thread
