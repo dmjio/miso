@@ -27,7 +27,9 @@
   </a>
 </p>
 
-**miso** is a [Haskell](https://www.haskell.org/) library for building web and [mobile](https://github.com/dmjio/miso-native) applications. It is inspired by both [Elm](http://elm-lang.org/) and [React](http://react.dev/). Try it [live](https://try.haskell-miso.org). See the [org](https://github.com/haskell-miso). Read the [docs](https://haddocks.haskell-miso.org/miso/Miso.html).
+<p align="center"> 
+Inspired by <a href="http://elm-lang.org/">Elm</a> and <a href="http://react.dev/">React</a>. Try it <a href="https://try.haskell-miso.org">live</a>. See the <a href="https://github.com/haskell-miso">GitHub</a> org. Read the <a href="https://haddocks.haskell-miso.org/miso/Miso.html">docs</a>.
+</p>
 
 ## Key features
 
