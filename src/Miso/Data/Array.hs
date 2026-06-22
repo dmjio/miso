@@ -62,7 +62,7 @@ new = Array <$> DSL.new (jsg "Array") ([] :: [JSVal])
 -- | Inserts a value into the t'Array' by value.
 insert :: ToJSVal value => Int -> value -> Array value -> IO ()
 insert key value (Array m) = do
-  _ <- (DSL.Object m) DSL.<## key $ value
+  _ <- DSL.Object m DSL.<## key $ value
   pure ()
 -----------------------------------------------------------------------------
 -- | Inserts a value into the t'Array' by value.

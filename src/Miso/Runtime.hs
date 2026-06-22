@@ -2,16 +2,11 @@
 {-# LANGUAGE CPP                        #-}
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE LambdaCase                 #-}
-{-# LANGUAGE BangPatterns               #-}
-{-# LANGUAGE TupleSections              #-}
 {-# LANGUAGE KindSignatures             #-}
 {-# LANGUAGE BlockArguments             #-}
-{-# LANGUAGE NamedFieldPuns             #-}
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE RecordWildCards            #-}
-{-# LANGUAGE TypeApplications           #-}
 {-# LANGUAGE OverloadedStrings          #-}
-{-# LANGUAGE NumericUnderscores         #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -----------------------------------------------------------------------------
@@ -102,10 +97,10 @@ import           Data.IntSet (IntSet)
 import           Control.Category ((.))
 import           Control.Concurrent
 import           Control.Exception (SomeException, catch, evaluate)
-import           Control.Monad (forM, forM_, when, void, (<=<), zipWithM_, forever, foldM)
+import           Control.Monad (forM, forM_, when, void, (<=<), zipWithM_, forever, foldM, unless)
 import           Control.Monad.Reader (ask, asks)
 import           Control.Monad.State hiding (state)
-import           Miso.JSON (FromJSON, ToJSON, Result(..), fromJSON, toJSON)
+import           Miso.JSON (FromJSON, ToJSON, Result(..), Value, encode, fromJSON, jsonStringify, toJSON)
 import           Data.Foldable (toList)
 import qualified Data.List as List
 import           Data.Maybe
@@ -142,7 +137,6 @@ import           Miso.Effect
 import qualified Miso.FFI.Internal as FFI
 import           Miso.FFI.Internal (Blob(..), ArrayBuffer(..))
 import qualified Miso.Hydrate as Hydrate
-import           Miso.JSON (encode, jsonStringify, Value)
 import           Miso.Lens hiding (view)
 import           Miso.String (ToMisoString(..))
 import           Miso.Types
@@ -168,7 +162,7 @@ initialize events _componentParentId hydrate isRoot initialProps maybeKey comp@C
   _componentId <- freshComponentId
   let
     _componentProps = initialProps
-    _componentSink = \action -> liftIO $ do
+    _componentSink = \action -> do
       atomicModifyIORef' globalQueue (\q -> (enqueue _componentId action q, ()))
       notify globalWaiter
 
@@ -189,14 +183,14 @@ initialize events _componentParentId hydrate isRoot initialProps maybeKey comp@C
     IM.lookup _componentId <$> readIORef components >>= \case
       Nothing -> (++) <$> renderScripts scripts <*> renderStyles styles
       Just cs -> pure (_componentScripts cs) -- hot reload scenario, reuse already mounted scripts
-      
+
   _componentDOMRef <- getComponentMountPoint
-  _componentIsDirty <- pure False
-  _componentVTree <- liftIO $ newIORef (VTree (Object jsNull))
-  _componentSubThreads <- liftIO (newIORef M.empty)
+  let _componentIsDirty = False
+  _componentVTree <- newIORef (VTree (Object jsNull))
+  _componentSubThreads <- newIORef M.empty
 
   frame <- newEmptyMVar :: IO (MVar Double)
-  _componentMailbox <- pure S.empty
+  let _componentMailbox = S.empty
 
   rAFCallback <-
     asyncCallback1 $ \jsval -> do
@@ -207,12 +201,12 @@ initialize events _componentParentId hydrate isRoot initialProps maybeKey comp@C
         newVTree <-
           buildVTree events _componentParentId _componentId Draw
             _componentSink logLevel (view currentProps newModel)
-        oldVTree <- liftIO (readIORef _componentVTree)
+        oldVTree <- readIORef _componentVTree
         _frame <- requestAnimationFrame rAFCallback
         _timestamp :: Double <- takeMVar frame
         Diff.diff (Just oldVTree) (Just newVTree) _componentDOMRef
         FFI.updateRef oldVTree newVTree
-        liftIO (atomicWriteIORef _componentVTree newVTree)
+        atomicWriteIORef _componentVTree newVTree
         FFI.flush
 
   let _componentApplyActions = \(actions :: [action]) model_ comps currentProps -> do
@@ -302,8 +296,8 @@ initSubs :: [Sub action] -> IORef (Map MisoString ThreadId) -> Sink action -> IO
 initSubs subs_ _componentSubThreads _componentSink = do
   forM_ subs_ $ \sub_ -> do
     threadId <- forkIO (sub_ _componentSink)
-    subKey <- liftIO freshSubId
-    liftIO $ atomicModifyIORef' _componentSubThreads $ \m ->
+    subKey <- freshSubId
+    atomicModifyIORef' _componentSubThreads $ \m ->
       (M.insert subKey threadId m, ())
 -----------------------------------------------------------------------------
 -- | Diffs two models, returning True if a redraw is necessary
@@ -329,7 +323,7 @@ scheduler =
       Just (vcompId, [])
         | vcompId < 0 -> do
             -- props propagation, negated 'ComponentId' indicates render-phase only.
-            vcomps <- liftIO (readIORef components)
+            vcomps <- readIORef components
             forM_ (IM.lookup (negate vcompId) vcomps) $ \ComponentState {..} -> do
               _componentDraw _componentModel
               _componentPropsPhase _prevComponentProps _componentProps
@@ -375,7 +369,7 @@ scheduler =
 renderComponents :: ComponentIds -> IO ()
 renderComponents dirtySet = do
   forM_ (IS.toAscList dirtySet) $ \vcompId ->
-    IM.lookup vcompId <$> liftIO (readIORef components) >>= mapM \ComponentState {..} -> do
+    IM.lookup vcompId <$> readIORef components >>= mapM \ComponentState {..} -> do
       when _componentIsDirty $ do
         _componentDraw _componentModel
         FFI.modelHydration _componentId =<< toObject jsNull
@@ -388,7 +382,7 @@ modifyComponent
   :: ComponentId
   -> State (ComponentState parent props model action) a
   -> IO ()
-modifyComponent vcompId go = liftIO $
+modifyComponent vcompId go =
   atomicModifyIORef' components $ \vcomps ->
     (IM.adjust (execState go) vcompId vcomps, ())
 ----------------------------------------------------------------------------
@@ -418,7 +412,7 @@ data DFS p props m a
 -----------------------------------------------------------------------------
 type Synch p props m a x = State (DFS p props m a) x
 -----------------------------------------------------------------------------
-visited :: Lens (DFS p props m a) (ComponentIds)
+visited :: Lens (DFS p props m a) ComponentIds
 visited = lens _visited $ \r x -> r { _visited = x }
 -----------------------------------------------------------------------------
 state :: Lens (DFS p props m a) (IntMap (ComponentState p props m a))
@@ -433,7 +427,7 @@ synch = mapM_ go =<< pop
     go :: ComponentState p props m a -> Synch p props m a ()
     go cs = do
       seen <- IS.member (cs ^. componentId) <$> use visited
-      when (not seen) $ do
+      unless seen $ do
         propagateParent cs (cs ^. parentId)
         propagateChildren cs (cs ^. children)
         markVisited (cs ^. componentId)
@@ -560,7 +554,7 @@ initialDraw initializedModel events hydrate isRoot Component {..} ComponentState
                 buildVTree events _componentParentId _componentId Draw
                   _componentSink logLevel (view _componentProps initializedModel)
               Diff.diff Nothing (Just newTree) _componentDOMRef
-              liftIO (atomicWriteIORef _componentVTree newTree)
+              atomicWriteIORef _componentVTree newTree
         else
           atomicWriteIORef _componentVTree vtree
 -----------------------------------------------------------------------------
@@ -568,7 +562,7 @@ initialDraw initializedModel events hydrate isRoot Component {..} ComponentState
 -- its events.
 getBatch :: IO (Maybe (ComponentId, [action]))
 getBatch = do
-  liftIO $ atomicModifyIORef' globalQueue $ \q ->
+  atomicModifyIORef' globalQueue $ \q ->
     case dequeue q of
       Nothing -> (q, Nothing)
       Just (vcompId, actions, newQueue) ->
@@ -576,7 +570,7 @@ getBatch = do
 -----------------------------------------------------------------------------
 -- | Helper for event extraction at a specific 'ComponentId'
 drainQueueAt :: ComponentId -> IO [a]
-drainQueueAt vcompId = liftIO $ atomicModifyIORef' globalQueue (dequeueAt vcompId)
+drainQueueAt vcompId = atomicModifyIORef' globalQueue (dequeueAt vcompId)
 -----------------------------------------------------------------------------
 -- | Data type for holding the events in the system along with
 -- the schedule of what events should be processed next
@@ -674,7 +668,7 @@ componentKey = lens _componentKey $ \record field -> record { _componentKey = fi
 parentId :: Lens (ComponentState parent props model action) ComponentId
 parentId = lens _componentParentId $ \record field -> record { _componentParentId = field }
 -----------------------------------------------------------------------------
-children :: Lens (ComponentState parent props model action) (ComponentIds)
+children :: Lens (ComponentState parent props model action) ComponentIds
 children = lens _componentChildren $ \record field -> record { _componentChildren = field }
 -----------------------------------------------------------------------------
 componentTopics :: Lens (ComponentState parent props model action) (Map MisoString (Value -> IO ()))
@@ -907,7 +901,7 @@ unsubscribe :: Topic message -> Effect parent props model action
 unsubscribe (Topic topicName) = do
   ComponentInfo {..} <- ask
   io_ $ modifyComponent _componentInfoId $ do
-    (componentTopics %= M.delete topicName)
+    componentTopics %= M.delete topicName
 -----------------------------------------------------------------------------
 -- | Publish to a t'Topic message'
 --
@@ -949,14 +943,14 @@ publish
   => Topic message
   -> message
   -> IO ()
-publish (Topic topicName) message = mapM_ go =<< IM.elems <$> readIORef components
+publish (Topic topicName) message = mapM_ go . IM.elems =<< readIORef components
   where
-    go ComponentState {..} = do
+    go ComponentState {..} =
       case M.lookup topicName _componentTopics of
         Nothing ->
           pure ()
-        Just f -> do
-          liftIO (f (toJSON message))
+        Just f ->
+          f (toJSON message)
 -----------------------------------------------------------------------------
 subIds :: IORef Int
 {-# NOINLINE subIds #-}
@@ -1024,10 +1018,10 @@ cleanup live domRef = do
           unmountComponent vcomp_
     atomicWriteIORef componentIds topLevelComponentId
     atomicWriteIORef globalQueue mempty
-    when (not live) (atomicWriteIORef components mempty)
+    unless live (atomicWriteIORef components mempty)
     abort <- domRef ! "abort"
     isnull <- isNull abort
-    when (not isnull) $ do
+    unless isnull $ do
       void $ (domRef # "abort") ()
     yield
     performMajorGC
@@ -1080,7 +1074,7 @@ unloadScripts ComponentState {..} = do
 -- | Helper to drop all lifecycle and mounting hooks if defined.
 freeLifecycleHooks :: ComponentState parent props model action -> IO ()
 freeLifecycleHooks ComponentState {..} = do
-  VTree (Object comp) <- liftIO (readIORef _componentVTree)
+  VTree (Object comp) <- readIORef _componentVTree
   mapM_ freeFunction =<< fromJSVal =<< comp ! ("mount" :: MisoString)
   mapM_ freeFunction =<< fromJSVal =<< comp ! ("unmount" :: MisoString)
 -----------------------------------------------------------------------------
@@ -1149,7 +1143,7 @@ buildVTree events_ parentId_ vcompId hydrate snk logLevel_ = \case
         componentId_ <- fromJSValUnchecked =<< vcomp_ ! ("componentId" :: MisoString)
         currentProps <- _componentProps . (IM.! componentId_) <$> readIORef components
         when (currentProps /= newProps) $ do
-          modifyComponent componentId_ $ do 
+          modifyComponent componentId_ $ do
             componentProps .= newProps
             prevComponentProps .= currentProps
           enqueueSchedule componentId_
@@ -1166,7 +1160,7 @@ buildVTree events_ parentId_ vcompId hydrate snk logLevel_ = \case
     vnode_ <- createNode "vnode" ns tag
     setAttrs vnode_ attrs snk logLevel_ events_
     vchildren <- toJSVal =<< procreate vnode_
-    flip (FFI.set "children") vnode_ vchildren
+    FFI.set "children" vchildren vnode_
     flip (FFI.set "type") vnode_ =<< toJSVal VNodeType
     pure (VTree vnode_)
       where
@@ -1476,12 +1470,12 @@ mailDescendants msg = do
   io_ $ do
     cs <- (IM.! _componentInfoId) <$> readIORef components
     forM_ (IS.toList (_componentChildren cs)) $ \child -> do
-      walk =<< (IM.! child) <$> readIORef components
+      walk . (IM.! child) =<< readIORef components
   where
     walk ComponentState {..} = do
       mail _componentId msg
       forM_ (IS.toList _componentChildren) $ \child -> do
-        walk =<< (IM.! child) <$> readIORef components
+        walk . (IM.! child) =<< readIORef components
 ----------------------------------------------------------------------------
 -- | Helper function for processing @Mail@ from 'mail'.
 --
@@ -1732,8 +1726,8 @@ getWebSocket vcompId (WebSocket websocketId) =
 -----------------------------------------------------------------------------
 finalizeWebSockets :: ComponentId -> IO ()
 finalizeWebSockets vcompId = do
-  mapM_ (mapM_ FFI.websocketClose . IM.elems) =<<
-    IM.lookup vcompId <$> readIORef websocketConnections
+  mapM_ (mapM_ FFI.websocketClose . IM.elems) .
+    IM.lookup vcompId =<< readIORef websocketConnections
   dropComponentWebSockets
     where
       dropComponentWebSockets :: IO ()
@@ -1890,7 +1884,7 @@ newtype WebSocket = WebSocket Int
 -----------------------------------------------------------------------------
 -- | A null t'WebSocket' is one with a negative descriptor.
 emptyWebSocket :: WebSocket
-emptyWebSocket = (-1)
+emptyWebSocket = -1
 -----------------------------------------------------------------------------
 -- | A type for holding an t'EventSource' descriptor.
 newtype EventSource = EventSource Int
@@ -1898,7 +1892,7 @@ newtype EventSource = EventSource Int
 -----------------------------------------------------------------------------
 -- | A null t'EventSource' is one with a negative descriptor.
 emptyEventSource :: EventSource
-emptyEventSource = (-1)
+emptyEventSource = -1
 -----------------------------------------------------------------------------
 eventSourceConnections :: IORef EventSources
 {-# NOINLINE eventSourceConnections #-}
@@ -2008,8 +2002,8 @@ eventSourceClose socketId = do
 -----------------------------------------------------------------------------
 finalizeEventSources :: ComponentId -> IO ()
 finalizeEventSources vcompId = do
-  mapM_ (mapM_ FFI.eventSourceClose . IM.elems) =<<
-    IM.lookup vcompId <$> readIORef eventSourceConnections
+  mapM_ (mapM_ FFI.eventSourceClose . IM.elems) .
+    IM.lookup vcompId =<< readIORef eventSourceConnections
   dropComponentEventSources
     where
       dropComponentEventSources :: IO ()

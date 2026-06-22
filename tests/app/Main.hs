@@ -6,7 +6,6 @@
 {-# LANGUAGE DeriveAnyClass      #-}
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE TypeApplications    #-}
-{-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE DerivingStrategies  #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -25,14 +24,12 @@ import           Data.Char (toLower)
 import           Prelude hiding ((!!))
 import           GHC.Generics
 import           Control.Monad
-import           Control.Concurrent
 import           Data.Either
 import           Data.IORef
 import           Data.Text (Text)
 import           GHC.Natural (Natural)
 import qualified Data.Text as T
 import           Control.Monad.State
-import qualified Data.IntMap.Strict as IM
 -----------------------------------------------------------------------------
 import           Miso
 import qualified Miso.JSON as JSON
@@ -43,13 +40,11 @@ import qualified Miso.Data.Map as MDM
 import qualified Miso.Data.Set as MDS
 import qualified Miso.Data.Array as Array
 import qualified Miso.Date as D
-import           Miso.DSL
 #ifndef GHCJS_OLD
 import           Miso.FFI.QQ (js)
 #endif
 import           Miso.Lens.Generic
 import           Miso.Lens
-import           Miso.Storage
 import           Miso.Test
 import           Miso.Html
 import           Miso.JSON.Parser (decodePure)
@@ -59,9 +54,8 @@ import           Miso.Runtime.Internal (ComponentState (..), components, compone
 -- | Clears the component state and DOM between each test
 clearComponentState :: IO ()
 clearComponentState = do
-  liftIO $ do
-    writeIORef components mempty
-    writeIORef componentIds initialComponentId
+  writeIORef components mempty
+  writeIORef componentIds initialComponentId
 -----------------------------------------------------------------------------
 clearBody :: IO ()
 clearBody = void $ eval ("document.body.innerHTML = '';" :: MisoString)
@@ -381,14 +375,14 @@ main = withJS $ do
         (JSON.fromJSON (JSON.toJSON Green) :: JSON.Result Color) `shouldBe` JSON.Success Green
         (JSON.fromJSON (JSON.toJSON Blue)  :: JSON.Result Color) `shouldBe` JSON.Success Blue
       -- Single-constructor record → flat object, no tag
-#ifndef GHCJS_OLD      
+#ifndef GHCJS_OLD
       it "encodes single-constructor records as flat objects" $ do
         JSON.toJSON (Point 3 4)
           `shouldBe` JSON.object [("px", JSON.Number 3), ("py", JSON.Number 4)]
       it "round-trips single-constructor records" $ do
         (JSON.fromJSON (JSON.toJSON (Point 3 4)) :: JSON.Result Point)
           `shouldBe` JSON.Success (Point 3 4)
-#endif          
+#endif
       -- Single-constructor positional → unwrapped value
       it "encodes single-constructor positional as unwrapped value" $ do
         JSON.toJSON (Wrapper 42) `shouldBe` JSON.Number 42
@@ -721,14 +715,14 @@ main = withJS $ do
       it "Should ^." $ do
         (0 ^. this) `shouldBe` 0
       it "Should at on IntMap" $ do
-        flip execState (mempty :: IntMap Int) (Miso.Lens.at 0 ?= 10) `shouldBe`
+        execState (Miso.Lens.at 0 ?= 10) (mempty :: IntMap Int) `shouldBe`
           IM.singleton 0 10
-        flip execState (IM.singleton 0 10 :: IntMap Int) (Miso.Lens.at 0 .= Nothing) `shouldBe`
+        execState (Miso.Lens.at 0 .= Nothing) (IM.singleton 0 10 :: IntMap Int) `shouldBe`
           mempty
       it "Should at on Map" $ do
-        flip execState (mempty :: Map Char Int) (Miso.Lens.at 'a' ?= 10) `shouldBe`
+        execState (Miso.Lens.at 'a' ?= 10) (mempty :: Map Char Int) `shouldBe`
           M.singleton 'a' 10
-        flip execState (M.singleton 'a' 10 :: Map Char Int) (Miso.Lens.at 'a' .= Nothing) `shouldBe`
+        execState (Miso.Lens.at 'a' .= Nothing) (M.singleton 'a' 10 :: Map Char Int) `shouldBe`
           mempty
       it "Should _1" $ do
         ((1,2) ^. _1) `shouldBe` 1
@@ -1342,7 +1336,7 @@ main = withJS $ do
         JSON.fromJSON (JSON.toJSON (0 :: Natural)) `shouldBe` (JSON.Success (0 :: Natural))
         (JSON.fromJSON (JSON.Number $ -99.00) :: JSON.Result Natural) `shouldBe` JSON.Error "Cannot parse negative number as Natural: -99"
         ((JSON.fromJSON (JSON.Number $ 0/0)) :: JSON.Result Natural) `shouldBe` JSON.Error "Cannot parse NaN as Natural: NaN"
-        (JSON.fromJSON (JSON.Number $ 15.24) :: JSON.Result Natural) `shouldBe` JSON.Success 15
+        (JSON.fromJSON (JSON.Number 15.24) :: JSON.Result Natural) `shouldBe` JSON.Success 15
       it "Should marshal a MisoString" $ do
         (`shouldBe` Just ("foo" :: MisoString)) =<< liftIO (fromJSVal =<< toJSVal ("foo" :: MisoString))
       it "Should marshal a (Maybe Bool)" $ do

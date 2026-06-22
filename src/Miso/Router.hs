@@ -201,7 +201,7 @@ instance (KnownSymbol frag) => ToMisoString (Fragment frag) where
 -----------------------------------------------------------------------------
 instance (ToMisoString a, KnownSymbol path) => ToMisoString (QueryParam path a) where
   toMisoString (QueryParam maybeVal) =
-    maybe mempty (\param -> "?" <> param <> "=" <> val) (ms <$> maybeVal)
+    maybe mempty (\param -> "?" <> ms param <> "=" <> val) maybeVal
       where
         val = ms $ symbolVal (Proxy @path)
 -----------------------------------------------------------------------------

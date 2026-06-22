@@ -1,7 +1,6 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RecordWildCards     #-}
-{-# LANGUAGE KindSignatures      #-}
 {-# LANGUAGE TypeFamilies        #-}
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE RankNTypes          #-}
@@ -98,7 +97,7 @@
 -- data Action = AddOne | SubtractOne
 --
 -- updateModel :: Action -> Effect parent Model Action
--- updateModel = \\case 
+-- updateModel = \\case
 --   AddOne -> value '+=' 1
 --   SubtractOne -> value '-=' 1
 -- @
@@ -815,7 +814,7 @@ _Nothing :: Prism (Maybe a) a
 _Nothing = prism (const Nothing) Prelude.id
 ----------------------------------------------------------------------------
 infixl 8 ^?
-(^?) :: s -> Prism s a -> Maybe a 
+(^?) :: s -> Prism s a -> Maybe a
 (^?) = flip preview
 ----------------------------------------------------------------------------
 prism :: (a -> s) -> (s -> Maybe a) -> Prism s a

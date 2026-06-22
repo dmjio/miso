@@ -1,5 +1,4 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE BangPatterns      #-}
 {-# LANGUAGE OverloadedStrings #-}
 -----------------------------------------------------------------------------
 -- |
@@ -41,7 +40,7 @@ rAFSub toAction sink = createSub acquire release sink
       ref <- newIORef (error "rAFSub: uninitialized, impossible")
       callback <-
         syncCallback1 $ \jsval -> do
-          sink =<< toAction <$> fromJSValUnchecked jsval
+          sink . toAction =<< fromJSValUnchecked jsval
           void (requestAnimationFrame =<< readIORef ref)
 
       writeIORef ref callback

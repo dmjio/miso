@@ -17,7 +17,6 @@ module Miso.Delegate
   ( delegator
   ) where
 -----------------------------------------------------------------------------
-import           Control.Monad.IO.Class (liftIO)
 import           Data.IORef (IORef, readIORef)
 import qualified Data.Map.Strict as M
 -----------------------------------------------------------------------------
@@ -53,6 +52,6 @@ delegator
 delegator mountPointElement vtreeRef es debug = do
   evts <- toJSVal (uncurry Event <$> M.toList es)
   FFI.delegator mountPointElement evts debug $ do
-    VTree (Object vtree) <- liftIO (readIORef vtreeRef)
+    VTree (Object vtree) <- readIORef vtreeRef
     pure vtree
 -----------------------------------------------------------------------------

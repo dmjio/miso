@@ -1,6 +1,4 @@
 ----------------------------------------------------------------------------
-{-# LANGUAGE LambdaCase #-}
-----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.JSON.Parser
 -- Copyright   :  (C) 2016-2026 David M. Johnson
@@ -12,7 +10,7 @@
 -- A Parser for the JSON specification. Meant to be used on the server w/ SSR.
 --
 -- This was ported from <https://github.com/dmjio/json-test> by [@ners](https://github.com/ners)
--- 
+--
 ----------------------------------------------------------------------------
 module Miso.JSON.Parser (decodePure) where
 ----------------------------------------------------------------------------

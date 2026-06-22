@@ -3,8 +3,6 @@
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE RecordWildCards       #-}
-{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE CPP                   #-}
 -----------------------------------------------------------------------------
 -- |
@@ -118,26 +116,26 @@ renderBuilder (VNode ns tag attrs children) = mconcat
   ] where
       selfClosing = htmls <> svgs <> mathmls
       htmls = [ x
-              | x <- [ "area", "base", "col", "embed", "img", "input", "br", "hr", "meta", "link", "param", "source", "track", "wbr" ]
-              , ns == HTML
+              | ns == HTML
+              , x <- [ "area", "base", "col", "embed", "img", "input", "br", "hr", "meta", "link", "param", "source", "track", "wbr" ]
               ]
       svgs  = [ x
-              | x <- [ "circle", "line", "rect", "path", "ellipse", "polygon", "polyline", "use", "image"]
-              , ns == SVG
+              | ns == SVG
+              , x <- [ "circle", "line", "rect", "path", "ellipse", "polygon", "polyline", "use", "image"]
               ]
       mathmls =
               [ x
-              | x <- ["mglyph", "mprescripts", "none", "maligngroup", "malignmark" ]
-              , ns == MATHML
+              | ns == MATHML
+              , x <- ["mglyph", "mprescripts", "none", "maligngroup", "malignmark" ]
               ]
 
 renderBuilder (VComp _ (SomeComponent props vcomp_)) =
   foldMap renderBuilder vkids
     where
 #ifdef SSR
-      vkids = [ unsafeCoerce $ (view vcomp_) props (getInitialComponentModel vcomp_) ]
+      vkids = [ unsafeCoerce $ view vcomp_ props (getInitialComponentModel vcomp_) ]
 #else
-      vkids = [ unsafeCoerce $ (view vcomp_) props (model vcomp_) ]
+      vkids = [ unsafeCoerce $ view vcomp_ props (model vcomp_) ]
 #endif
 renderBuilder (VFrag _ kids) = foldMap renderBuilder kids
 ----------------------------------------------------------------------------
@@ -167,7 +165,7 @@ renderAttrs (Property key value) =
   , stringUtf8 "\""
   ]
 renderAttrs (On _) = mempty
-renderAttrs (Styles styles) =
+renderAttrs (Styles styles_) =
   mconcat
   [ "style"
   , stringUtf8 "=\""
@@ -178,7 +176,7 @@ renderAttrs (Styles styles) =
       , fromMisoString v
       , charUtf8 ';'
       ]
-    | (k,v) <- M.toList styles
+    | (k,v) <- M.toList styles_
     ]
   , stringUtf8 "\""
   ]

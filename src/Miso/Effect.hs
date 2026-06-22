@@ -60,7 +60,7 @@ module Miso.Effect
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad (void)
-import           Data.Foldable (for_)
+import           Data.Foldable (traverse_)
 import           Control.Monad.RWS (RWS, put, tell, execRWS, censor, MonadReader)
 -----------------------------------------------------------------------------
 import           Miso.DSL.FFI
@@ -337,7 +337,7 @@ for
   => IO (f action)
   -- ^ @actions@ executed in batch.
   -> Effect parent props model action
-for actions = withSink $ \sink -> actions >>= flip for_ sink
+for actions = withSink $ \sink -> actions >>= traverse_ sink
 -----------------------------------------------------------------------------
 -- | Performs the given 'IO' action before all IO actions collected by the given
 -- effect.
