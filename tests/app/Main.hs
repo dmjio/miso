@@ -54,9 +54,8 @@ import           Miso.Runtime.Internal (ComponentState (..), components, compone
 -- | Clears the component state and DOM between each test
 clearComponentState :: IO ()
 clearComponentState = do
-  liftIO $ do
-    writeIORef components mempty
-    writeIORef componentIds initialComponentId
+  writeIORef components mempty
+  writeIORef componentIds initialComponentId
 -----------------------------------------------------------------------------
 clearBody :: IO ()
 clearBody = void $ eval ("document.body.innerHTML = '';" :: MisoString)
@@ -716,14 +715,14 @@ main = withJS $ do
       it "Should ^." $ do
         (0 ^. this) `shouldBe` 0
       it "Should at on IntMap" $ do
-        flip execState (mempty :: IntMap Int) (Miso.Lens.at 0 ?= 10) `shouldBe`
+        execState (Miso.Lens.at 0 ?= 10) (mempty :: IntMap Int) `shouldBe`
           IM.singleton 0 10
-        flip execState (IM.singleton 0 10 :: IntMap Int) (Miso.Lens.at 0 .= Nothing) `shouldBe`
+        execState (Miso.Lens.at 0 .= Nothing) (IM.singleton 0 10 :: IntMap Int) `shouldBe`
           mempty
       it "Should at on Map" $ do
-        flip execState (mempty :: Map Char Int) (Miso.Lens.at 'a' ?= 10) `shouldBe`
+        execState (Miso.Lens.at 'a' ?= 10) (mempty :: Map Char Int) `shouldBe`
           M.singleton 'a' 10
-        flip execState (M.singleton 'a' 10 :: Map Char Int) (Miso.Lens.at 'a' .= Nothing) `shouldBe`
+        execState (Miso.Lens.at 'a' .= Nothing) (M.singleton 'a' 10 :: Map Char Int) `shouldBe`
           mempty
       it "Should _1" $ do
         ((1,2) ^. _1) `shouldBe` 1

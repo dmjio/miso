@@ -161,7 +161,7 @@ initialize events _componentParentId hydrate isRoot initialProps maybeKey comp@C
   _componentId <- freshComponentId
   let
     _componentProps = initialProps
-    _componentSink = \action -> liftIO $ do
+    _componentSink = \action -> do
       atomicModifyIORef' globalQueue (\q -> (enqueue _componentId action q, ()))
       notify globalWaiter
 
@@ -185,8 +185,8 @@ initialize events _componentParentId hydrate isRoot initialProps maybeKey comp@C
 
   _componentDOMRef <- getComponentMountPoint
   let _componentIsDirty = False
-  _componentVTree <- liftIO $ newIORef (VTree (Object jsNull))
-  _componentSubThreads <- liftIO (newIORef M.empty)
+  _componentVTree <- newIORef (VTree (Object jsNull))
+  _componentSubThreads <- newIORef M.empty
 
   frame <- newEmptyMVar :: IO (MVar Double)
   let _componentMailbox = S.empty
@@ -200,12 +200,12 @@ initialize events _componentParentId hydrate isRoot initialProps maybeKey comp@C
         newVTree <-
           buildVTree events _componentParentId _componentId Draw
             _componentSink logLevel (view currentProps newModel)
-        oldVTree <- liftIO (readIORef _componentVTree)
+        oldVTree <- readIORef _componentVTree
         _frame <- requestAnimationFrame rAFCallback
         _timestamp :: Double <- takeMVar frame
         Diff.diff (Just oldVTree) (Just newVTree) _componentDOMRef
         FFI.updateRef oldVTree newVTree
-        liftIO (atomicWriteIORef _componentVTree newVTree)
+        atomicWriteIORef _componentVTree newVTree
         FFI.flush
 
   let _componentApplyActions = \(actions :: [action]) model_ comps currentProps -> do
@@ -295,8 +295,8 @@ initSubs :: [Sub action] -> IORef (Map MisoString ThreadId) -> Sink action -> IO
 initSubs subs_ _componentSubThreads _componentSink = do
   forM_ subs_ $ \sub_ -> do
     threadId <- forkIO (sub_ _componentSink)
-    subKey <- liftIO freshSubId
-    liftIO $ atomicModifyIORef' _componentSubThreads $ \m ->
+    subKey <- freshSubId
+    atomicModifyIORef' _componentSubThreads $ \m ->
       (M.insert subKey threadId m, ())
 -----------------------------------------------------------------------------
 -- | Diffs two models, returning True if a redraw is necessary
@@ -322,7 +322,7 @@ scheduler =
       Just (vcompId, [])
         | vcompId < 0 -> do
             -- props propagation, negated 'ComponentId' indicates render-phase only.
-            vcomps <- liftIO (readIORef components)
+            vcomps <- readIORef components
             forM_ (IM.lookup (negate vcompId) vcomps) $ \ComponentState {..} -> do
               _componentDraw _componentModel
               _componentPropsPhase _prevComponentProps _componentProps
@@ -368,7 +368,7 @@ scheduler =
 renderComponents :: ComponentIds -> IO ()
 renderComponents dirtySet = do
   forM_ (IS.toAscList dirtySet) $ \vcompId ->
-    IM.lookup vcompId <$> liftIO (readIORef components) >>= mapM \ComponentState {..} -> do
+    IM.lookup vcompId <$> readIORef components >>= mapM \ComponentState {..} -> do
       when _componentIsDirty $ do
         _componentDraw _componentModel
         FFI.modelHydration _componentId =<< toObject jsNull
@@ -381,7 +381,7 @@ modifyComponent
   :: ComponentId
   -> State (ComponentState parent props model action) a
   -> IO ()
-modifyComponent vcompId go = liftIO $
+modifyComponent vcompId go =
   atomicModifyIORef' components $ \vcomps ->
     (IM.adjust (execState go) vcompId vcomps, ())
 ----------------------------------------------------------------------------
@@ -553,7 +553,7 @@ initialDraw initializedModel events hydrate isRoot Component {..} ComponentState
                 buildVTree events _componentParentId _componentId Draw
                   _componentSink logLevel (view _componentProps initializedModel)
               Diff.diff Nothing (Just newTree) _componentDOMRef
-              liftIO (atomicWriteIORef _componentVTree newTree)
+              atomicWriteIORef _componentVTree newTree
         else
           atomicWriteIORef _componentVTree vtree
 -----------------------------------------------------------------------------
@@ -561,7 +561,7 @@ initialDraw initializedModel events hydrate isRoot Component {..} ComponentState
 -- its events.
 getBatch :: IO (Maybe (ComponentId, [action]))
 getBatch = do
-  liftIO $ atomicModifyIORef' globalQueue $ \q ->
+  atomicModifyIORef' globalQueue $ \q ->
     case dequeue q of
       Nothing -> (q, Nothing)
       Just (vcompId, actions, newQueue) ->
@@ -569,7 +569,7 @@ getBatch = do
 -----------------------------------------------------------------------------
 -- | Helper for event extraction at a specific 'ComponentId'
 drainQueueAt :: ComponentId -> IO [a]
-drainQueueAt vcompId = liftIO $ atomicModifyIORef' globalQueue (dequeueAt vcompId)
+drainQueueAt vcompId = atomicModifyIORef' globalQueue (dequeueAt vcompId)
 -----------------------------------------------------------------------------
 -- | Data type for holding the events in the system along with
 -- the schedule of what events should be processed next
@@ -949,7 +949,7 @@ publish (Topic topicName) message = mapM_ go =<< IM.elems <$> readIORef componen
         Nothing ->
           pure ()
         Just f -> do
-          liftIO (f (toJSON message))
+          f (toJSON message)
 -----------------------------------------------------------------------------
 subIds :: IORef Int
 {-# NOINLINE subIds #-}
@@ -1073,7 +1073,7 @@ unloadScripts ComponentState {..} = do
 -- | Helper to drop all lifecycle and mounting hooks if defined.
 freeLifecycleHooks :: ComponentState parent props model action -> IO ()
 freeLifecycleHooks ComponentState {..} = do
-  VTree (Object comp) <- liftIO (readIORef _componentVTree)
+  VTree (Object comp) <- readIORef _componentVTree
   mapM_ freeFunction =<< fromJSVal =<< comp ! ("mount" :: MisoString)
   mapM_ freeFunction =<< fromJSVal =<< comp ! ("unmount" :: MisoString)
 -----------------------------------------------------------------------------
