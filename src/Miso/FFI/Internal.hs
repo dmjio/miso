@@ -3,7 +3,6 @@
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE NamedFieldPuns             #-}
-{-# LANGUAGE ViewPatterns               #-}
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE CPP                        #-}
 -----------------------------------------------------------------------------
@@ -156,7 +155,7 @@ module Miso.FFI.Internal
    , modelHydration
    ) where
 -----------------------------------------------------------------------------
-import           Control.Monad (void, forM_, (<=<), when)
+import           Control.Monad (void, forM_, (<=<), when, unless)
 import           Data.Map.Strict (Map)
 import           Data.Maybe
 import           Prelude hiding ((!!))
@@ -573,12 +572,12 @@ requestFullscreen = do
   docEl <- doc ! "documentElement"
   rfs   <- docEl ! "requestFullscreen"
   undef <- isUndefined rfs
-  if not undef
-    then void $ docEl # "requestFullscreen" $ ()
-    else do
+  if undef
+    then do
       wrfs   <- docEl ! "webkitRequestFullscreen"
       wundef <- isUndefined wrfs
-      when (not wundef) $ void $ docEl # "webkitRequestFullscreen" $ ()
+      unless wundef $ void $ docEl # "webkitRequestFullscreen" $ ()
+    else void $ docEl # "requestFullscreen" $ ()
 -----------------------------------------------------------------------------
 -- | Calls the @alert()@ function.
 alert :: MisoString -> IO ()
@@ -677,7 +676,7 @@ addStyleSheet url cacheBust  = do
   head_ <- getHead
   link <- context # "createElement" $ ["link" :: MisoString]
   _ <- link # "setAttribute" $ ["rel","stylesheet" :: MisoString]
-  url_ <- appendTimestamp url cacheBust 
+  url_ <- appendTimestamp url cacheBust
   _ <- link # "setAttribute" $ ["href", url_ ]
   void $ context # "appendChild" $ (head_, link)
   pure link

@@ -26,7 +26,7 @@
 -- A JSON library specialized to MisoString for performance. Largely based
 -- on [microaeson](https://hackage-content.haskell.org/package/microaeson).
 --
--- Uses JS runtime primitives `JSON.stringify()` and `JSON.parse()`. 
+-- Uses JS runtime primitives `JSON.stringify()` and `JSON.parse()`.
 --
 ----------------------------------------------------------------------------
 module Miso.JSON
@@ -108,13 +108,11 @@ import           GHC.Natural (Natural)
 import           Data.Char
 import qualified Data.Map.Strict as M
 import           Data.Map.Strict (Map)
+import           Data.Maybe (fromMaybe)
 import           Data.Int
 import           GHC.Natural (naturalToInteger, naturalFromInteger)
 import           GHC.TypeLits
 import           Data.Kind
-#ifndef VANILLA
-import qualified Data.Text as T
-#endif
 import qualified Data.Text.Lazy as LT
 import           Data.Word
 import           GHC.Generics
@@ -124,11 +122,12 @@ import           Miso.String (FromMisoString, ToMisoString, MisoString, ms, sing
 import qualified Miso.String as MS
 import           Miso.JSON.Types
 import qualified Miso.JSON.Parser as Parser
-----------------------------------------------------------------------------
 import           Numeric (showHex)
+----------------------------------------------------------------------------
 #ifndef VANILLA
 import           Control.Monad.Trans.Maybe
 import           System.IO.Unsafe (unsafePerformIO)
+import qualified Data.Text as T
 #endif
 
 ----------------------------------------------------------------------------
@@ -158,7 +157,7 @@ m .:? k = maybe (pure Nothing) parseJSON (M.lookup k m)
 m .:! k = maybe (pure Nothing) (fmap Just . parseJSON) (M.lookup k m)
 ----------------------------------------------------------------------------
 (.!=) :: Parser (Maybe a) -> a -> Parser a
-mv .!= def = fmap (maybe def id) mv
+mv .!= def = fmap (fromMaybe def) mv
 ----------------------------------------------------------------------------
 class ToJSON a where
   toJSON :: a -> Value
@@ -462,7 +461,7 @@ parseMaybe :: (a -> Parser b) -> a -> Maybe b
 parseMaybe m v =
   case parseEither m v of
     Left _ -> Nothing
-    Right r -> Just r 
+    Right r -> Just r
 ----------------------------------------------------------------------------
 parseEither :: (a -> Parser b) -> a -> Either MisoString b
 parseEither m v = unParser (m v)
@@ -677,7 +676,7 @@ instance FromJSON Natural where
   parseJSON = withNumber "Natural" parseNumber
     where parseNumber d | d < 0 = pfail ("Cannot parse negative number as Natural: " <> ms d)
                         | isNaN d = pfail ("Cannot parse NaN as Natural: " <> ms d)
-                        | otherwise  = pure $ naturalFromInteger $ fromInteger $ round d 
+                        | otherwise  = pure $ naturalFromInteger $ fromInteger $ round d
 ----------------------------------------------------------------------------
 instance FromJSON Int where
   parseJSON = withNumber "Int" (pure . fromInteger . round)

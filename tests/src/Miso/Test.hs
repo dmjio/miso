@@ -187,7 +187,7 @@ expect f x y = do
   groupName <- use currentTestGroup
   expects += 1
   currentTestResult %= (&& succeeded)
-  when (not succeeded) $ liftIO $ do
+  unless succeeded $ liftIO $ do
     stop <- now
     prettyTest (CurrentTest groupName name succeeded expectationMessage (stop - start))
       where
@@ -218,7 +218,7 @@ shouldSatisfy x f = do
   groupName <- use currentTestGroup
   expects += 1
   currentTestResult %= (&& succeeded)
-  when (not succeeded) $ liftIO $ do
+  unless succeeded $ liftIO $ do
     stop <- now
     prettyTest (CurrentTest groupName name succeeded expectationMessage (stop - start))
       where
