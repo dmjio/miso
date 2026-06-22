@@ -943,13 +943,13 @@ publish
   => Topic message
   -> message
   -> IO ()
-publish (Topic topicName) message = mapM_ go =<< IM.elems <$> readIORef components
+publish (Topic topicName) message = mapM_ go . IM.elems =<< readIORef components
   where
-    go ComponentState {..} = do
+    go ComponentState {..} =
       case M.lookup topicName _componentTopics of
         Nothing ->
           pure ()
-        Just f -> do
+        Just f ->
           f (toJSON message)
 -----------------------------------------------------------------------------
 subIds :: IORef Int
@@ -1470,12 +1470,12 @@ mailDescendants msg = do
   io_ $ do
     cs <- (IM.! _componentInfoId) <$> readIORef components
     forM_ (IS.toList (_componentChildren cs)) $ \child -> do
-      walk =<< (IM.! child) <$> readIORef components
+      walk . (IM.! child) =<< readIORef components
   where
     walk ComponentState {..} = do
       mail _componentId msg
       forM_ (IS.toList _componentChildren) $ \child -> do
-        walk =<< (IM.! child) <$> readIORef components
+        walk . (IM.! child) =<< readIORef components
 ----------------------------------------------------------------------------
 -- | Helper function for processing @Mail@ from 'mail'.
 --
@@ -1726,8 +1726,8 @@ getWebSocket vcompId (WebSocket websocketId) =
 -----------------------------------------------------------------------------
 finalizeWebSockets :: ComponentId -> IO ()
 finalizeWebSockets vcompId = do
-  mapM_ (mapM_ FFI.websocketClose . IM.elems) =<<
-    IM.lookup vcompId <$> readIORef websocketConnections
+  mapM_ (mapM_ FFI.websocketClose . IM.elems) .
+    IM.lookup vcompId =<< readIORef websocketConnections
   dropComponentWebSockets
     where
       dropComponentWebSockets :: IO ()
@@ -2002,8 +2002,8 @@ eventSourceClose socketId = do
 -----------------------------------------------------------------------------
 finalizeEventSources :: ComponentId -> IO ()
 finalizeEventSources vcompId = do
-  mapM_ (mapM_ FFI.eventSourceClose . IM.elems) =<<
-    IM.lookup vcompId <$> readIORef eventSourceConnections
+  mapM_ (mapM_ FFI.eventSourceClose . IM.elems) .
+    IM.lookup vcompId =<< readIORef eventSourceConnections
   dropComponentEventSources
     where
       dropComponentEventSources :: IO ()

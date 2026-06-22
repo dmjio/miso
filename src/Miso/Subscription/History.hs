@@ -81,7 +81,7 @@ uriSub f sink = createSub acquire release sink
   where
     release = FFI.windowRemoveEventListener "popstate"
     acquire = FFI.windowAddEventListener "popstate" $ \_ ->
-      sink =<< f <$> getURI
+      sink . f =<< getURI
 -----------------------------------------------------------------------------
 -- | Subscription for @popstate@ events, from the History API, mapped
 -- to a user-defined 'Router'.
