@@ -202,9 +202,12 @@ module Miso.CSS
   , rotate3d
   , scale
   , scaleXY
+  , scale3d
   , scaleX
   , scaleY
   , scaleZ
+  , perspectiveFn
+  , matrix3d
   , skew
   , skewX
   , skewY
@@ -1448,6 +1451,11 @@ scale n = TransformFn $ "scale(" <> MS.ms n <> ")"
 scaleXY :: Double -> Double -> TransformFn
 scaleXY x y = TransformFn $ "scale(" <> MS.ms x <> "," <> MS.ms y <> ")"
 -----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function/scale3d
+--
+scale3d :: Double -> Double -> Double -> TransformFn
+scale3d x y z = TransformFn $ "scale3d(" <> MS.intercalate "," [MS.ms x, MS.ms y, MS.ms z] <> ")"
+-----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function/scaleX
 --
 scaleX :: Double -> TransformFn
@@ -1462,6 +1470,36 @@ scaleY n = TransformFn $ "scaleY(" <> MS.ms n <> ")"
 --
 scaleZ :: Double -> TransformFn
 scaleZ n = TransformFn $ "scaleZ(" <> MS.ms n <> ")"
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function/perspective
+-- The @perspective()@ transform function, distinct from the @perspective@ CSS property.
+--
+-- >>> renderTransformFn (perspectiveFn (px 500))
+-- "perspective(500px)"
+--
+perspectiveFn :: MisoString -> TransformFn
+perspectiveFn d = TransformFn $ "perspective(" <> d <> ")"
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function/matrix3d
+-- 4x4 homogeneous matrix in column-major order; each tuple is one column.
+--
+-- > matrix3d (1,0,0,0) (0,1,0,0) (0,0,1,0) (10,20,0,1)
+--
+matrix3d
+  :: (Double, Double, Double, Double)
+  -> (Double, Double, Double, Double)
+  -> (Double, Double, Double, Double)
+  -> (Double, Double, Double, Double)
+  -> TransformFn
+matrix3d (a1,b1,c1,d1) (a2,b2,c2,d2) (a3,b3,c3,d3) (a4,b4,c4,d4) =
+  TransformFn $ "matrix3d(" <> values <> ")"
+  where
+    values = MS.intercalate ","
+      [ MS.ms a1, MS.ms b1, MS.ms c1, MS.ms d1
+      , MS.ms a2, MS.ms b2, MS.ms c2, MS.ms d2
+      , MS.ms a3, MS.ms b3, MS.ms c3, MS.ms d3
+      , MS.ms a4, MS.ms b4, MS.ms c4, MS.ms d4
+      ]
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function/skew
 --
