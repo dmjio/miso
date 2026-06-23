@@ -200,7 +200,7 @@ initialize events _componentParentId hydrate isRoot initialProps maybeKey comp@C
             _componentSink logLevel (view currentProps newModel)
         oldVTree <- readIORef _componentVTree
         atomicWriteIORef _componentVTree newVTree
-        cb <- syncCallback1 $ \_ -> do
+        cb <- asyncCallback1 $ \_ -> do
           Diff.diff (Just oldVTree) (Just newVTree) _componentDOMRef
           FFI.updateRef oldVTree newVTree
           FFI.flush
