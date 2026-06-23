@@ -9,7 +9,76 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
-----------------------------------------------------------------------------
+-- = Overview
+--
+-- "Miso.Html.Event" provides pre-wired event-handler 'Miso.Types.Attribute'
+-- values for the most common browser events. Each handler is built on the
+-- lower-level 'Miso.Event.on' \/ 'Miso.Event.onWithOptions' primitives from
+-- "Miso.Event".
+--
+-- This module is re-exported in its entirety by "Miso.Html" and "Miso".
+--
+-- = Naming conventions
+--
+-- Handlers follow a consistent naming pattern:
+--
+-- [@onXxx action@] fires @action@; no event data extracted
+-- [@onXxxWith (a -> action)@] passes extracted event data or 'Miso.Effect.DOMRef'
+-- [@onXxxWithOptions opts act@] adds 'Miso.Event.Types.Options' (@preventDefault@ \/ @stopPropagation@) before firing
+-- [@onXxxCapture action@] registers in the capture phase instead of bubble
+--
+-- = Quick start
+--
+-- @
+-- import "Miso"
+--
+-- view :: Model -> 'Miso.Types.View' Model Action
+-- view m =
+--   'Miso.Html.Element.div_' []
+--     [ 'Miso.Html.Element.button_' [ 'onClick' Increment ]        [ 'Miso.text' \"+\" ]
+--     , 'Miso.Html.Element.input_'  [ 'onInput' SetText
+--                     , 'Miso.Html.Property.value_' m.text ]      []
+--     , 'Miso.Html.Element.form_'   [ 'onSubmit' Submit ]         []  -- preventDefault by default
+--     ]
+-- @
+--
+-- = Event groups
+--
+-- * __Mouse__: 'onClick', 'onClickCapture', 'onClickWith', 'onClickWithOptions',
+--   'onClickPrevent', 'onDoubleClick', 'onDoubleClickWith',
+--   'onMouseDown', 'onMouseUp', 'onMouseEnter', 'onMouseLeave',
+--   'onMouseOver', 'onMouseOut', 'onContextMenuWithOptions'
+-- * __Keyboard__: 'onKeyDown', 'onKeyDownWithInfo', 'onKeyPress', 'onKeyUp', 'onEnter'
+-- * __Form__: 'onInput', 'onInputWith', 'onChange', 'onChangeWith',
+--   'onChecked', 'onSubmit', 'onSelect'
+-- * __Focus__: 'onFocus', 'onBlur'
+-- * __Drag__: 'onDrag', 'onDragStart', 'onDragEnd', 'onDragEnter',
+--   'onDragLeave', 'onDragOver', 'onDrop' (and @WithOptions@ variants)
+-- * __Pointer__: 'onPointerDown', 'onPointerUp', 'onPointerEnter',
+--   'onPointerLeave', 'onPointerOver', 'onPointerOut',
+--   'onPointerCancel', 'onPointerMove'
+-- * __Media__: 'onPlay', 'onPause', 'onEnded', 'onTimeUpdate',
+--   'onVolumeChange', 'onLoadedData', 'onLoadedMetadata', … (and @With@ variants)
+-- * __Touch__: 'onTouchStart', 'onTouchEnd', 'onTouchMove',
+--   'onTouchCancel' (and @WithOptions@ variants)
+-- * __Lifecycle__: 'onLoad', 'onUnload', 'onError'
+--
+-- = Notes
+--
+-- * 'onSubmit' enables @preventDefault@ by default to suppress the native
+--   form submission.
+-- * 'onEnter' is a convenience wrapper around 'onKeyDown' that fires
+--   different actions depending on whether @keyCode == 13@.
+-- * The @WithOptions@ variants require 'Miso.Event.Types.defaultEvents' (or a
+--   superset) to include the relevant event name in the component's @events@ map.
+--
+-- = See also
+--
+-- * "Miso.Event" — 'Miso.Event.on', 'Miso.Event.onCapture', 'Miso.Event.onWithOptions'
+-- * "Miso.Event.Decoder" — 'Miso.Event.Decoder.Decoder' for custom event extraction
+-- * "Miso.Event.Types" — 'Miso.Event.Types.Options', 'Miso.Event.Types.KeyCode',
+--   'Miso.Event.Types.PointerEvent'
+-----------------------------------------------------------------------------
 module Miso.Html.Event
   ( -- *** Mouse
     onClick
@@ -155,7 +224,12 @@ onChecked f = on "change" checkedDecoder (\action _ -> f action)
 -- @
 --
 -- @since 1.9.0.0
-onContextMenuWithOptions :: Options -> action -> Attribute action
+onContextMenuWithOptions
+  :: Options
+  -- ^ Propagation options (@preventDefault@, @stopPropagation@)
+  -> action
+  -- ^ Action to dispatch when the context menu event fires
+  -> Attribute action
 onContextMenuWithOptions opts action =
   onWithOptions BUBBLE opts "contextmenu" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
@@ -173,7 +247,12 @@ onClickWith :: (DOMRef -> action) -> Attribute action
 onClickWith action = on "click" emptyDecoder $ \() domRef -> action domRef
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/click
-onClickWithOptions :: Options -> action -> Attribute action
+onClickWithOptions
+  :: Options
+  -- ^ Propagation options (@preventDefault@, @stopPropagation@)
+  -> action
+  -- ^ Action to dispatch on click
+  -> Attribute action
 onClickWithOptions options action = onWithOptions BUBBLE options "click" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/click
@@ -193,36 +272,62 @@ onDoubleClickWith :: (DOMRef -> action) -> Attribute action
 onDoubleClickWith f = on "dblclick" emptyDecoder $ \() domRef -> f domRef
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dblclick
-onDoubleClickWithOptions :: Options -> action -> Attribute action
+onDoubleClickWithOptions
+  :: Options
+  -- ^ Propagation options (@preventDefault@, @stopPropagation@)
+  -> action
+  -- ^ Action to dispatch on double-click
+  -> Attribute action
 onDoubleClickWithOptions options action =
   onWithOptions BUBBLE options "dblclick" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/input
-onInput :: (MisoString -> action) -> Attribute action
+onInput
+  :: (MisoString -> action)
+  -- ^ Callback receiving @event.target.value@
+  -> Attribute action
 onInput f = on "input" valueDecoder (\action _ -> f action)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/input
-onInputWith :: (MisoString -> DOMRef -> action) -> Attribute action
+onInputWith
+  :: (MisoString -> DOMRef -> action)
+  -- ^ Callback receiving @event.target.value@ and the element's 'DOMRef'
+  -> Attribute action
 onInputWith = on "input" valueDecoder
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/change
-onChange :: (MisoString -> action) -> Attribute action
+onChange
+  :: (MisoString -> action)
+  -- ^ Callback receiving @event.target.value@
+  -> Attribute action
 onChange f = on "change" valueDecoder (\action _ -> f action)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/change
-onChangeWith :: (MisoString -> DOMRef -> action) -> Attribute action
+onChangeWith
+  :: (MisoString -> DOMRef -> action)
+  -- ^ Callback receiving @event.target.value@ and the element's 'DOMRef'
+  -> Attribute action
 onChangeWith = on "change" valueDecoder
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/select
-onSelect :: (MisoString -> action) -> Attribute action
+onSelect
+  :: (MisoString -> action)
+  -- ^ Callback receiving @event.target.value@ of the selected text
+  -> Attribute action
 onSelect f = on "select" valueDecoder (\action _ -> f action)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/keydown
-onKeyDownWithInfo :: (KeyInfo -> action) -> Attribute action
+onKeyDownWithInfo
+  :: (KeyInfo -> action)
+  -- ^ Callback receiving the key code and modifier key state
+  -> Attribute action
 onKeyDownWithInfo f = on "keydown" keyInfoDecoder (\action _ -> f action)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/keydown
-onKeyDown :: (KeyCode -> action) -> Attribute action
+onKeyDown
+  :: (KeyCode -> action)
+  -- ^ Callback receiving the numeric key code of the pressed key
+  -> Attribute action
 onKeyDown f = on "keydown" keycodeDecoder (\action _ -> f action)
 -----------------------------------------------------------------------------
 -- | 'onEnter'
@@ -249,11 +354,17 @@ onEnter
 onEnter nothing action = onKeyDown $ bool nothing action . (==13)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/keypress
-onKeyPress :: (KeyCode -> action) -> Attribute action
+onKeyPress
+  :: (KeyCode -> action)
+  -- ^ Callback receiving the numeric key code of the pressed key
+  -> Attribute action
 onKeyPress f = on "keypress" keycodeDecoder (\action _ -> f action)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/keyup
-onKeyUp :: (KeyCode -> action) -> Attribute action
+onKeyUp
+  :: (KeyCode -> action)
+  -- ^ Callback receiving the numeric key code of the released key
+  -> Attribute action
 onKeyUp f = on "keyup" keycodeDecoder (\action _ -> f action)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/mouseup
@@ -285,7 +396,12 @@ onDragStart :: action -> Attribute action
 onDragStart action = on "dragstart" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragstart
-onDragStartWithOptions :: Options -> action -> Attribute action
+onDragStartWithOptions
+  :: Options
+  -- ^ Propagation options (@preventDefault@, @stopPropagation@)
+  -> action
+  -- ^ Action to dispatch when the drag starts
+  -> Attribute action
 onDragStartWithOptions options action =
   onWithOptions BUBBLE options "dragstart" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
@@ -294,7 +410,12 @@ onDragOver :: action -> Attribute action
 onDragOver action = on "dragover" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragover
-onDragOverWithOptions :: Options -> action -> Attribute action
+onDragOverWithOptions
+  :: Options
+  -- ^ Propagation options (@preventDefault@, @stopPropagation@)
+  -> action
+  -- ^ Action to dispatch while the dragged element is over this target
+  -> Attribute action
 onDragOverWithOptions options action =
   onWithOptions BUBBLE options "dragover" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
@@ -303,7 +424,12 @@ onDragEnd :: action -> Attribute action
 onDragEnd action = on "dragend" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragend
-onDragEndWithOptions :: Options -> action -> Attribute action
+onDragEndWithOptions
+  :: Options
+  -- ^ Propagation options (@preventDefault@, @stopPropagation@)
+  -> action
+  -- ^ Action to dispatch when the drag operation ends
+  -> Attribute action
 onDragEndWithOptions options action =
   onWithOptions BUBBLE options "dragend" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
@@ -312,7 +438,12 @@ onDragEnter :: action -> Attribute action
 onDragEnter action = on "dragenter" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragenter
-onDragEnterWithOptions :: Options -> action -> Attribute action
+onDragEnterWithOptions
+  :: Options
+  -- ^ Propagation options (@preventDefault@, @stopPropagation@)
+  -> action
+  -- ^ Action to dispatch when a dragged element enters this target
+  -> Attribute action
 onDragEnterWithOptions options action =
   onWithOptions BUBBLE options "dragenter" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
@@ -321,7 +452,12 @@ onDragLeave :: action -> Attribute action
 onDragLeave action = on "dragleave" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragleave
-onDragLeaveWithOptions :: Options -> action -> Attribute action
+onDragLeaveWithOptions
+  :: Options
+  -- ^ Propagation options (@preventDefault@, @stopPropagation@)
+  -> action
+  -- ^ Action to dispatch when a dragged element leaves this target
+  -> Attribute action
 onDragLeaveWithOptions options action =
   onWithOptions BUBBLE options "dragleave" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
@@ -330,17 +466,32 @@ onDrag :: action -> Attribute action
 onDrag action = on "drag" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/drag
-onDragWithOptions :: Options -> action -> Attribute action
+onDragWithOptions
+  :: Options
+  -- ^ Propagation options (@preventDefault@, @stopPropagation@)
+  -> action
+  -- ^ Action to dispatch while the element is being dragged
+  -> Attribute action
 onDragWithOptions options action =
   onWithOptions BUBBLE options "drag" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/drop
-onDrop :: Options -> action -> Attribute action
+onDrop
+  :: Options
+  -- ^ Propagation options — typically include @preventDefault@ to allow the drop
+  -> action
+  -- ^ Action to dispatch when a dragged element is dropped on this target
+  -> Attribute action
 onDrop options action =
   onWithOptions BUBBLE options "drop" emptyDecoder (\() _ -> action)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/drop
-onDropWithOptions :: Options -> action -> Attribute action
+onDropWithOptions
+  :: Options
+  -- ^ Propagation options (@preventDefault@, @stopPropagation@)
+  -> action
+  -- ^ Action to dispatch on drop
+  -> Attribute action
 onDropWithOptions options action =
   onWithOptions BUBBLE options "drop" emptyDecoder (\() _ -> action)
 -----------------------------------------------------------------------------
@@ -354,35 +505,59 @@ onSubmit action =
     "submit" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/pointerup
-onPointerUp :: (PointerEvent -> action) -> Attribute action
+onPointerUp
+  :: (PointerEvent -> action)
+  -- ^ Callback receiving the full 'PointerEvent'
+  -> Attribute action
 onPointerUp f = on "pointerup" pointerDecoder (\action _ -> f action)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/pointerdown
-onPointerDown :: (PointerEvent -> action) -> Attribute action
+onPointerDown
+  :: (PointerEvent -> action)
+  -- ^ Callback receiving the full 'PointerEvent'
+  -> Attribute action
 onPointerDown f = on "pointerdown" pointerDecoder (\action _ -> f action)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/pointerenter
-onPointerEnter :: (PointerEvent -> action) -> Attribute action
+onPointerEnter
+  :: (PointerEvent -> action)
+  -- ^ Callback receiving the full 'PointerEvent'
+  -> Attribute action
 onPointerEnter f = on "pointerenter" pointerDecoder (\action _ -> f action)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/pointerleave
-onPointerLeave :: (PointerEvent -> action) -> Attribute action
+onPointerLeave
+  :: (PointerEvent -> action)
+  -- ^ Callback receiving the full 'PointerEvent'
+  -> Attribute action
 onPointerLeave f = on "pointerleave" pointerDecoder (\action _ -> f action)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/pointerover
-onPointerOver :: (PointerEvent -> action) -> Attribute action
+onPointerOver
+  :: (PointerEvent -> action)
+  -- ^ Callback receiving the full 'PointerEvent'
+  -> Attribute action
 onPointerOver f = on "pointerover" pointerDecoder (\action _ -> f action)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/pointerout
-onPointerOut :: (PointerEvent -> action) -> Attribute action
+onPointerOut
+  :: (PointerEvent -> action)
+  -- ^ Callback receiving the full 'PointerEvent'
+  -> Attribute action
 onPointerOut f = on "pointerout" pointerDecoder (\action _ -> f action)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/pointercancel
-onPointerCancel :: (PointerEvent -> action) -> Attribute action
+onPointerCancel
+  :: (PointerEvent -> action)
+  -- ^ Callback receiving the full 'PointerEvent'
+  -> Attribute action
 onPointerCancel f = on "pointercancel" pointerDecoder (\action _ -> f action)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/pointermove
-onPointerMove :: (PointerEvent -> action) -> Attribute action
+onPointerMove
+  :: (PointerEvent -> action)
+  -- ^ Callback receiving the full 'PointerEvent'
+  -> Attribute action
 onPointerMove f = on "pointermove" pointerDecoder (\action _ -> f action)
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_abort.asp
@@ -574,7 +749,12 @@ onTouchStart :: action -> Attribute action
 onTouchStart action = on "touchstart" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/touchstart
-onTouchStartWithOptions :: Options -> action -> Attribute action
+onTouchStartWithOptions
+  :: Options
+  -- ^ Propagation options (@preventDefault@, @stopPropagation@)
+  -> action
+  -- ^ Action to dispatch on touch start
+  -> Attribute action
 onTouchStartWithOptions options action = onWithOptions BUBBLE options "touchstart" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/touchend
@@ -582,7 +762,12 @@ onTouchEnd :: action -> Attribute action
 onTouchEnd action = on "touchend" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/touchend
-onTouchEndWithOptions :: Options -> action -> Attribute action
+onTouchEndWithOptions
+  :: Options
+  -- ^ Propagation options (@preventDefault@, @stopPropagation@)
+  -> action
+  -- ^ Action to dispatch on touch end
+  -> Attribute action
 onTouchEndWithOptions options action = onWithOptions BUBBLE options "touchend" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/touchmove
@@ -590,7 +775,12 @@ onTouchMove :: action -> Attribute action
 onTouchMove action = on "touchmove" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/touchmove
-onTouchMoveWithOptions :: Options -> action -> Attribute action
+onTouchMoveWithOptions
+  :: Options
+  -- ^ Propagation options (@preventDefault@, @stopPropagation@)
+  -> action
+  -- ^ Action to dispatch while a touch point is moving
+  -> Attribute action
 onTouchMoveWithOptions options action = onWithOptions BUBBLE options "touchmove" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/touchcancel
@@ -598,6 +788,11 @@ onTouchCancel :: action -> Attribute action
 onTouchCancel action = on "touchcancel" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/touchcancel
-onTouchCancelWithOptions :: Options -> action -> Attribute action
+onTouchCancelWithOptions
+  :: Options
+  -- ^ Propagation options (@preventDefault@, @stopPropagation@)
+  -> action
+  -- ^ Action to dispatch when a touch point is cancelled
+  -> Attribute action
 onTouchCancelWithOptions options action = onWithOptions BUBBLE options "touchcancel" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------

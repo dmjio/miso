@@ -9,7 +9,78 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
-----------------------------------------------------------------------------
+--
+-- = Overview
+--
+-- "Miso.Media" is a Haskell wrapper around the browser's
+-- <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement HTMLMediaElement>
+-- API. It covers both @\<audio\>@ and @\<video\>@ elements through the
+-- unified 'Media' type, which wraps the underlying 'Miso.DSL.JSVal'.
+--
+-- All property reads and method calls run in 'IO'. Properties that can be
+-- set declaratively are cross-linked to their corresponding
+-- 'Miso.Html.Property' combinators.
+--
+-- = Quick start
+--
+-- Obtain a 'Media' handle from the DOM, then read or control it in an
+-- 'Miso.Effect.Effect':
+--
+-- @
+-- import "Miso"
+-- import "Miso.Media"
+--
+-- update :: Action -> 'Miso.Effect.Effect' p props Model Action
+-- update PlayVideo = 'Miso.Effect.io_' $ do
+--   m <- 'Media' \<$\> 'Miso.FFI.getElementById' \"myVideo\"
+--   'play' m
+-- update PauseVideo = 'Miso.Effect.io_' $ do
+--   m <- 'Media' \<$\> 'Miso.FFI.getElementById' \"myVideo\"
+--   'pause' m
+-- update ReadState = 'Miso.Effect.io' $ do
+--   m  <- 'Media' \<$\> 'Miso.FFI.getElementById' \"myVideo\"
+--   t  <- 'currentTime' m
+--   rs <- 'readyState' m
+--   pure (GotState t rs)
+-- @
+--
+-- Wire events using 'mediaEvents' and the handlers from "Miso.Html.Event":
+--
+-- @
+-- myComponent = ('Miso.component' model update view)
+--   { 'Miso.Types.events' = 'Miso.Event.Types.defaultEvents' \<\> 'mediaEvents' }
+-- @
+--
+-- = API groups
+--
+-- * __Methods__: 'play', 'pause', 'load', 'canPlayType', 'srcObject'
+-- * __Playback state__ (read-only): 'currentSrc', 'currentTime', 'duration',
+--   'ended', 'paused', 'seeking', 'networkState', 'readyState'
+-- * __Playback control__ (read; set via 'Miso.Html.Property'): 'autoplay',
+--   'controls', 'loop', 'muted', 'defaultMuted', 'volume', 'playbackRate',
+--   'defaultPlaybackRate', 'preload', 'mediaGroup'
+-- * __Video-specific__ (read-only): 'videoWidth', 'videoHeight', 'poster'
+-- * __Event map__: 'mediaEvents' — merge into 'Miso.Types.events' to enable
+--   media event delegation
+--
+-- = State enumerations
+--
+-- 'NetworkState' and 'ReadyState' mirror the integer constants defined by
+-- <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement HTMLMediaElement>
+-- and are derived from 'Enum' so @toEnum@ / @fromEnum@ round-trip correctly:
+--
+-- @
+-- -- NetworkState: NETWORK_EMPTY(0) NETWORK_IDLE(1) NETWORK_LOADING(2) NETWORK_NO_SOURCE(3)
+-- -- ReadyState:   HAVE_NOTHING(0) HAVE_METADATA(1) HAVE_CURRENT_DATA(2) HAVE_FUTURE_DATA(3) HAVE_ENOUGH_DATA(4)
+-- @
+--
+-- = See also
+--
+-- * "Miso.Html.Element" — 'Miso.Html.Element.audio_', 'Miso.Html.Element.video_'
+-- * "Miso.Html.Property" — 'Miso.Html.Property.autoplay_', 'Miso.Html.Property.controls_', …
+-- * "Miso.Html.Event" — 'Miso.Html.Event.onPlay', 'Miso.Html.Event.onPause', …
+-- * "Miso.Event.Types" — 'Miso.Event.Types.mediaEvents' (also re-exported here)
+-----------------------------------------------------------------------------
 module Miso.Media
   ( -- *** Types
     Media        (..)
@@ -256,6 +327,11 @@ volume (Media m) = fromJSValUnchecked =<< m ! ("volume" :: MisoString)
 type Stream = JSVal
 -----------------------------------------------------------------------------
 -- | Sets the `srcObject` on audio or video elements.
-srcObject :: Stream -> Media -> IO ()
+srcObject
+  :: Stream
+  -- ^ A 'Stream' obtained from @navigator.mediaDevices.getUserMedia@ or similar
+  -> Media
+  -- ^ The audio\/video element whose @srcObject@ will be set
+  -> IO ()
 srcObject stream (Media media) = setField media "srcObject" stream
 -----------------------------------------------------------------------------

@@ -7,7 +7,23 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- Foreign Function Interface (FFI) utilities for interacting with JavaScript.
+-- Public re-export surface for Miso's JavaScript FFI layer.
+--
+-- This module re-exports the stable public API from "Miso.FFI.Internal".
+-- Prefer importing this module over @Internal@ in application code and
+-- library extensions.
+--
+-- Exports are grouped by concern:
+--
+-- * __DOM manipulation__: 'getElementById', 'focus', 'blur', 'removeChild', …
+-- * __Logging__: 'consoleLog', 'consoleError', 'consoleWarn'
+-- * __Callbacks__: 'syncCallback', 'asyncCallback', 'asyncCallback2', …
+-- * __Canvas\/Drawing__: 'flush', 'setDrawingContext'
+-- * __Browser APIs__: 'fetch', 'addEventListener', 'dispatchEvent', …
+-- * __JS types__: 'ArrayBuffer', 'Blob', 'FormData', 'Uint8Array', 'File', …
+-- * __Component lifecycle__: 'mountComponent', 'unmountComponent', 'modelHydration'
+--
+-- For inline JavaScript via quasi-quotation, see "Miso.FFI.QQ".
 --
 ----------------------------------------------------------------------------
 module Miso.FFI

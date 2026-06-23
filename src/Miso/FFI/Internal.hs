@@ -16,9 +16,80 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- Internal FFI functions for browser / device interaction.
+-- = Overview
 --
-----------------------------------------------------------------------------
+-- "Miso.FFI.Internal" contains the low-level browser bindings that back the
+-- miso runtime. It is exposed for advanced use-cases and custom renderer
+-- authors; most application code should import "Miso.FFI" instead, which
+-- re-exports a curated subset of this module.
+--
+-- = Drawing context abstraction
+--
+-- Miso routes all DOM mutations through a /drawing context/ object stored at
+-- @globalThis.miso.drawingContext@. This indirection lets the same Haskell
+-- runtime target different rendering backends (browser DOM, native mobile via
+-- <https://github.com/haskell-miso/miso-lynx miso-lynx>, etc.) without
+-- changing application code. Use 'setDrawingContext' to switch renderers at
+-- startup:
+--
+-- @
+-- setDrawingContext \"lynx\"   -- switch to the Lynx native renderer
+-- @
+--
+-- = Inline JavaScript
+--
+-- 'inline' provides a safe, scoped alternative to 'Miso.DSL.eval'. It
+-- wraps a JS snippet in a function, passes the supplied 'Miso.DSL.Object'
+-- fields as named parameters, and returns the result:
+--
+-- @
+-- {-\# LANGUAGE DeriveGeneric, DeriveAnyClass \#-}
+--
+-- data Person = Person { name :: MisoString, age :: Int }
+--   deriving (Generic, ToJSVal, ToObject)
+--
+-- logNameGetAge :: Person -> IO Int
+-- logNameGetAge person = inline
+--   \"console.log(name); return age;\"
+--   person
+-- @
+--
+-- Prefer 'inline' (or the @[js| … |]@ quasi-quoter from "Miso.FFI.QQ")
+-- over 'Miso.DSL.eval' — 'inline' is isolated and not subject to the
+-- security concerns or optimisation barriers of @eval@.
+--
+-- = API groups
+--
+-- * __Callbacks__: 'syncCallback', 'asyncCallback' (and 1\/2-arg variants)
+-- * __Events__: 'addEventListener', 'removeEventListener',
+--   'eventPreventDefault', 'eventStopPropagation',
+--   'delegator', 'dispatchEvent', 'newEvent', 'newCustomEvent'
+-- * __Window__: 'windowAddEventListener', 'windowRemoveEventListener',
+--   'windowInnerHeight', 'windowInnerWidth'
+-- * __DOM__: 'getBody', 'getDocument', 'getElementById', 'getHead',
+--   'removeChild', 'nextSibling', 'previousSibling', 'diff', 'hydrate'
+-- * __Console__: 'consoleLog', 'consoleWarn', 'consoleError', 'consoleLog''
+-- * __Performance__: 'now'
+-- * __Element actions__: 'focus', 'blur', 'select', 'setSelectionRange',
+--   'scrollIntoView', 'requestFullscreen', 'click', 'files', 'setValue'
+-- * __CSS \/ JS injection__: 'addStyle', 'addStyleSheet', 'addScript',
+--   'addSrc', 'addScriptImportMap'
+-- * __Network__: 'fetch' \/ 'Response' \/ 'CONTENT_TYPE',
+--   'websocketConnect', 'websocketSend', 'websocketClose',
+--   'eventSourceConnect', 'eventSourceClose'
+-- * __Navigator__: 'getUserMedia', 'copyClipboard', 'geolocation', 'isOnLine'
+-- * __Types__: 'Image', 'Date', 'Blob', 'File', 'FormData',
+--   'ArrayBuffer', 'Uint8Array', 'FileReader', 'URLSearchParams', 'Event'
+-- * __Randomness__: 'splitmix32', 'mathRandom', 'getRandomValue'
+-- * __Component lifecycle__ (runtime use only): 'mountComponent',
+--   'unmountComponent', 'modelHydration'
+--
+-- = See also
+--
+-- * "Miso.FFI" — public re-export surface for application code
+-- * "Miso.FFI.QQ" — @[js| … |]@ quasi-quoter for inline JavaScript
+-- * "Miso.DSL" — 'Miso.DSL.JSVal', 'Miso.DSL.ToJSVal', 'Miso.DSL.FromJSVal'
+-----------------------------------------------------------------------------
 module Miso.FFI.Internal
    ( -- * Callbacks
      syncCallback
@@ -164,7 +235,15 @@ import           Miso.DSL
 import           Miso.String
 -----------------------------------------------------------------------------
 -- | Set property on object
-set :: ToJSVal v => MisoString -> v -> Object -> IO ()
+set
+  :: ToJSVal v
+  => MisoString
+  -- ^ Property name to set
+  -> v
+  -- ^ Value to assign
+  -> Object
+  -- ^ JavaScript object to mutate
+  -> IO ()
 {-# INLINABLE set #-}
 set k v o = do
   v' <- toJSVal v
@@ -175,7 +254,12 @@ set k v o = do
 -- Example usage:
 --
 -- > Just (value :: String) <- fromJSVal =<< getProperty domRef "value"
-getProperty :: JSVal -> MisoString -> IO JSVal
+getProperty
+  :: JSVal
+  -- ^ JavaScript object to read from
+  -> MisoString
+  -- ^ Property name to retrieve
+  -> IO JSVal
 {-# INLINABLE getProperty #-}
 getProperty = (!)
 -----------------------------------------------------------------------------
@@ -551,7 +635,14 @@ select x = void $ jsg "miso" # "callSelect" $ (x, 50 :: Int)
 -- | Fails silently if the element is not found.
 --
 -- Analogous to @document.querySelector('#' + id).setSelectionRange(start, end, \'none\')@.
-setSelectionRange :: MisoString -> Int -> Int -> IO ()
+setSelectionRange
+  :: MisoString
+  -- ^ DOM element @id@ (without the @#@ prefix) to call @setSelectionRange@ on
+  -> Int
+  -- ^ Selection start index (inclusive)
+  -> Int
+  -- ^ Selection end index (exclusive)
+  -> IO ()
 {-# INLINABLE setSelectionRange #-}
 setSelectionRange x start end = void $ jsg "miso" # "callSetSelectionRange" $ (x, start, end, 50 :: Int)
 -----------------------------------------------------------------------------
@@ -682,7 +773,12 @@ addStyleSheet url cacheBust  = do
   pure link
 -----------------------------------------------------------------------------
 -- | Helper for cache busting
-appendTimestamp :: MisoString -> Bool -> IO MisoString
+appendTimestamp
+  :: MisoString
+  -- ^ Base URL to optionally append a timestamp query parameter to
+  -> Bool
+  -- ^ When 'True', appends @?v=\<timestamp\>@ to force cache invalidation
+  -> IO MisoString
 {-# INLINABLE appendTimestamp #-}
 appendTimestamp url = \case
   True -> do

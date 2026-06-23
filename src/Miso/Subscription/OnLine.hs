@@ -8,6 +8,41 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- = Overview
+--
+-- "Miso.Subscription.OnLine" provides 'onLineSub', a subscription that
+-- tracks the browser's
+-- <https://developer.mozilla.org/en-US/docs/Web/API/Navigator/onLine navigator.onLine>
+-- connectivity status. It registers @online@ and @offline@ event listeners
+-- on @window@ and fires an action with 'True' when the connection is
+-- restored and 'False' when it is lost.
+--
+-- = Quick start
+--
+-- @
+-- import "Miso"
+-- import "Miso.Subscription.OnLine"
+--
+-- data Action = OnLineChanged Bool
+--
+-- subs :: ['Miso.Effect.Sub' Action]
+-- subs = [ 'onLineSub' OnLineChanged ]
+--
+-- update :: Action -> 'Miso.Effect.Effect' p props Model Action
+-- update (OnLineChanged isOnLine)
+--   | isOnLine  = 'Miso.Effect.io_' (consoleLog \"Back online\")
+--   | otherwise = 'Miso.Effect.io_' (consoleLog \"Offline\")
+-- @
+--
+-- To read the current status imperatively without subscribing, use
+-- 'Miso.Navigator.isOnLine' from "Miso.Navigator".
+--
+-- = See also
+--
+-- * "Miso.Navigator" — 'Miso.Navigator.isOnLine' for one-shot reads
+-- * "Miso.Subscription" — re-export hub
+-- * "Miso.Subscription.Util" — 'Miso.Subscription.Util.createSub' used internally
 ----------------------------------------------------------------------------
 module Miso.Subscription.OnLine
   ( -- *** Subscriptions
@@ -23,7 +58,10 @@ import qualified Miso.FFI.Internal as FFI
 --
 -- <https://developer.mozilla.org/en-US/docs/Web/API/Navigator/onLine>
 --
-onLineSub :: (Bool -> action) -> Sub action
+onLineSub
+  :: (Bool -> action)
+  -- ^ Callback: 'True' when going online, 'False' when going offline
+  -> Sub action
 onLineSub f sink = createSub acquire release sink
   where
     release (cb1, cb2) = do

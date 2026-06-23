@@ -13,10 +13,88 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- This module defines t'Effect', t'Sub' and t'Sink' types, which are used with the
--- 'Miso.Types.update' function and 'Miso.Types.subs' field of the t'Miso.Types.Component'.
+-- = Overview
 --
-----------------------------------------------------------------------------
+-- "Miso.Effect" defines the three core abstractions used in the
+-- Model-View-Update loop:
+--
+-- * 'Effect' — the monad returned by every 'Miso.Types.update' handler.
+--   Combines a state update on @model@ with a list of 'IO' actions to
+--   schedule.
+--
+-- * 'Sub' — a long-running subscription (@'Sink' action -> IO ()@) that
+--   feeds actions into the event queue from threads, timers, WebSockets, etc.
+--
+-- * 'Sink' — a function (@action -> IO ()@) that enqueues a single action
+--   for processing by 'Miso.Types.update'.
+--
+-- = The Effect monad
+--
+-- @
+-- type 'Effect' parent props model action
+--      = RWS ('ComponentInfo' parent props) ['Schedule' action] model ()
+-- @
+--
+-- The @RWS@ decomposition:
+--
+-- * __Reader__ — 'ComponentInfo': component metadata ('componentInfoId',
+--   'componentInfoDOMRef', 'componentInfoProps') accessible via 'Control.Monad.Reader.ask'
+--   or the convenience lenses.
+-- * __Writer__ — accumulated list of 'Schedule'd 'IO' actions to run after
+--   the model update.
+-- * __State__ — the @model@, updated via 'Control.Monad.State.put',
+--   'Control.Monad.State.modify', or the lens operators from "Miso.Lens".
+--
+-- = Scheduling IO
+--
+-- By default all 'IO' runs asynchronously in a separate thread after the
+-- VDOM has been patched. Use 'sync' \/ 'sync_' to block the render thread:
+--
+-- @
+-- update = \\case
+--   Fetch    -> 'io'   (fetchData >>= pure . GotData)  -- async
+--   LogIt    -> 'io_'  (consoleLog \"hi\")               -- async, no action
+--   Urgent   -> 'sync' (pure SomeSyncAction)           -- blocks render
+--   Many     -> 'batch' [a1, a2, a3]                   -- multiple async
+--   Opt      -> 'for'  (fetchMaybe >>= pure)           -- Maybe\/Foldable
+-- @
+--
+-- = Subscriptions
+--
+-- A 'Sub' is a function that receives a 'Sink' and runs forever (typically
+-- on a forked thread). Register subscriptions in 'Miso.Types.subs':
+--
+-- @
+-- tickSub :: 'Sub' Action
+-- tickSub sink = forever $ do
+--   threadDelay 16667
+--   sink Tick
+--
+-- myComponent = ('Miso.component' model update view) { 'Miso.Types.subs' = [tickSub] }
+-- @
+--
+-- Use 'mapSub' to adapt a @Sub a@ into a @Sub b@ with a mapping function.
+--
+-- = Component metadata
+--
+-- Within 'update', access the current component's runtime info through
+-- 'Control.Monad.Reader.ask' or the provided lenses:
+--
+-- @
+-- update = \\case
+--   Init -> do
+--     domRef <- 'Miso.Lens.view' 'componentInfoDOMRef'
+--     compId <- 'Miso.Lens.view' 'componentInfoId'
+--     myProps <- 'getProps'
+--     io_ (initThirdParty domRef)
+-- @
+--
+-- = See also
+--
+-- * "Miso.Types" — 'Miso.Types.Component', 'Miso.Types.update', 'Miso.Types.subs'
+-- * "Miso.Lens" — lens operators (@'.='@, @'+='@, @'%='@) for model updates
+-- * "Miso.Subscription" — pre-built subscriptions (mouse, keyboard, history, …)
+-----------------------------------------------------------------------------
 module Miso.Effect
   ( -- ** Effect
     -- *** Types
@@ -85,9 +163,13 @@ mkComponentInfo = ComponentInfo
 data ComponentInfo parent props
   = ComponentInfo
   { _componentInfoId :: ComponentId
+  -- ^ Unique identifier for this component instance
   , _componentInfoParentId :: ComponentId
+  -- ^ Unique identifier of the parent component (same as '_componentInfoId' for root components)
   , _componentInfoDOMRef :: DOMRef
+  -- ^ The DOM node this component is mounted on
   , _componentInfoProps :: props
+  -- ^ The current @props@ value passed into this component
   }
 -----------------------------------------------------------------------------
 -- | Lens for accessing the t'ComponentId' from t'ComponentInfo'.
@@ -276,7 +358,12 @@ runEffect = execRWS
 -----------------------------------------------------------------------------
 -- | Turn a 'Sub' that consumes actions of type @a@ into a 'Sub' that consumes
 -- actions of type @b@ using the supplied function of type @a -> b@.
-mapSub :: (a -> b) -> Sub a -> Sub b
+mapSub
+  :: (a -> b)
+  -- ^ Function to map actions produced by the subscription
+  -> Sub a
+  -- ^ Source subscription delivering @a@ actions
+  -> Sub b
 mapSub f sub = \g -> sub (g . f)
 -----------------------------------------------------------------------------
 -- | Schedule a single 'IO' action, executed synchronously. For asynchronous
@@ -348,7 +435,12 @@ for actions = withSink $ \sink -> actions >>= traverse_ sink
 -- @
 --
 -- @since 1.9.0.0
-beforeAll :: IO () -> Effect parent props model action -> Effect parent props model action
+beforeAll
+  :: IO ()
+  -- ^ 'IO' action to prepend before all scheduled effects
+  -> Effect parent props model action
+  -- ^ Effect whose IO actions are modified
+  -> Effect parent props model action
 beforeAll = modifyAllIO . (*>)
 -----------------------------------------------------------------------------
 -- | Performs the given 'IO' action after all IO actions collected by the given
@@ -358,7 +450,12 @@ beforeAll = modifyAllIO . (*>)
 --
 -- > -- log that running the a websocket Effect completed
 -- > afterAll (consoleLog "Done running websocket effect") $ websocketConnectJSON OnConnect OnClose OnOpen OnError
-afterAll :: IO () -> Effect parent props model action -> Effect parent props model action
+afterAll
+  :: IO ()
+  -- ^ 'IO' action to append after all scheduled effects
+  -> Effect parent props model action
+  -- ^ Effect whose IO actions are modified
+  -> Effect parent props model action
 afterAll = modifyAllIO . (<*)
 -----------------------------------------------------------------------------
 -- | Modifies all 'IO' collected by the given Effect.
@@ -370,7 +467,9 @@ afterAll = modifyAllIO . (<*)
 -- expressions in an 'Effect'. For examples see 'beforeAll' and 'afterAll'.
 modifyAllIO
   :: (IO () -> IO ())
+  -- ^ Transform to apply to every scheduled 'IO' action in the effect
   -> Effect parent props model action
+  -- ^ Effect whose IO actions are modified
   -> Effect parent props model action
 modifyAllIO f = censor $ \actions ->
   [ Schedule x (f <$> action)

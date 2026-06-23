@@ -18,7 +18,7 @@
 -- = Data Bindings
 --
 -- "Miso.Binding" provides an experimental mechanism for synchronizing
--- model fields between a parent and child t'Component' using
+-- model fields between a parent and child t'Miso.Component' using
 -- 'Miso.Lens.Lens'-based /bindings/. Rather than coordinating state
 -- through explicit message passing, a 'Binding' declares a directed or
 -- bidirectional edge between two model fields. When the runtime detects
@@ -52,18 +52,18 @@
 -- import "Miso.Lens.TH" ('Miso.Lens.TH.makeLenses')
 -- import "Miso.String" ('Miso.String.MisoString')
 --
--- data ParentModel = ParentModel { _userName    :: 'MisoString' } deriving 'Eq'
--- data ChildModel  = ChildModel  { _displayName :: 'MisoString' } deriving 'Eq'
+-- data ParentModel = ParentModel { _userName    :: 'Miso.String.MisoString' } deriving 'Eq'
+-- data ChildModel  = ChildModel  { _displayName :: 'Miso.String.MisoString' } deriving 'Eq'
 --
 -- 'Miso.Lens.makeLenses' ''ParentModel
 -- 'Miso.Lens.makeLenses' ''ChildModel
 --
--- -- Declare the child 'Component' with a bidirectional 'Binding'.
+-- -- Declare the child t'Miso.Types.Component' with a bidirectional 'Binding'.
 -- -- Changes to either field will be reflected in the other.
 --
--- childComp :: 'Component' ParentModel () ChildModel ChildAction
--- childComp = ('component' initialChild updateChild viewChild)
---   { 'bindings' = [ userName @'<-->' displayName ] }
+-- childComp :: t'Miso.Component' ParentModel () ChildModel ChildAction
+-- childComp = ('Miso.component' initialChild updateChild viewChild)
+--   { 'Miso.bindings' = [ userName @'<-->'@ displayName ] }
 -- @
 --
 -- On mount, the parent field takes precedence by default (see 'Precedence').

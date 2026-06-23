@@ -5,11 +5,79 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Util.Parser
--- Copyright   :  (C) 2016-2026 David M. Johnson (@dmjio)
+-- Copyright   :  (C) 2016-2026 David M. Johnson
 -- License     :  BSD3-style (see the file LICENSE)
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- = Overview
+--
+-- "Miso.Util.Parser" is an internal parser combinator library that
+-- operates over a token stream produced by "Miso.Util.Lexer". It is used
+-- by miso's JSON pipeline ("Miso.JSON.Parser") and the client-side router
+-- ("Miso.Router"). It is __not__ designed for general application use,
+-- but is exposed for downstream code that needs to build custom parsers.
+--
+-- = Core types
+--
+-- @
+-- newtype 'ParserT' r token m a = Parser
+--   { 'runParserT' :: r -> token -> m (a, token) }
+--
+-- type 'Parser' token a = 'ParserT' () [token] [] a
+-- @
+--
+-- 'ParserT' is a monad transformer parameterised by:
+--
+-- * @r@ — a read-only environment (accessible via 'askParser')
+-- * @token@ — the input stream type (typically @[t]@)
+-- * @m@ — the result monad; using @[]@ gives non-deterministic\/backtracking parsing
+-- * @a@ — the parsed result
+--
+-- The @'Parser' token a@ convenience alias fixes @r = ()@ and @m = []@,
+-- which gives a standard backtracking parser over a @[token]@ stream.
+--
+-- = Primitive combinators
+--
+-- @
+-- 'anyToken'    :: 'ParserT' r [a] [] a         -- consume any single token
+-- 'satisfy'     :: (a -> Bool) -> 'ParserT' r [a] [] a  -- consume if predicate holds
+-- 'token_'      :: Eq t => t -> 'Parser' t t    -- match a specific token
+-- 'peek'        :: 'Parser' a a                 -- look ahead without consuming
+-- 'endOfInput'  :: 'Parser' a ()                -- succeed only at end of stream
+-- 'allTokens'   :: 'ParserT' r a [] a           -- return the entire remaining stream
+-- 'modifyTokens' :: (t -> t) -> 'ParserT' r t [] ()  -- transform the token stream
+-- 'askParser'   :: 'ParserT' r token [] r       -- read the environment
+-- 'errorOut'    :: e -> 'ParserT' r e [] ()     -- inject a custom error token
+-- @
+--
+-- = Error type
+--
+-- @
+-- data 'ParseError' a token
+--   = UnexpectedParse [token]  -- input remained after a successful parse
+--   | LexicalError 'Miso.Util.Lexer.LexerError'  -- upstream lex failure
+--   | Ambiguous [(a, [token])] -- multiple distinct parses
+--   | NoParses token           -- no parse succeeded
+--   | EmptyStream              -- input was empty
+-- @
+--
+-- = Running a parser
+--
+-- @
+-- 'parse' :: 'Parser' token a -> [token] -> Either ('ParseError' a token) a
+-- @
+--
+-- 'parse' returns 'Right' only when exactly one parse consumes all input.
+-- Ambiguous or partial parses produce a 'Left' error.
+--
+-- = See also
+--
+-- * "Miso.Util.Lexer" — produces the token stream consumed here
+-- * "Miso.JSON.Parser" — JSON parser built on this module
+-- * "Miso.Router" — URI\/route parser built on this module
+-- * "Miso.Util" — 'Miso.Util.sepBy', 'Miso.Util.oneOf' used alongside parsers
 ----------------------------------------------------------------------------
 module Miso.Util.Parser
   ( -- ** Types
@@ -48,7 +116,12 @@ data ParseError a token
   deriving (Show, Eq)
 ----------------------------------------------------------------------------
 -- | Executes a parser against a series of tokens.
-parse :: Parser token a -> [token] -> Either (ParseError a token) a
+parse
+  :: Parser token a
+  -- ^ Parser to run
+  -> [token]
+  -- ^ Input token stream
+  -> Either (ParseError a token) a
 parse _ [] = Left EmptyStream
 parse parser tokens =
   case runParserT parser () tokens of
@@ -64,6 +137,8 @@ type Parser token a = ParserT () [token] [] a
 newtype ParserT r token m a
   = Parser
   { runParserT :: r -> token -> m (a, token)
+  -- ^ Run the parser given a read-only environment @r@ and input @token@;
+  -- returns zero or more @(result, remaining-input)@ pairs in @m@
   }
 ----------------------------------------------------------------------------
 instance Functor (ParserT r token []) where
@@ -106,7 +181,10 @@ anyToken = Parser $ \_ input ->
 ----------------------------------------------------------------------------
 -- | Succeeds for any token for which the predicate @f@ returns 'True'.
 -- Returns the parsed token.
-satisfy :: (a -> Bool) -> ParserT r [a] [] a
+satisfy
+  :: (a -> Bool)
+  -- ^ Predicate; the next token is consumed only if this returns 'True'
+  -> ParserT r [a] [] a
 satisfy f = do
   t <- anyToken
   guard (f t)
@@ -114,7 +192,11 @@ satisfy f = do
 ----------------------------------------------------------------------------
 -- | Succeeds if the next token in the stream matches the given one.
 -- Returns the parsed token.
-token_ :: Eq token => token -> Parser token token
+token_
+  :: Eq token
+  => token
+  -- ^ Expected token value
+  -> Parser token token
 token_ t = satisfy (==t)
 ----------------------------------------------------------------------------
 -- | Returns all input from a parser
@@ -122,7 +204,10 @@ allTokens :: ParserT r a [] a
 allTokens = Parser $ \_ input -> [(input, input)]
 ----------------------------------------------------------------------------
 -- | Modifies tokens
-modifyTokens :: (t -> t) -> ParserT r t [] ()
+modifyTokens
+  :: (t -> t)
+  -- ^ Transform to apply to the current token stream
+  -> ParserT r t [] ()
 modifyTokens f = Parser $ \_ input -> [((), f input)]
 ----------------------------------------------------------------------------
 -- | Retrieves read-only state from a Parser
@@ -137,7 +222,10 @@ peek = Parser $ \_ tokens ->
     (x:xs) -> [(x, x:xs)]
 ----------------------------------------------------------------------------
 -- | Parser combinator that always fails
-errorOut :: errorToken -> ParserT r errorToken [] ()
+errorOut
+  :: errorToken
+  -- ^ Error token injected as the current stream (useful for error propagation)
+  -> ParserT r errorToken [] ()
 errorOut x = Parser $ \_ _ -> [((),x)]
 ----------------------------------------------------------------------------
 -- | Parser combinator that only succeeds if there are no more tokens.

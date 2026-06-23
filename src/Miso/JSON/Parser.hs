@@ -7,10 +7,33 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- A Parser for the JSON specification. Meant to be used on the server w/ SSR.
+-- = Overview
 --
--- This was ported from <https://github.com/dmjio/json-test> by [@ners](https://github.com/ners)
+-- "Miso.JSON.Parser" is the second stage of miso's pure Haskell JSON
+-- pipeline, used for server-side rendering (SSR). It takes the 'Token'
+-- stream produced by "Miso.JSON.Lexer" and builds a 'Miso.JSON.Types.Value'
+-- tree.
 --
+-- The single public entry point is 'decodePure':
+--
+-- @
+-- 'decodePure' :: 'Miso.String.MisoString' -> Either String 'Miso.JSON.Types.Value'
+-- @
+--
+-- It returns @'Left' err@ on a lexical or parse error and @'Right' v@ on
+-- success. Error messages include the position and nature of the failure.
+--
+-- This module is __internal__. Use 'decodePure' via "Miso.JSON" in
+-- application code.
+--
+-- This module was ported from <https://github.com/dmjio/json-test> by
+-- <https://github.com/ners @ners>.
+--
+-- = See also
+--
+-- * "Miso.JSON.Lexer" — tokenizer that feeds this parser
+-- * "Miso.JSON.Types" — 'Miso.JSON.Types.Value' and 'Miso.JSON.Types.Result' types
+-- * "Miso.Util.Parser" — the underlying parser combinator library
 ----------------------------------------------------------------------------
 module Miso.JSON.Parser (decodePure) where
 ----------------------------------------------------------------------------

@@ -9,11 +9,87 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- Construct custom properties on DOM elements
+-- = Overview
 --
--- > div_ [ id_ "miso" ] [ "miso" ]
+-- "Miso.Html.Property" provides smart constructors for
+-- <https://developer.mozilla.org/en-US/docs/Web/API/Element#properties DOM properties>
+-- and
+-- <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes HTML attributes>.
+-- Each produces an 'Miso.Types.Attribute' that the virtual DOM applies to
+-- the corresponding DOM node on every render, diffing only changed values.
 --
-----------------------------------------------------------------------------
+-- All names are suffixed with @_@ to avoid clashing with Haskell
+-- 'Prelude' names. This module is re-exported in its entirety by
+-- "Miso.Html" and "Miso".
+--
+-- = Quick start
+--
+-- @
+-- import "Miso"
+--
+-- view :: Model -> 'Miso.Types.View' Model Action
+-- view m =
+--   'Miso.Html.Element.div_' [ 'id_' \"app\", 'class_' \"container\" ]
+--     [ 'Miso.Html.Element.input_'
+--         [ 'type_' \"text\"
+--         , 'value_' m.text
+--         , 'placeholder_' \"Type here…\"
+--         , 'disabled_'
+--         ]
+--         []
+--     , 'Miso.Html.Element.img_'
+--         [ 'src_' \"logo.png\", 'alt_' \"Logo\", 'width_' \"64\", 'height_' \"64\" ]
+--         []
+--     ]
+-- @
+--
+-- = Class management
+--
+-- Four combinators handle CSS classes:
+--
+-- @
+-- 'class_'    \"foo bar\"              -- single string, set className
+-- 'className' \"foo bar\"              -- alias for class_
+-- 'classes_'  [\"foo\", \"bar\"]         -- list of class names
+-- 'classList_' [(\"active\", isActive)  -- conditional classes
+--             ,(\"error\",  hasError)]
+-- @
+--
+-- = Property groups
+--
+-- * __Global__: 'id_', 'class_', 'className', 'classes_', 'classList_',
+--   'title_', 'lang_', 'hidden_', 'inert_', 'draggable_', 'tabindex_',
+--   'role_', 'data_', 'aria_', 'xmlns_'
+-- * __Form__: 'type_', 'value_', 'defaultValue_', 'checked_', 'placeholder_',
+--   'selected_', 'disabled_', 'readonly_', 'required_', 'multiple_',
+--   'autofocus_', 'autocomplete_', 'autocorrect_', 'spellcheck_',
+--   'name_', 'for_', 'form_', 'action_', 'method_', 'enctype_',
+--   'noValidate_', 'accept_', 'acceptCharset_', 'pattern_',
+--   'min_', 'max_', 'step_', 'size_', 'maxlength_', 'minlength_',
+--   'list_', 'cols_', 'rows_', 'wrap_'
+-- * __Link \/ anchor__: 'href_', 'target_', 'rel_', 'hreflang_',
+--   'download_', 'downloadAs_', 'ping_', 'media_'
+-- * __Image \/ map__: 'src_', 'alt_', 'width_', 'height_', 'loading_',
+--   'ismap_', 'usemap_', 'shape_', 'coords_'
+-- * __Media__: 'autoplay_', 'controls_', 'loop_', 'muted_', 'preload_',
+--   'poster_', 'volume_', 'currentTime_', 'defaultMuted_',
+--   'defaultPlaybackRate_', 'playbackRate_', 'seeking_', 'mediaGroup_'
+-- * __Table__: 'colspan_', 'rowspan_', 'headers_', 'scope_', 'align_'
+-- * __\<script\> \/ \<meta\>__: 'async_', 'defer_', 'charset_', 'content_',
+--   'httpEquiv_', 'language_', 'scoped_'
+-- * __\<iframe\>__: 'sandbox_', 'seamless_', 'srcdoc_', 'frameborder_',
+--   'scrolling_'
+-- * __Misc__: 'open_', 'reversed_', 'default_', 'kind_', 'srclang_',
+--   'label_', 'autosave_', 'formation_', 'ref_'
+--
+-- = See also
+--
+-- * "Miso.Property" — lower-level 'Miso.Property.textProp', 'Miso.Property.boolProp',
+--   'Miso.Property.intProp', 'Miso.Property.doubleProp' combinators
+-- * "Miso.Html.Element" — element constructors that accept these attributes
+-- * "Miso.Html.Event" — event-handler attributes
+-- * "Miso.CSS" — style property DSL ('Miso.CSS.style_', 'Miso.CSS.styleInline_')
+-----------------------------------------------------------------------------
 module Miso.Html.Property
   ( -- *** Combinators
      class_

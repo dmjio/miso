@@ -7,11 +7,44 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- Types for the @Miso.JSON@ module and JSON specification.
+-- = Overview
 --
--- This was ported from <https://github.com/dmjio/json-test> by [@ners](https://github.com/ners)
+-- "Miso.JSON.Types" defines the two core types used throughout miso's JSON
+-- support:
 --
-----------------------------------------------------------------------------
+-- * 'Value' — an
+--   <https://www.json.org/ RFC 8259>-compliant JSON value. Used as the
+--   intermediate representation in event decoders
+--   ("Miso.Event.Decoder") and in 'Miso.DSL.ToJSVal' \/ 'Miso.DSL.FromJSVal'
+--   marshalling.
+--
+-- * 'Result' — a lightweight error monad (@'Success' a | 'Error' 'Miso.String.MisoString'@)
+--   used by JSON parsers to report decode failures. It has full
+--   'Functor', 'Applicative', 'Monad', 'MonadFail', 'Alternative',
+--   'Foldable', and 'Traversable' instances.
+--
+-- This module was ported from <https://github.com/dmjio/json-test> by
+-- <https://github.com/ners @ners>.
+--
+-- = Value constructors
+--
+-- @
+-- data 'Value'
+--   = 'Number' Double          -- JSON number
+--   | 'Bool'   Bool            -- JSON boolean
+--   | 'String' 'Miso.String.MisoString'   -- JSON string
+--   | 'Array'  ['Value']       -- JSON array
+--   | 'Object' ('Miso.JSON.Types.Object')  -- JSON object (Map MisoString Value)
+--   | 'Null'                   -- JSON null
+-- @
+--
+-- = See also
+--
+-- * "Miso.JSON" — top-level re-export hub; 'Miso.JSON.FromJSON', 'Miso.JSON.ToJSON', @('.:')@, 'Miso.JSON.withObject'
+-- * "Miso.JSON.Parser" — pure server-side JSON decoder ('Miso.JSON.Parser.decodePure')
+-- * "Miso.JSON.Lexer" — tokenizer used by the parser
+-- * "Miso.Event.Decoder" — uses 'Value' and 'Result' via 'Miso.JSON.Parser'
+-----------------------------------------------------------------------------
 {-# LANGUAGE CPP #-}
 ----------------------------------------------------------------------------
 module Miso.JSON.Types

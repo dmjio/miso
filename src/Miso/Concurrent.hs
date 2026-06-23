@@ -8,7 +8,32 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
-----------------------------------------------------------------------------
+--
+-- = Overview
+--
+-- "Miso.Concurrent" provides 'Waiter', a lightweight synchronization
+-- primitive built on 'Control.Concurrent.MVar.MVar' that the miso runtime
+-- uses to coordinate its event loop with subscription threads.
+--
+-- Two constructors are available with different wakeup semantics:
+--
+-- * 'waiter' — __many-to-one__. Multiple threads may call 'notify'
+--   concurrently; only one pending notification is retained at a time
+--   ('Control.Concurrent.MVar.tryPutMVar' is used, so rapid notifications
+--   coalesce). The single consumer calls 'wait' to block until at least one
+--   notification arrives.
+--
+-- * 'oneshot' — __one-to-many__. One thread calls 'notify' to permanently
+--   unblock /all/ threads currently (or subsequently) calling 'wait'.
+--   Implemented with 'Control.Concurrent.MVar.readMVar', so the stored value
+--   is never consumed.
+--
+-- = See also
+--
+-- * "Miso.Effect" — 'Miso.Effect.Sub' subscriptions that use 'notify' to
+--   wake the event loop
+-- * "Miso.Runtime" — the event loop that calls 'wait'
+-----------------------------------------------------------------------------
 module Miso.Concurrent
   ( -- ** Synchronization primitives
     Waiter (..)

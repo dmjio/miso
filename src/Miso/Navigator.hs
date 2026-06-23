@@ -12,7 +12,64 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
-----------------------------------------------------------------------------
+--
+-- = Overview
+--
+-- "Miso.Navigator" wraps the browser's
+-- <https://developer.mozilla.org/en-US/docs/Web/API/Navigator Navigator>
+-- API as 'Miso.Effect.Effect' combinators that integrate directly into the
+-- Model-View-Update loop. Each function returns an 'Miso.Effect.Effect' and
+-- feeds its result back as an action via 'Miso.Effect.withSink' or
+-- 'Miso.Effect.io'.
+--
+-- = Quick start
+--
+-- @
+-- import "Miso"
+-- import "Miso.Navigator"
+--
+-- data Action
+--   = RequestLocation
+--   | GotLocation 'Geolocation'
+--   | LocationError 'GeolocationError'
+--   | RequestCamera
+--   | GotStream 'Stream'
+--   | MediaError 'Miso.DSL.JSVal'
+--
+-- update :: Action -> 'Miso.Effect.Effect' p props Model Action
+-- update RequestLocation =
+--   'geolocation' GotLocation LocationError
+-- update RequestCamera =
+--   'getUserMedia' ('userMedia' { audio = False }) GotStream MediaError
+-- update _ = pure ()
+-- @
+--
+-- = API groups
+--
+-- * __Camera \/ microphone__ ('Navigator.mediaDevices.getUserMedia'):
+--   'getUserMedia', 'userMedia', 'UserMedia', 'Stream'
+-- * __Clipboard__ ('Navigator.clipboard.writeText'):
+--   'copyClipboard'
+-- * __Online status__ ('Navigator.onLine'):
+--   'isOnLine'
+-- * __Geolocation__ ('Navigator.geolocation.getCurrentPosition'):
+--   'geolocation', 'Geolocation', 'GeolocationError', 'GeolocationErrorCode'
+--
+-- = Error handling
+--
+-- Geolocation errors are decoded from the browser's
+-- <https://developer.mozilla.org/en-US/docs/Web/API/GeolocationPositionError GeolocationPositionError>
+-- object into 'GeolocationError', which carries a 'GeolocationErrorCode'
+-- (@'PERMISSION_DENIED'@, @'POSITION_UNAVAILABLE'@, @'TIMEOUT'@) and a
+-- human-readable message string.
+--
+-- = See also
+--
+-- * "Miso.FFI.Internal" — 'Miso.FFI.Internal.getUserMedia', 'Miso.FFI.Internal.copyClipboard',
+--   'Miso.FFI.Internal.geolocation', 'Miso.FFI.Internal.isOnLine' — the raw IO primitives
+-- * "Miso.Subscription.OnLine" — subscription-based online\/offline monitoring
+-- * "Miso.Effect" — 'Miso.Effect.withSink', 'Miso.Effect.io'
+-----------------------------------------------------------------------------
 module Miso.Navigator
   ( -- ** User media
     getUserMedia
@@ -93,7 +150,10 @@ isOnLine action = io (action <$> FFI.isOnLine)
 --
 data UserMedia
   = UserMedia
-  { audio, video :: Bool
+  { audio :: Bool
+  -- ^ Request access to the user's microphone
+  , video :: Bool
+  -- ^ Request access to the user's camera
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
 -- | Default t'UserMedia'
@@ -106,7 +166,9 @@ userMedia = UserMedia True True
 --
 geolocation
   :: (Geolocation -> action)
+  -- ^ Success callback; receives the device's current position
   -> (GeolocationError -> action)
+  -- ^ Error callback; receives a 'GeolocationError' with code and message
   -> Effect parent props model action
 geolocation successful errorful = do
   withSink $ \sink ->
@@ -142,7 +204,12 @@ instance FromJSVal GeolocationErrorCode where
 -- | Geolocation holds latitude, longitude and accuracy, among others.
 data Geolocation
   = Geolocation
-  { latitude, longitude, accuracy :: Double
+  { latitude :: Double
+  -- ^ Latitude in decimal degrees
+  , longitude :: Double
+  -- ^ Longitude in decimal degrees
+  , accuracy :: Double
+  -- ^ Accuracy of the position in metres (95% confidence radius)
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
 instance FromJSVal Geolocation where

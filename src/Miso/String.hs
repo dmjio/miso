@@ -12,6 +12,19 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- The 'MisoString' type and its conversion type classes.
+--
+-- 'MisoString' is a platform-conditional alias:
+--
+-- * On the client (WASM \/ GHC JS backend) it is @JSString@ — a zero-copy
+--   wrapper around a native JavaScript string, giving optimal interop with
+--   the DOM and JSON APIs.
+-- * On the server (@VANILLA@ build) it is 'Data.Text.Text', enabling
+--   server-side rendering without any FFI dependency.
+--
+-- Use 'ms' (short for 'toMisoString') to convert from 'String', 'T.Text',
+-- numeric types, etc. into 'MisoString'.
 ----------------------------------------------------------------------------
 module Miso.String
   ( ToMisoString (..)
@@ -45,10 +58,11 @@ import qualified Data.Text.Lazy.Encoding as LT
 ----------------------------------------------------------------------------
 import           Miso.DSL.FFI
 ----------------------------------------------------------------------------
--- | An efficient string type when building miso applications
+-- | The primary string type in Miso applications.
 --
--- t'MisoString' is t'Text' when prerendering
--- t'MisoString' is a JavaScript string when using the JS/WASM backends
+-- * @VANILLA@ (server\/SSR build): alias for 'Data.Text.Text'
+-- * WASM \/ GHC JS backend: alias for @JSString@ — a zero-copy wrapper around
+--   a native JavaScript string, giving optimal interop with the DOM and JSON APIs
 --
 #ifdef VANILLA
 type MisoString = Text
@@ -56,24 +70,30 @@ type MisoString = Text
 type MisoString = JSString
 #endif
 ----------------------------------------------------------------------------
--- | Convenience class for creating `MisoString` from other string-like types
+-- | A type that can be converted to 'MisoString'.
+--
+-- Instances are provided for 'String', 'T.Text', 'LT.Text', 'B.ByteString',
+-- 'BL.ByteString', 'Double', 'Float', 'Int', 'Word', and others.
+-- Use 'ms' as a short alias for 'toMisoString'.
 class ToMisoString str where
-  -- | Convert a type into 'MisoString'
+  -- | Convert a value to 'MisoString'.
   toMisoString :: str -> MisoString
 ----------------------------------------------------------------------------
--- | Class used to parse a 'MisoString'. Like a safe 'Read' for 'MisoString'
+-- | A type that can be parsed from a 'MisoString'.
+-- Like a safe 'Read' that returns an error message on failure.
 class FromMisoString t where
+  -- | Parse a 'MisoString', returning @'Left' errMsg@ on failure.
   fromMisoStringEither :: MisoString -> Either String t
 ----------------------------------------------------------------------------
--- | Reads a 'MisoString', throws an error when decoding
--- fails. Use `fromMisoStringEither` as a safe alternative.
+-- | Parse a 'MisoString', throwing an error on failure.
+-- Use 'fromMisoStringEither' as a safe alternative.
 fromMisoString :: FromMisoString a => MisoString -> a
 fromMisoString s =
   case fromMisoStringEither s of
     Left error_ -> error ("fromMisoString: " <> error_)
     Right x  -> x
 ----------------------------------------------------------------------------
--- | Convenience function, shorthand for `toMisoString`
+-- | Short alias for 'toMisoString'. The idiomatic way to construct a 'MisoString'.
 ms :: ToMisoString str => str -> MisoString
 ms = toMisoString
 ----------------------------------------------------------------------------

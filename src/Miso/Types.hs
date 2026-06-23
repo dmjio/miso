@@ -26,7 +26,105 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- Core types for Miso applications.
+-- = Overview
+--
+-- "Miso.Types" defines every core type that miso applications are built
+-- from. It is re-exported in its entirety by "Miso", so most application
+-- code never needs to import it directly.
+--
+-- = The Component record
+--
+-- @'Component' parent props model action@ is the central record type. It
+-- wires together the MVU loop and all supporting runtime configuration:
+--
+-- @
+-- data 'Component' parent props model action = Component
+--   { model           :: model
+--   , hydrateModel    :: Maybe (IO model)
+--   , update          :: action -> 'Miso.Effect.Effect' parent props model action
+--   , view            :: props -> model -> 'View' model action
+--   , subs            :: ['Miso.Effect.Sub' action]
+--   , styles          :: ['CSS']
+--   , scripts         :: ['JS']
+--   , mountPoint      :: Maybe 'MountPoint'
+--   , logLevel        :: 'LogLevel'
+--   , mailbox         :: Value -> Maybe action
+--   , bindings        :: ['Miso.Binding.Binding' parent model]
+--   , eventPropagation :: Bool
+--   , mount           :: Maybe action
+--   , unmount         :: Maybe action
+--   , onPropsChanged  :: Maybe (props -> props -> action)
+--   }
+-- @
+--
+-- Use the 'component' smart constructor to build one with sane defaults,
+-- then override only the fields you need:
+--
+-- @
+-- myApp :: 'App' Model Action
+-- myApp = ('component' initialModel update view)
+--   { 'subs'   = [ mySub ]
+--   , 'styles' = [ 'Href' \"style.css\" False ]
+--   }
+-- @
+--
+-- = The View type
+--
+-- @'View' model action@ is miso's virtual DOM tree. Its four constructors
+-- map to the four node kinds the runtime handles:
+--
+-- * 'VNode' — a regular DOM element (@\<div\>@, @\<svg\>@, …)
+-- * 'VText' — a text node
+-- * 'VComp' — an embedded child 'Component'
+-- * 'VFrag' — a keyless group of siblings (no wrapper element)
+--
+-- = Key types at a glance
+--
+-- ['Component'] full MVU application\/component record
+-- ['App'] alias for @'Component' 'ROOT' () model action@
+-- ['ROOT'] phantom type marking a top-level component
+-- ['View'] virtual DOM node
+-- ['Attribute'] DOM property, class list, event handler, or style
+-- ['Namespace'] @HTML@ \| @SVG@ \| @MATHML@
+-- ['Key'] reconciliation hint for list diffing
+-- ['CSS'] stylesheet reference (@Href@, @Style@, @Sheet@)
+-- ['JS'] script reference (@Src@, @Script@, @Module@, …)
+-- ['LogLevel'] debug verbosity (@Off@, @DebugHydrate@, …)
+-- ['URI'] parsed URL (path + query string + fragment)
+--
+-- = Text combinators
+--
+-- * 'text' — create a text node (HTML-escaped in SSR mode)
+-- * 'textRaw' — create a text node without HTML escaping
+-- * 'text_' — concatenate a list of strings with a space separator
+-- * 'textKey' / 'textKey_' — keyed variants for efficient list diffing
+-- * 'htmlEncode' — manually escape @< > & \" \'@
+--
+-- = Component mounting
+--
+-- * @\"key\" '+>' comp@ — mount a child component with a key
+-- * 'mount_' — mount without a key (unsafe in dynamic lists)
+-- * 'mountWithProps' / 'mountWithProps_' — mount with explicit @props@
+--
+-- = Fragment and keyed combinators
+--
+-- * 'fragment' / 'vfrag' — group siblings without a wrapper element
+-- * 'fragment_' / 'vfrag_' — keyed fragment
+-- * 'keyed' — attach a reconciliation key to any 'View'
+--
+-- = Conditional view utilities
+--
+-- * 'optionalAttrs' — add attributes conditionally
+-- * 'optionalVoidAttrs' — same for void (no-children) elements
+-- * 'optionalChildren' — add children conditionally
+--
+-- = See also
+--
+-- * "Miso.Effect" — 'Miso.Effect.Effect', 'Miso.Effect.Sub', 'Miso.Effect.Sink'
+-- * "Miso.Html.Element" — element smart constructors built on 'node'
+-- * "Miso.Html.Property" — attribute constructors built on 'Attribute'
+-- * "Miso.Html.Render" — SSR serialisation via 'Miso.Html.Render.ToHtml'
+-- * "Miso.Router" — 'Miso.Router.URI' parsing and pretty-printing
 ----------------------------------------------------------------------------
 module Miso.Types
   ( -- ** Types
@@ -562,8 +660,10 @@ instance IsString (View model action) where
 -- | Virtual DOM implemented as a JavaScript t'Object'.
 --   Used for diffing, patching and event delegation.
 --   Not meant to be constructed directly, see t'Miso.Types.View' instead.
-newtype VTree = VTree { getTree :: Object }
-  deriving newtype (ToObject, ToJSVal)
+newtype VTree = VTree
+  { getTree :: Object
+  -- ^ Underlying JavaScript object representing the virtual DOM tree
+  } deriving newtype (ToObject, ToJSVal)
 -----------------------------------------------------------------------------
 -- | Create a new 'Miso.Types.VNode'.
 --
@@ -572,9 +672,13 @@ newtype VTree = VTree { getTree :: Object }
 -- the node is created and its children are initialized to @children@.
 node
   :: Namespace
+  -- ^ Element namespace (@HTML@, @SVG@, or @MATHML@)
   -> MisoString
+  -- ^ Tag name (e.g. @\"div\"@, @\"circle\"@)
   -> [Attribute action]
+  -- ^ Attributes, properties, and event handlers
   -> [View model action]
+  -- ^ Child nodes
   -> View model action
 node = VNode
 -----------------------------------------------------------------------------
@@ -584,9 +688,13 @@ node = VNode
 --
 vnode
   :: Namespace
+  -- ^ Element namespace (@HTML@, @SVG@, or @MATHML@)
   -> MisoString
+  -- ^ Tag name (e.g. @\"div\"@, @\"circle\"@)
   -> [Attribute action]
+  -- ^ Attributes, properties, and event handlers
   -> [View model action]
+  -- ^ Child nodes
   -> View model action
 vnode = node
 -----------------------------------------------------------------------------
@@ -737,8 +845,12 @@ optionalChildren element attrs kids condition opts =
 --
 data URI
   = URI
-  { uriPath, uriFragment :: MisoString
+  { uriPath :: MisoString
+  -- ^ Path component, e.g. @\"users\/42\"@
+  , uriFragment :: MisoString
+  -- ^ Fragment identifier (without the leading @#@), e.g. @\"section-1\"@
   , uriQueryString :: M.Map MisoString (Maybe MisoString)
+  -- ^ Query parameters. @'Just' v@ for @?key=v@ pairs; 'Nothing' for bare flags (@?flag@).
   } deriving stock (Show, Eq, Generic)
     deriving anyclass (ToJSVal, ToObject)
 ----------------------------------------------------------------------------

@@ -8,6 +8,59 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- = Overview
+--
+-- "Miso.Subscription.History" wraps the browser's
+-- <https://developer.mozilla.org/en-US/docs/Web/API/History History API>
+-- and
+-- <https://developer.mozilla.org/en-US/docs/Web/API/PopStateEvent popstate>
+-- event, providing both a reactive subscription and imperative navigation
+-- helpers.
+--
+-- = Subscriptions
+--
+-- 'uriSub' fires whenever the URL changes — through browser back\/forward
+-- buttons or any of the imperative helpers below:
+--
+-- @
+-- subs :: ['Miso.Effect.Sub' Action]
+-- subs = [ 'uriSub' UrlChanged ]
+-- @
+--
+-- 'routerSub' is a convenience wrapper that decodes the 'URI' via a
+-- 'Miso.Router.Router' instance before delivering it as an action:
+--
+-- @
+-- subs = [ 'routerSub' (RouteChanged . 'Data.Either.fromRight' NotFound) ]
+-- @
+--
+-- = Imperative navigation
+--
+-- These functions push or replace entries on the browser history stack and
+-- simultaneously fire a synthetic @popstate@ event so that 'uriSub' and
+-- 'routerSub' are notified automatically:
+--
+-- @
+-- update GoHome     = 'Miso.Effect.io_' ('pushURI' ('Miso.Router.toURI' Home))
+-- update GoProfile  = 'Miso.Effect.io_' ('pushRoute' (User (Capture 42)))
+-- update ReplaceUrl = 'Miso.Effect.io_' ('replaceURI' newUri)
+-- update GoBack     = 'Miso.Effect.io_' 'back'
+-- update GoForward  = 'Miso.Effect.io_' 'forward'
+-- update (Jump n)   = 'Miso.Effect.io_' ('go' n)
+-- @
+--
+-- 'getURI' reads the current URL from @window.location@ without subscribing:
+--
+-- @
+-- update Init = 'Miso.Effect.io' (GotURI \<$\> 'getURI')
+-- @
+--
+-- = See also
+--
+-- * "Miso.Router" — 'Miso.Router.Router', 'Miso.Router.URI', 'Miso.Router.toURI', 'Miso.Router.prettyURI'
+-- * "Miso.Subscription" — re-export hub
+-- * "Miso.Subscription.Util" — 'Miso.Subscription.Util.createSub' used internally
 ----------------------------------------------------------------------------
 module Miso.Subscription.History
   ( -- *** Subscription
@@ -35,7 +88,10 @@ import           Miso.Effect (Sub)
 import           Miso.Subscription.Util
 -----------------------------------------------------------------------------
 -- | Pushes a new URI onto the History stack. Also raises a `popstate` event.
-pushURI :: URI -> IO ()
+pushURI
+  :: URI
+  -- ^ The URI to push onto the history stack
+  -> IO ()
 pushURI uri = do
   pushState (prettyURI uri)
   raisePopState
@@ -44,11 +100,18 @@ pushURI uri = do
 --
 -- Converts the t'Route' to a t'URI' internally.
 --
-pushRoute :: Router route => route -> IO ()
+pushRoute
+  :: Router route
+  => route
+  -- ^ The route to push onto the history stack (converted to a URI internally)
+  -> IO ()
 pushRoute = pushURI . toURI
 -----------------------------------------------------------------------------
 -- | Replaces current URI on stack. Also raises a `popstate` event.
-replaceURI :: URI -> IO ()
+replaceURI
+  :: URI
+  -- ^ The URI to replace the current history entry with
+  -> IO ()
 replaceURI uri = do
   replaceState (prettyURI uri)
   raisePopState
@@ -68,7 +131,10 @@ forward :: IO ()
 forward = void $ getHistory # "forward" $ ()
 -----------------------------------------------------------------------------
 -- | Jumps to a specific position in history.
-go :: Int -> IO ()
+go
+  :: Int
+  -- ^ Number of steps to jump; positive = forward, negative = backward
+  -> IO ()
 go n = void $ getHistory # "go" $ [n]
 -----------------------------------------------------------------------------
 -- | Subscription for t'URI' changes, uses the History API.
@@ -76,7 +142,10 @@ go n = void $ getHistory # "go" $ [n]
 -- This returns a new t'URI' whenever `go`, `back`, `forward`, `pushState`
 -- or `replaceState` have been called.
 --
-uriSub :: (URI -> action) -> Sub action
+uriSub
+  :: (URI -> action)
+  -- ^ Callback fired with the new 'URI' on every URL change
+  -> Sub action
 uriSub f sink = createSub acquire release sink
   where
     release = FFI.windowRemoveEventListener "popstate"
@@ -85,7 +154,11 @@ uriSub f sink = createSub acquire release sink
 -----------------------------------------------------------------------------
 -- | Subscription for @popstate@ events, from the History API, mapped
 -- to a user-defined 'Router'.
-routerSub :: Router route => (Either RoutingError route -> action) -> Sub action
+routerSub
+  :: Router route
+  => (Either RoutingError route -> action)
+  -- ^ Callback fired with the decoded route (or 'RoutingError') on every URL change
+  -> Sub action
 routerSub f = uriSub $ \uri -> f (route uri)
 -----------------------------------------------------------------------------
 -- | Retrieves the current relative URI by inspecting @pathname@, @search@

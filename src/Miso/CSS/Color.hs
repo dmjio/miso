@@ -14,6 +14,73 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- = Overview
+--
+-- "Miso.CSS.Color" provides the 'Color' type and smart constructors for every
+-- CSS color format, plus the full set of
+-- <https://www.w3.org/TR/css-color-4/#named-colors CSS named colors>.
+--
+-- Colors are produced by smart constructors ('rgb', 'rgba', 'hsl', 'hsla',
+-- 'oklch', 'oklcha', 'hex', 'var') and consumed by 'renderColor', which
+-- serialises a 'Color' to a 'Miso.String.MisoString' suitable for use as a
+-- CSS property value. All color constructors are re-exported from "Miso.CSS".
+--
+-- = Color formats
+--
+-- ['rgb' r g b] @rgb(r,g,b)@ — <https://www.w3.org/TR/css-color-4/#rgb-functions RGB>
+-- ['rgba' r g b a] @rgba(r,g,b,a)@ — <https://www.w3.org/TR/css-color-4/#rgb-functions RGBA>
+-- ['hsl' h s l] @hsl(h,s,l)@ — <https://www.w3.org/TR/css-color-4/#the-hsl-notation HSL>
+-- ['hsla' h s l a] @hsla(h,s,l,a)@ — <https://www.w3.org/TR/css-color-4/#the-hsl-notation HSLA>
+-- ['oklch' l c h] @oklch(l% c h)@ — <https://www.w3.org/TR/css-color-4/#the-oklch-notation OKLCH>
+-- ['oklcha' l c h a] @oklch(l% c h / a)@ — <https://www.w3.org/TR/css-color-4/#the-oklch-notation OKLCHA>
+-- ['hex' s] @#s@ — <https://www.w3.org/TR/css-color-4/#hex-notation Hex>
+-- ['var' name] @var(--name)@ — <https://www.w3.org/TR/css-variables/ CSS Variables>
+--
+-- = Quick start
+--
+-- @
+-- import qualified "Miso.CSS"       as CSS
+-- import           "Miso.CSS.Color"
+--
+-- myView :: 'Miso.Types.View' Model Action
+-- myView =
+--   'Miso.Html.Element.div_'
+--     [ CSS.'Miso.CSS.style_'
+--         [ CSS.'Miso.CSS.backgroundColor' 'cornflowerblue'
+--         , CSS.'Miso.CSS.color'           ('rgba' 255 255 255 0.9)
+--         , CSS.'Miso.CSS.borderColor'     ('hex' "333")
+--         ]
+--     ] []
+-- @
+--
+-- = Overloaded hex literals
+--
+-- With @-XOverloadedLabels@, hex color strings can be written as label
+-- literals directly where a 'Color' or 'Miso.String.MisoString' is expected.
+-- The leading @#@ is inserted automatically:
+--
+-- @
+-- {-\# LANGUAGE OverloadedLabels \#-}
+--
+-- myColor :: 'Color'
+-- myColor = #ff6347          -- equivalent to 'hex' \"ff6347\"
+--
+-- myString :: 'Miso.String.MisoString'
+-- myString = #cccccc         -- equivalent to \"#cccccc\"
+-- @
+--
+-- = Named colors
+--
+-- All 148 <https://www.w3.org/TR/css-color-4/#named-colors CSS named colors>
+-- are available as top-level values (e.g. 'red', 'blue', 'cornflowerblue').
+-- Each is defined as an 'rgba' value with full opacity (@alpha = 1@) and
+-- renders to its @rgba(…)@ form via 'renderColor'.
+--
+-- = See also
+--
+-- * "Miso.CSS" — CSS property DSL that consumes 'Color' values
+-- * "Miso.CSS.Types" — low-level CSS types
 -----------------------------------------------------------------------------
 module Miso.CSS.Color
   ( -- *** Types
@@ -346,7 +413,7 @@ hex = Hex
 oklch :: Double -> Double -> Double -> Color
 oklch = OKLCH
 -----------------------------------------------------------------------------
--- | Smart constructor for an 'OKLCH' 'Color' with alpha transparency
+-- | Smart constructor for an 'OKLCHA' 'Color' with alpha transparency
 --
 -- >>> renderColor (oklcha 40.1 0.123 0.123 0.5)
 -- "oklcha(40.1% 0.123 0.123 / 0.5)"
@@ -361,8 +428,6 @@ oklcha = OKLCHA
 --
 transparent :: Color
 transparent = rgba 0 0 0 0
--- <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" fill="goldenrod"/></svg>
--- data:image/svg+xml;base64,
 -----------------------------------------------------------------------------
 -- | Smart constructor for the 'aliceblue' 'Color'.
 --
@@ -1557,7 +1622,7 @@ purple = rgba 128 0 128 1
 -- | Smart constructor for the 'red' 'Color'.
 --
 -- >>> renderColor red
--- "rgba (255,0,0,1.0)"
+-- "rgba(255,0,0,1.0)"
 --
 -- <<data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0icmVkIi8+PC9zdmc+>>
 --
@@ -1727,7 +1792,7 @@ steelblue = rgba 70 130 180 1
 -- | Smart constructor for the 'tan' 'Color'.
 --
 -- >>> renderColor tan
--- "rgba(210,180,140,1.<<data:image/svg+xml;base64,0)"
+-- "rgba(210,180,140,1.0)"
 --
 -- <<data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0idGFuIi8+PC9zdmc+>>
 --

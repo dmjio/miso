@@ -11,9 +11,68 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- Predefined list of HTML elements
+-- = Overview
 --
-----------------------------------------------------------------------------
+-- "Miso.Html.Element" provides smart constructors for every
+-- <https://developer.mozilla.org/en-US/docs/Web/HTML/Element HTML element>.
+-- Each constructor has the signature:
+--
+-- @
+-- tagName_ :: ['Miso.Types.Attribute' action] -> ['Miso.Types.View' model action] -> 'Miso.Types.View' model action
+-- @
+--
+-- All names are suffixed with @_@ to avoid clashing with Haskell
+-- 'Prelude' names (e.g. 'div_', 'head_', 'map_').
+-- This module is re-exported in its entirety by "Miso.Html" and "Miso".
+--
+-- = Quick start
+--
+-- @
+-- import "Miso"
+--
+-- view :: Model -> 'Miso.Types.View' Model Action
+-- view m =
+--   'div_' []
+--     [ 'h1_' [] [ 'Miso.text' \"Hello, miso!\" ]
+--     , 'p_'  [ 'Miso.Html.Property.class_' \"intro\" ]
+--              [ 'Miso.text' \"Counter: \", 'Miso.text' ('Miso.String.ms' m) ]
+--     , 'button_' [ 'Miso.Html.Event.onClick' Increment ] [ 'Miso.text' \"+\" ]
+--     ]
+-- @
+--
+-- = Element groups
+--
+-- * __Document metadata__: 'html_', 'head_', 'base_', 'link_', 'meta_',
+--   'style_', 'title_', 'doctype_'
+-- * __Sectioning__: 'body_', 'address_', 'article_', 'aside_', 'footer_',
+--   'header_', 'h1_'–'h6_', 'hgroup_', 'main_', 'nav_', 'section_', 'search_'
+-- * __Text content__: 'blockquote_', 'dd_', 'div_', 'dl_', 'dt_',
+--   'figcaption_', 'figure_', 'hr_', 'li_', 'menu_', 'ol_', 'p_', 'pre_',
+--   'ul_'
+-- * __Inline semantics__: 'a_', 'abbr_', 'b_', 'bdi_', 'bdo_', 'br_',
+--   'cite_', 'code_', 'data_', 'dfn_', 'em_', 'i_', 'kbd_', 'mark_',
+--   'q_', 'rp_', 'rt_', 'ruby_', 's_', 'samp_', 'small_', 'span_',
+--   'strong_', 'sub_', 'sup_', 'time_', 'u_', 'var_', 'wbr_'
+-- * __Embedded content__: 'audio_', 'canvas_', 'embed_', 'iframe_',
+--   'img_', 'map_', 'object_', 'picture_', 'portal_', 'source_',
+--   'track_', 'video_'
+-- * __Scripting__: 'noscript_', 'script_'
+-- * __Edits__: 'del_', 'ins_'
+-- * __Table__: 'caption_', 'col_', 'colgroup_', 'table_', 'tbody_',
+--   'td_', 'tfoot_', 'th_', 'thead_', 'tr_'
+-- * __Forms__: 'button_', 'datalist_', 'fieldset_', 'form_', 'input_',
+--   'label_', 'legend_', 'meter_', 'optgroup_', 'option_', 'output_',
+--   'progress_', 'select_', 'textarea_'
+-- * __Interactive__: 'details_', 'dialog_', 'summary_'
+-- * __Custom__: 'nodeHtml' for any tag name not listed above
+--
+-- = See also
+--
+-- * "Miso.Html.Property" — 'Miso.Html.Property.id_', 'Miso.Html.Property.class_', 'Miso.Html.Property.src_', …
+-- * "Miso.Html.Event" — 'Miso.Html.Event.onClick', 'Miso.Html.Event.onInput', …
+-- * "Miso.Html.Render" — server-side HTML rendering via 'Miso.Html.Render.ToHtml'
+-- * "Miso.Svg.Element" — SVG element constructors
+-----------------------------------------------------------------------------
 module Miso.Html.Element
   ( -- ** Smart constructors
       nodeHtml

@@ -8,6 +8,76 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- = Overview
+--
+-- "Miso.Svg.Element" provides smart constructors for every element in the
+-- <https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element SVG>
+-- vocabulary. All nodes are created in the @SVG@ namespace via
+-- @document.createElementNS(\"http:\/\/www.w3.org\/2000\/svg\", …)@.
+-- This module is re-exported in its entirety by "Miso.Svg".
+--
+-- __Leaf elements__ (shapes, images, stops, …) omit the children argument:
+--
+-- @
+-- circle_ :: ['Miso.Types.Attribute' action] -> 'Miso.Types.View' model action
+-- @
+--
+-- __Container elements__ accept both attributes and children:
+--
+-- @
+-- g_ :: ['Miso.Types.Attribute' action] -> ['Miso.Types.View' model action] -> 'Miso.Types.View' model action
+-- @
+--
+-- = Quick start
+--
+-- @
+-- import "Miso"
+-- import "Miso.Svg"
+-- import qualified "Miso.Svg.Property" as SP
+--
+-- logo :: 'Miso.Types.View' model action
+-- logo =
+--   'svg_' [ SP.'Miso.Svg.Property.viewBox_' \"0 0 200 200\", SP.'Miso.Svg.Property.width_' \"200\" ]
+--     [ 'g_' [ SP.'Miso.Svg.Property.fill_' \"none\", SP.'Miso.Svg.Property.stroke_' \"black\" ]
+--         [ 'circle_' [ SP.'Miso.Svg.Property.cx_' \"100\", SP.'Miso.Svg.Property.cy_' \"100\", SP.'Miso.Svg.Property.r_' \"80\" ]
+--         , 'line_'   [ SP.'Miso.Svg.Property.x1_' \"20\", SP.'Miso.Svg.Property.y1_' \"100\"
+--                     , SP.'Miso.Svg.Property.x2_' \"180\", SP.'Miso.Svg.Property.y2_' \"100\" ]
+--         ]
+--     , 'text_' [ SP.'Miso.Svg.Property.x_' \"100\", SP.'Miso.Svg.Property.y_' \"110\"
+--               , SP.'Miso.Svg.Property.textAnchor_' \"middle\" ]
+--               [ 'Miso.text' \"miso\" ]
+--     ]
+-- @
+--
+-- = Element groups
+--
+-- * __Root__: 'svg_'
+-- * __Graphics__ (leaf): 'circle_', 'ellipse_', 'image_', 'line_',
+--   'path_', 'polygon_', 'polyline_', 'rect_', 'use_'
+-- * __Animation__: 'animate_', 'animateMotion_', 'animateTransform_',
+--   'mpath_', 'set_'
+-- * __Descriptive__: 'desc_', 'metadata_', 'title_'
+-- * __Containers__: 'defs_', 'g_', 'marker_', 'mask_', 'pattern_',
+--   'switch_', 'symbol_'
+-- * __Text__: 'text_', 'textPath_', 'tspan_'
+-- * __Gradients__: 'linearGradient_', 'radialGradient_', 'stop_'
+-- * __Filters__: 'feBlend_', 'feColorMatrix_', 'feComponentTransfer_',
+--   'feComposite_', 'feConvolveMatrix_', 'feDiffuseLighting_',
+--   'feDisplacementMap_', 'feDropShadow_', 'feFlood_',
+--   'feFuncA_', 'feFuncB_', 'feFuncG_', 'feFuncR_',
+--   'feGaussianBlur_', 'feImage_', 'feMerge_', 'feMergeNode_',
+--   'feMorphology_', 'feOffset_', 'feSpecularLighting_',
+--   'feTile_', 'feTurbulence_'
+-- * __Light sources__: 'feDistantLight_', 'fePointLight_', 'feSpotLight_'
+-- * __Misc__: 'foreignObject_', 'clipPath_', 'filter_', 'script_',
+--   'style_', 'view_'
+--
+-- = See also
+--
+-- * "Miso.Svg.Property" — SVG attribute combinators (@cx_@, @r_@, @fill_@, …)
+-- * "Miso.Svg.Event" — SVG event handlers
+-- * "Miso.Html.Element" — HTML element constructors
 ----------------------------------------------------------------------------
 module Miso.Svg.Element
   ( -- *** SVG

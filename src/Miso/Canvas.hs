@@ -16,7 +16,89 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
-----------------------------------------------------------------------------
+-- = Overview
+--
+-- "Miso.Canvas" is a typed Haskell wrapper around the browser's
+-- <https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API HTML5 Canvas 2D API>.
+-- It lets you draw graphics imperatively inside a miso 'Miso.Types.View'
+-- without leaving Haskell.
+--
+-- The central abstraction is the 'Canvas' monad:
+--
+-- @
+-- type 'Canvas' a = 'Control.Monad.Reader.ReaderT' 'CanvasContext2D' IO a
+-- @
+--
+-- Every drawing operation ('fillRect', 'arc', 'fillText', …) is a 'Canvas'
+-- action that reads the implicit
+-- <https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D CanvasRenderingContext2D>
+-- and calls the corresponding JavaScript method.
+--
+-- = Quick start
+--
+-- Wire a canvas element into your view using 'canvas'. The runtime calls
+-- @init@ once when the DOM node is created and @draw@ after every VDOM
+-- update, passing the state returned by @init@:
+--
+-- @
+-- import           "Miso"
+-- import           "Miso.Canvas"
+-- import qualified "Miso.CSS"       as CSS
+-- import qualified "Miso.CSS.Color" as Color
+-- import qualified "Miso.Html.Property" as HP
+--
+-- view :: Model -> 'Miso.Types.View' Model Action
+-- view m =
+--   'canvas'
+--     [ HP.'Miso.Html.Property.width_' \"800\", HP.'Miso.Html.Property.height_' \"480\" ]
+--     (\\_ -> pure ())          -- init: no canvas-level state needed
+--     (\\() -> drawScene m)    -- draw: closure over current model
+--
+-- drawScene :: Model -> 'Canvas' ()
+-- drawScene m = do
+--   'clearRect' (0, 0, 800, 480)
+--   'fillStyle' ('color' Color.'Miso.CSS.Color.cornflowerblue')
+--   'fillRect'  (0, 0, 800, 480)
+--   'fillStyle' ('color' Color.'Miso.CSS.Color.white')
+--   'font'      \"24px sans-serif\"
+--   'fillText'  (\"Hello, miso!\", 32, 48)
+-- @
+--
+-- = canvas vs canvas_
+--
+-- Two element constructors are provided:
+--
+-- * 'canvas' — the standard variant. Acquires a @\"2d\"@
+--   'CanvasContext2D' automatically and runs @init@ \/ @draw@ inside
+--   the 'Canvas' monad.
+--
+-- * 'canvas_' — the escape hatch. @init@ and @draw@ receive raw 'IO'
+--   callbacks and a 'Miso.DSL.DOMRef', letting you hand the element off to
+--   a third-party JavaScript library (e.g. Three.js, WebGL) that manages
+--   its own context.
+--
+-- = Styling
+--
+-- 'fillStyle' and 'strokeStyle' accept a 'StyleArg', which can be a plain
+-- 'Miso.CSS.Color.Color' (via 'color'), a 'Gradient' (via 'gradient'), or a
+-- 'Pattern' (via 'pattern_'):
+--
+-- @
+-- 'fillStyle' ('color' Color.'Miso.CSS.Color.red')
+-- 'fillStyle' ('gradient' myGradient)
+-- 'fillStyle' ('pattern_' myPattern)
+-- @
+--
+-- Note: @'Miso.Canvas.color'@ and @'Miso.CSS.color'@ have the same name but
+-- different types. Import "Miso.CSS" qualified to avoid ambiguity when using
+-- both in the same file.
+--
+-- = See also
+--
+-- * "Miso.CSS.Color" — 'Miso.CSS.Color.Color' type and named colors
+-- * "Miso.CSS" — CSS property DSL for non-canvas styling
+-- * "Miso.FFI" — lower-level JS interop used internally
+-----------------------------------------------------------------------------
 module Miso.Canvas
   ( -- * Types
     Canvas
@@ -503,7 +585,12 @@ textBaseline :: TextBaselineType -> Canvas ()
 textBaseline = set "textBaseline"
 -----------------------------------------------------------------------------
 -- | [gradient.addColorStop(stop,color)](https://www.w3schools.com/tags/canvas_addcolorstop.asp)
-addColorStop :: (Double, Color) -> Gradient -> Canvas ()
+addColorStop
+  :: (Double, Color)
+  -- ^ @(stop, color)@ — position along the gradient (0.0–1.0) and the colour at that stop
+  -> Gradient
+  -- ^ The gradient object to add the colour stop to
+  -> Canvas ()
 addColorStop args (Gradient g) = do
   _ <- liftIO $ g # ("addColorStop" :: MisoString) $ args
   pure ()

@@ -12,11 +12,30 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- Interface to the [Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API)
--- for making HTTP requests.
+-- Interface to the browser's
+-- [Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API)
+-- for making HTTP requests inside Miso's 'Effect' monad.
 --
--- Refer to the miso README if you want to automatically interact with a Servant
--- API.
+-- Every function takes a URL, optional request headers, a success callback,
+-- and an error callback — both @('Response' x -> action)@. The resulting
+-- @'Effect' parent props model action@ dispatches the appropriate action into
+-- the MVU loop when the response arrives.
+--
+-- Functions are organised by HTTP method and body\/response type:
+--
+-- @
+-- ─── JSON ─────────────  getJSON   postJSON \/ postJSON'  putJSON
+-- ─── Text ─────────────  getText   postText               putText
+-- ─── Blob ─────────────  getBlob   postBlob               putBlob
+-- ─── FormData ─────────  getFormData  postFormData        putFormData
+-- ─── Uint8Array ───────  getUint8Array  postUint8Array    putUint8Array
+-- ─── ArrayBuffer ──────  getArrayBuffer postArrayBuffer   putArrayBuffer
+-- @
+--
+-- Use 'getJSON' \/ 'postJSON' for typical REST calls. Use 'postJSON'' when
+-- the server returns a JSON body in the response.
+--
+-- For Servant-style typed client generation, see the miso README.
 --
 ----------------------------------------------------------------------------
 module Miso.Fetch
@@ -128,7 +147,10 @@ getJSON url headers_ successful errorful =
             , ..
             }
 ----------------------------------------------------------------------------
--- | Sends a POST request with JSON encoded data.
+-- | Send a POST request with a JSON-encoded body; ignores the response body.
+--
+-- Sets @Content-Type: application\/json@ automatically. Use 'postJSON'' when
+-- you also need to parse a JSON response body.
 postJSON
   :: (FromJSVal error, ToJSON body)
   => MisoString
@@ -152,7 +174,10 @@ postJSON url body_ headers_ successful errorful =
   where
     jsonHeaders_ = biasHeaders headers_ [contentType =: applicationJSON]
 ----------------------------------------------------------------------------
--- | Sends a POST request with JSON encoded data and expects JSON response.
+-- | Send a POST request with a JSON-encoded body and parse a JSON response.
+--
+-- Sets both @Content-Type: application\/json@ and @Accept: application\/json@
+-- automatically. Use 'postJSON' when the response body is not needed.
 postJSON'
   :: (FromJSVal error, ToJSON body, FromJSON return)
   => MisoString
@@ -194,7 +219,9 @@ postJSON' url body_ headers_ successful errorful =
             , ..
             }
 ----------------------------------------------------------------------------
--- | Sends a PUT request with JSON encoded data.
+-- | Send a PUT request with a JSON-encoded body; ignores the response body.
+--
+-- Sets @Content-Type: application\/json@ automatically.
 putJSON
   :: (FromJSVal error, ToJSON body)
   => MisoString
@@ -218,7 +245,10 @@ putJSON url body_ headers_ successful errorful =
   where
     jsonHeaders_ = biasHeaders headers_ [contentType =: applicationJSON]
 ----------------------------------------------------------------------------
--- | Retrieves text using the Fetch API.
+-- | Retrieve a plain-text resource via GET.
+--
+-- Sets @Accept: text\/plain@ automatically. The response body is delivered as
+-- a 'MisoString'.
 getText
   :: FromJSVal error
   => MisoString
@@ -239,7 +269,9 @@ getText url headers_ successful errorful =
   where
     textHeaders_ = biasHeaders headers_ [accept =: textPlain]
 ----------------------------------------------------------------------------
--- | Sends a POST request with text data.
+-- | Send a POST request with a plain-text body; ignores the response body.
+--
+-- Sets @Content-Type: text\/plain@ automatically.
 postText
   :: FromJSVal error
   => MisoString
@@ -263,7 +295,9 @@ postText url body_ headers_ successful errorful =
   where
     textHeaders_ = biasHeaders headers_ [contentType =: textPlain]
 ----------------------------------------------------------------------------
--- | Sends a PUT request with text data.
+-- | Send a PUT request with a plain-text body; ignores the response body.
+--
+-- Sets @Content-Type: text\/plain@ automatically.
 putText
   :: FromJSVal error
   => MisoString
@@ -287,7 +321,9 @@ putText url imageBody headers_ successful errorful =
   where
     textHeaders_ = biasHeaders headers_ [contentType =: textPlain]
 ----------------------------------------------------------------------------
--- | Retrieves a Blob using the Fetch API.
+-- | Retrieve a binary resource as a 'Blob' via GET.
+--
+-- Sets @Accept: application\/octet-stream@ automatically.
 getBlob
   :: FromJSVal error
   => MisoString
@@ -308,7 +344,9 @@ getBlob url headers_ successful errorful =
   where
     blobHeaders_ = biasHeaders headers_ [accept =: octetStream]
 ----------------------------------------------------------------------------
--- | Sends a POST request with a Blob.
+-- | Send a POST request with a 'Blob' body; ignores the response body.
+--
+-- Sets @Content-Type: application\/octet-stream@ automatically.
 postBlob
   :: FromJSVal error
   => MisoString
@@ -332,7 +370,9 @@ postBlob url body_ headers_ successful errorful =
   where
     blobHeaders_ = biasHeaders headers_ [contentType =: octetStream]
 ----------------------------------------------------------------------------
--- | Sends a PUT request with a Blob.
+-- | Send a PUT request with a 'Blob' body; ignores the response body.
+--
+-- Sets @Content-Type: application\/octet-stream@ automatically.
 putBlob
   :: FromJSVal error
   => MisoString
@@ -356,7 +396,9 @@ putBlob url imageBody headers_ successful errorful =
   where
     blobHeaders_ = biasHeaders headers_ [contentType =: octetStream]
 ----------------------------------------------------------------------------
--- | Retrieves FormData using the Fetch API.
+-- | Retrieve a multipart resource as 'FormData' via GET.
+--
+-- Sets @Accept: multipart\/form-data@ automatically.
 getFormData
   :: FromJSVal error
   => MisoString
@@ -377,7 +419,9 @@ getFormData url headers_ successful errorful =
   where
     formDataHeaders_ = biasHeaders headers_ [accept =: formData]
 ----------------------------------------------------------------------------
--- | Sends a POST request with FormData.
+-- | Send a POST request with a 'FormData' body; ignores the response body.
+--
+-- Sets @Content-Type: multipart\/form-data@ automatically.
 postFormData
   :: FromJSVal error
   => MisoString
@@ -401,7 +445,9 @@ postFormData url body_ headers_ successful errorful =
   where
     formDataHeaders_ = biasHeaders headers_ [contentType =: formData]
 ----------------------------------------------------------------------------
--- | Sends a PUT request with FormData.
+-- | Send a PUT request with a 'FormData' body; ignores the response body.
+--
+-- Sets @Content-Type: multipart\/form-data@ automatically.
 putFormData
   :: FromJSVal error
   => MisoString
@@ -425,7 +471,9 @@ putFormData url imageBody headers_ successful errorful =
   where
     formDataHeaders_ = biasHeaders headers_ [contentType =: formData]
 ----------------------------------------------------------------------------
--- | Retrieves an ArrayBuffer using the Fetch API.
+-- | Retrieve a binary resource as an 'ArrayBuffer' via GET.
+--
+-- Sets @Accept: application\/octet-stream@ automatically.
 getArrayBuffer
   :: FromJSVal error
   => MisoString
@@ -446,7 +494,9 @@ getArrayBuffer url headers_ successful errorful =
   where
     arrayBufferHeaders_ = biasHeaders headers_ [accept =: octetStream]
 ----------------------------------------------------------------------------
--- | Sends a POST request with an ArrayBuffer.
+-- | Send a POST request with an 'ArrayBuffer' body; ignores the response body.
+--
+-- Sets @Content-Type: application\/octet-stream@ automatically.
 postArrayBuffer
   :: FromJSVal error
   => MisoString
@@ -470,7 +520,9 @@ postArrayBuffer url body_ headers_ successful errorful =
   where
     arrayBufferHeaders_ = biasHeaders headers_ [contentType =: octetStream]
 ----------------------------------------------------------------------------
--- | Sends a PUT request with an ArrayBuffer.
+-- | Send a PUT request with an 'ArrayBuffer' body; ignores the response body.
+--
+-- Sets @Content-Type: application\/octet-stream@ automatically.
 putArrayBuffer
   :: FromJSVal error
   => MisoString
@@ -494,7 +546,9 @@ putArrayBuffer url arrayBuffer_ headers_ successful errorful =
   where
     arrayBufferHeaders_ = biasHeaders headers_ [contentType =: octetStream]
 ----------------------------------------------------------------------------
--- | Retrieves a Uint8Array using the Fetch API.
+-- | Retrieve a binary resource as a 'Uint8Array' via GET.
+--
+-- Sets @Accept: application\/octet-stream@ automatically.
 getUint8Array
   :: FromJSVal error
   => MisoString
@@ -515,7 +569,9 @@ getUint8Array url headers_ successful errorful =
   where
     uint8ArrayHeaders_ = biasHeaders headers_ [accept =: octetStream]
 ----------------------------------------------------------------------------
--- | Sends a POST request with a Uint8Array.
+-- | Send a POST request with a 'Uint8Array' body; ignores the response body.
+--
+-- Sets @Content-Type: application\/octet-stream@ automatically.
 postUint8Array
   :: FromJSVal error
   => MisoString
@@ -539,7 +595,9 @@ postUint8Array url body_ headers_ successful errorful =
   where
     uint8ArrayHeaders_ = biasHeaders headers_ [contentType =: octetStream]
 ----------------------------------------------------------------------------
--- | Sends a PUT request with a Uint8Array.
+-- | Send a PUT request with a 'Uint8Array' body; ignores the response body.
+--
+-- Sets @Content-Type: application\/octet-stream@ automatically.
 putUint8Array
   :: FromJSVal error
   => MisoString
@@ -563,7 +621,7 @@ putUint8Array url uint8Array_ headers_ successful errorful =
   where
     uint8ArrayHeaders_ = biasHeaders headers_ [contentType =: octetStream]
 ----------------------------------------------------------------------------
--- | Sends a POST request with an 'Image'.
+-- | Send a POST request with an 'Image' body; ignores the response body.
 postImage
   :: FromJSVal error
   => MisoString
@@ -585,7 +643,7 @@ postImage url body_ headers_ successful errorful =
       (sink . errorful)
       NONE
 ----------------------------------------------------------------------------
--- | Sends a PUT request with an 'Image'.
+-- | Send a PUT request with an 'Image' body; ignores the response body.
 putImage
   :: FromJSVal error
   => MisoString
@@ -607,34 +665,40 @@ putImage url imageBody headers_ successful errorful =
       (sink . errorful)
       NONE
 ----------------------------------------------------------------------------
--- | Type synonym for request body.
+-- | Type synonym for a raw JavaScript request body.
 type Body = JSVal
 ----------------------------------------------------------------------------
--- | Value for specifying "Accept" in an HTTP header
+-- | HTTP header name @\"Accept\"@.
+-- Use with '=:' to build request headers, e.g. @accept =: applicationJSON@.
 accept :: MisoString
 accept = "Accept"
 ----------------------------------------------------------------------------
--- | Value for specifying "Content-Type" in an HTTP header
+-- | HTTP header name @\"Content-Type\"@.
+-- Use with '=:' to build request headers, e.g. @contentType =: textPlain@.
 contentType :: MisoString
 contentType = "Content-Type"
 ----------------------------------------------------------------------------
--- | Value for specifying "application/json" in an HTTP header
+-- | MIME type @\"application\/json\"@.
 applicationJSON :: MisoString
 applicationJSON = "application/json"
 ----------------------------------------------------------------------------
--- | Value for specifying "text/plain" in an HTTP header
+-- | MIME type @\"text\/plain\"@.
 textPlain :: MisoString
 textPlain = "text/plain"
 ----------------------------------------------------------------------------
--- | Value for specifying "application/octet-stream" in an HTTP header
+-- | MIME type @\"application\/octet-stream\"@. Used for binary payloads.
 octetStream :: MisoString
 octetStream = "application/octet-stream"
 ----------------------------------------------------------------------------
--- | Value for specifying "multipart/form-data" in an HTTP header
+-- | MIME type @\"multipart\/form-data\"@.
 formData :: MisoString
 formData = "multipart/form-data"
 ----------------------------------------------------------------------------
--- | Helper function for the union of two header Map
+-- | Merge two header lists, giving precedence to the first (user-supplied) list.
+--
+-- Duplicate keys in @contentSpecific@ are dropped when the same key already
+-- appears in @userDefined@, allowing callers to override the library's default
+-- @Content-Type@ and @Accept@ headers.
 biasHeaders :: Ord k => [(k, a)] -> [(k, a)] -> [(k, a)]
 biasHeaders userDefined contentSpecific
   = M.toList

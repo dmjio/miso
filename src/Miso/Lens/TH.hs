@@ -9,6 +9,72 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- = Overview
+--
+-- "Miso.Lens.TH" generates 'Lens' definitions via Template Haskell, similar
+-- to @lens@'s @makeLenses@ and @makeClassy@. Fields must be prefixed with
+-- @_@ — the generated lens name is the field name with the underscore dropped.
+--
+-- Enable the extension and splice at the declaration level:
+--
+-- @
+-- {-\# LANGUAGE TemplateHaskell \#-}
+-- import "Miso.Lens.TH" ('makeLenses', 'makeClassy')
+-- @
+--
+-- = makeLenses
+--
+-- Generates a @'Lens' Record Field@ for each @_@-prefixed record field:
+--
+-- @
+-- data Model = Model
+--   { _count :: Int
+--   , _text  :: 'Miso.String.MisoString'
+--   } deriving (Eq)
+--
+-- 'makeLenses' \'\'Model
+-- -- Generates:
+-- --   count :: 'Lens' Model Int
+-- --   text  :: 'Lens' Model 'Miso.String.MisoString'
+--
+-- update :: Action -> 'Miso.Effect.Effect' p props Model Action
+-- update Increment   = count '+=' 1
+-- update (SetText t) = text  '.=' t
+-- @
+--
+-- = makeClassy
+--
+-- Generates a @HasFoo@ typeclass with a self-lens @foo :: Lens s Foo@ and
+-- one lens per @_@-prefixed field. This enables lens composition across
+-- record types that embed @Foo@:
+--
+-- @
+-- data Foo = Foo { _fooX :: Int, _fooY :: Int }
+-- 'makeClassy' \'\'Foo
+-- -- Generates:
+-- --   class HasFoo s where
+-- --     foo  :: 'Lens' s Foo
+-- --     fooX :: 'Lens' s Int   -- fooX = foo . lens _fooX ...
+-- --     fooY :: 'Lens' s Int
+-- --   instance HasFoo Foo where foo = 'this'
+--
+-- data Bar = Bar { _barFoo :: Foo, _barZ :: Double }
+-- 'makeLenses' \'\'Bar
+-- instance HasFoo Bar where foo = barFoo
+-- -- Now barX :: 'Lens' Bar Int  (via foo composition)
+-- @
+--
+-- = Comparison with Generic approach
+--
+-- [Template Haskell] "Miso.Lens.TH" — @_@ prefix required; explicit splice
+-- [Overloaded labels] "Miso.Lens.Generic" — no TH; derives via @Generic@
+--
+-- = See also
+--
+-- * "Miso.Lens" — 'Miso.Lens.Lens', 'Miso.Lens.lens', 'Miso.Lens.view',
+--   'Miso.Lens.set', and the update operators ('.=', '+=', '%=', …)
+-- * "Miso.Lens.Generic" — label-based alternative requiring no TH splice
 -----------------------------------------------------------------------------
 module Miso.Lens.TH
   ( -- ** TH
@@ -30,7 +96,10 @@ import Miso.Lens (this, lens, Lens)
 -----------------------------------------------------------------------------
 -- | Automatically generates Haskell lenses via template-haskell.
 --
-makeLenses :: Name -> Q [Dec]
+makeLenses
+  :: Name
+  -- ^ The name of the record type to derive lenses for (e.g. @\'\'MyModel@)
+  -> Q [Dec]
 makeLenses name = do
   reify name >>= \case
     TyConI (NewtypeD _ _ _ _ con _) -> do
@@ -72,7 +141,10 @@ makeLenses name = do
         fieldVar = mkName "field"
 -----------------------------------------------------------------------------
 -- | Automatically generates classy lenses via template-haskell.
-makeClassy :: Name -> Q [Dec]
+makeClassy
+  :: Name
+  -- ^ The name of the record type to derive a @Has@ typeclass and lenses for (e.g. @\'\'MyModel@)
+  -> Q [Dec]
 makeClassy name = do
   reify name >>= \case
     TyConI (NewtypeD _ _ _ _ con _) -> do

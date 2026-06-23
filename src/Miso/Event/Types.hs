@@ -11,7 +11,56 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
-----------------------------------------------------------------------------
+--
+-- = Overview
+--
+-- "Miso.Event.Types" defines the payload types for browser DOM events and
+-- the 'Events' map that controls which events are delegated to the miso
+-- runtime and at which 'Phase' of the event lifecycle.
+--
+-- = Event delegation
+--
+-- Miso uses
+-- <https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Scripting/Event_bubbling event delegation>:
+-- a single listener is attached at the root of the component's DOM subtree
+-- and catches all matching events as they bubble or capture past it.
+-- The 'Events' map (@'Data.Map.Strict.Map' 'Miso.String.MisoString' 'Phase'@)
+-- declares which event names participate and their phase.
+--
+-- The default set ('defaultEvents') covers the most common interactions.
+-- Additional event groups can be merged in when constructing a component:
+--
+-- @
+-- myComponent = ('Miso.component' model update view)
+--   { 'Miso.Types.events' = 'defaultEvents'
+--       \<\> 'keyboardEvents'
+--       \<\> 'pointerEvents'
+--   }
+-- @
+--
+-- = Event groups
+--
+-- ['defaultEvents'] blur, change, click, contextmenu, dblclick, focus, input, select, submit
+-- ['keyboardEvents'] keydown, keypress, keyup
+-- ['mouseEvents'] mouseup, mousedown, mouseenter, mouseleave, mouseover, mouseout, contextmenu
+-- ['dragEvents'] drag, dragstart, dragend, dragenter, dragleave, dragover, drop
+-- ['pointerEvents'] pointerup, pointerdown, pointerenter, pointerleave, pointerover, pointerout, pointercancel, contextmenu
+-- ['mediaEvents'] play, pause, ended, timeupdate, volumechange, …
+-- ['clipboardEvents'] cut, copy, paste
+-- ['touchEvents'] touchstart, touchend, touchmove, touchcancel
+--
+-- = Payload types
+--
+-- * 'KeyCode' \/ 'KeyInfo' — keyboard event key code and modifier state.
+-- * 'Checked' — checkbox @checked@ boolean.
+-- * 'PointerEvent' \/ 'PointerType' — pointer position, pressure, tilt, and device type.
+-- * 'Options' — per-handler flags: 'preventDefault', 'stopPropagation'.
+--
+-- = See also
+--
+-- * "Miso.Event.Decoder" — 'Miso.Event.Decoder.Decoder' and pre-built decoders for these types
+-- * "Miso.Html.Event" — @onClick@, @onInput@, @onKeyDown@, … combinators
+-----------------------------------------------------------------------------
 module Miso.Event.Types
   ( -- ** Types
     Events
@@ -50,7 +99,15 @@ import           Miso.String (MisoString, ms)
 data KeyInfo
   = KeyInfo
   { keyCode :: !KeyCode
-  , shiftKey, metaKey, ctrlKey, altKey :: !Bool
+  -- ^ Numeric key code of the pressed key (see 'KeyCode')
+  , shiftKey :: !Bool
+  -- ^ 'True' if the Shift key was held when the event fired
+  , metaKey :: !Bool
+  -- ^ 'True' if the Meta (Command on macOS, Windows key on PC) key was held
+  , ctrlKey :: !Bool
+  -- ^ 'True' if the Control key was held
+  , altKey :: !Bool
+  -- ^ 'True' if the Alt (Option on macOS) key was held
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
 -- | Type used for Keyboard events.
@@ -68,21 +125,26 @@ newtype Checked = Checked Bool
 data PointerEvent
   = PointerEvent
   { pointerType :: PointerType
+  -- ^ Device kind: 'MousePointerType', 'PenPointerType', 'TouchPointerType', or 'UnknownPointerType'
   , pointerId :: Int
+  -- ^ Unique identifier for this pointer, stable across move\/up\/cancel events
   , isPrimary :: Bool
+  -- ^ 'True' for the primary pointer in a multi-touch sequence
   , client :: (Double, Double)
-  -- ^ clientX, clientY
+  -- ^ @(clientX, clientY)@ — position relative to the viewport
   , screen :: (Double, Double)
-  -- ^ screenX, screenY
+  -- ^ @(screenX, screenY)@ — position relative to the screen
   , offset :: (Double, Double)
-  -- ^ offsetX, offsetY
+  -- ^ @(offsetX, offsetY)@ — position relative to the target element
   , page :: (Double,Double)
-  -- ^ pageX, pageY
+  -- ^ @(pageX, pageY)@ — position relative to the full document
   , tilt :: (Double,Double)
-  -- ^ tiltX, tiltY
+  -- ^ @(tiltX, tiltY)@ — pen tilt angle in degrees from the surface plane
   , pressure :: Double
+  -- ^ Normalised pressure in @[0, 1]@; @0.5@ for mouse buttons that lack pressure sensitivity
   , button :: Int
-  -- ^ https://w3c.github.io/pointerevents/#the-button-property
+  -- ^ Which button changed state; @-1@ during move with no button change.
+  -- See <https://w3c.github.io/pointerevents/#the-button-property PointerEvent.button>
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
 -- | Pointer type
@@ -105,7 +167,9 @@ instance FromJSON PointerType where
 data Options
   = Options
   { _preventDefault :: Bool
+  -- ^ If 'True', calls @event.preventDefault()@ to suppress the browser's default behaviour
   , _stopPropagation :: Bool
+  -- ^ If 'True', calls @event.stopPropagation()@ to halt event bubbling\/capturing
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
 instance Monoid Options where

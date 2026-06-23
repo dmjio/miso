@@ -1,15 +1,49 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.CSS.Types
--- Copyright   :  (C) 2016-2026 David M. Johnson (@dmjio)
+-- Copyright   :  (C) 2016-2026 David M. Johnson
 -- License     :  BSD3-style (see the file LICENSE)
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- Types for CSS, including inline styles and [StyleSheets](https://developer.mozilla.org/en-US/docs/Web/API/StyleSheet).
+-- = Overview
 --
-----------------------------------------------------------------------------
+-- "Miso.CSS.Types" defines the core data types that back the CSS DSL in
+-- "Miso.CSS". There are three layers:
+--
+-- * 'Style' — a single CSS property\/value pair (@(\"color\", \"red\")@).
+-- * 'Styles' — one rule block: either a selector rule, a
+--   <https://developer.mozilla.org/en-US/docs/Web/CSS/@keyframes \@keyframes>
+--   animation, or a
+--   <https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_media_queries \@media>
+--   query.
+-- * 'StyleSheet' — an ordered list of 'Styles' rule blocks that together form
+--   a complete
+--   <https://developer.mozilla.org/en-US/docs/Web/API/StyleSheet stylesheet>.
+--
+-- In normal usage you never construct these types directly — the smart
+-- constructors in "Miso.CSS" (@sheet_@, @selector_@, @keyframes_@, @media_@)
+-- build them for you. This module is exported for downstream code that
+-- inspects or extends the CSS representation.
+--
+-- = Type hierarchy
+--
+-- @
+-- 'StyleSheet'          -- rendered to a \<style\> tag
+--   └─ ['Styles']       -- one rule block each
+--        ├─ 'Styles'    (selector → ['Style'])
+--        ├─ 'KeyFrame'  (animation-name → [(stop, ['Style'])])
+--        └─ 'Media'     (media-query   → [(selector, ['Style'])])
+--
+-- 'Style' = ('MisoString', 'MisoString')   -- property, value
+-- @
+--
+-- = See also
+--
+-- * "Miso.CSS" — smart constructors and property combinators built on these types
+-- * "Miso.CSS.Color" — 'Miso.CSS.Color.Color' type used as property values
+-----------------------------------------------------------------------------
 module Miso.CSS.Types
   ( -- *** Types
     Style
@@ -59,25 +93,28 @@ import Miso.String (MisoString)
 --    ]
 -- @
 --
-newtype StyleSheet = StyleSheet { getStyleSheet :: [Styles] }
-  deriving (Eq, Show)
+newtype StyleSheet = StyleSheet
+  { getStyleSheet :: [Styles]
+  -- ^ Ordered list of CSS rule blocks that make up the stylesheet
+  } deriving (Eq, Show)
 -----------------------------------------------------------------------------
 -- | Type for a CSS 'Style'
 --
 type Style = (MisoString, MisoString)
 -----------------------------------------------------------------------------
--- | An individual CSS [transform function](https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function).
--- Construct values with 'translate', 'rotate', 'scale', etc., then combine with 'transforms'.
+-- | An individual CSS <https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function transform function>.
+-- Construct values with @translate@, @rotate@, @scale@, etc., then combine with @transforms@.
 --
 -- @
 -- transforms [ translate (px 10) (pct 50), rotate (deg 45), scaleX 1.5 ]
 -- @
 --
-newtype TransformFn = TransformFn { renderTransformFn :: MisoString }
-  deriving (Eq, Show)
+newtype TransformFn = TransformFn
+  { renderTransformFn :: MisoString
+  -- ^ The serialised CSS transform function string (e.g. @\"rotate(45deg)\"@)
+  } deriving (Eq, Show)
 -----------------------------------------------------------------------------
--- | Type for a @Map@ of CSS 'Style'. Used with @StyleSheet@.
--- It maps CSS properties to their values.
+-- | A CSS rule block. One of: a selector rule, a @\@keyframes@ animation, or a @\@media@ query.
 data Styles
   = Styles (MisoString, [Style])
   | KeyFrame MisoString [(MisoString, [Style])]
