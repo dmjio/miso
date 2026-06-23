@@ -86,7 +86,6 @@ module Miso.CSS
   , clipPath
   , color
   , columnGap
-  , cssVariable
   , cursor
   , direction
   , display
@@ -551,7 +550,7 @@ animationDirection x = "animation-direction" =: x
 animationDuration :: MisoString -> Style
 animationDuration x = "animation-duration" =: x
 -----------------------------------------------------------------------------
--- | https://animation-mozilla.org/en-US/docs/Web/CSS/align-content/animation-fill-mode
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/animation-fill-mode
 --
 animationFillMode :: MisoString -> Style
 animationFillMode x = "animation-fill-mode" =: x
@@ -836,11 +835,6 @@ color x = "color" =: renderColor x
 --
 columnGap :: MisoString -> Style
 columnGap x = "column-gap" =: x
------------------------------------------------------------------------------
--- | https://developer.mozilla.org/en-US/docs/Web/CSS/css-variable
---
-cssVariable :: MisoString -> Style
-cssVariable x = "css-variable" =: x
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/direction
 --
