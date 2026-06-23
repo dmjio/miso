@@ -81,55 +81,60 @@
 --   to events that are raised by the application. This function takes any @action@,
 --   updating the @model@ and optionally introduces 'IO' into the system.
 --
--- = Your first t'Component'
+-- = Your first t'Miso.Types.Component'
 --
--- To define a 'Component', the 'component' smart constructor can be used.
+-- To define a t'Miso.Types.Component', the 'component' smart constructor can be used.
 -- Below is an example of a simple counter 'Component'.
 --
 -- @
 -- -----------------------------------------------------------------------------
 -- module Main where
 -- -----------------------------------------------------------------------------
--- import Miso
--- import Miso.Lens
--- import qualified Miso.Html.Element as H
--- import qualified Miso.Html.Event as HE
--- import qualified Miso.Html.Property as HP
+-- import "Miso"
+-- import "Miso.Lens"
+-- import qualified "Miso.Html.Element" as H
+-- import qualified "Miso.Html.Event" as HE
+-- import qualified "Miso.Html.Property" as HP
 -- -----------------------------------------------------------------------------
---                       * - The type of the parent Component 'model'
---                       |    * - The type of the parent Component 'props' accessible to the child
---                       |    |   * - The type of the current Component's 'model'
+--                       * - The type of the parent 'Component' 'model'
+--                       |    * - The type of the parent 'Component' 'props' accessible to the child
+--                       |    |   * - The type of the current 'Component' 'model'
 --                       |    |   |   * - The type of the action that updates the 'model'
 --                       |    |   |   |
--- counter :: 'Component' ROOT () Int Action
+-- counter :: 'Component' 'ROOT' () 'Int' Action
 -- counter = 'vcomp' m u v
 --   where
---     m :: Int
+--     m :: 'Int'
 --     m = 0
---                             * - The type of the parent Component 'model'
---                             |   * - The type of the parent Component 'props' accessible to the child
---                             |   |   * - The type of the current Component's 'model'
+--                             * - The type of the parent 'Component' 'model'
+--                             |   * - The type of the parent 'Component' 'props' accessible to the child
+--                             |   |   * - The type of the current 'Component' 'model'
 --                             |   |   |   * - The type of the action that updates the 'model'
 --                             |   |   |   |
---     u :: Action -> 'Effect' ROOT () Int Action
+--     u :: Action -> 'Effect' 'ROOT' () 'Int' Action
 --     u = \\case
---       Add -> 'this' += 1
---       Subtract -> 'this' -= 1
+--       Add -> 'Miso.Lens.this' += 1
+--       Subtract -> 'Miso.Lens.this' -= 1
 --
---     v :: () -> Int -> 'View' Int Action
---     v _ x = 'vfrag'
---       [ H.button_ [ HE.onClick Add, HP.id_ "add" ] [ "+" ]
---       , text (ms x)
---       , H.button_ [ HE.onClick Subtract, HP.id_ "subtract" ] [ "-" ]
+--           * - The type of the parent 'Component' props
+--           |      * - The type of the current 'Component' 'model'
+--           |      |          * - The type of the 'Component' 'model' (used for 'Component' mounting with '+>')
+--           |      |          |  * - The type of the action that updates 'Component' 'model'
+--           |      |          |  |
+--     v :: () -> 'Int' -> 'View' 'Int' Action
+--     v _props x = 'vfrag'
+--       [ H.'Miso.Html.Element.button_' [ HE.'Miso.Html.Event.onClick' Add, HP.'Miso.Html.Property.id_' "add" ] [ "+" ]
+--       , 'text' ('ms' x)
+--       , H.'Miso.Html.Elemment.button_' [ HE.'Miso.Html.Event.onClick' Subtract, HP.'Miso.Html.Property.id_' "subtract" ] [ "-" ]
 --       ]
 -- -----------------------------------------------------------------------------
--- main :: IO ()
+-- main :: 'IO' ()
 -- main = 'startApp' 'defaultEvents' counter
 -- -----------------------------------------------------------------------------
 -- data Action
 --   = Add
 --   | Subtract
---   deriving (Eq, Show)
+--   deriving ('Eq', 'Show')
 -- -----------------------------------------------------------------------------
 -- @
 --
@@ -138,7 +143,7 @@
 -- The 'startApp' (or 'miso') functions are used to run the above t'Component'.
 --
 -- @
--- main :: IO ()
+-- main :: 'IO' ()
 -- main = 'startApp' 'defaultEvents' counter
 -- @
 --
@@ -155,7 +160,7 @@
 --
 -- data Action = Init
 --
--- main :: IO ()
+-- main :: 'IO' ()
 -- main = 'startApp' 'defaultEvents' counter { 'mount' = Just Init }
 --
 -- update :: 'App' model Action
@@ -166,7 +171,7 @@
 -- Note also the signature of 'startApp'.
 --
 -- @
--- 'startApp' :: 'Eq' model => 'Events' -> 'App' model action -> IO ()
+-- 'startApp' :: 'Eq' model => 'Events' -> 'App' model action -> 'IO' ()
 -- @
 --
 -- The 'App' type synonym is defined as:
@@ -200,7 +205,7 @@
 --
 -- @
 -- data 'SomeComponent' parent
---   = forall model action props . (Eq model, Eq props)
+--   = forall model action props . ('Eq' model, 'Eq' props)
 --   => 'SomeComponent' props ('Component' parent props model action)
 -- @
 --
@@ -212,7 +217,7 @@
 -- * 'fragment', 'vfrag', 'fragment_', 'vfrag_' — build a 'VFrag'
 -- * ('+>') — key and mount a child 'Component'
 --
--- A full list of element smart constructors built on 'node' (e.g. 'Miso.Html.Element.div_') can be found in "Miso.Html.Element".
+-- A full list of element smart constructors built on 'node' (e.g. 'Miso.Html.Element.Miso.Html.Element.div_') can be found in "Miso.Html.Element".
 --
 -- = 'VComp'
 --
@@ -233,14 +238,14 @@
 --   => 'MisoString'
 --   -> 'Component' model () child action
 --   -> 'View' model a
--- key '+>' vcomp = 'VComp' (Just (toKey key)) ('SomeComponent' () vcomp)
+-- key '+>' comp = 'VComp' (Just ('toKey' key)) ('SomeComponent' () comp)
 -- @
 --
 -- Practically, using this combinator looks like:
 --
 -- @
--- view :: props -> Int -> 'View' Int action
--- view _ _ = 'div_' [ 'id_' "container" ] [ "counter" '+>' counter ]
+-- viewModel :: props -> Int -> 'View' Int action
+-- viewModel _ _ = 'Miso.Html.Element.div_' [ 'Miso.Html.Property.id_' "container" ] [ "counter" '+>' counter ]
 -- @
 --
 -- The @\"counter\"@ string is a unique 'Key' that identifies the 'Component' at runtime. These keys are very important when
@@ -264,16 +269,16 @@
 -- It carries a 'Namespace', a tag name, a list of 'Attribute' values, and a list of child 'View' nodes:
 --
 -- @
--- 'VNode' 'HTML' "div" [ 'id_' "container" ] [ "Hello, world!" ]
+-- 'VNode' 'HTML' "div" [ 'Miso.Html.Property.id_' "container" ] [ "Hello, world!" ]
 -- @
 --
 -- In practice you will rarely construct 'VNode' directly. Instead use the element smart constructors
 -- from "Miso.Html.Element", which fix the namespace and tag for you:
 --
 -- @
--- 'div_'    [ 'id_' "container" ] [ "Hello, world!" ]
--- 'button_' [ 'onClick' DoSomething ] [ "Click me" ]
--- 'h1_'     [ 'className' "title" ] [ 'text' (ms pageTitle) ]
+-- 'Miso.Html.Element.div_'    [ 'Miso.Html.Property.id_' "container" ] [ "Hello, world!" ]
+-- 'Miso.Html.Element.button_' [ 'Miso.Html.Event.onClick' DoSomething ] [ "Click me" ]
+-- 'Miso.Html.Element.h1_'     [ 'Miso.Html.Property.className' "title" ] [ 'text' ('Miso.String.ms' pageTitle) ]
 -- @
 --
 -- For elements not covered by "Miso.Html.Element", use 'node' (or its synonym 'vnode') directly:
@@ -309,19 +314,19 @@
 -- {-# LANGUAGE QuasiQuotes -#}
 -- {-# LANGUAGE MultilineStrings -#}
 --
--- import Miso
--- import Miso.FFI.QQ (js)
+-- import "Miso"
+-- import "Miso.FFI.QQ" ('Miso.FFI.QQ.js')
 --
--- data Action = Highlight DOMRef
+-- data Action = Highlight t'Miso.Effect.DOMRef'
 --
 -- update :: Action -> 'Effect' parent props model Action
 -- update = \\case
 --   Highlight domRef -> 'io_' $ do
---     ['js'| hljs.highlight(${domRef}) |]
+--     ['Miso.FFI.QQ.js'| hljs.highlight(${domRef}) |]
 --
 -- view :: props -> model -> 'View' model Action
 -- view _ x =
---   'code_'
+--   'Miso.Html.Element.code_'
 --   [ 'onCreatedWith' Highlight
 --   ]
 --   [ """
@@ -343,13 +348,13 @@
 -- any extra imports:
 --
 -- @
--- 'div_' [] [ "Hello, world!" ]
+-- 'Miso.Html.Element.Miso.Html.Element.div_' [] [ "Hello, world!" ]
 -- @
 --
 -- For dynamic content, use the 'text' smart constructor with a 'MisoString':
 --
 -- @
--- 'div_' [] [ 'text' (ms userName) ]
+-- 'Miso.Html.Element.div_' [] [ 'text' ('ms' userName) ]
 -- @
 --
 -- == HTML Encoding
@@ -378,7 +383,7 @@
 --
 -- @
 -- -- Renders: Hello world
--- 'div_' [] [ 'text_' [ "Hello", "world" ] ]
+-- 'Miso.Html.Element.div_' [] [ 'text_' [ \"Hello\", \"world\" ] ]
 -- @
 --
 -- == Keyed Text Nodes
@@ -389,10 +394,12 @@
 -- replacement when sibling order changes.
 --
 -- @
--- 'ul_' [] (map renderItem items)
+-- 'Miso.Html.Element.ul_' [] (renderItem '<$>' items)
+--
+-- data Item = Item { itemId, itemLabel :: 'MisoString' }
 --
 -- renderItem :: Item -> 'View' model Action
--- renderItem item = 'li_' [] [ 'textKey' (itemId item) (itemLabel item) ]
+-- renderItem item = 'Miso.Html.Element.li_' [] [ 'textKey' (itemId item) (itemLabel item) ]
 -- @
 --
 -- 'keyed' can also attach a key to any existing 'View', including a 'VText' produced
@@ -418,7 +425,7 @@
 --
 -- @
 -- -- Renders two \<li\> elements as direct siblings, no enclosing element
--- 'fragment' [ 'li_' [] [ 'text' "Item A" ], 'li_' [] [ 'text' "Item B" ] ]
+-- 'fragment' [ 'Miso.Html.Element.li_' [] [ 'text' "Item A" ], 'Miso.Html.Element.li_' [] [ 'text' "Item B" ] ]
 -- @
 --
 -- A 'VFrag' may optionally carry a 'Key'. Keyed fragments participate in the same
@@ -427,7 +434,7 @@
 --
 -- @
 -- -- Keyed fragment — survives reordering without full teardown\/remount
--- 'vfrag_' "my-key" [ 'li_' [] [ 'text' "Item A" ], 'li_' [] [ 'text' "Item B" ] ]
+-- 'vfrag_' "my-key" [ 'Miso.Html.Element.li_' [] [ 'text' "Item A" ], 'Miso.Html.Element.li_' [] [ 'text' "Item B" ] ]
 -- @
 --
 -- Fragments may be nested — a 'VFrag' child may itself be a 'VFrag'. The diff function
@@ -461,10 +468,10 @@
 -- See the 'key_' property for usage (and smart constructors like 'textKey_' and ('+>') as well).
 --
 -- @
--- 'ul_'
+-- 'Miso.Html.Element.ul_'
 --   []
---   [ 'li_' [ 'key_' "key-1" ] [ "a" ]
---   , 'li_' [ 'key_' "key-2" ] [ "b" ]
+--   [ 'Miso.Html.Element.li_' [ 'key_' "key-1" ] [ "a" ]
+--   , 'Miso.Html.Element.li_' [ 'key_' "key-2" ] [ "b" ]
 --   , "key-3" '+>' counter
 --   , 'textKey' "key-4" "text here"
 --   , 'vfrag_' "key-5" [ "foo", "bar" ]
@@ -484,7 +491,7 @@
 --
 -- @
 -- 'touchEvents' :: 'Events'
--- 'touchEvents' = M.fromList
+-- 'touchEvents' = M.'Data.Map.fromList'
 --   [ ("touchstart", 'BUBBLE')
 --   , ("touchcancel", 'BUBBLE')
 --   , ("touchmove", 'BUBBLE')
@@ -510,16 +517,16 @@
 -- @
 -- data 'Decoder' a
 --   = 'Decoder'
---   { 'decoder' :: 'Value' -> 'Parser' a
+--   { 'decoder' :: 'Value' -> 'Miso.Util.Parser.Parser' a
 --   , 'decodeAt' :: 'DecodeTarget'
 --   }
 --
 -- -- | Example of a custom 'Decoder' for the @value@ property of an event target.
 -- 'valueDecoder' :: 'Decoder' 'MisoString'
--- 'valueDecoder' = Decoder {..}
+-- 'valueDecoder' = 'Decoder' {..}
 --   where
---     decodeAt = 'DecodeTarget' ["target"]
---     decoder = 'withObject' "target" $ \\o -> o .: "value"
+--     'Miso.Event.decodeAt' = 'Miso.Event.DecodeTarget' ["target"]
+--     'Miso.Event.decoder' = 'Miso.JSON.withObject' "target" $ \\o -> o 'Miso.JSON..:' "value"
 -- @
 --
 -- = Attributes / Properties
@@ -529,8 +536,8 @@
 -- @
 -- data 'Attribute' action
 --   = 'Property' 'MisoString' 'Miso.JSON.Value'          -- ^ DOM property (key/value)
---   | 'ClassList' ['MisoString']                         -- ^ CSS class list
---   | 'On' ('Sink' action -> ...)                        -- ^ Event handler
+--   | 'ClassList' ['MisoString']             -- ^ 'CSS' class list
+--   | 'On' ('Sink' action -> ...)            -- ^ Event handler
 --   | 'Styles' ('Data.Map.Strict.Map' 'MisoString' 'MisoString') -- ^ Inline style map
 -- @
 --
@@ -538,13 +545,13 @@
 -- "Miso.Html.Property", "Miso.Html.Event", "Miso.Property", and "Miso.CSS":
 --
 -- @
--- 'div_'
---   [ 'id_' "container"                    -- textProp "id"
---   , 'className' "card active"            -- textProp "class"
---   , 'classList' ["card", "active"]       -- ClassList (alternative)
---   , 'disabled_'                          -- boolProp "disabled" True
---   , 'onClick' MyAction                   -- On event handler
---   , 'Miso.CSS.style_' [ 'Miso.CSS.display' "flex" ] -- Styles map
+-- 'Miso.Html.Element.div_'
+--   [ 'Miso.Html.Property.id_' "container"                    -- 'textProp' "id"
+--   , 'Miso.Html.Property.className' "card active"            -- 'textProp' "class"
+--   , 'Miso.Html.Property.classList' ["card", "active"]       -- 'ClassList'
+--   , 'Miso.Html.Property.disabled_'                          -- 'boolProp' "disabled" 'True'
+--   , 'Miso.Html.Event.onClick' MyAction                   -- 'On' event handler
+--   , 'Miso.CSS.style_' [ 'Miso.CSS.display' "flex" ]          -- 'Styles' map
 --   ]
 --   []
 -- @
@@ -555,14 +562,14 @@
 -- 'objectProp') from "Miso.Property" to set arbitrary DOM properties:
 --
 -- @
--- 'prop' "data-index" (42 :: Int)      -- sets element.data-index = 42
--- 'textProp' "placeholder" "Search…"  -- sets element.placeholder
+-- 'prop' "data-index" (42 :: 'Int')      -- sets element.data-index = 42
+-- 'textProp' "placeholder" "Search…"   -- sets element.placeholder
 -- 'boolProp' "checked" True            -- sets element.checked = true
 -- @
 --
--- Note that DOM /properties/ and HTML /attributes/ are distinct. Miso sets
--- properties on the DOM node object (e.g. @node.checked@) rather than the
--- HTML attribute (e.g. @setAttribute("checked", ...)@). This matches what
+-- Note that DOM /properties/ and HTML /attributes/ are distinct. Miso tries to set
+-- properties on the DOM node object (e.g. @node.checked@) first, then falls back to setting
+-- the HTML attribute (e.g. @setAttribute("checked", ...)@). This matches what
 -- the browser actually exposes in JavaScript and avoids common pitfalls with
 -- boolean attributes.
 --
@@ -572,7 +579,10 @@
 -- See the @'Key'@ section for details.
 --
 -- @
--- 'li_' [ 'key_' (itemId item) ] [ 'text' (itemLabel item) ]
+--
+-- data Item = Item { itemId, itemLabel :: 'MisoString' }
+--
+-- 'Miso.Html.Element.li_' [ 'key_' (itemId item) ] [ 'text' (itemLabel item) ]
 -- @
 --
 -- = 'Effect'
@@ -583,10 +593,10 @@
 -- Note: 'IO' is never evaluated inside of 'Effect', it is only scheduled.
 -- There is no 'MonadIO' instance for 'Effect'.
 --
--- The 'Effect' type is defined as a 'RWS'.
+-- The 'Effect' type is defined as a 'Control.Monad.RWS.RWS'.
 --
 -- @
--- type 'Effect' parent props model action = 'RWS' ('ComponentInfo' parent props) ['Schedule' action] model ()
+-- type 'Effect' parent props model action = 'Control.Monad.RWS.RWS' ('ComponentInfo' parent props) ['Schedule' action] model ()
 -- @
 --
 -- * The 'Control.Monad.Reader' portion of 'Effect' is 'ComponentInfo'. 'ask', 'asks', 'Miso.Lens.view' can be used to access its fields.
@@ -631,7 +641,7 @@
 -- Miso provides three mechanisms for 'Component' to exchange data:
 --
 -- * __Props__ — synchronous, parent-to-child read-only data passed at mount time (see below).
--- * __Async mailbox__ — message-passing via 'mail' / 'broadcast' / 'checkMail'; any 'Component' can send a t'Miso.JSON.Value' to any other by 'ComponentId'.
+-- * __Async mailbox__ — message-passing via 'mail', 'broadcast', 'checkMail'; any 'Component' can send a t'Miso.JSON.Value' to any other by 'ComponentId'.
 -- * __PubSub__ ("Miso.PubSub") — publish\/subscribe for fan-out messaging across unrelated 'Component'.
 --
 -- == Props
@@ -748,7 +758,7 @@
 --   where
 --     viewChild :: Greeting -> () -> 'View' () ChildAction
 --     viewChild (Greeting g) _ =
---       'div_' [] [ 'text' ("Hello, " <> g <> "!") ]
+--       'Miso.Html.Element.div_' [] [ 'text' ("Hello, " <> g <> "!") ]
 --
 --     updateChild :: ChildAction -> 'Effect' ParentModel Greeting () ChildAction
 --     updateChild = \\case
@@ -758,13 +768,13 @@
 -- -----------------------------------------------------------------------------
 -- -- Parent component: owns the greeting, passes it to the child as props
 -- parent :: 'App' ParentModel ParentAction
--- parent = 'vcomp' (ParentModel "World") 'noop' viewParent
+-- parent = 'vcomp' (ParentModel \"World\") 'noop' viewParent
 --   where
 --     viewParent :: () -> ParentModel -> 'View' ParentModel ParentAction
---     viewParent _ (ParentModel g) =
---       'mountWithProps_' "child" (Greeting g) child
+--     viewParent _ (ParentModel g) = 'mountWithProps_' "child" (Greeting g) child
 -- -----------------------------------------------------------------------------
 -- newtype ParentModel = ParentModel 'MisoString' deriving ('Eq')
+--
 -- data ChildAction = ReadGreeting
 -- data ParentAction
 -- @
@@ -800,11 +810,10 @@
 -- @
 -- data Action
 --   = ReceivedMsg MyMsg
---   | MailError   MisoString
+--   | MailError   t'Miso.String.MisoString'
 --
 -- myComp :: 'Component' parent props model Action
--- myComp = ('vcomp' m u v)
---   { 'mailbox' = 'checkMail' ReceivedMsg MailError }
+-- myComp = ('vcomp' m u v) { 'mailbox' = 'checkMail' ReceivedMsg MailError }
 -- @
 --
 -- === Looking up a 'ComponentId'
@@ -843,11 +852,11 @@
 -- * 'subs'
 --
 -- @
--- main :: IO ()
+-- main :: t'IO' ()
 -- main = 'startApp' 'defaultEvents' app { 'subs' = [ timerSub ] }
 --
 -- timerSub :: 'Sub' Action
--- timerSub sink = 'forever' $ ('threadDelay' 100000) >> sink Log
+-- timerSub sink = 'Control.Monad.forever' $ ('Control.Concurrent.threadDelay' 100000) >> sink Log
 --
 -- data Action = Log
 -- @
@@ -856,7 +865,7 @@
 -- When a 'Component' unmounts, these 'Sub' will be stopped, and their resources finalized.
 --
 -- @
--- 'onLineSub' :: (Bool -> action) -> 'Sub' action
+-- 'onLineSub' :: ('Bool' -> action) -> 'Sub' action
 -- 'onLineSub' f sink = 'Miso.Subscription.Util.createSub' acquire release sink
 --   where
 --     release (cb1, cb2) = do
@@ -900,11 +909,11 @@
 -- == Basic lens operations
 --
 -- @
--- 'Miso.Lens.view' l   -- read a field (MonadReader)
--- 'set'  l v           -- write a field
--- 'over' l f           -- modify a field
--- r '^.' l             -- infix read
--- r '&' l '.~' v       -- infix write
+-- 'view' l               -- read a field (MonadReader)
+-- 'set'  l v             -- write a field
+-- 'over' l f            -- modify a field
+-- r '^.' l              -- infix read
+-- r '&' l '.~' v         -- infix write
 -- @
 --
 -- == 'MonadState' operators (for use inside 'Effect')
@@ -915,32 +924,34 @@
 -- l '*=' n   -- multiply
 -- @
 --
--- == 'this' — the identity lens
+-- == 'Miso.Lens.this' — the identity lens
 --
 -- When the model /is/ the field (e.g. the model is a plain @Int@), use 'this':
 --
 -- @
 -- update = \\case
---   Increment -> 'this' '+=' 1
---   Decrement -> 'this' '-=' 1
+--   Increment -> 'Miso.Lens.this' 'Miso.Lens.+=' 1
+--   Decrement -> 'Miso.Lens.this' 'Miso.Lens.-=' 1
 -- @
 --
 -- == Generating lenses
 --
 -- Three approaches, pick one:
 --
--- * __Template Haskell__ ("Miso.Lens.TH"): 'makeLenses' / 'makeClassy' splice lenses for each record field.
+-- * __Template Haskell__ ("Miso.Lens.TH"): 'Miso.Lens.makeLenses' / 'Miso.Lens.makeClassy' splice lenses for each record field.
 --
 -- @
 -- {-# LANGUAGE TemplateHaskell #-}
--- import Miso.Lens.TH (makeLenses)
 --
--- data Model = Model { _count :: Int, _name :: MisoString }
--- makeLenses ''Model
+-- import "Miso.Lens.TH" ('Miso.Lens.TH.makeLenses')
+--
+-- data Model = Model { _count :: Int, _name :: 'MisoString' }
+--
+-- 'Miso.Lens.TH.makeLenses' ''Model
 --
 -- update = \\case
---   Increment -> count '+=' 1
---   Rename n  -> name '.=' n
+--   Increment -> count 'Miso.Lens.+=' 1
+--   Rename n  -> name 'Miso.Lens..=' n
 -- @
 --
 -- * __Generics__ ("Miso.Lens.Generic"): 'field' \/ 'HasLens' derive lenses at compile time
@@ -952,22 +963,23 @@
 -- {-# LANGUAGE DeriveGeneric      #-}
 -- {-# LANGUAGE OverloadedLabels   #-}
 -- {-# LANGUAGE TypeApplications   #-}
--- import GHC.Generics (Generic)
--- import Miso.Lens.Generic (field)
 --
--- data Model = Model { count :: Int, name :: MisoString }
+-- import GHC.Generics (Generic)
+-- import "Miso.Lens.Generic" ('Miso.Lens.Generic.field')
+--
+-- data Model = Model { count :: Int, name :: 'MisoString' }
 --   deriving (Eq, Generic)
 --
 -- update = \\case
---   Increment -> 'field' \@\"count\" '+=' 1          -- via TypeApplications
---   Rename n  -> #name '.=' n                     -- via OverloadedLabels
+--   Increment -> 'field' \@\"count\" 'Miso.Lens.+=' 1  -- via TypeApplications
+--   Rename n  -> #name '.=' n            -- via OverloadedLabels
 -- @
 --
 -- * __Hand-written__: construct a 'Lens' directly using 'lens' and the @'Lens' s a@ synonym.
 --
 -- @
--- name :: 'Lens' Person 'MisoString'
--- name = 'lens' _name $ \\p n -> p { _name = n }
+-- name :: 'Miso.Lens.Lens' Person 'MisoString'
+-- name = 'Miso.Lens.lens' _name $ \\p n -> p { _name = n }
 -- @
 --
 -- = (2D/3D) Canvas support
@@ -978,14 +990,14 @@
 --
 -- == The 'Miso.Canvas.Canvas' monad
 --
--- Drawing commands run in the 'Miso.Canvas.Canvas' monad, which is a 'ReaderT' over a
--- @CanvasContext2D@ (the raw JavaScript @CanvasRenderingContext2D@):
+-- Drawing commands run in the 'Miso.Canvas.Canvas' monad, which is a 'Control.Monad.Reader.ReaderT' over a
+-- 'Miso.Canvas.CanvasContext2D' (the raw JavaScript 'Miso.Canvas.CanvasContext2D'):
 --
 -- @
--- type Canvas a = ReaderT CanvasContext2D IO a
+-- type t'Miso.Canvas.Canvas' a = 'Control.Monad.Reader.ReaderT' 'Miso.Canvas.CanvasContext2D' 'IO' a
 -- @
 --
--- == Embedding a canvas in the view
+-- == Embedding a canvas in the 'view'
 --
 -- Use the 'Miso.Canvas.canvas' smart constructor.
 -- It takes an /init/ callback (runs once on mount, returns state) and a
@@ -993,9 +1005,9 @@
 --
 -- @
 -- 'Miso.Canvas.canvas'
---   [ HP.'width_' "800", HP.'height_' "480" ]
+--   [ HP.'Miso.Html.Property.width_' "800", HP.'Miso.Html.Property.height_' "480" ]
 --   (\\_ -> pure ())                   -- init: called once on canvas initialization
---   (\\() -> drawScene myModel)        -- draw: called many times, on each diff.
+--   (\\() -> drawScene myModel)        -- draw: called many times, on each 'Miso.Diff.diff'.
 -- @
 --
 -- 'Miso.Canvas.canvas_' is the variant that threads no init state at all (always passes @()@).
@@ -1036,10 +1048,10 @@
 -- (milliseconds) on each frame:
 --
 -- @
--- data Action = Tick Double
+-- data Action = Tick 'Double'
 --
 -- main :: IO ()
--- main = startApp defaultEvents comp { subs = [ 'Miso.Subscription.RAF.rAFSub' Tick ] }
+-- main = 'startApp' 'defaultEvents' comp { 'subs' = [ 'Miso.Subscription.RAF.rAFSub' Tick ] }
 -- @
 --
 -- = HTML
@@ -1050,17 +1062,17 @@
 -- on the server.
 --
 -- @
--- class 'ToHtml' a where
---   'toHtml' :: a -> 'Data.ByteString.Lazy.ByteString'
+-- class 'Miso.Html.ToHtml' a where
+--   'Miso.Html.ToHtml.toHtml' :: a -> 'Data.ByteString.Lazy.ByteString'
 -- @
 --
 -- Instances are provided for @'View' m a@ and @['View' m a]@:
 --
 -- @
--- import Miso.Html.Render (toHtml)
+-- import "Miso.Html.Render" ('Miso.Html.Render.toHtml')
 --
 -- pageHtml :: 'Data.ByteString.Lazy.ByteString'
--- pageHtml = 'toHtml' $ 'div_' [ 'id_' "root" ] [ "Hello, world!" ]
+-- pageHtml = 'toHtml' $ 'Miso.Html.Element.div_' [ 'Miso.Html.Property.id_' "root" ] [ "Hello, world!" ]
 -- @
 --
 -- This is typically wired into a Servant handler on the server using the
@@ -1071,9 +1083,9 @@
 -- @
 -- import Servant.Miso.Html (HTML)
 --
--- type Home    = \"home\"    :\> Get '[HTML] (Component model action)
--- type About   = \"about\"   :\> Get '[HTML] (View model action)
--- type Contact = \"contact\" :\> Get '[HTML] [View model action]
+-- type Home    = \"home\"    :\> Get '[HTML] ('Component' model action)
+-- type About   = \"about\"   :\> Get '[HTML] ('View' model action)
+-- type Contact = \"contact\" :\> Get '[HTML] ['View' model action]
 -- type API = Home :\<|\> About :\<|\> Contact
 -- @
 --
@@ -1119,14 +1131,13 @@
 -- @
 -- {-# LANGUAGE QuasiQuotes #-}
 --
--- import Miso.FFI.QQ ('Miso.FFI.QQ.js')
+-- import "Miso.FFI.QQ" ('Miso.FFI.QQ.js')
 --
--- -- Fire-and-forget: pass a value to a JS library
--- update :: Action -> 'Effect' parent props model Action
+-- update :: Action -> 'Miso.Effect.Effect' parent props model Action
 -- update = \\case
 --   Log msg -> 'io_' ['Miso.FFI.QQ.js'| console.log(${msg}) |]
 --
--- data Action = Log MisoString
+-- data Action = Log 'MisoString'
 -- @
 --
 -- == Returning values from JavaScript
@@ -1135,8 +1146,8 @@
 -- Use an explicit type annotation or a @do@-binding to drive inference:
 --
 -- @
--- fac :: Int -> IO Int
--- fac n = ['Miso.FFI.QQ.js'|
+-- factorial :: 'Int' -> IO 'Int'
+-- factorial n = ['Miso.FFI.QQ.js'|
 --   let x = 1;
 --   for (let i = 1; i <= ${n}; i++) { x *= i; }
 --   return x;
@@ -1155,7 +1166,7 @@
 --
 -- == Defining a 'Router' with Generics
 --
--- Derive 'Router' via @GHC.Generics@ — constructor names become path segments
+-- Derive 'Router' via "GHC.Generics" — constructor names become path segments
 -- (camel-case uses only the first hump). Use t'Capture', t'Path', t'QueryParam',
 -- and t'QueryFlag' as constructor fields to describe the URL shape:
 --
@@ -1164,68 +1175,68 @@
 -- {-# LANGUAGE DeriveAnyClass #-}
 --
 -- import GHC.Generics
--- import Miso.Router
+-- import "Miso.Router"
 --
 -- data Route
 --   = Index                                                      -- matches "/"
 --   | About                                                      -- matches "/about"
---   | Product (Capture "id" Int) (QueryParam "tab" MisoString)   -- matches "/product/42?tab=info"
---   deriving stock    (Show, Eq, Generic)
---   deriving anyclass Router
+--   | Product ('Miso.Router.Capture' "id" Int) ('Miso.Router.QueryParam' "tab" 'MisoString')   -- matches "/product/42?tab=info"
+--   deriving stock ('Show', 'Eq', 'GHC.Generics.Generic')
+--   deriving anyclass 'Miso.Router.Router'
 -- @
 --
--- The router is /reversible/ — 'prettyRoute' re-serialises any route back to a URL:
+-- The router is /reversible/ — 'Miso.Router.prettyRoute' re-serialises any route back to a URL:
 --
 -- @
--- 'prettyRoute' (Product (Capture 42) (QueryParam (Just "info")))
+-- 'Miso.Router.prettyRoute' (Product ('Miso.Router.Capture' 42) ('Miso.Router.QueryParam' (Just "info")))
 -- -- "\/product\/42?tab=info"
 -- @
 --
 -- == Defining a 'Router' manually
 --
--- For full control, implement 'routeParser' and 'fromRoute' directly:
+-- For full control, implement 'Miso.Router.routeParser' and 'Miso.Router.fromRoute' directly:
 --
 -- @
 -- data Route = Product Int
 --
--- instance Router Route where
---   routeParser = routes [ Product \<$\> ('path' "product" *\> 'capture') ]
---   fromRoute (Product n) = [ 'toPath' "product", 'toCapture' n ]
+-- instance 'Miso.Router.Router' Route where
+--   'Miso.Router.routeParser' = 'Miso.Router.routes' [ Product \<$\> ('path' "product" *\> 'capture') ]
+--   'Miso.Router.fromRoute' (Product n) = [ 'Miso.Router.toPath' "product", 'Miso.Router.toCapture' n ]
 -- @
 --
 -- == Subscribing to URI changes
 --
 -- 'Miso.Subscription.History.routerSub' listens to @popstate@ events and delivers
--- the parsed route (or a 'RoutingError') to your @update@ function:
+-- the parsed route (or a 'Miso.Router.RoutingError') to your 'update' function:
 --
 -- @
--- app = ('vcomp' m u v) { 'subs' = [ 'routerSub' HandleRoute ] }
+-- app = ('vcomp' m u v) { 'subs' = [ 'Miso.Router.routerSub' HandleRoute ] }
 --
 -- update = \\case
---   HandleRoute (Right Index)       -> 'modify' (\\m -> m { page = HomePage })
---   HandleRoute (Right About)       -> 'modify' (\\m -> m { page = AboutPage })
---   HandleRoute (Left _)            -> 'modify' (\\m -> m { page = NotFound })
+--   HandleRoute (Right Index)       -> page 'Miso.Lens..=' HomePage
+--   HandleRoute (Right About)       -> page 'Miso.Lens..=' AboutPage
+--   HandleRoute (Left _)            -> page 'Miso.Lens..=' NotFound
 -- @
 --
 -- 'Miso.Subscription.History.uriSub' is the lower-level variant — it delivers
--- the raw 'URI' without parsing, useful when you want to handle routing yourself.
+-- the raw 'Miso.Router.URI' without parsing, useful when you want to handle routing yourself.
 --
 -- == Navigating programmatically
 --
 -- @
--- 'pushURI'    uri    -- push a raw 'URI' onto the History stack
--- 'pushRoute'  route  -- push a typed route (serialised via 'Router')
--- 'replaceURI' uri    -- replace the current history entry
--- 'back'              -- go back one entry
--- 'forward'           -- go forward one entry
+-- 'Miso.Router.pushURI'    uri    -- push a raw 'URI' onto the History stack
+-- 'Miso.Router.pushRoute'  route  -- push a typed route (serialised via 'Router')
+-- 'Miso.Router.replaceURI' uri    -- replace the current history entry
+-- 'Miso.Router.back'              -- go back one entry
+-- 'Miso.Router.forward'           -- go forward one entry
 -- @
 --
--- == Type-safe links in views
+-- == Type-safe links in 'view'
 --
 -- 'Miso.Router.href_' produces a type-safe @href@ attribute from any route:
 --
 -- @
--- 'button_' [ 'Miso.Router.href_' (Product (Capture 10) (QueryParam Nothing)) ] [ "Go to product 10" ]
+-- 'Miso.Html.Element.button_' [ 'Miso.Router.href_' (Product ('Miso.Router.Capture' 10) ('Miso.Router.QueryParam' Nothing)) ] [ "Go to product 10" ]
 -- @
 --
 -- = 'MisoString'
@@ -1246,13 +1257,13 @@
 -- 'ToMisoString' instance:
 --
 -- @
--- ms "hello"          -- String    -> MisoString
--- ms (42 :: Int)      -- Int       -> MisoString
--- ms (3.14 :: Double) -- Double    -> MisoString
--- ms myText           -- Data.Text -> MisoString
+-- 'ms' "hello"          -- 'String'    -> 'MisoString'
+-- 'ms' (42 :: 'Int')      -- 'Int'       -> 'MisoString'
+-- 'ms' (3.14 :: 'Double') -- 'Double'    -> 'MisoString'
+-- 'ms' myText           -- 'Data.Text.Text' -> 'MisoString'
 -- @
 --
--- 'ToMisoString' instances are provided for 'String', t'Data.Text.Text',
+-- 'Miso.String.ToMisoString' instances are provided for 'String', t'Data.Text.Text',
 -- t'Data.Text.Lazy.Text', t'Data.ByteString.ByteString', 'Int', 'Word',
 -- 'Double', 'Float', and 'Char'.
 --
@@ -1262,12 +1273,12 @@
 -- Use 'fromMisoStringEither' for a safe variant:
 --
 -- @
--- fromMisoString "42"     :: Int     -- 42
--- fromMisoString "3.14"   :: Double  -- 3.14
--- fromMisoStringEither s  :: Either String Int
+-- 'Miso.String.fromMisoString' "42"     :: 'Int'     -- 42
+-- 'Miso.String.fromMisoString' "3.14"   :: 'Double'  -- 3.14
+-- 'Miso.String.fromMisoStringEither' s  :: Either 'String' 'Int'
 -- @
 --
--- 'FromMisoString' instances are provided for 'String', t'Data.Text.Text',
+-- 'Miso.String.FromMisoString' instances are provided for 'String', t'Data.Text.Text',
 -- t'Data.Text.Lazy.Text', t'Data.ByteString.ByteString', 'Int', 'Word',
 -- 'Double', and 'Float'.
 --
@@ -1278,10 +1289,10 @@
 -- @
 -- {-# LANGUAGE QuasiQuotes #-}
 --
--- import Miso.String.QQ (misoString)
+-- import "Miso.String.QQ" ('Miso.String.QQ.misoString')
 --
--- snippet :: MisoString
--- snippet = [misoString|
+-- snippet :: 'MisoString'
+-- snippet = ['Miso.String.QQ.misoString'|
 --   line one
 --   line two
 -- |]
@@ -1314,67 +1325,67 @@
 --
 -- == Encoding
 --
--- Encode any 'ToJSON' instance to a t'MisoString':
+-- Encode any 'Miso.JSON.ToJSON' instance to a t'MisoString':
 --
 -- @
--- 'encode' value        -- uses JS runtime on client, pure on server
--- 'encodePure' value    -- always uses pure Haskell implementation
+-- 'Miso.JSON.encode' value        -- uses JS runtime on client, pure on server
+-- 'Miso.JSON.encodePure' value    -- always uses pure Haskell implementation
 -- @
 --
 -- == Decoding
 --
 -- @
--- 'decode' s            :: Maybe a      -- returns Nothing on failure
--- 'eitherDecode' s      :: Either MisoString a
+-- 'Miso.JSON.decode' s            :: 'Maybe' a      -- returns 'Nothing' on failure
+-- 'Miso.JSON.eitherDecode' s      :: Either 'MisoString' a
 -- @
 --
--- == 'ToJSON' \/ 'FromJSON'
+-- == 'Miso.JSON.ToJSON' \/ 'Miso.JSON.FromJSON'
 --
 -- Derive instances via @GHC.Generics@:
 --
 -- @
 -- {-# LANGUAGE DeriveGeneric #-}
 --
--- import GHC.Generics
--- import Miso.JSON
+-- import "GHC.Generics"
+-- import "Miso.JSON"
 --
--- data User = User { name :: MisoString, age :: Int }
---   deriving (Generic)
+-- data User = User { name :: 'MisoString', age :: 'Int' }
+--   deriving ('GHC.Generics.Generic')
 --
--- instance ToJSON   User
--- instance FromJSON User
+-- instance 'Miso.JSON.ToJSON' User
+-- instance 'Miso.JSON.FromJSON' User
 -- @
 --
--- Use 'genericToJSON' \/ 'genericParseJSON' with 'Options' to customise field and
+-- Use 'Miso.JSON.genericToJSON' \/ 'Miso.JSON.genericParseJSON' with 'Options' to customise field and
 -- constructor names. 'camelTo2' is provided for converting @camelCase@ to
 -- @snake_case@ (or any separator):
 --
 -- @
--- instance ToJSON User where
---   toJSON = 'genericToJSON' 'defaultOptions' { 'fieldLabelModifier' = 'camelTo2' \'_\' }
+-- instance 'Miso.JSON.ToJSON' User where
+--   'Miso.JSON.toJSON' = 'Miso.JSON.genericToJSON' 'Miso.JSON.defaultOptions' { 'Miso.JSON.fieldLabelModifier' = 'Miso.JSON.camelTo2' \'_\' }
 -- @
 --
 -- == Building and Parsing Objects
 --
 -- @
 -- -- Build
--- 'object' [ "name" '.=' ms "Alice", "age" '.=' (30 :: Int) ]
+-- 'Miso.JSON.object' [ "name" 'Miso.JSON..=' 'ms' "Alice", "age" 'Miso.JSON..=' (30 :: Int) ]
 --
 -- -- Parse (inside a 'withObject' callback or event decoder)
--- 'withObject' "User" $ \\o -> User
---   \<$\> o '.:' "name"     -- required field
---   \<*\> o '.:' "age"
+-- 'Miso.JSON.withObject' "User" $ \\o -> User
+--   '<$>' o 'Miso.JSON..:' "name"     -- required field
+--   '<*>' o 'Miso.JSON..:' "age"
 --
--- o '.:?' "nickname"    -- optional field → Maybe a
--- o '.:!' "nickname"    -- optional field, explicit null → Maybe a
--- p '.!=' "anon"        -- provide a default for a Maybe parser
+-- o 'Miso.JSON..:?' "nickname"    -- optional field → Maybe a
+-- o 'Miso.JSON..:!' "nickname"    -- optional field, explicit null → Maybe a
+-- p 'Miso.JSON..!=' "anon"        -- provide a default for a Maybe parser
 -- @
 --
 -- == Pretty-Printing
 --
 -- @
--- 'encodePretty'  value          -- indented with 'defConfig' (2-space indent)
--- 'encodePretty'' config value   -- indented with custom 'Config'
+-- 'Miso.JSON.encodePretty'  value          -- indented with 'Miso.JSON.defConfig' (2-space indent)
+-- 'Miso.JSON.encodePretty'' config value   -- indented with custom 'Miso.JSON.Config'
 -- @
 --
 -- == @miso-aeson@
@@ -1390,19 +1401,19 @@
 --
 -- == 1. Structured DSL ("Miso.CSS")
 --
--- 'style_' takes a list of @'Style'@ values (which are @(MisoString, MisoString)@ pairs).
--- Miso manages individual properties on the DOM node, merging and diffing them efficiently:
+-- 'Miso.CSS.style_' takes a list of @'Style'@ values (which are @(MisoString, MisoString)@ pairs).
+-- Miso manages individual properties on the 'DOMRef', merging and diffing them efficiently:
 --
 -- @
--- import qualified Miso.CSS as CSS
--- import           Miso.CSS.Color (RGB(..))
+-- import qualified "Miso.CSS" as CSS
+-- import           "Miso.CSS.Color" ('Miso.CSS.Color.RGB'(..))
 --
--- 'div_'
---   [ CSS.'style_'
---       [ CSS.'display' "flex"
---       , CSS.'flexDirection' "column"
---       , CSS.'backgroundColor' (RGB 30 30 30)
---       , CSS.'color' (RGB 255 255 255)
+-- 'Miso.Html.Element.div_'
+--   [ CSS.'Miso.CSS.style_'
+--       [ CSS.'Miso.CSS.display' "flex"
+--       , CSS.'Miso.CSS.flexDirection' "column"
+--       , CSS.'Miso.CSS.backgroundColor' ('Miso.CSS.Color.RGB' 30 30 30)
+--       , CSS.'Miso.CSS.color' ('Miso.CSS.Color.RGB' 255 255 255)
 --       ]
 --   ]
 --   []
@@ -1414,13 +1425,13 @@
 -- "user-select" '=:' "none"
 -- @
 --
--- == 2. Inline string ('CSS.styleInline_')
+-- == 2. Inline string ('Miso.CSS.styleInline_')
 --
 -- For simple or dynamic style strings, 'styleInline_' sets the element's @style@
 -- attribute as a raw string:
 --
 -- @
--- CSS.'styleInline_' "display:flex; gap:8px; padding:16px"
+-- CSS.'Miso.CSS.styleInline_' "display:flex; gap:8px; padding:16px"
 -- @
 --
 -- == 3. External stylesheets
@@ -1438,7 +1449,7 @@
 --
 -- @
 -- main :: 'IO' ()
--- main = 'startApp' 'defaultEvents' counter
+-- main = 'startApp' 'defaultEvents' app
 --  where
 --    app = counter
 -- #ifdef INTERACTIVE
@@ -1529,7 +1540,7 @@
 --
 -- @
 -- myComp :: 'App' Model Action
--- myComp = ('vcomp' defaultModel updateFn viewFn)
+-- myComp = ('vcomp' defaultModel updateModel viewModel)
 --   { 'hydrateModel' = Just $ do
 --       val <- 'Miso.DSL.jsg' "window" 'Miso.DSL.!' "__initialModel__"
 --       'Miso.DSL.fromJSValUnchecked' val
@@ -1542,8 +1553,8 @@
 -- @
 -- serverView :: Model -> 'View' Model Action
 -- serverView m =
---   'div_' []
---     [ 'script_' [] [ 'textRaw' ("window.__initialModel__ = " \<\> 'encode' m) ]
+--   'Miso.Html.Element.div_' []
+--     [ 'Miso.Html.Element.script_' [] [ 'textRaw' ("window.__initialModel__ = " \<\> 'Miso.JSON.encode' m) ]
 --     , appView m
 --     ]
 -- @
@@ -1681,7 +1692,7 @@ miso events f = do
   comp <- f <$> getURI
   initComponent events Hydrate False comp { mountPoint = Nothing }
 ----------------------------------------------------------------------------
--- | Like 'miso', except discards the 'URI' argument.
+-- | Like 'miso', except discards the 'Miso.Router.URI' argument.
 --
 -- Use this function if you'd like to prerender, but not use navigation.
 --

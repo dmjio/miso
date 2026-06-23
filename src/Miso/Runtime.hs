@@ -802,45 +802,45 @@ newtype Topic a = Topic MisoString
 topic :: MisoString -> Topic a
 topic = Topic
 -----------------------------------------------------------------------------
--- | Subscribes to a @Topic@, provides callback function that writes to t'Miso.Types.Component' 'Sink'
+-- | Subscribes a t'Miso.Types.Component' to a t'Topic'.
 --
--- If a @Topic message@ does not exist when calling 'subscribe' it is generated dynamically.
--- Each subscriber decodes the received 'Value' using it's own 'FromJSON' instance. This provides
--- for loose-coupling between t'Miso.Types.Component'. As long as the underlying 'Value' are identical
--- t'Miso.Types.Component' can use their own types without serialization issues. @Topic message@ should
--- have their own JSON API specification when being distributed.
+-- Registers a callback in the component that decodes incoming messages
+-- using its own 'FromJSON' instance and dispatches them to the component's
+-- 'Sink'. If the component is already subscribed to the named topic the
+-- previous callback is replaced.
+--
+-- Because each subscriber uses its own 'FromJSON', components can use
+-- different Haskell types for the same topic as long as the underlying
+-- JSON is compatible, enabling loose coupling between t'Miso.Types.Component'.
 --
 -- @
+--
+-- data Message = Increment | Decrement
+--   deriving (Show, Eq, Generic, ToJSON, FromJSON)
 --
 -- arithmetic :: Topic Message
 -- arithmetic = topic "arithmetic"
 --
--- clientComponent :: MisoString -> Component Int Action
--- clientComponent name = component 0 update_ $ \m ->
---   div_
---   []
---   [ br_ []
---   , text (name <> " : " <> ms (m ^. _id))
---   , button_ [ onClick Unsubscribe ] [ "unsubscribe" ]
---   , button_ [ onClick Subscribe ] [ "subscribe" ]
---   ] where
---       update_ :: Action -> Effect Int Action
---       update_ = \case
---         AddOne -> do
---           _id += 1
---         SubtractOne ->
---           _id -= 1
---         Unsubscribe ->
---           unsubscribe arithmetic
---         Subscribe ->
---           subscribe arithmetic Notification
---         Notification (Success Increment) -> do
---           update_ AddOne
---         Notification (Success Decrement) -> do
---           update_ SubtractOne
---         Notification (Error msg) ->
---           io_ $ consoleError ("Decode failure: " <> ms msg)
---         _ -> pure ()
+-- data Action
+--   = Notify Message
+--   | NotifyError MisoString
+--   | Subscribe
+--   | Unsubscribe
+--   | AddOne
+--   | SubtractOne
+--
+-- update_ :: Action -> Effect parent props Int Action
+-- update_ = \\case
+--   Subscribe ->
+--     subscribe arithmetic Notify NotifyError
+--   Unsubscribe ->
+--     unsubscribe arithmetic
+--   Notify Increment -> update_ AddOne
+--   Notify Decrement -> update_ SubtractOne
+--   NotifyError msg ->
+--     io_ $ consoleError ("Decode failure: " <> msg)
+--   AddOne -> _count += 1
+--   SubtractOne -> _count -= 1
 --
 -- @
 --
@@ -861,40 +861,13 @@ subscribe (Topic topicName) successful errorful = do
                   Success s -> successful s
                   Error e -> errorful e)
 -----------------------------------------------------------------------------
--- Pub / Sub implementation
+-- | Unsubscribes a t'Miso.Types.Component' from a t'Topic'.
 --
--- (Subscribe)
+-- Removes the callback registered by 'subscribe' so the component no longer
+-- receives messages published to the topic. If the component is not
+-- currently subscribed this is a no-op.
 --
--- Check if you're already subscribed to this topic.
---
---  [true]  - If you're already subscribed, then it's a no-op (warn)
---
---  [false] - If you're not subscribed then fork a new thread that holds the duplicated topic
---            and blocks on the read end of the duplicated topic, sink messages into component sink
---
--- (Unsubscribe)
---
--- Check if you're already subscribed to this topic
---
---  [true] - Kill the thread, delete the subscriber entry
---
---  [false] - If you're not subscribed, then it's a no-op (warn)
---
--- (Publish)
---
--- Check if the Topic exists
---
---  [true] - If it exists then write the message to the topic
---
---  [false] - If it doesn't exist, create it.
---
--- N.B. Components can be both publishers and subscribers to their own topics.
------------------------------------------------------------------------------
--- | Unsubscribe from a t'Topic'
---
--- Unsubscribes a t'Miso.Types.Component' from receiving messages from t'Topic'
---
--- See 'subscribe' for more use.
+-- See 'subscribe' for example usage.
 --
 -- @since 1.9.0.0
 unsubscribe :: Topic message -> Effect parent props model action

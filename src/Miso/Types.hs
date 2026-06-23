@@ -184,18 +184,18 @@ data Component parent props model action
 -- | @mountPoint@ for t'Miso.Types.Component', e.g "body"
 type MountPoint = MisoString
 -----------------------------------------------------------------------------
--- | Allow users to express CSS and append it to \<head\> before the first draw
+-- | Allow users to express 'CSS' and append it to \<head\> before the first draw
 --
--- > Href "http://domain.com/style.css" (True :: CacheBust)
--- > Style "body { background-color: red; }"
+-- > 'Href' "http://domain.com/style.css" ('True' :: 'CacheBust')
+-- > 'Style' "body { background-color: red; }"
 --
 data CSS
   = Href MisoString CacheBust
-  -- ^ URL linking to hosted CSS
+  -- ^ 'URL' linking to hosted 'CSS'
   | Style MisoString
-  -- ^ Raw CSS content in a 'Miso.Html.Element.style_' tag
+  -- ^ Raw 'CSS' content in a 'Miso.Html.Element.style_' tag
   | Sheet StyleSheet
-  -- ^ CSS built with 'Miso.CSS'
+  -- ^ 'CSS' built with "Miso.CSS"
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 -- | Parameter used to indicate cache busting logic should be used.
@@ -204,15 +204,15 @@ data CSS
 --
 type CacheBust = Bool
 -----------------------------------------------------------------------------
--- | Allow users to express JS and append it to <head> before the first draw
+-- | Allow users to express JS and append it to \<head\> before the first draw
 --
 -- This is meant to be useful in development only.
 --
 -- @
--- Src \"http:\/\/example.com\/script.js\" (False :: CacheBust)
--- Script "alert(\"hi\");"
--- ImportMap [ "key" =: "value" ]
--- Module "console.log(\"hi\");"
+-- 'Src' \"http:\/\/example.com\/script.js\" ('False' :: 'CacheBust')
+-- 'Script' "alert(\"hi\");"
+-- 'ImportMap' [ "key" '=:' "value" ]
+-- 'Module' "console.log(\"hi\");"
 -- @
 --
 -- @since 1.9.0.0
