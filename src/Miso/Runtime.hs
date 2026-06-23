@@ -189,12 +189,7 @@ initialize events _componentParentId hydrate isRoot initialProps maybeKey comp@C
   _componentVTree <- newIORef (VTree (Object jsNull))
   _componentSubThreads <- newIORef M.empty
 
-  frame <- newEmptyMVar :: IO (MVar Double)
   let _componentMailbox = S.empty
-
-  rAFCallback <-
-    asyncCallback1 $ \jsval -> do
-      putMVar frame =<< fromJSValUnchecked jsval
 
   let _componentDraw = \newModel -> do
         currentProps <- (^. componentProps) . (IM.! _componentId) <$> readIORef components
@@ -202,12 +197,15 @@ initialize events _componentParentId hydrate isRoot initialProps maybeKey comp@C
           buildVTree events _componentParentId _componentId Draw
             _componentSink logLevel (view currentProps newModel)
         oldVTree <- readIORef _componentVTree
-        _frame <- requestAnimationFrame rAFCallback
-        _timestamp :: Double <- takeMVar frame
-        Diff.diff (Just oldVTree) (Just newVTree) _componentDOMRef
-        FFI.updateRef oldVTree newVTree
         atomicWriteIORef _componentVTree newVTree
-        FFI.flush
+        cbRef <- newIORef (error "componentDraw: impossible")
+        cb <- asyncCallback1 $ \_ -> do
+          Diff.diff (Just oldVTree) (Just newVTree) _componentDOMRef
+          FFI.updateRef oldVTree newVTree
+          FFI.flush
+          freeFunction . Function =<< readIORef cbRef
+        atomicWriteIORef cbRef cb
+        void (requestAnimationFrame cb)
 
   let _componentApplyActions = \(actions :: [action]) model_ comps currentProps -> do
         let info = ComponentInfo _componentId _componentParentId _componentDOMRef currentProps
