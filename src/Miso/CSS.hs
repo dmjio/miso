@@ -86,7 +86,6 @@ module Miso.CSS
   , clipPath
   , color
   , columnGap
-  , cssVariable
   , cursor
   , direction
   , display
@@ -836,13 +835,6 @@ color x = "color" =: renderColor x
 --
 columnGap :: MisoString -> Style
 columnGap x = "column-gap" =: x
------------------------------------------------------------------------------
--- | Set a [CSS custom property](https://developer.mozilla.org/en-US/docs/Web/CSS/Using_CSS_custom_properties).
---
--- > cssVariable "brand-color" (renderColor red)
---
-cssVariable :: MisoString -> MisoString -> Style
-cssVariable name val = ("--" <> name) =: val
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/direction
 --
