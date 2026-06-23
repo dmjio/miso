@@ -551,7 +551,7 @@ animationDirection x = "animation-direction" =: x
 animationDuration :: MisoString -> Style
 animationDuration x = "animation-duration" =: x
 -----------------------------------------------------------------------------
--- | https://animation-mozilla.org/en-US/docs/Web/CSS/align-content/animation-fill-mode
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/animation-fill-mode
 --
 animationFillMode :: MisoString -> Style
 animationFillMode x = "animation-fill-mode" =: x
@@ -837,10 +837,12 @@ color x = "color" =: renderColor x
 columnGap :: MisoString -> Style
 columnGap x = "column-gap" =: x
 -----------------------------------------------------------------------------
--- | https://developer.mozilla.org/en-US/docs/Web/CSS/css-variable
+-- | Set a [CSS custom property](https://developer.mozilla.org/en-US/docs/Web/CSS/Using_CSS_custom_properties).
 --
-cssVariable :: MisoString -> Style
-cssVariable x = "css-variable" =: x
+-- > cssVariable "brand-color" (renderColor red)
+--
+cssVariable :: MisoString -> MisoString -> Style
+cssVariable name val = ("--" <> name) =: val
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/direction
 --
