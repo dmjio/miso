@@ -332,8 +332,8 @@ hsla = HSLA
 -----------------------------------------------------------------------------
 -- | Smart constructor for a 'Hex' 'Color'
 --
--- >>> renderColor (hsla 0 0 0 1.0)
--- "hsl(0,0,0,1.0)"
+-- >>> renderColor (hex "ccc")
+-- "#ccc"
 --
 hex :: MisoString -> Color
 hex = Hex

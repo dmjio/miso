@@ -15,6 +15,7 @@ module Miso.CSS.Types
     Style
   , Styles (..)
   , StyleSheet (..)
+  , TransformFn (..)
   ) where
 -----------------------------------------------------------------------------
 import Miso.String (MisoString)
@@ -64,6 +65,16 @@ newtype StyleSheet = StyleSheet { getStyleSheet :: [Styles] }
 -- | Type for a CSS 'Style'
 --
 type Style = (MisoString, MisoString)
+-----------------------------------------------------------------------------
+-- | An individual CSS [transform function](https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function).
+-- Construct values with 'translate', 'rotate', 'scale', etc., then combine with 'transforms'.
+--
+-- @
+-- transforms [ translate (px 10) (pct 50), rotate (deg 45), scaleX 1.5 ]
+-- @
+--
+newtype TransformFn = TransformFn { renderTransformFn :: MisoString }
+  deriving (Eq, Show)
 -----------------------------------------------------------------------------
 -- | Type for a @Map@ of CSS 'Style'. Used with @StyleSheet@.
 -- It maps CSS properties to their values.
