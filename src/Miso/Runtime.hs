@@ -101,8 +101,7 @@ import           Control.Monad (forM, forM_, when, void, (<=<), zipWithM_, forev
 import           Control.Monad.Reader (ask, asks)
 import           Control.Monad.State hiding (state)
 import           Miso.JSON (FromJSON, ToJSON, Result(..), Value, encode, fromJSON, jsonStringify, toJSON)
-import           Data.Foldable (toList, foldl')
-import qualified Data.List as List
+
 import           Data.Maybe
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
@@ -335,7 +334,7 @@ scheduler =
     -----------------------------------------------------------------------------
     -- | Execute the commit phase against the model, perform top-down render
     -- of the entire Component tree.
-    run :: ComponentId -> [action] -> IO ()
+    run :: ComponentId -> Seq action -> IO ()
     run vcompId = renderComponents <=< commit vcompId
     -----------------------------------------------------------------------------
     -- | Apply the actions across the model, evaluate async and sync IO.
@@ -571,7 +570,7 @@ getBatch = do
         (newQueue, Just (vcompId, actions))
 -----------------------------------------------------------------------------
 -- | Helper for event extraction at a specific 'ComponentId'
-drainQueueAt :: ComponentId -> IO [a]
+drainQueueAt :: ComponentId -> IO (Seq a)
 drainQueueAt vcompId = atomicModifyIORef' globalQueue (dequeueAt vcompId)
 -----------------------------------------------------------------------------
 -- | Data type for holding the events in the system along with
