@@ -102,6 +102,7 @@ import           Control.Monad.Reader (ask, asks)
 import           Control.Monad.State hiding (state)
 import           Miso.JSON (FromJSON, ToJSON, Result(..), Value, encode, fromJSON, jsonStringify, toJSON)
 
+import           Data.Foldable (foldl')
 import           Data.Maybe
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
