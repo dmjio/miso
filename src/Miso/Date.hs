@@ -4,20 +4,66 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Date
--- Copyright   :  (C) 2016-2026 David M. Johnson (@dmjio)
+-- Copyright   :  (C) 2016-2026 David M. Johnson
 -- License     :  BSD3-style (see the file LICENSE)
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- Mutable 'Date' data structure in 'IO'.
+-- = Overview
 --
--- A JavaScript [Date](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date). This is a convenience for manipulating JavaScript data structures from Haskell.
+-- "Miso.Date" is a Haskell wrapper around the JavaScript
+-- <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date Date>
+-- object. A 'Date' value lives in JavaScript memory and represents a single
+-- point in time. All operations run in 'IO' and call through to the
+-- underlying JS object.
 --
--- We recommend using this module qualified.
+-- Import qualified to avoid clashing with 'Prelude':
 --
--- > import qualified Miso.Date as D
+-- @
+-- import qualified "Miso.Date" as D
+-- @
 --
+-- = Quick start
+--
+-- @
+-- import qualified "Miso.Date" as D
+--
+-- example :: IO ()
+-- example = do
+--   now  <- D.'new'
+--   iso  <- D.'toISOString' now     -- e.g. \"2026-06-23T12:00:00.000Z\"
+--   year <- D.'getFullYear' now     -- e.g. 2026
+--   ms   <- D.'valueOf' now         -- milliseconds since Unix epoch
+--   pure ()
+-- @
+--
+-- = API groups
+--
+-- * __Construction__: 'new'
+-- * __Conversion__ (strings): 'toDateString', 'toISOString', 'toJSON',
+--   'toLocaleDateString', 'toLocaleString', 'toLocaleTimeString',
+--   'toString', 'toTimeString', 'toUTCString'
+-- * __Conversion__ (numeric): 'valueOf' (ms since epoch)
+-- * __Local getters__: 'getDate', 'getDay', 'getFullYear', 'getHours',
+--   'getMilliseconds', 'getMinutes', 'getMonth', 'getSeconds',
+--   'getTime', 'getTimezoneOffset'
+-- * __UTC getters__: 'getUTCDate', 'getUTCDay', 'getUTCFullYear',
+--   'getUTCHours', 'getUTCMilliseconds', 'getUTCMinutes',
+--   'getUTCMonth', 'getUTCSeconds'
+-- * __Local setters__: 'setDate', 'setFullYear', 'setHours',
+--   'setMilliseconds', 'setMinutes', 'setMonth', 'setSeconds', 'setTime'
+-- * __UTC setters__: 'setUTCDate', 'setUTCFullYear', 'setUTCHours',
+--   'setUTCMilliseconds', 'setUTCMinutes', 'setUTCMonth', 'setUTCSeconds'
+--
+-- __Note__: JavaScript months are __0-indexed__ (January = 0, December = 11).
+-- All getter and setter functions in this module follow that convention.
+-- Setter functions return the new timestamp as milliseconds since the Unix
+-- epoch (a 'Double'), mirroring the JavaScript return value.
+--
+-- = See also
+--
+-- * "Miso.DSL" — 'Miso.DSL.JSVal' and marshaling used internally
 -----------------------------------------------------------------------------
 module Miso.Date
   ( -- * Type
@@ -254,12 +300,26 @@ getUTCSeconds date = call0 date "getUTCSeconds"
 -----------------------------------------------------------------------------
 -- | Sets the day of the month.
 --
-setDate :: Int -> Date -> IO Double
+setDate
+  :: Int
+  -- ^ Day of the month (1–31)
+  -> Date
+  -- ^ Date object to modify
+  -> IO Double
 setDate day (Date d) = DSL.fromJSValUnchecked =<< callFunction d "setDate" [day]
 -----------------------------------------------------------------------------
 -- | Sets the full year, with optional month and day.
 --
-setFullYear :: Int -> Maybe Int -> Maybe Int -> Date -> IO Double
+setFullYear
+  :: Int
+  -- ^ Full year (e.g. 2026)
+  -> Maybe Int
+  -- ^ Optional month (0-indexed: 0 = January)
+  -> Maybe Int
+  -- ^ Optional day of the month (1–31)
+  -> Date
+  -- ^ Date object to modify
+  -> IO Double
 setFullYear year month day (Date d) = do
   y <- DSL.toJSVal year
   m <- traverse DSL.toJSVal month
@@ -268,7 +328,18 @@ setFullYear year month day (Date d) = do
 -----------------------------------------------------------------------------
 -- | Sets the hour, with optional minutes, seconds, and milliseconds.
 --
-setHours :: Int -> Maybe Int -> Maybe Int -> Maybe Int -> Date -> IO Double
+setHours
+  :: Int
+  -- ^ Hour (0–23)
+  -> Maybe Int
+  -- ^ Optional minutes (0–59)
+  -> Maybe Int
+  -- ^ Optional seconds (0–59)
+  -> Maybe Int
+  -- ^ Optional milliseconds (0–999)
+  -> Date
+  -- ^ Date object to modify
+  -> IO Double
 setHours hours minutes seconds millis (Date d) = do
   h <- DSL.toJSVal hours
   m <- traverse DSL.toJSVal minutes
@@ -278,12 +349,26 @@ setHours hours minutes seconds millis (Date d) = do
 -----------------------------------------------------------------------------
 -- | Sets the milliseconds.
 --
-setMilliseconds :: Int -> Date -> IO Double
+setMilliseconds
+  :: Int
+  -- ^ Milliseconds (0–999)
+  -> Date
+  -- ^ Date object to modify
+  -> IO Double
 setMilliseconds ms (Date d) = DSL.fromJSValUnchecked =<< callFunction d "setMilliseconds" [ms]
 -----------------------------------------------------------------------------
 -- | Sets the minutes, with optional seconds and milliseconds.
 --
-setMinutes :: Int -> Maybe Int -> Maybe Int -> Date -> IO Double
+setMinutes
+  :: Int
+  -- ^ Minutes (0–59)
+  -> Maybe Int
+  -- ^ Optional seconds (0–59)
+  -> Maybe Int
+  -- ^ Optional milliseconds (0–999)
+  -> Date
+  -- ^ Date object to modify
+  -> IO Double
 setMinutes minutes seconds millis (Date d) = do
   m <- DSL.toJSVal minutes
   s <- traverse DSL.toJSVal seconds
@@ -292,7 +377,14 @@ setMinutes minutes seconds millis (Date d) = do
 -----------------------------------------------------------------------------
 -- | Sets the month, with optional day of the month.
 --
-setMonth :: Int -> Maybe Int -> Date -> IO Double
+setMonth
+  :: Int
+  -- ^ Month (0-indexed: 0 = January, 11 = December)
+  -> Maybe Int
+  -- ^ Optional day of the month (1–31)
+  -> Date
+  -- ^ Date object to modify
+  -> IO Double
 setMonth month day (Date d) = do
   m <- DSL.toJSVal month
   d' <- traverse DSL.toJSVal day
@@ -300,7 +392,14 @@ setMonth month day (Date d) = do
 -----------------------------------------------------------------------------
 -- | Sets the seconds, with optional milliseconds.
 --
-setSeconds :: Int -> Maybe Int -> Date -> IO Double
+setSeconds
+  :: Int
+  -- ^ Seconds (0–59)
+  -> Maybe Int
+  -- ^ Optional milliseconds (0–999)
+  -> Date
+  -- ^ Date object to modify
+  -> IO Double
 setSeconds seconds millis (Date d) = do
   s <- DSL.toJSVal seconds
   ms <- traverse DSL.toJSVal millis
@@ -308,17 +407,36 @@ setSeconds seconds millis (Date d) = do
 -----------------------------------------------------------------------------
 -- | Sets the time in milliseconds since epoch.
 --
-setTime :: Double -> Date -> IO Double
+setTime
+  :: Double
+  -- ^ Milliseconds since the Unix epoch (1 January 1970 00:00:00 UTC)
+  -> Date
+  -- ^ Date object to modify
+  -> IO Double
 setTime time (Date d) = DSL.fromJSValUnchecked =<< callFunction d "setTime" [time]
 -----------------------------------------------------------------------------
 -- | Sets the UTC day of the month.
 --
-setUTCDate :: Int -> Date -> IO Double
+setUTCDate
+  :: Int
+  -- ^ Day of the month in UTC (1–31)
+  -> Date
+  -- ^ Date object to modify
+  -> IO Double
 setUTCDate day (Date d) = DSL.fromJSValUnchecked =<< callFunction d "setUTCDate" [day]
 -----------------------------------------------------------------------------
 -- | Sets the UTC full year, with optional month and day.
 --
-setUTCFullYear :: Int -> Maybe Int -> Maybe Int -> Date -> IO Double
+setUTCFullYear
+  :: Int
+  -- ^ Full year in UTC (e.g. 2026)
+  -> Maybe Int
+  -- ^ Optional month in UTC (0-indexed)
+  -> Maybe Int
+  -- ^ Optional day in UTC (1–31)
+  -> Date
+  -- ^ Date object to modify
+  -> IO Double
 setUTCFullYear year month day (Date d) = do
   y <- DSL.toJSVal year
   m <- traverse DSL.toJSVal month
@@ -327,7 +445,18 @@ setUTCFullYear year month day (Date d) = do
 -----------------------------------------------------------------------------
 -- | Sets the UTC hour, with optional minutes, seconds, and milliseconds.
 --
-setUTCHours :: Int -> Maybe Int -> Maybe Int -> Maybe Int -> Date -> IO Double
+setUTCHours
+  :: Int
+  -- ^ Hour in UTC (0–23)
+  -> Maybe Int
+  -- ^ Optional minutes (0–59)
+  -> Maybe Int
+  -- ^ Optional seconds (0–59)
+  -> Maybe Int
+  -- ^ Optional milliseconds (0–999)
+  -> Date
+  -- ^ Date object to modify
+  -> IO Double
 setUTCHours hours minutes seconds millis (Date d) = do
   h <- DSL.toJSVal hours
   m <- traverse DSL.toJSVal minutes
@@ -337,12 +466,26 @@ setUTCHours hours minutes seconds millis (Date d) = do
 -----------------------------------------------------------------------------
 -- | Sets the UTC milliseconds.
 --
-setUTCMilliseconds :: Int -> Date -> IO Double
+setUTCMilliseconds
+  :: Int
+  -- ^ Milliseconds in UTC (0–999)
+  -> Date
+  -- ^ Date object to modify
+  -> IO Double
 setUTCMilliseconds ms (Date d) = DSL.fromJSValUnchecked =<< callFunction d "setUTCMilliseconds" [ms]
 -----------------------------------------------------------------------------
 -- | Sets the UTC minutes, with optional seconds and milliseconds.
 --
-setUTCMinutes :: Int -> Maybe Int -> Maybe Int -> Date -> IO Double
+setUTCMinutes
+  :: Int
+  -- ^ Minutes in UTC (0–59)
+  -> Maybe Int
+  -- ^ Optional seconds (0–59)
+  -> Maybe Int
+  -- ^ Optional milliseconds (0–999)
+  -> Date
+  -- ^ Date object to modify
+  -> IO Double
 setUTCMinutes minutes seconds millis (Date d) = do
   m <- DSL.toJSVal minutes
   s <- traverse DSL.toJSVal seconds
@@ -351,7 +494,14 @@ setUTCMinutes minutes seconds millis (Date d) = do
 -----------------------------------------------------------------------------
 -- | Sets the UTC month, with optional day of the month.
 --
-setUTCMonth :: Int -> Maybe Int -> Date -> IO Double
+setUTCMonth
+  :: Int
+  -- ^ Month in UTC (0-indexed: 0 = January)
+  -> Maybe Int
+  -- ^ Optional day in UTC (1–31)
+  -> Date
+  -- ^ Date object to modify
+  -> IO Double
 setUTCMonth month day (Date d) = do
   m <- DSL.toJSVal month
   d' <- traverse DSL.toJSVal day
@@ -359,7 +509,14 @@ setUTCMonth month day (Date d) = do
 -----------------------------------------------------------------------------
 -- | Sets the UTC seconds, with optional milliseconds.
 --
-setUTCSeconds :: Int -> Maybe Int -> Date -> IO Double
+setUTCSeconds
+  :: Int
+  -- ^ Seconds in UTC (0–59)
+  -> Maybe Int
+  -- ^ Optional milliseconds (0–999)
+  -> Date
+  -- ^ Date object to modify
+  -> IO Double
 setUTCSeconds seconds millis (Date d) = do
   s <- DSL.toJSVal seconds
   ms <- traverse DSL.toJSVal millis

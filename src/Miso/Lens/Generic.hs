@@ -20,6 +20,58 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- = Overview
+--
+-- "Miso.Lens.Generic" derives 'Miso.Lens.Lens' values for record fields
+-- at compile time using @GHC.Generics@ and @GHC.Records@, without
+-- Template Haskell. Fields are addressed by name via 'GHC.OverloadedLabels'
+-- or the explicit 'field' combinator.
+--
+-- Enable the required extensions:
+--
+-- @
+-- {-\# LANGUAGE OverloadedLabels, DeriveGeneric \#-}
+-- import GHC.Generics (Generic)
+-- import "Miso.Lens.Generic" ('HasLens', 'field')
+-- import "Miso.Lens"         ('Lens', 'view', 'set', ('.='), ('++='))
+-- @
+--
+-- = Quick start
+--
+-- @
+-- data Counter = Counter { _count :: Int, _label :: 'Miso.String.MisoString' }
+--   deriving ('GHC.Generics.Generic')
+--
+-- -- Label syntax (requires OverloadedLabels):
+-- countLens :: 'Miso.Lens.Lens' Counter Int
+-- countLens = #_count
+--
+-- -- Explicit syntax (works without OverloadedLabels):
+-- labelLens :: 'Miso.Lens.Lens' Counter 'Miso.String.MisoString'
+-- labelLens = 'field' \@\"_label\"
+--
+-- update :: Action -> 'Miso.Effect.Effect' p props Counter Action
+-- update Increment = #_count '+=' 1
+-- update (SetLabel l) = #_label '.=' l
+-- @
+--
+-- = How it works
+--
+-- The 'HasLens' instance is resolved via 'GHC.Records.HasField' for the
+-- getter and a generic traversal ('GSet') for the setter. A type-level
+-- 'TotalityCheck' produces a descriptive compile error if the field name
+-- is absent from (or inconsistent across) the constructors.
+--
+-- = Comparison with Template Haskell
+--
+-- [Overloaded labels] "Miso.Lens.Generic" — no TH; derives via @Generic@
+-- [Template Haskell] "Miso.Lens.TH" — @makeLenses@ \/ @makeClassy@
+--
+-- = See also
+--
+-- * "Miso.Lens" — 'Miso.Lens.Lens', 'Miso.Lens.lens', operators
+-- * "Miso.Lens.TH" — Template Haskell alternative
 -----------------------------------------------------------------------------
 module Miso.Lens.Generic (HasLens(..), field) where
 

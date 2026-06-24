@@ -6,12 +6,67 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Miso.Svg.Events
+-- Module      :  Miso.Svg.Event
 -- Copyright   :  (C) 2016-2026 David M. Johnson
 -- License     :  BSD3-style (see the file LICENSE)
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- = Overview
+--
+-- "Miso.Svg.Event" provides event-handler 'Miso.Types.Attribute' values
+-- for SVG-specific DOM events. All handlers use 'Miso.Event.emptyDecoder'
+-- — they fire a fixed action with no payload extracted from the event
+-- object. This module is re-exported by "Miso.Svg".
+--
+-- For pointer and keyboard events on SVG elements, use the handlers from
+-- "Miso.Html.Event" directly — they work on any DOM element regardless of
+-- namespace.
+--
+-- = Quick start
+--
+-- @
+-- import "Miso"
+-- import "Miso.Svg"
+--
+-- data Action = AnimDone | Zoomed
+--
+-- view :: Model -> 'Miso.Types.View' Model Action
+-- view _ =
+--   'svg_' []
+--     [ 'animate_'
+--         [ 'onEnd'  AnimDone
+--         , 'onZoom' Zoomed
+--         ]
+--     , 'circle_'
+--         [ 'onClick'    Toggle
+--         , 'onMouseOver' Highlight
+--         ]
+--     ]
+-- @
+--
+-- = Event groups
+--
+-- * __Animation__ (@\<animate\>@, @\<animateTransform\>@, …):
+--   'onBegin', 'onEnd', 'onRepeat'
+--
+-- * __Document__ (fires on @\<svg\>@ root):
+--   'onAbort', 'onError', 'onResize', 'onScroll', 'onZoom'
+--
+-- * __Graphical__ (fires on any visible SVG element):
+--   'onActivate', 'onClick', 'onFocusIn', 'onFocusOut',
+--   'onMouseDown', 'onMouseMove', 'onMouseOut', 'onMouseOver', 'onMouseUp'
+--
+-- Note: 'onClick' is re-exported from "Miso.Html.Event" and is identical
+-- to the HTML version.
+--
+-- = See also
+--
+-- * "Miso.Html.Event" — 'Miso.Html.Event.onPointerDown', 'Miso.Html.Event.onKeyDown', …
+--   work on SVG elements too
+-- * "Miso.Svg.Element" — SVG element constructors
+-- * "Miso.Event" — 'Miso.Event.on', 'Miso.Event.emptyDecoder' primitives
 ----------------------------------------------------------------------------
 module Miso.Svg.Event
   ( -- *** Animation

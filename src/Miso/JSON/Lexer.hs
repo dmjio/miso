@@ -10,10 +10,39 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- A Lexer for the JSON specification. Meant to be used on the server w/ SSR.
+-- = Overview
 --
--- This was ported from <https://github.com/dmjio/json-test> by [@ners](https://github.com/ners)
--- 
+-- "Miso.JSON.Lexer" is the first stage of miso's pure Haskell JSON pipeline,
+-- which is used for server-side rendering (SSR). It tokenises a
+-- 'Miso.String.MisoString' into a stream of 'Token' values consumed by
+-- "Miso.JSON.Parser".
+--
+-- This module is __internal__. Application code should use "Miso.JSON" or
+-- "Miso.JSON.Parser" ('Miso.JSON.Parser.decodePure') instead.
+--
+-- This module was ported from <https://github.com/dmjio/json-test> by
+-- <https://github.com/ners @ners>.
+--
+-- = Token types
+--
+-- @
+-- data 'Token'
+--   = 'TokenPunctuator' Char    -- one of @[ ] { } , :@
+--   | 'TokenNumber'     Double  -- JSON number (integer or floating-point)
+--   | 'TokenBool'       Bool    -- @true@ or @false@
+--   | 'TokenString'     'Miso.String.MisoString' -- quoted string with escape sequences
+--   | 'TokenNull'               -- @null@
+-- @
+--
+-- String tokens handle all
+-- <https://www.rfc-editor.org/rfc/rfc8259#section-7 RFC 8259 escape sequences>
+-- including @\\uXXXX@ and UTF-16 surrogate pairs (@\\uD800\\uDC00@).
+--
+-- = See also
+--
+-- * "Miso.JSON.Parser" — consumes 'Token' streams produced here
+-- * "Miso.JSON.Types" — 'Miso.JSON.Types.Value' produced by the parser
+-- * "Miso.Util.Lexer" — the underlying 'Miso.Util.Lexer.Lexer' combinator library
 ----------------------------------------------------------------------------
 module Miso.JSON.Lexer (Token (..), tokens) where
 ----------------------------------------------------------------------------

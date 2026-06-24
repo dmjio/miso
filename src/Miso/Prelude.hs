@@ -7,34 +7,46 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- A custom Prelude for [miso](https://github.com/dmjio/miso).
+-- = Overview
 --
--- Can consume via @NoImplicitPrelude@ or using Cabal mixins.
+-- "Miso.Prelude" is a batteries-included custom prelude for miso
+-- applications. It re-exports:
+--
+-- * The entirety of "Miso" — all view, update, and subscription
+--   combinators are available without a qualified import.
+-- * The standard 'Prelude' — familiar Haskell functions remain in scope,
+--   with @'(!!)'@ hidden to avoid the clash with miso's index operator.
+-- * @'Control.Category.(.)'@ — replaces 'Prelude.(.)' so it works for any
+--   'Control.Category.Category', not just @(->)@.
+--
+-- = Usage
+--
+-- __Option 1 — explicit import__ (simplest):
 --
 -- @
--- import Miso.Prelude
+-- import "Miso.Prelude"
 -- @
 --
--- Almost identical to the existing @Prelude@, except we re-export the
--- @Miso@ module, along with @Control.Category@.
+-- __Option 2 — Cabal mixin__ (replaces @Prelude@ project-wide, zero
+-- per-file boilerplate):
 --
 -- @
 -- executable app
---   import:
---     options
---   main-is:
---     Main.hs
---   build-depends:
---     base, miso
+--   main-is:         Main.hs
+--   build-depends:   base, miso
 --   mixins:
 --     miso,
 --     miso (Miso.Prelude as Prelude),
 --     base hiding (Prelude)
---   default-language:
---     Haskell2010
+--   default-language: Haskell2010
 -- @
 --
-----------------------------------------------------------------------------
+-- = See also
+--
+-- * "Miso" — the main miso re-export hub
+-- * "Miso.Effect" — 'Miso.Effect.Effect', 'Miso.Effect.Sub', 'Miso.Effect.io_'
+-- * "Miso.Html" — HTML element and event combinators
+-----------------------------------------------------------------------------
 module Miso.Prelude
   ( module Miso
   , module Prelude

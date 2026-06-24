@@ -9,8 +9,105 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- <https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute>
+-- = Overview
 --
+-- "Miso.Svg.Property" provides 'Miso.Types.Attribute' smart constructors
+-- for all
+-- <https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute SVG attributes>.
+-- Every combinator takes a 'Miso.String.MisoString' value and produces an
+-- 'Miso.Types.Attribute' that is set on the SVG element by the virtual DOM.
+--
+-- This module is __not__ re-exported by "Miso.Svg" and must be imported
+-- separately. Qualify it to avoid clashing with same-named combinators
+-- from "Miso.Html.Property":
+--
+-- @
+-- import qualified "Miso.Svg.Property" as SP
+-- @
+--
+-- = Quick start
+--
+-- @
+-- import "Miso.Svg"
+-- import qualified "Miso.Svg.Property" as SP
+--
+-- arrow :: 'Miso.Types.View' model action
+-- arrow =
+--   'Miso.Svg.Element.svg_' [ SP.'viewBox_' \"0 0 100 100\", SP.'width_' \"100\" ]
+--     [ 'Miso.Svg.Element.path_'
+--         [ SP.'d_'           \"M 10 50 L 90 50 M 70 30 L 90 50 L 70 70\"
+--         , SP.'stroke_'      \"black\"
+--         , SP.'strokeWidth_' \"4\"
+--         , SP.'fill_'        \"none\"
+--         , SP.'strokeLinecap_' \"round\"
+--         ]
+--     ]
+-- @
+--
+-- = Attribute groups
+--
+-- * __Geometry__: 'cx_', 'cy_', 'r_', 'rx_', 'ry_', 'x_', 'y_',
+--   'x1_', 'y1_', 'x2_', 'y2_', 'width_', 'height_', 'd_', 'points_',
+--   'viewBox_', 'preserveAspectRatio_', 'pathLength_', 'textLength_'
+--
+-- * __Paint__: 'fill_', 'fillOpacity_', 'fillRule_', 'stroke_',
+--   'strokeWidth_', 'strokeOpacity_', 'strokeDasharray_',
+--   'strokeDashoffset_', 'strokeLinecap_', 'strokeLinejoin_',
+--   'strokeMiterlimit_', 'color_', 'opacity_', 'stopColor_', 'stopOpacity_'
+--
+-- * __Transform__: 'transform_', 'transformOrigin_', 'gradientTransform_',
+--   'patternTransform_', 'rotate_', 'scale_'
+--
+-- * __Text__: 'textAnchor_', 'textDecoration_', 'textRendering_',
+--   'fontFamily_', 'fontSize_', 'fontSizeAdjust_', 'fontStyle_',
+--   'fontVariant_', 'fontWeight_', 'letterSpacing_', 'wordSpacing_',
+--   'direction_', 'writingMode_', 'unicodeBidi_', 'dominantBaseline_',
+--   'alignmentBaseline_', 'baselineShift_', 'dx_', 'dy_'
+--
+-- * __Gradients__: 'gradientUnits_', 'spreadMethod_', 'fr_', 'fx_', 'fy_',
+--   'offset_', 'x1_', 'y1_', 'x2_', 'y2_'
+--
+-- * __Filters__: 'in_\'', 'in2_', 'result_', 'mode_', 'operator_',
+--   'order_', 'kernelMatrix_', 'edgeMode_', 'stdDeviation_',
+--   'bias_', 'divisor_', 'amplitude_', 'exponent_', 'intercept_',
+--   'slope_', 'tableValues_', 'numOctaves_', 'seed_', 'baseFrequency_',
+--   'stitchTiles_', 'filterUnits_', 'primitiveUnits_',
+--   'diffuseConstant_', 'specularConstant_', 'specularExponent_',
+--   'surfaceScale_', 'azimuth_', 'elevation_', 'pointsAtX_',
+--   'pointsAtY_', 'pointsAtZ_', 'limitingConeAngle_', 'k1_',
+--   'k2_', 'k3_', 'k4_', 'xChannelSelector_', 'yChannelSelector_',
+--   'preserveAlpha_', 'radius_', 'scale_'
+--
+-- * __Markers__: 'markerHeight_', 'markerWidth_', 'markerUnits_',
+--   'markerEnd_', 'markerMid_', 'markerStart_', 'orient_', 'refX_', 'refY_'
+--
+-- * __Masks \/ Clips__: 'maskContentUnits_', 'maskUnits_', 'mask_',
+--   'clipPath_', 'clipRule_', 'clipPathUnits_'
+--
+-- * __Pattern__: 'patternContentUnits_', 'patternUnits_'
+--
+-- * __Animation__: 'begin_', 'dur_', 'end_', 'by_', 'from_', 'to_',
+--   'values_', 'calcMode_', 'keyTimes_', 'keySplines_', 'keyPoints_',
+--   'repeatCount_', 'repeatDur_', 'restart_', 'additive_',
+--   'accumulate_', 'attributeName_', 'type_\'', 'path_'
+--
+-- * __Misc__: 'cursor_', 'display_', 'filter_', 'imageRendering_',
+--   'lightingColor_', 'overflow_', 'paintOrder_', 'pointerEvents_',
+--   'shapeRendering_', 'vectorEffect_', 'visibility_',
+--   'colorInterpolation_', 'colorInterpolationFilters_',
+--   'floodColor_', 'floodOpacity_', 'crossorigin_', 'decoding_',
+--   'media_', 'method_', 'side_', 'spacing_', 'startOffset_',
+--   'systemLanguage_', 'target_', 'targetX_', 'targetY_', 'z_'
+--
+-- __Note__: Two SVG attributes clash with Haskell keywords and are given
+-- disambiguated names: @'in_\''@ (for the @in@ attribute) and @'type_\''@
+-- (for the @type@ attribute).
+--
+-- = See also
+--
+-- * "Miso.Svg.Element" — SVG element constructors
+-- * "Miso.Html.Property" — HTML property combinators (different namespace)
+-- * <https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute MDN SVG attribute reference>
 ----------------------------------------------------------------------------
 module Miso.Svg.Property
   ( -- *** Regular Attributes

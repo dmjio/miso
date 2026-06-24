@@ -5,20 +5,56 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Data.Array
--- Copyright   :  (C) 2016-2026 David M. Johnson (@dmjio)
+-- Copyright   :  (C) 2016-2026 David M. Johnson
 -- License     :  BSD3-style (see the file LICENSE)
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- Mutable 'Array' data structure in 'IO'.
+-- = Overview
 --
--- A JavaScript [Array](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array). This is a convenience for manipulating JavaScript data structures from Haskell.
+-- "Miso.Data.Array" is a Haskell wrapper around the JavaScript
+-- <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array Array>
+-- object. Values of type @'Array' a@ live in JavaScript memory; all
+-- operations run in 'IO' and mutate the underlying JS array in place.
 --
--- We recommend using this module qualified.
+-- Use this module when you need to pass a JS-native array to a browser API
+-- or a third-party JavaScript library. For pure Haskell data processing,
+-- prefer ordinary lists or 'Data.Map.Strict.Map'.
 --
--- > import qualified Miso.Data.Array as M
+-- Import qualified to avoid clashing with 'Prelude':
 --
+-- @
+-- import qualified "Miso.Data.Array" as A
+-- @
+--
+-- = Quick start
+--
+-- @
+-- import qualified "Miso.Data.Array" as A
+--
+-- example :: IO ()
+-- example = do
+--   arr <- A.'fromList' [10, 20, 30 :: Int]
+--   A.'push' 40 arr
+--   v   <- A.'lookup' 2 arr    -- Just 30
+--   n   <- A.'size' arr        -- 4
+--   xs  <- A.'toList' arr      -- [10, 20, 30, 40]
+--   pure ()
+-- @
+--
+-- = Operations
+--
+-- * __Construction__: 'new', 'fromList', 'singleton'
+-- * __Deconstruction__: 'toList'
+-- * __Access__: 'lookup', '(!?)', 'member', 'size', 'null'
+-- * __Mutation__: 'insert', 'push', 'pop', 'shift', 'unshift', 'splice', 'reverse'
+--
+-- = See also
+--
+-- * "Miso.Data.Map" — mutable JS 'Miso.Data.Map.Map'
+-- * "Miso.Data.Set" — mutable JS 'Miso.Data.Set.Set'
+-- * "Miso.DSL" — 'Miso.DSL.ToJSVal' \/ 'Miso.DSL.FromJSVal' used by element types
 -----------------------------------------------------------------------------
 module Miso.Data.Array
   ( -- * Type
@@ -60,23 +96,49 @@ new :: IO (Array value)
 new = Array <$> DSL.new (jsg "Array") ([] :: [JSVal])
 -----------------------------------------------------------------------------
 -- | Inserts a value into the t'Array' by value.
-insert :: ToJSVal value => Int -> value -> Array value -> IO ()
+insert
+  :: ToJSVal value
+  => Int
+  -- ^ Index at which to insert the value (0-based)
+  -> value
+  -- ^ Value to store at that index
+  -> Array value
+  -- ^ Array to mutate
+  -> IO ()
 insert key value (Array m) = do
   _ <- DSL.Object m DSL.<## key $ value
   pure ()
 -----------------------------------------------------------------------------
--- | Inserts a value into the t'Array' by value.
-push :: ToJSVal value => value -> Array value -> IO ()
+-- | Appends a value to the end of the t'Array'.
+push
+  :: ToJSVal value
+  => value
+  -- ^ Value to append
+  -> Array value
+  -- ^ Array to mutate
+  -> IO ()
 push value (Array m) = do
   _ <- callFunction m "push" [value]
   pure ()
 -----------------------------------------------------------------------------
 -- | Look up a value in the array by key.
-lookup :: FromJSVal value => Int -> Array value -> IO (Maybe value)
+lookup
+  :: FromJSVal value
+  => Int
+  -- ^ 0-based index to look up
+  -> Array value
+  -- ^ Array to query
+  -> IO (Maybe value)
 lookup key m = DSL.fromJSValUnchecked =<< m DSL.!! key
 -----------------------------------------------------------------------------
--- | Look up a value in the array by key.
-(!?) :: FromJSVal value => Int -> Array value -> IO value
+-- | Look up a value in the array by index, throwing if out of bounds.
+(!?)
+  :: FromJSVal value
+  => Int
+  -- ^ 0-based index to look up
+  -> Array value
+  -- ^ Array to query
+  -> IO value
 (!?) key m =
   lookup key m >>= \case
     Nothing ->
@@ -93,19 +155,39 @@ null :: Array value -> IO Bool
 null m = (== 0) <$> size m
 -----------------------------------------------------------------------------
 -- | Checks existence of 'value' in t'Array', returns t'Bool.
-member :: ToJSVal value => value -> Array value -> IO Bool
+member
+  :: ToJSVal value
+  => value
+  -- ^ Value to search for (uses JavaScript @SameValueZero@ equality)
+  -> Array value
+  -- ^ Array to search
+  -> IO Bool
 member value (Array m) = DSL.fromJSValUnchecked =<< callFunction m "includes" =<< DSL.toJSVal value
 -----------------------------------------------------------------------------
 -- | Splices an array. See [splice](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/splice).
-splice :: ToJSVal value => Int -> Int -> [value] -> Array value -> IO (Array value)
+splice
+  :: ToJSVal value
+  => Int
+  -- ^ Start index (0-based) at which to begin the splice
+  -> Int
+  -- ^ Number of elements to remove starting at @start@
+  -> [value]
+  -- ^ Elements to insert at @start@ after the removal
+  -> Array value
+  -- ^ Array to mutate in place
+  -> IO (Array value)
 splice start deleteCount xs (Array m) = do
   s <- DSL.toJSVal start
   d <- DSL.toJSVal deleteCount
   args <- mapM DSL.toJSVal xs
   Array <$> do callFunction m "splice" $ [s,d] ++ args
 -----------------------------------------------------------------------------
--- | Construct a t'Array' from a list of value value pairs.
-fromList :: ToJSVal value => [value] -> IO (Array value)
+-- | Construct a t'Array' from a list of values.
+fromList
+  :: ToJSVal value
+  => [value]
+  -- ^ Elements to populate the new array with (in order)
+  -> IO (Array value)
 fromList xs = do
   m <- new
   forM_ (zip [0..] xs) $ \(k,v) ->
@@ -120,7 +202,11 @@ toList m = do
 -----------------------------------------------------------------------------
 -- | Creates a new Array with a single element.
 --
-singleton :: ToJSVal a => a -> IO (Array a)
+singleton
+  :: ToJSVal a
+  => a
+  -- ^ The single element for the new array
+  -> IO (Array a)
 singleton x = fromList [x]
 -----------------------------------------------------------------------------
 -- | Removes the last element from an array and returns it.
@@ -137,7 +223,13 @@ shift (Array arr) = DSL.fromJSValUnchecked =<< callFunction arr "shift" ([] :: [
 -----------------------------------------------------------------------------
 -- | Adds one or more elements to the beginning of an array.
 --
-unshift :: ToJSVal a => a -> Array a -> IO Int
+unshift
+  :: ToJSVal a
+  => a
+  -- ^ Element to prepend at index 0
+  -> Array a
+  -- ^ Array to mutate
+  -> IO Int
 unshift x (Array arr) = DSL.fromJSValUnchecked =<< callFunction arr "unshift" [x]
 -----------------------------------------------------------------------------
 -- | Reverses an array in-place.

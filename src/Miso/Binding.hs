@@ -17,16 +17,60 @@
 --
 -- = Data Bindings
 --
--- miso includes an experimental feature that allows fields of different models to be synchronized
--- against each another in response to model changes. See 'Miso.Binding'. Note this feature is
--- experimental, it is recommended to use asynchronous Component communication (like 'broadcast') by default.
+-- "Miso.Binding" provides an experimental mechanism for synchronizing
+-- model fields between a parent and child t'Miso.Component' using
+-- 'Miso.Lens.Lens'-based /bindings/. Rather than coordinating state
+-- through explicit message passing, a 'Binding' declares a directed or
+-- bidirectional edge between two model fields. When the runtime detects
+-- that a bound field has changed, it propagates the new value to the
+-- connected component automatically.
 --
--- This module exposes combinators to construct a 'Binding' which holds two lenses that will alter
--- t'Component' model state along the parent-child relationship using a 'Lens'. Practically, this means when
--- one t'Component' is marked as dirty, another t'Component' will also potentially will be marked as
--- dirty if they are connected along an edge ('Binding').
+-- __Note:__ This feature is experimental. For production inter-component
+-- communication, prefer asynchronous messaging via @broadcast@ or
+-- "Miso.PubSub".
 --
--- See the [miso-reactive](https://github.com/haskell-miso/miso-reactive) project for more information.
+-- == How It Works
+--
+-- A 'Binding' encodes a directed /edge/ in the component graph. Each
+-- edge is described by a pair of lenses — one projecting into the parent
+-- model and one into the child model — that must share a common @field@
+-- type. After each update cycle the runtime reads the source field
+-- through its lens and writes it into the destination model through the
+-- other lens, according to the edge direction.
+--
+-- == Example
+--
+-- Suppose a parent component tracks a user's name, and a child component
+-- independently maintains a display name. Declaring a bidirectional
+-- binding keeps both fields in sync automatically:
+--
+-- @
+-- {-\# LANGUAGE TemplateHaskell \#-}
+--
+-- import "Miso"
+-- import "Miso.Binding"
+-- import "Miso.Lens.TH" ('Miso.Lens.TH.makeLenses')
+-- import "Miso.String" ('Miso.String.MisoString')
+--
+-- data ParentModel = ParentModel { _userName    :: 'Miso.String.MisoString' } deriving 'Eq'
+-- data ChildModel  = ChildModel  { _displayName :: 'Miso.String.MisoString' } deriving 'Eq'
+--
+-- 'Miso.Lens.makeLenses' ''ParentModel
+-- 'Miso.Lens.makeLenses' ''ChildModel
+--
+-- -- Declare the child t'Miso.Types.Component' with a bidirectional 'Binding'.
+-- -- Changes to either field will be reflected in the other.
+--
+-- childComp :: t'Miso.Component' ParentModel () ChildModel ChildAction
+-- childComp = ('Miso.component' initialChild updateChild viewChild)
+--   { 'Miso.bindings' = [ userName @'<-->'@ displayName ] }
+-- @
+--
+-- On mount, the parent field takes precedence by default (see 'Precedence').
+-- To invert that behaviour, use @'<<-->'@ instead.
+--
+-- See the [miso-reactive](https://github.com/haskell-miso/miso-reactive)
+-- project for extended examples.
 --
 ----------------------------------------------------------------------------
 module Miso.Binding
@@ -51,17 +95,27 @@ import Control.Monad.Identity (Identity(..))
 ----------------------------------------------------------------------------
 import Miso.Lens (Lens, Lens', LensCore(..))
 ----------------------------------------------------------------------------
--- | t'Binding' is used to synchronize parent and child model changes at the granularity specified by a t'Miso.Lens.Lens'
+-- | A 'Binding' encodes a directed or bidirectional synchronization edge
+-- between a field in a parent model and a field in a child model. The
+-- field is projected via a pair of lenses that must share a common type.
 --
--- This can be thought of as establishing an "edge" in the 'Miso.Types.Component' graph,
--- whereby events cause model change synchronization to "ripple" or "pulsate"
--- through the views. The "reactivity" of the graph is constructed manually
--- by the end-user, using the edge primitives `-->`, `<--`, `<-->` (reactive combinators).
+-- After each update cycle the runtime evaluates all bindings registered
+-- in a t'Miso.Types.Component' and propagates field values along each edge according
+-- to its direction. On initial mount the 'Precedence' value determines
+-- which side wins when both fields carry different values.
 --
--- @
--- main :: IO ()
--- main = run app { bindings = [ parentLens \<--\> childLens ] }
--- @
+-- Construct 'Miso.Types.bindings' using the operator combinators rather than the data
+-- constructors directly. For miso 'Miso.Lens.Lens':
+--
+-- * @'-->'@      — parent→child
+-- * @'<--'@      — child→parent
+-- * @'<-->'@     — bidirectional ('Parent' precedence on mount)
+--
+-- For van Laarhoven 'Miso.Lens.Lens'':
+--
+-- * @'--->'@     — parent→child
+-- * @'<---'@     — child→parent
+-- * @'<--->'@    — bidirectional ('Parent' precedence on mount)
 --
 -- @since 1.9.0.0
 data Binding parent child
@@ -69,37 +123,62 @@ data Binding parent child
   | forall field . ChildToParent (field -> parent -> parent) (child -> field)
   | forall field . Bidirectional Precedence (parent -> field) (field -> parent -> parent) (child -> field) (field -> child -> child)
 -----------------------------------------------------------------------------
--- | Data type used to express if the Child state should take precendence
--- over the parent state during 'Component' mount.
+-- | Determines which side of a 'Bidirectional' binding wins when parent
+-- and child fields carry different values at t'Component' mount time.
+-- After the initial mount both sides are kept in sync, so 'Precedence'
+-- only affects the very first reconciliation.
 data Precedence = Child | Parent
   deriving (Eq, Show)
 -----------------------------------------------------------------------------
--- | Unidirectionally binds a parent field to a child field
+-- | Constructs a unidirectional 'Binding' that propagates a field from
+-- the parent model into the child model. Changes to the child field are
+-- not reflected back to the parent.
+--
+-- Uses the miso 'Miso.Lens.Lens' representation. For van Laarhoven
+-- lenses use @'--->'@.
 --
 -- @since 1.9.0.0
 infixr 0 -->
 (-->) :: Lens parent a -> Lens model a -> Binding parent model
 parent --> child = ParentToChild (_get parent) (_set child)
 -----------------------------------------------------------------------------
--- | Unidirectionally binds a child field to a parent field
+-- | Constructs a unidirectional 'Binding' that propagates a field from
+-- the child model back into the parent model. Changes to the parent
+-- field are not reflected into the child.
+--
+-- Uses the miso 'Miso.Lens.Lens' representation. For van Laarhoven
+-- lenses use @'<---'@.
 --
 -- @since 1.9.0.0
 infixl 0 <--
 (<--) :: Lens parent a  -> Lens model a -> Binding parent model
 parent <-- child = ChildToParent (_set parent) (_get child)
 -----------------------------------------------------------------------------
--- | Bidirectionally binds a child field to a parent field, using @Lens@
+-- | Constructs a bidirectional 'Binding' between a parent field and a
+-- child field using the miso 'Miso.Lens.Lens' representation. Changes
+-- to either field are propagated to the other after each update cycle.
 --
--- This is a bidirectional reactive combinator for a miso @Lens@.
+-- On t'Component' mount, the parent field takes 'Precedence' over the
+-- child field. Use @'<-->'@ to invert this and let the child win, or
+-- @'<<-->'@ to state the parent precedence explicitly.
+--
+-- For van Laarhoven lenses use @'<--->'@.
 --
 -- @since 1.9.0.0
 infix 0 <-->
 (<-->) :: Lens parent field -> Lens child field -> Binding parent child
 p <--> c = Bidirectional Parent (_get p) (_set p) (_get c) (_set c)
 -----------------------------------------------------------------------------
--- | Bidirectionally binds a child field to a parent field, using @Lens'@
+-- | Constructs a bidirectional 'Binding' between a parent field and a
+-- child field using the van Laarhoven 'Miso.Lens.Lens'' representation.
+-- Changes to either field are propagated to the other after each update
+-- cycle.
 --
--- This is a bidirectional reactive combinator for a van Laarhoven @Lens'@
+-- On t'Component' mount, the parent field takes 'Precedence' over the
+-- child field. Use @'<<--->'@ to invert this and let the child win, or
+-- @'<--->>'@ to state the parent 'Precedence' explicitly.
+--
+-- For miso lenses use @'<-->'@.
 --
 -- @since 1.9.0.0
 infix 0 <--->
@@ -109,7 +188,10 @@ p <---> c = Bidirectional Parent (get_ p) (set_ p) (get_ c) (set_ c)
     get_ lens_ record = getConst (lens_ Const record)
     set_ lens_ field = runIdentity . lens_ (\_ -> Identity field)
 -----------------------------------------------------------------------------
--- | Like '<--->' but biases to inherit 'Parent' state on 'Component' 'mount'.
+-- | Like @'<--->'@ but explicitly sets 'Precedence' to 'Parent', so
+-- the parent field overwrites the child field on t'Component' mount.
+-- This is the default behaviour of @'<--->'@; use this combinator
+-- when you want to be explicit about the 'Precedence'.
 --
 -- @since 1.10.0.0
 (<--->>)
@@ -121,7 +203,10 @@ l <--->> r =
     Bidirectional _ w x y z -> Bidirectional Parent w x y z
     _ -> error "impossible"
 -----------------------------------------------------------------------------
--- | Like '<--->' but biases to inherit 'Child' state on 'Component' 'mount'.
+-- | Like @'<--->'@ but sets 'Precedence' to 'Child', so the child
+-- field overwrites the parent field on t'Component' mount. Use this
+-- when the child component owns the authoritative initial value for
+-- the shared field.
 --
 -- @since 1.10.0.0
 (<<--->)
@@ -133,8 +218,12 @@ l <<---> r =
     Bidirectional _ w x y z -> Bidirectional Child w x y z
     _ -> error "impossible"
 -----------------------------------------------------------------------------
--- | Unidirectionally binds a parent field to a child field, for van Laarhoven
--- style @Lens'@
+-- | Constructs a unidirectional 'Binding' that propagates a field from
+-- the parent model into the child model. Changes to the child field are
+-- not reflected back to the parent.
+--
+-- Uses the van Laarhoven 'Miso.Lens.Lens'' representation. For miso
+-- lenses use @'-->'@.
 --
 -- @since 1.9.0.0
 infixr 0 --->
@@ -144,7 +233,10 @@ p ---> c = ParentToChild (get_ p) (set_ c)
     get_ lens_ record = getConst (lens_ Const record)
     set_ lens_ field = runIdentity . lens_ (\_ -> Identity field)
 -----------------------------------------------------------------------------
--- | Like '<-->' but biases to inherit 'Parent' state on 'Component' 'mount'.
+-- | Like @'<-->'@ but explicitly sets 'Precedence' to 'Parent', so
+-- the parent field overwrites the child field on t'Component' mount.
+-- This is the default behaviour of @'<-->'@ use this combinator
+-- when you want to be explicit about the precedence.
 --
 -- @since 1.10.0.0
 (<-->>)
@@ -156,7 +248,10 @@ l <-->> r =
     Bidirectional _ w x y z -> Bidirectional Parent w x y z
     _ -> error "impossible"
 -----------------------------------------------------------------------------
--- | Like '<-->' but biases to inherit 'Child' state on 'Component' 'mount'.
+-- | Like @'<-->'@ but sets 'Precedence' to 'Child', so the child
+-- field overwrites the parent field on t'Component' mount. Use this
+-- when the child component owns the authoritative initial value for
+-- the shared field.
 --
 -- @since 1.10.0.0
 (<<-->)
@@ -168,8 +263,12 @@ l <<--> r =
     Bidirectional _ w x y z -> Bidirectional Child w x y z
     _ -> error "impossible"
 -----------------------------------------------------------------------------
--- | Unidirectionally binds a child field to a parent field, for van Laarhoven
--- style @Lens'@
+-- | Constructs a unidirectional 'Binding' that propagates a field from
+-- the child model back into the parent model. Changes to the parent
+-- field are not reflected into the child.
+--
+-- Uses the van Laarhoven 'Miso.Lens.Lens'' representation. For miso
+-- lenses use @'<--'@.
 --
 -- @since 1.9.0.0
 infixl 0 <---

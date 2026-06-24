@@ -9,12 +9,52 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- MathML attributes.
+-- = Overview
 --
--- We recommend referring to [MDN Attributes reference](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Attribute)
--- for details on how each attribute can be used.
+-- "Miso.Mathml.Property" provides 'Miso.Types.Attribute' smart constructors
+-- for
+-- <https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Attribute MathML attributes>.
+-- They are used alongside the element constructors from "Miso.Mathml.Element".
+-- The module is re-exported by "Miso.Mathml".
 --
-----------------------------------------------------------------------------
+-- = Quick start
+--
+-- @
+-- import "Miso.Mathml.Element"
+-- import "Miso.Mathml.Property"
+--
+-- styledFrac :: 'Miso.Types.View' model action
+-- styledFrac =
+--   'Miso.Mathml.Element.math_' [ 'display_' \"block\" ]
+--     [ 'Miso.Mathml.Element.mfrac_' [ 'linethickness_' \"2px\" ]
+--         [ 'Miso.Mathml.Element.mn_' [ 'mathvariant_' \"bold\" ] [ 'Miso.text' \"1\" ]
+--         , 'Miso.Mathml.Element.mn_' [] [ 'Miso.text' \"3\" ]
+--         ]
+--     ]
+-- @
+--
+-- = Attribute groups
+--
+-- * __Global MathML attributes__: 'dir_', 'displaystyle_', 'scriptlevel_',
+--   'id_', 'href_', 'mathbackground_', 'mathcolor_', 'mathsize_', 'mathvariant_'
+-- * __Layout__: 'display_', 'height_', 'width_', 'depth_', 'voffset_',
+--   'lspace_', 'rspace_', 'linethickness_', 'minsize_', 'maxsize_'
+-- * __Table__: 'align_', 'rowalign_', 'rowlines_', 'rowspacing_', 'rowspan_',
+--   'columnalign_', 'columnlines_', 'columnspacing_', 'columnspan_'
+-- * __Operator flags__ (boolean): 'accent_', 'accentunder_', 'fence_',
+--   'separator_', 'stretchy_', 'symmetric_', 'movablelimits_'
+-- * __Frame__: 'frame_', 'framespacing_'
+-- * __Grouping__: 'open_', 'close_', 'notation_'
+--
+-- For full semantics of each attribute consult the
+-- <https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Attribute MDN MathML attribute reference>.
+--
+-- = See also
+--
+-- * "Miso.Mathml.Element" — MathML element constructors
+-- * "Miso.Mathml" — re-export hub for the full MathML DSL
+-- * "Miso.Property" — low-level 'Miso.Property.textProp', 'Miso.Property.boolProp', 'Miso.Property.intProp'
+-----------------------------------------------------------------------------
 module Miso.Mathml.Property
   ( -- * Global attributes
     dir_

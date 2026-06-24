@@ -10,35 +10,50 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- Support for live reloading of miso applications.
+-- = Overview
 --
--- = Live Reload
+-- "Miso.Reload" supports hot-reloading of miso applications during
+-- interactive development with GHC WASM browser mode (@ghciwatch@ +
+-- WASM GHCi). It provides two entry points that replace @startApp@ in
+-- your @main@:
 --
--- This module exposes two functions meant to be used during interactive
--- development with GHC WASM browser mode, 'live' and 'reload'.
+-- ['reload'] clears @\<head\>@ and @\<body\>@ — full reset on every @:r@; model is lost
+-- ['live'] clears @\<body\>@ only — model state survives @:r@
 --
--- == Reload
+-- = reload
 --
--- Use 'reload' if you'd like to redraw the page on each file change, resetting
--- the working application state.
---
--- @
--- main :: IO ()
--- main = 'reload' 'defaultEvents' app
--- @
---
--- == Live
---
--- Use 'live' if you'd like to persist the working application state (all 'Component' 'model')
--- between GHCi reloads. This only works if you do not alter the 'model' schema (e.g. add, remove, change a field's type).
+-- Clears both @\<head\>@ and @\<body\>@, kills any running scheduler thread,
+-- and re-mounts the component from scratch. All application state is lost.
+-- Use this when you are actively changing the @model@ type.
 --
 -- @
 -- main :: IO ()
--- main = 'live' 'defaultEvents' app
+-- main = 'reload' 'Miso.Event.Types.defaultEvents' app
 -- @
 --
--- See the [miso-sampler](https://github.com/haskell-miso/miso-sampler) for example usage.
+-- = live
 --
+-- Clears only @\<body\>@, then re-mounts the component using the __old
+-- model__ value recovered from the previous GHCi session via a C-heap
+-- stable pointer. @\<head\>@ injections (stylesheets, scripts) from the
+-- previous session are preserved.
+--
+-- @
+-- main :: IO ()
+-- main = 'live' 'Miso.Event.Types.defaultEvents' app
+-- @
+--
+-- __Warning__: 'live' is unsafe if you change the @model@ type between
+-- reloads (adding, removing, or changing a field's type). Such a change
+-- will produce a segfault because the old in-memory model is coerced
+-- directly into the new type. Use 'reload' whenever you alter the model
+-- schema.
+--
+-- = See also
+--
+-- * <https://github.com/haskell-miso/miso-sampler miso-sampler> — reference project demonstrating 'live'
+-- * "Miso.Runtime" — 'Miso.Runtime.initComponent' and component lifecycle
+-- * "Miso.Event.Types" — 'Miso.Event.Types.defaultEvents' used as first argument
 ----------------------------------------------------------------------------
 module Miso.Reload
   ( -- ** Functions
@@ -96,7 +111,9 @@ foreign import ccall unsafe "miso_x_clear"
 reload
   :: Eq model
   => Events
+  -- ^ Event delegation map (typically 'Miso.Event.Types.defaultEvents')
   -> App model action
+  -- ^ Top-level application component to (re-)mount
   -> IO ()
 reload events vcomp = do
   exists <- x_exists
@@ -129,7 +146,9 @@ reload events vcomp = do
 live
   :: Eq model
   => Events
+  -- ^ Event delegation map (typically 'Miso.Event.Types.defaultEvents')
   -> App model action
+  -- ^ Top-level application component to (re-)mount with preserved model state
   -> IO ()
 live events vcomp = do
   exists <- x_exists

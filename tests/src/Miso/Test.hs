@@ -6,26 +6,99 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Miso.Test
--- Copyright   :  (C) 2016-2026 David M. Johnson (@dmjio)
--- License     :  BSD3-style (see the file LICENSE)
--- Maintainer  :  David M. Johnson <code@dmj.io>
--- Stability   :  experimental
--- Portability :  non-portable
+-- Module      : Miso.Test
+-- Copyright   : (C) 2016-2026 David M. Johnson
+-- License     : BSD3-style (see the file LICENSE)
+-- Maintainer  : David M. Johnson <code@dmj.io>
+-- Stability   : experimental
+-- Portability : non-portable
 --
--- An hspec-like [miso](https://github.com/dmjio/miso) testing framework. Meant for testing @miso@ @Component@.
--- The testing framework operates in the t'IO' monad and has access
--- to the DOM courtesy of [Playwright](https://playwright.dev/).
+-- = Overview
+--
+-- "Miso.Test" is a lightweight hspec-style testing framework for miso
+-- 'Miso.Types.Component' integration tests. It runs in the browser (or a
+-- JSDOM environment) via
+-- <https://playwright.dev/ Playwright>, giving each test full access to
+-- the live DOM.
+--
+-- Tests are written as @'StateT' 'TestState' IO@, which means they can call
+-- any 'IO' action — including miso DOM operations and 'Miso.FFI' calls — directly.
+-- Each 'it' block is timed and its result is printed with coloured output.
+-- After all tests run, 'runTests' prints a summary and calls
+-- @'System.Exit.exitSuccess'@ or @'System.Exit.exitFailure'@ so the process
+-- exit code reflects the test outcome.
+--
+-- = Quick start
 --
 -- @
+-- import "Miso.Test"
+-- import "Miso.Runtime.Internal" (components)
+-- import Data.IORef (writeIORef)
+-- import qualified Data.IntMap.Strict as IM
 --
 -- main :: IO ()
--- main = runTests $ do
---   describe "Arithmetic tests" $ do
---     it "2 + 2 = 4" $ do
---       (2 + 2) \`shouldBe\` 4
+-- main = 'runTests' $ do
+--   'describe' \"Arithmetic\" $ do
+--     'it' \"2 + 2 = 4\" $
+--       (2 + 2) \`'shouldBe'\` (4 :: Int)
+--     'it' \"3 /= 4\" $
+--       (3 :: Int) \`'shouldNotBe'\` 4
+--
+--   'describe' \"Component\" $
+--     'beforeEach' (writeIORef components IM.empty) $ do
+--       'it' \"mounts without error\" $ do
+--         -- mount a component and assert on DOM state
+--         pure ()
 -- @
 --
+-- = Combinators
+--
+-- * 'describe' — group related tests under a label.
+-- * 'it' — declare a single named test; times it and records pass\/fail.
+-- * 'beforeEach' — run an 'IO' action before every 'it' in the wrapped block.
+-- * 'afterEach' — run an 'IO' action after every 'it' in the wrapped block.
+--
+-- = Assertion primitives
+--
+-- * @x \`'shouldBe'\` y@ — assert @x == y@; pretty-prints a diff on failure.
+-- * @x \`'shouldNotBe'\` y@ — assert @x \/= y@.
+-- * @x \`'shouldSatisfy'\` p@ — assert that the predicate @p x@ holds.
+-- * @'expect' f x y@ — assert @f x y@; the most general form.
+--
+-- Multiple assertions within a single 'it' block are all evaluated; the
+-- block is marked as failed if any assertion fails.
+--
+-- = Running tests
+--
+-- @'runTests' :: 'Test' a -> IO ()@ is the entry point. It executes the
+-- test tree, prints per-test results and a final summary (pass count,
+-- fail count, total tests, total duration, and @expect()@ call count),
+-- then exits:
+--
+-- * @'System.Exit.exitSuccess'@ — all tests passed.
+-- * @'System.Exit.exitFailure'@ — one or more tests failed.
+--
+-- When compiled with @-DJSDOM@, 'runTests' additionally calls
+-- @globalThis.initJSDOM()@ before running any tests, enabling headless
+-- DOM testing outside a real browser.
+--
+-- = Utilities
+--
+-- * 'choose' @min max@ — returns a uniformly random @Int@ in @[min, max)@
+--   using the JS @getRandomNumber@ global. Useful for property-style tests
+--   that need random inputs.
+--
+-- = Types
+--
+-- * @'Test' a = 'Control.Monad.State.StateT' 'TestState' IO a@ — the test monad.
+-- * 'TestState' — internal state tracking per-test timing, pass\/fail counts,
+--   before\/after hooks, and error messages.
+--
+-- = See also
+--
+-- * "Miso.Runtime.Internal" — 'Miso.Runtime.Internal.components' IORef for resetting state between tests
+-- * "Miso.Random" — 'Miso.Random.newStdGen', 'Miso.Random.replicateRM' for random values
+-- * "Miso" — the component and effect API under test
 ----------------------------------------------------------------------------
 module Miso.Test
   ( -- * Test Combinators
@@ -104,10 +177,15 @@ it name action = do
 data CurrentTest
   = CurrentTest
   { testGroup :: MisoString
+  -- ^ Name of the enclosing 'describe' group
   , name :: MisoString
+  -- ^ Name of the 'it' test case
   , successful :: Bool
+  -- ^ 'True' if all assertions in the test passed
   , errorMessage :: MisoString
+  -- ^ Human-readable failure message, empty on success
   , duration :: Double
+  -- ^ Wall-clock execution time in milliseconds
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
 -- | The monad that executes tests
@@ -117,18 +195,31 @@ type Test a = StateT TestState IO a
 data TestState
   = TestState
   { _currentTestGroup :: MisoString
+  -- ^ Label of the current 'describe' group
   , _currentErrorMessage :: MisoString
+  -- ^ Accumulated failure message for the current 'it' block
   , _currentTestName :: MisoString
+  -- ^ Name of the currently executing 'it' block
   , _currentTestTime :: Double
+  -- ^ Start time (or elapsed time) of the current 'it' block in milliseconds
   , _expects :: Int
+  -- ^ Total number of 'expect' calls made across all tests
   , _failed :: Int
+  -- ^ Count of 'it' blocks that had at least one failing assertion
   , _passed :: Int
+  -- ^ Count of 'it' blocks where all assertions passed
   , _total :: Int
+  -- ^ Total number of 'it' blocks registered
   , _totalDuration :: Double
+  -- ^ Cumulative wall-clock time for all 'it' blocks in milliseconds
   , _currentTestResult :: Bool
+  -- ^ 'True' while no assertion has failed in the current 'it' block
   , _beforeAction :: IO ()
+  -- ^ Action run before each 'it' block (registered via 'beforeEach')
   , _afterAction :: IO ()
+  -- ^ Action run after each 'it' block (registered via 'afterEach')
   , _caughtException :: Bool
+  -- ^ 'True' if the current 'it' block threw an 'Control.Exception.IOException'
   }
 -----------------------------------------------------------------------------
 emptyTestState :: TestState
@@ -177,8 +268,11 @@ currentTestTime = lens _currentTestTime $ \r x -> r { _currentTestTime = x }
 expect
   :: (Eq a, Show a)
   => (a -> a -> Bool)
+  -- ^ Comparison predicate; the test passes when this returns 'True'
   -> a
+  -- ^ Actual value (shown in failure output as "Received")
   -> a
+  -- ^ Expected value (shown in failure output as "Expecting")
   -> Test ()
 expect f x y = do
   let succeeded = f x y
@@ -209,7 +303,9 @@ expect f x y = do
 shouldSatisfy
   :: (Eq a, Show a)
   => a
+  -- ^ Actual value to test
   -> (a -> Bool)
+  -- ^ Predicate that must hold for the assertion to pass
   -> Test ()
 shouldSatisfy x f = do
   let succeeded = f x
@@ -244,7 +340,9 @@ shouldSatisfy x f = do
 shouldNotBe
   :: (Show a, Eq a)
   => a
+  -- ^ Actual value
   -> a
+  -- ^ Value it must NOT equal
   -> Test ()
 shouldNotBe = expect (/=)
 -----------------------------------------------------------------------------
@@ -253,7 +351,9 @@ shouldNotBe = expect (/=)
 shouldBe
   :: (Show a, Eq a)
   => a
+  -- ^ Actual value
   -> a
+  -- ^ Expected value it must equal
   -> Test ()
 shouldBe = expect (==)
 -----------------------------------------------------------------------------
@@ -263,7 +363,9 @@ shouldBe = expect (==)
 --
 beforeEach
   :: IO ()
+  -- ^ Action to run before each 'it' block in the wrapped group
   -> Test ()
+  -- ^ Test group to wrap
   -> Test ()
 beforeEach action x = do
   beforeAction %= \f -> f >> action
@@ -275,7 +377,9 @@ beforeEach action x = do
 --
 afterEach
   :: IO ()
+  -- ^ Action to run after each 'it' block in the wrapped group
   -> Test ()
+  -- ^ Test group to wrap
   -> Test ()
 afterEach action x = do
   afterAction %= \f -> f >> action
@@ -284,7 +388,9 @@ afterEach action x = do
 data Clocked a
   = Clocked
   { time :: Double
+  -- ^ Wall-clock duration in milliseconds
   , result :: Either String a
+  -- ^ @'Left' errMsg@ if an exception was caught; @'Right' a@ on success
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
 clock :: Test a -> Test (Clocked a)
@@ -307,7 +413,10 @@ clock action = do
         pure $ Left (show e)
 -----------------------------------------------------------------------------
 -- | Executes a block of tests in 'describe' blocks.
-runTests :: Test a -> IO ()
+runTests
+  :: Test a
+  -- ^ The test tree to execute (built from 'describe' \/ 'it' blocks)
+  -> IO ()
 runTests ts = do
 #ifdef JSDOM
   _ <- global # ("initJSDOM" :: String) $ ()

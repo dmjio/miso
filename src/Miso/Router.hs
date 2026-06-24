@@ -24,95 +24,84 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- This module introduces a 'Router' that produces "correct-by-construction" URL
--- encoding and decoding from any Haskell algebraic data type. This @Router@ can be used
--- in conjunction with 'Miso.Subscription.History.uriSub' or 'Miso.Subscription.History.routerSub'
--- to perform client-side routing. Further
--- it also supports the construction of type-safe links in any @View model action@ via
--- the 'href_' function exported from this module.
+-- = Overview
 --
--- This module can be used in two ways, one is the manual construction of a @Router@
--- as seen below.
+-- "Miso.Router" provides a type-safe, bidirectional client-side router.
+-- A Haskell sum type represents your application's routes; the 'Router'
+-- class encodes and decodes between that type and URL strings. The router
+-- is used together with 'Miso.Subscription.History.uriSub' or
+-- 'Miso.Subscription.History.routerSub' to react to browser navigation.
 --
--- @
---
--- data Route = Widget Int
---    deriving (Show, Eq)
---
--- instance Router Route where
---   routeParser = routes [ Widget \<$\> (path "widget" *\> capture) ]
---   fromRoute (Widget value) = [ toPath "widget", toCapture value ]
---
--- main :: IO ()
--- main = print (runRouter "\/widget\/10" router)
---
--- > Right (Widget "widget" 10)
--- @
---
--- The second way is using the @Generic@ deriving mechanism. This should ensure that
+-- = Approach 1 — Generic deriving (recommended)
 --
 -- @
---
--- {-# LANGUAGE DerivingStrategies #-}
--- {-# LANGUAGE DeriveAnyClass     #-}
--- {-# LANGUAGE DeriveGeneric      #-}
+-- {-\# LANGUAGE DeriveGeneric, DeriveAnyClass, DerivingStrategies \#-}
+-- import GHC.Generics (Generic)
+-- import "Miso.Router"
 --
 -- data Route
---  = About
---  | Home
---  | Widget (Capture "thing" Int) (Path "foo") (Capture "other" MisoString) (QueryParam "bar" Int)
---  deriving stock (Generic, Show)
---  deriving anyclass Router
--- @
---
--- The @Generic@ deriving works by converting the constructor name to a path so
---
--- > test :: Either RoutingError Route
--- > test = toRoute "/widget/23/foo/okay?bar=0"
---
--- Decodes as
---
--- > Right (Widget (Capture 23) (Path "foo") (Capture "okay") (QueryParam (Just 0)))
---
--- The order of t`Capture` and t`Path` matters when defined on your sum type. The order of t`QueryParam` and t`QueryFlag` does not.
---
--- The router is "reversible" which means it can produce type-safe links using the `href_` function.
---
--- > prettyRoute $ Widget (Capture 23) (Path ("foo")) (Capture ("okay")) (QueryParam (Just 0))
--- > "/widget/23/foo/okay?bar=0"
---
--- This can be used in conjunction with the @href_@ field below to embed type safe links into 'Miso.miso' @View model action@ code.
---
--- > button_ [ Miso.Router.href_ (Widget 10) ] [ "click me" ]
---
--- Note: the 'Miso.Router.Index' constructor is name special, it is used to encode the `"/"` path.
---
--- @
---
--- data Route = Index
---   deriving stock (Show, Eq)
---   deriving anyclass (Router)
---
--- main :: IO ()
--- main = print (fromRoute Index)
---
--- -- "/"
--- @
---
--- Lastly, camel-case constructors only use the first hump of the camel.
---
--- @
---
--- data Route = Index | FooBar
---   deriving anyclass Router
+--   = Index                                                    -- \"\/\"
+--   | About                                                    -- \"\/about\"
+--   | User (Capture \"id\" Int)                                 -- \"\/user\/42\"
+--   | Search (QueryParam \"q\" 'Miso.String.MisoString')         -- \"\/search?q=foo\"
 --   deriving stock (Show, Eq, Generic)
---
--- main :: IO ()
--- main = print (prettyRoute FooBar)
---
--- "/foo"
+--   deriving anyclass 'Router'
 -- @
 --
+-- Decoding:
+--
+-- @
+-- 'toRoute' \"\/user\/42\"  -- Right (User (Capture 42))
+-- 'toRoute' \"\/search?q=hello\" -- Right (Search (QueryParam (Just \"hello\")))
+-- @
+--
+-- Encoding (type-safe links):
+--
+-- @
+-- 'prettyRoute' (User (Capture 42))       -- \"\/user\/42\"
+-- button_ [ 'href_' (User (Capture 42)) ] [ text \"Profile\" ]
+-- @
+--
+-- = Approach 2 — Manual instance
+--
+-- @
+-- data Route = Widget Int deriving (Show, Eq)
+--
+-- instance 'Router' Route where
+--   routeParser = 'routes' [ Widget \<$\> ('path' \"widget\" *\> 'capture') ]
+--   fromRoute (Widget n) = [ 'toPath' \"widget\", 'toCapture' n ]
+-- @
+--
+-- = Generic naming rules
+--
+-- * __Constructor name__ becomes the lowercase path segment:
+--   @About@ → @\/about@, @UserProfile@ → @\/user@ (first camel-case hump only).
+-- * The special name __@Index@__ encodes the root path @\/@.
+-- * The position of 'Capture' and 'Path' fields in the constructor
+--   determines their order in the URL path. The position of
+--   'QueryParam' and 'QueryFlag' does not matter.
+--
+-- = URL types
+--
+-- [@'Capture' sym a@] dynamic path segment — @Capture 42@ → @\/42@
+-- [@'Path' sym@] fixed path segment — @Path \"foo\"@ → @\/foo@
+-- [@'QueryParam' sym a@] optional query key — @QueryParam (Just 1)@ → @?sym=1@
+-- [@'QueryFlag' sym@] boolean query flag — @QueryFlag True@ → @?sym@
+-- [@'Fragment' sym@] hash fragment — @Fragment@ → @#sym@
+--
+-- = Integration with history subscription
+--
+-- @
+-- import "Miso.Subscription.History" ('routerSub')
+--
+-- subs :: ['Miso.Effect.Sub' Action]
+-- subs = [ 'Miso.Subscription.History.routerSub' RouteChanged ]
+-- @
+--
+-- = See also
+--
+-- * "Miso.Subscription.History" — 'Miso.Subscription.History.uriSub', 'Miso.Subscription.History.routerSub', 'Miso.Subscription.History.pushURI'
+-- * "Miso.Html.Property" — 'Miso.Html.Property.href_' (plain string version)
 -----------------------------------------------------------------------------
 module Miso.Router
   ( -- ** Classes
@@ -228,7 +217,13 @@ data Token
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 -- | Smart constructor for building a 'QueryParamToken'
-toQueryParam :: ToMisoString s => MisoString -> s -> Token
+toQueryParam
+  :: ToMisoString s
+  => MisoString
+  -- ^ Query parameter key
+  -> s
+  -- ^ Query parameter value
+  -> Token
 toQueryParam k v = QueryParamToken k (Just (ms v))
 -----------------------------------------------------------------------------
 -- | Smart constructor for building a capture variable
@@ -397,7 +392,12 @@ class Router route where
 -- @
 --
 -----------------------------------------------------------------------------
-runRouter :: MisoString -> RouteParser route -> Either RoutingError route
+runRouter
+  :: MisoString
+  -- ^ The raw URL string to parse
+  -> RouteParser route
+  -- ^ Parser to apply against the tokenised URL
+  -> Either RoutingError route
 runRouter = parseRoute
 -----------------------------------------------------------------------------
 -- | Convenience for specifying multiple routes

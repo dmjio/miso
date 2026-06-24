@@ -3,22 +3,39 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Runtime.Internal
--- Copyright   :  (C) 2016-2026 David M. Johnson (@dmjio)
+-- Copyright   :  (C) 2016-2026 David M. Johnson
 -- License     :  BSD3-style (see the file LICENSE)
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- This is an internal module not meant for consumption during application
--- development. This is primarily meant to give user's access to the
--- global @component@ state for testing. Use at your own risk. You have been warned.
+-- = Overview
 --
--- We currently consume this module for the miso integration testing package @miso-tests@.
+-- "Miso.Runtime.Internal" is a __testing-only__ facade that re-exports
+-- the miso runtime's global mutable state from "Miso.Runtime".
 --
--- Alterations to these global variables *will* break your application. Again, do not
--- use these in your main application, only use with the miso testing framework to test
--- your application.
+-- __Do not import this module in application code.__ Mutating any of
+-- the exported 'Data.IORef.IORef' values will corrupt the component
+-- lifecycle and produce undefined behaviour. The module exists solely to
+-- give the @miso-tests@ integration-test package direct access to
+-- component state for assertions.
 --
+-- = Exported names
+--
+-- * 'components' — global 'Data.IORef.IORef' mapping 'Miso.Effect.ComponentId'
+--   to 'ComponentState' for every mounted component.
+-- * 'componentIds' — monotonically increasing 'Data.IORef.IORef' used to
+--   assign fresh component identifiers.
+-- * 'rootComponentId' — the well-known identifier of the top-level app component.
+-- * 'ComponentState' — record holding the live model, scheduler mailbox, and
+--   other per-component runtime fields.
+-- * 'schedulerThread' — 'Data.IORef.IORef' holding the 'Control.Concurrent.ThreadId'
+--   of the event-loop scheduler thread.
+--
+-- = See also
+--
+-- * "Miso.Runtime" — the authoritative definitions of everything exported here
+-- * "Miso.Reload" — uses these internals to kill and restart the scheduler on @:r@
 ----------------------------------------------------------------------------
 module Miso.Runtime.Internal
   ( components

@@ -19,10 +19,10 @@
 -- ensures a smaller payload size during compilation.
 --
 -- @
--- data Lens record field
---  = Lens
---  { _get :: record -> field
---  , _set :: record -> field -> record
+-- data 'Lens' record field
+--  = 'Lens'
+--  { '_get' :: record -> field
+--  , '_set' :: record -> field -> record
 --  }
 -- @
 --
@@ -219,6 +219,7 @@ toVL Lens {..} = \f record -> flip _set record <$> f (_get record)
 -- | Convert from 'Miso.miso' t'Lens' to van Laarhoven t'Lens''
 fromVL
   :: Lens' record field
+  -- ^ Van Laarhoven lens to convert
   -> Lens record field
 fromVL lens_ = Lens {..}
   where
@@ -676,7 +677,7 @@ infix 4 %?=
 -- value = lens _value $ \\p x -> p { _value = x }
 --
 -- update :: Action -> Effect parent Model Action
--- update (IncrementBy x) = value += x
+-- update (IncrementBy x) = value '+=' x
 -- @
 infix 4 +=
 (+=) :: (MonadState record m, Num field)  => Lens record field -> field -> m ()
@@ -743,7 +744,7 @@ infix 4 -=
 --
 -- @
 -- update AddOne = do
---   _1 += 1
+--   _1 'Miso.Lens.+=' 1
 -- @
 _1 :: Lens (a,b) a
 _1 = lens fst $ \(_,b) x -> (x,b)
@@ -752,7 +753,7 @@ _1 = lens fst $ \(_,b) x -> (x,b)
 --
 -- @
 -- update AddOne = do
---   _2 += 1
+--   _2 'Miso.Lens.+=' 1
 -- @
 _2 :: Lens (a,b) b
 _2 = lens snd $ \(a,_) x -> (a,x)
@@ -761,7 +762,7 @@ _2 = lens snd $ \(a,_) x -> (a,x)
 --
 -- @
 -- update AddOne = do
---   _id += 1
+--   _id 'Miso.Lens.+=' 1
 -- @
 _id :: Lens a a
 _id = Control.Category.id
@@ -770,26 +771,30 @@ _id = Control.Category.id
 --
 -- @
 -- update AddOne = do
---   this += 1
+--   this 'Miso.Lens.+=' 1
 -- @
 this :: Lens a a
 this = _id
 ---------------------------------------------------------------------------------
 -- | Smart constructor 'lens' function. Used to easily construct a t'Lens'
 --
--- > name :: Lens Person String
--- > name = lens _name $ \p n -> p { _name = n }
+-- > name :: 'Lens' Person String
+-- > name = 'lens' _name $ \p n -> p { _name = n }
 --
 lens
   :: (record -> field)
+  -- ^ Getter: read the field from a record
   -> (record -> field -> record)
+  -- ^ Setter: write a new field value into a record
   -> Lens record field
 lens getter setter = Lens getter (flip setter)
 ----------------------------------------------------------------------------
 data Prism s a
   = Prism
   { _up :: a -> s
+  -- ^ Embed a value @a@ back into the sum type @s@ (the @review@ direction)
   , _down :: s -> Maybe a
+  -- ^ Try to extract a value @a@ from @s@; 'Nothing' if the wrong constructor
   }
 ----------------------------------------------------------------------------
 review :: Prism s a -> a -> s
@@ -817,7 +822,12 @@ infixl 8 ^?
 (^?) :: s -> Prism s a -> Maybe a
 (^?) = flip preview
 ----------------------------------------------------------------------------
-prism :: (a -> s) -> (s -> Maybe a) -> Prism s a
+prism
+  :: (a -> s)
+  -- ^ Embed direction: construct @s@ from @a@
+  -> (s -> Maybe a)
+  -- ^ Match direction: try to extract @a@ from @s@
+  -> Prism s a
 prism = Prism
 ----------------------------------------------------------------------------
 -- | Class for getting and setting values across various container types.

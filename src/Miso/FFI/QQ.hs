@@ -15,32 +15,79 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.FFI.QQ
--- Copyright   :  (C) 2016-2026 David M. Johnson (@dmjio)
+-- Copyright   :  (C) 2016-2026 David M. Johnson
 -- License     :  BSD3-style (see the file LICENSE)
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- A QuasiQuoter for `inline-js` functionality.
+-- = Overview
+--
+-- "Miso.FFI.QQ" provides the @'js'@ quasi-quoter, which lets you embed
+-- JavaScript snippets directly in Haskell source. In-scope Haskell
+-- variables are spliced into the JS body with @${varName}@ interpolation
+-- syntax, and their types are checked at compile time via
+-- 'Miso.DSL.ToJSVal'.
+--
+-- Enable the extension and import the quoter:
 --
 -- @
+-- {-\# LANGUAGE QuasiQuotes \#-}
+-- import "Miso.FFI.QQ" ('js')
+-- @
 --
--- {-# LANGUAGE QuasiQuotes #-}
+-- = Quick start
 --
--- import Miso.FFI.QQ (js)
---
+-- @
+-- -- Compute a factorial entirely in JavaScript
 -- fac :: Int -> IO Int
--- fac n = [js|
+-- fac n = ['js'|
 --   let x = 1;
---   for (i = 1; i <= ${n}; i++) {
+--   for (let i = 1; i \<= ${n}; i++) {
 --     x *= i;
 --   }
 --   return x;
 -- |]
 --
+-- -- Call a third-party JS library with a DOM reference and a string
+-- highlight :: 'Miso.DSL.JSVal' -> 'Miso.String.MisoString' -> IO ()
+-- highlight domRef lang = ['js'|
+--   hljs.highlightElement(${domRef}, { language: ${lang} });
+-- |]
 -- @
 --
-----------------------------------------------------------------------------
+-- = How it works
+--
+-- At compile time the quasi-quoter:
+--
+-- 1. Lexes the JS body to find all @${varName}@ interpolations.
+-- 2. Looks up each @varName@ in the Haskell scope (compile error if not found).
+-- 3. Builds a 'Miso.DSL.Object' mapping short generated keys to the
+--    marshalled values (via 'Miso.FFI.Internal.inline' \/ 'Miso.DSL.createWith').
+-- 4. Rewrites the JS body, replacing each @${varName}@ with its generated
+--    key, and wraps the whole thing in a JS function so the keys are visible
+--    as named parameters.
+--
+-- The result is semantically equivalent to:
+--
+-- @
+-- do o <- 'Miso.DSL.createWith' [(\"a0\", toJSVal n)]
+--    'Miso.FFI.Internal.inline' \"… body with a0 instead of n …\" o
+-- @
+--
+-- = Differences from eval
+--
+-- Unlike 'Miso.DSL.eval', the generated code runs in a fresh function scope —
+-- it cannot read or write surrounding local variables other than those
+-- explicitly interpolated. This makes it both safer and faster (JS engines
+-- can optimise closed-over functions that don't reference @eval@).
+--
+-- = See also
+--
+-- * 'Miso.FFI.Internal.inline' — the runtime primitive this expands to
+-- * "Miso.DSL" — 'Miso.DSL.ToJSVal', 'Miso.DSL.createWith'
+-- * "Miso.FFI" — higher-level browser API wrappers
+-----------------------------------------------------------------------------
 module Miso.FFI.QQ
   ( js
   ) where

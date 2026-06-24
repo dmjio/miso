@@ -8,7 +8,61 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
-----------------------------------------------------------------------------
+--
+-- = Overview
+--
+-- "Miso.Mathml.Element" provides smart constructors for every element in the
+-- <https://developer.mozilla.org/en-US/docs/Web/MathML MathML Core>
+-- vocabulary. Each constructor produces a 'Miso.Types.View' node in the
+-- @MATHML@ namespace:
+--
+-- @
+-- tagName_ :: ['Miso.Types.Attribute' action] -> ['Miso.Types.View' model action] -> 'Miso.Types.View' model action
+-- @
+--
+-- All names are suffixed with @_@. The module is re-exported by "Miso.Mathml".
+--
+-- = Quick start
+--
+-- Embed a fraction inside a paragraph using 'Miso.Html.Element.p_' and 'math_':
+--
+-- @
+-- import "Miso"
+-- import "Miso.Mathml.Element"
+-- import "Miso.Mathml.Property" ('display_')
+--
+-- formula :: 'Miso.Types.View' model action
+-- formula =
+--   'Miso.Html.Element.p_' []
+--     [ 'math_' [ 'display_' \"block\" ]
+--         [ 'mfrac_' []
+--             [ 'mn_' [] [ 'Miso.text' \"1\" ]
+--             , 'msqrt_' [] [ 'mn_' [] [ 'Miso.text' \"2\" ] ]
+--             ]
+--         ]
+--     ]
+-- @
+--
+-- = Element groups
+--
+-- * __Top-level__: 'math_'
+-- * __Token elements__ (leaves): 'mi_' (identifier), 'mn_' (number),
+--   'mo_' (operator), 'ms_' (string literal), 'mtext_', 'mspace_'
+-- * __General layout__: 'mrow_', 'mfrac_', 'msqrt_', 'mroot_',
+--   'mpadded_', 'mphantom_', 'merror_', 'mstyle_', 'mfenced_'
+-- * __Script \& limit__: 'msub_', 'msup_', 'msubsup_',
+--   'mover_', 'munder_', 'munderover_', 'mmultiscripts_', 'mprescripts_'
+-- * __Tabular__: 'mtable_', 'mtr_', 'mtd_'
+-- * __Semantics__: 'semantics_', 'annotation_', 'annotationXml_'
+-- * __Custom__: 'nodeMathml' for any MathML tag not listed above
+--
+-- = See also
+--
+-- * "Miso.Mathml.Property" — MathML attribute combinators
+-- * "Miso.Mathml" — re-export hub for the full MathML DSL
+-- * "Miso.Html.Element" — HTML element constructors
+-- * "Miso.Svg.Element" — SVG element constructors
+-----------------------------------------------------------------------------
 module Miso.Mathml.Element
   ( -- ** Combinator
     nodeMathml

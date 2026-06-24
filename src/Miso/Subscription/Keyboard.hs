@@ -9,6 +9,51 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- = Overview
+--
+-- "Miso.Subscription.Keyboard" provides global keyboard subscriptions that
+-- track which keys are currently held down. All four subscriptions register
+-- @keydown@, @keyup@, and @blur@ listeners on @window@; the @blur@ handler
+-- clears the pressed-key set so keys cannot get stuck when the window loses
+-- focus.
+--
+-- = Quick start
+--
+-- @
+-- import "Miso"
+-- import "Miso.Subscription.Keyboard"
+--
+-- -- Fire action with arrow-key state on every key change
+-- subs :: ['Miso.Effect.Sub' Action]
+-- subs = [ 'arrowsSub' ArrowsChanged ]
+--
+-- update :: Action -> 'Miso.Effect.Effect' p props Model Action
+-- update (ArrowsChanged ('Arrows' x y)) = do
+--   -- x ∈ {-1, 0, 1}, y ∈ {-1, 0, 1}
+--   'Miso.Effect.io_' (move x y)
+-- @
+--
+-- = Subscription variants
+--
+-- * 'keyboardSub' — delivers the raw @'Data.IntSet.IntSet'@ of all currently
+--   pressed
+--   <https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/keyCode keyCodes>.
+--   Use this when you need to handle arbitrary key combinations.
+--
+-- * 'arrowsSub' — maps the four arrow keys (37–40) to an 'Arrows' value
+--   with @arrowX ∈ {-1, 0, 1}@ and @arrowY ∈ {-1, 0, 1}@.
+--
+-- * 'wasdSub' — same as 'arrowsSub' but for W\/A\/S\/D (keyCodes 87\/83\/65\/68).
+--
+-- * 'directionSub' — fully configurable: supply your own @(up, down, left, right)@
+--   keyCode lists and get the same 'Arrows' mapping.
+--
+-- = See also
+--
+-- * "Miso.Subscription" — re-export hub
+-- * "Miso.Event.Types" — 'Miso.Event.Types.KeyCode', 'Miso.Event.Types.KeyInfo'
+-- * "Miso.Html.Event" — per-element 'Miso.Html.Event.onKeyDown' \/ 'Miso.Html.Event.onKeyUp'
 ----------------------------------------------------------------------------
 module Miso.Subscription.Keyboard
   ( -- *** Types
@@ -39,7 +84,9 @@ import qualified Miso.FFI.Internal as FFI
 data Arrows
  = Arrows
  { arrowX :: !Int
+ -- ^ Horizontal direction: @-1@ (left), @0@ (neutral), @1@ (right)
  , arrowY :: !Int
+ -- ^ Vertical direction: @-1@ (down), @0@ (neutral), @1@ (up)
  } deriving (Show, Eq)
 -----------------------------------------------------------------------------
 -- | Helper function to convert keys currently pressed to @Arrows@, given a
@@ -71,7 +118,9 @@ wasdSub = directionSub ([87], [83], [65], [68])
 -- The Ints represent [keyCode](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/keyCode)s for each direction.
 directionSub
   :: ([Int], [Int], [Int], [Int])
+  -- ^ @(up, down, left, right)@ keyCode lists for each direction
   -> (Arrows -> action)
+  -- ^ Callback fired with the current 'Arrows' state on every key change
   -> Sub action
 directionSub dirs = keyboardSub . (. toArrows dirs)
 -----------------------------------------------------------------------------

@@ -7,22 +7,49 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- Example usage:
+-- = Overview
+--
+-- "Miso.Svg" is the re-export hub for miso's SVG DSL. It re-exports
+-- "Miso.Svg.Element" (all SVG element constructors) and "Miso.Svg.Event"
+-- (SVG-specific event handlers).
+--
+-- SVG property\/attribute combinators live in "Miso.Svg.Property" and
+-- must be imported separately when needed.
+--
+-- = Quick start
+--
+-- Embed an SVG circle inside a miso view:
 --
 -- @
--- import Miso
--- import Miso.Svg
+-- import "Miso"
+-- import "Miso.Svg"
+-- import qualified "Miso.Svg.Property" as SP
 --
--- view_ :: Int -> View Int action
--- view_ n = svg_ [ height_ "100", width "100" ] [
---    circle_ [ cx_ "50", cy_ "50", r_ "40", stroke_ "green", strokeWidth_ "4", fill_ "yellow" ] []
---  ]
+-- badge :: 'Miso.Types.View' model action
+-- badge =
+--   'svg_' [ SP.'Miso.Svg.Property.width_' \"100\", SP.'Miso.Svg.Property.height_' \"100\" ]
+--     [ 'circle_'
+--         [ SP.'Miso.Svg.Property.cx_' \"50\", SP.'Miso.Svg.Property.cy_' \"50\"
+--         , SP.'Miso.Svg.Property.r_' \"40\"
+--         , SP.'Miso.Svg.Property.stroke_' \"green\"
+--         , SP.'Miso.Svg.Property.strokeWidth_' \"4\"
+--         , SP.'Miso.Svg.Property.fill_' \"yellow\"
+--         ]
+--     ]
 -- @
 --
--- More information on how to use miso is available on GitHub
+-- = Modules
 --
--- <http://github.com/dmjio/miso>
+-- * "Miso.Svg.Element" — SVG element constructors (@svg_@, @circle_@, @path_@, @g_@, …)
+-- * "Miso.Svg.Event"   — SVG event handlers (@onBegin@, @onEnd@, @onClick@, …)
+-- * "Miso.Svg.Property" — SVG attribute combinators (@cx_@, @r_@, @fill_@, @stroke_@, …)
+--   /(not re-exported here — import separately)/
 --
+-- = See also
+--
+-- * "Miso.Html.Element" — HTML element constructors
+-- * "Miso.Mathml.Element" — MathML element constructors
+-- * <https://developer.mozilla.org/en-US/docs/Web/SVG MDN SVG reference>
 ----------------------------------------------------------------------------
 module Miso.Svg
    ( -- ** Element

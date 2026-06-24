@@ -9,6 +9,101 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- = Overview
+--
+-- "Miso.WebSocket" provides a full-duplex
+-- <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket WebSocket>
+-- client that integrates directly into the MVU loop. Every operation
+-- — connecting, sending, and closing — returns an 'Miso.Effect.Effect',
+-- making WebSocket communication a first-class citizen of the @update@
+-- function.
+--
+-- = Quick start
+--
+-- @
+-- import "Miso"
+-- import "Miso.WebSocket"
+--
+-- data Action
+--   = Connect
+--   | Connected  'WebSocket'
+--   | Received   'Miso.String.MisoString'
+--   | Disconnected 'Closed'
+--   | WsError    'Miso.String.MisoString'
+--   | Send       'Miso.String.MisoString'
+--   | Disconnect
+--
+-- -- Hold the socket handle in the model so we can send later
+-- data Model = Model { ws :: 'WebSocket' }
+--
+-- update :: Action -> 'Miso.Effect.Effect' p props Model Action
+-- update Connect =
+--   'connectText' \"wss:\/\/echo.websocket.org\"
+--     Connected Disconnected Received WsError
+-- update (Connected sock) =
+--   'Miso.State.modify' (\\m -> m { ws = sock })
+-- update (Received msg) =
+--   'Miso.Effect.io_' (consoleLog msg)
+-- update (Send txt) = do
+--   sock <- 'Miso.State.gets' ws
+--   'sendText' sock txt
+-- update Disconnect = do
+--   sock <- 'Miso.State.gets' ws
+--   'close' sock
+-- update _ = pure ()
+-- @
+--
+-- = Connection variants
+--
+-- Five @connect@ functions cover every wire format. They all share the
+-- same callback signature — @onOpen@, @onClosed@, @onMessage@, @onError@
+-- — but differ in how the message payload is decoded:
+--
+-- ['connectText'] 'Miso.String.MisoString' — plain UTF-8 text
+-- ['connectJSON'] @json@ ('Miso.JSON.FromJSON' json) — auto-decoded from JSON
+-- ['connectBLOB'] 'Blob' — raw binary Blob
+-- ['connectArrayBuffer'] 'ArrayBuffer' — raw binary buffer
+-- ['connect'] @'Payload' json@ — mixed; caller pattern-matches the payload ADT
+--
+-- = Sending messages
+--
+-- The 'WebSocket' handle delivered to @onOpen@ must be stored in the
+-- model and passed to each send call:
+--
+-- @
+-- 'sendText'        :: 'WebSocket' -> 'Miso.String.MisoString' -> 'Miso.Effect.Effect' p props model action
+-- 'sendJSON'        :: 'Miso.JSON.ToJSON' json => 'WebSocket' -> json -> 'Miso.Effect.Effect' p props model action
+-- 'sendBLOB'        :: 'WebSocket' -> 'Blob' -> 'Miso.Effect.Effect' p props model action
+-- 'sendArrayBuffer' :: 'WebSocket' -> 'ArrayBuffer' -> 'Miso.Effect.Effect' p props model action
+-- @
+--
+-- = Lifecycle
+--
+-- * Always call 'close' when the connection is no longer needed to avoid
+--   resource leaks. It is safe to call 'close' multiple times — subsequent
+--   calls are no-ops.
+-- * 'socketState' lets you query the current 'SocketState'
+--   (@CONNECTING@, @OPEN@, @CLOSING@, @CLOSED@) asynchronously.
+-- * 'emptyWebSocket' (@= -1@) is a null sentinel you can store in the
+--   model before a connection has been established.
+--
+-- = Types
+--
+-- * 'WebSocket' — an opaque integer file descriptor returned by @onOpen@.
+-- * 'URL' — alias for 'Miso.String.MisoString'.
+-- * 'SocketState' — four-state enum mirroring the JS @readyState@ property.
+-- * 'Closed' — close event data: 'closedCode', 'wasClean', 'reason'.
+-- * 'CloseCode' — typed close codes from
+--   <https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent/code RFC 6455>.
+-- * 'Payload' — @JSON value | BLOB Blob | TEXT MisoString | BUFFER ArrayBuffer@.
+-- * 'Blob' / 'ArrayBuffer' — re-exported from "Miso.FFI.Internal".
+--
+-- = See also
+--
+-- * "Miso.EventSource" — Server-Sent Events (SSE), a unidirectional alternative
+-- * "Miso.Fetch" — one-shot HTTP requests
+-- * "Miso.Effect" — 'Miso.Effect.Effect', 'Miso.Effect.io_'
 ----------------------------------------------------------------------------
 module Miso.WebSocket
   ( -- *** t'WebSocket'

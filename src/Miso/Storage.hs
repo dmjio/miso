@@ -10,8 +10,55 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- This module provides an interface to the
--- [Web Storage API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Storage_API).
+-- = Overview
+--
+-- "Miso.Storage" wraps the browser's
+-- <https://developer.mozilla.org/en-US/docs/Web/API/Web_Storage_API Web Storage API>,
+-- providing access to both
+-- <https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage localStorage>
+-- and
+-- <https://developer.mozilla.org/en-US/docs/Web/API/Window/sessionStorage sessionStorage>
+-- through symmetric 'IO' functions.
+--
+-- Both stores map 'Miso.String.MisoString' keys to 'Miso.String.MisoString'
+-- values (the Web Storage API only persists strings). Reads return
+-- @'Maybe' 'Miso.String.MisoString'@ — 'Nothing' when the key is absent.
+--
+-- * __localStorage__ — persists across browser sessions until explicitly
+--   cleared.
+-- * __sessionStorage__ — persists only for the lifetime of the current
+--   browser tab\/session; cleared automatically when the tab is closed.
+--
+-- = Quick start
+--
+-- @
+-- import "Miso.Storage"
+-- import "Miso.String" ('Miso.String.ms')
+--
+-- -- Persist a preference
+-- saveTheme :: 'Miso.String.MisoString' -> IO ()
+-- saveTheme theme = 'setLocalStorage' \"theme\" theme
+--
+-- -- Restore it on startup
+-- loadTheme :: IO ('Maybe' 'Miso.String.MisoString')
+-- loadTheme = 'getLocalStorage' \"theme\"
+--
+-- -- Session-scoped token (cleared when tab closes)
+-- saveToken :: 'Miso.String.MisoString' -> IO ()
+-- saveToken tok = 'setSessionStorage' \"auth_token\" tok
+-- @
+--
+-- = API groups
+--
+-- * __localStorage__: 'getLocalStorage', 'setLocalStorage',
+--   'removeLocalStorage', 'clearLocalStorage', 'localStorageLength'
+-- * __sessionStorage__: 'getSessionStorage', 'setSessionStorage',
+--   'removeSessionStorage', 'clearSessionStorage', 'sessionStorageLength'
+--
+-- = See also
+--
+-- * "Miso.Effect" — schedule storage reads\/writes with 'Miso.Effect.io' \/ 'Miso.Effect.io_'
+-- * "Miso.Subscription.History" — URL-based state that survives page reloads
 ----------------------------------------------------------------------------
 module Miso.Storage
   ( -- ** Local
@@ -36,6 +83,7 @@ import           Miso.String (MisoString)
 -- | Retrieves a value stored under the given key in session storage.
 getSessionStorage
   :: MisoString
+  -- ^ Storage key to look up
   -> IO (Maybe MisoString)
 getSessionStorage key = do
   fromJSValUnchecked =<< flip getItem key =<< sessionStorage
@@ -43,6 +91,7 @@ getSessionStorage key = do
 -- | Retrieves a value stored under the given key in local storage.
 getLocalStorage
   :: MisoString
+  -- ^ Storage key to look up
   -> IO (Maybe MisoString)
 getLocalStorage key =
   fromJSValUnchecked =<< flip getItem key =<< localStorage
@@ -52,7 +101,9 @@ getLocalStorage key =
 -- @setLocalStorage key value@ sets the value of @key@ to @value@.
 setLocalStorage
   :: MisoString
+  -- ^ Storage key to set
   -> MisoString
+  -- ^ Value to store
   -> IO ()
 setLocalStorage key value = do
   s <- localStorage
@@ -63,7 +114,9 @@ setLocalStorage key value = do
 -- @setSessionStorage key value@ sets the value of @key@ to @value@.
 setSessionStorage
   :: MisoString
+  -- ^ Storage key to set
   -> MisoString
+  -- ^ Value to store
   -> IO ()
 setSessionStorage key value = do
   s <- sessionStorage
@@ -74,6 +127,7 @@ setSessionStorage key value = do
 -- @removeLocalStorage key@ removes the value of @key@.
 removeLocalStorage
   :: MisoString
+  -- ^ Storage key to remove
   -> IO ()
 removeLocalStorage key = do
   s <- localStorage
@@ -84,6 +138,7 @@ removeLocalStorage key = do
 -- @removeSessionStorage key@ removes the value of @key@.
 removeSessionStorage
   :: MisoString
+  -- ^ Storage key to remove
   -> IO ()
 removeSessionStorage key = do
   s <- sessionStorage

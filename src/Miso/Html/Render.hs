@@ -13,9 +13,60 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- 'Miso.Types.View' serialization
+-- = Overview
 --
-----------------------------------------------------------------------------
+-- "Miso.Html.Render" provides the 'ToHtml' typeclass for serialising a
+-- 'Miso.Types.View' tree to a lazy 'Data.ByteString.Lazy.ByteString' of
+-- UTF-8 HTML. This is the foundation of miso's
+-- <https://en.wikipedia.org/wiki/Server-side_scripting server-side rendering (SSR)>
+-- support.
+--
+-- Instances are provided for both @'Miso.Types.View' m a@ (a single node)
+-- and @['Miso.Types.View' m a]@ (a sequence of nodes).
+--
+-- = Quick start
+--
+-- @
+-- import           "Miso.Html.Render" ('ToHtml', 'toHtml')
+-- import qualified Data.ByteString.Lazy as L
+--
+-- renderPage :: Model -> L.ByteString
+-- renderPage m = 'toHtml' (view m)
+-- @
+--
+-- With @servant@, use @'toHtml'@ inside a @'Data.ByteString.Lazy.ByteString'@
+-- or @OctetStream@ response, or wire it into a 'Miso.Html.Render.ToHtml' servant
+-- MIME type.
+--
+-- = Rendering rules
+--
+-- * __'Miso.Types.VNode'__ — rendered as @\<tag attrs\>children\<\/tag\>@.
+--   Self-closing elements (@\<br\/\>@, @\<img\/\>@, @\<input\/\>@, …) are
+--   rendered without a closing tag.
+-- * __'Miso.Types.VText'__ — rendered as a raw text string (no escaping
+--   beyond what is already in the 'Miso.String.MisoString').
+-- * __'Miso.Types.VComp'__ — recursively renders the sub-component's view
+--   using its initial (or hydrated) model.
+-- * __'Miso.Types.VFrag'__ — renders all children inline, no wrapper tag.
+-- * __Event handlers__ (@'Miso.Types.On'@) — silently dropped; they have
+--   no meaning in a static HTML string.
+-- * __Boolean properties__ (@disabled@, @checked@, @required@, …) — rendered
+--   as bare attribute names when @True@, omitted entirely when @False@.
+-- * __Adjacent text nodes__ — collapsed into a single text node to match
+--   browser parsing behaviour during hydration.
+--
+-- = SSR flag
+--
+-- When compiled with @-fssr@ the renderer calls the component's optional
+-- @hydrateModel@ action to derive the initial model (e.g. by fetching from
+-- a database), falling back to the static @model@ if the action throws.
+--
+-- = See also
+--
+-- * "Miso.Hydrate" — client-side hydration from server-rendered HTML
+-- * "Miso.Html.Element" — element smart constructors
+-- * "Miso.Html" — top-level HTML DSL re-export hub
+-----------------------------------------------------------------------------
 module Miso.Html.Render
   ( -- *** Classes
     ToHtml (..)

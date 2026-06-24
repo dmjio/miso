@@ -9,7 +9,101 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- Module for constructing CSS styles and stylesheets in miso
+-- = Overview
+--
+-- "Miso.CSS" is a typed DSL for constructing CSS properties, stylesheets,
+-- animations, and media queries in miso applications. Two styling modes are
+-- available:
+--
+-- * __Structured styles__ ('style_'): CSS properties are stored in a
+--   'Data.Map.Map' and diffed by the virtual DOM, so only changed properties
+--   are written to the DOM node on each render. Prefer this for dynamic styles.
+--
+-- * __Inline string styles__ ('styleInline_'): a raw CSS string is set on the
+--   @style@ attribute verbatim and is not diffed. Useful for static one-liners
+--   or values that the structured combinators do not yet cover.
+--
+-- = Quick start
+--
+-- @
+-- import qualified "Miso.CSS"       as CSS
+-- import           "Miso.CSS.Color" ('Miso.CSS.Color.red', 'Miso.CSS.Color.rgba')
+--
+-- myView :: 'Miso.Types.View' Model Action
+-- myView =
+--   'Miso.Html.Element.div_'
+--     [ CSS.'Miso.CSS.style_'
+--         [ CSS.'Miso.CSS.display'        "flex"
+--         , CSS.'Miso.CSS.flexDirection'  "column"
+--         , CSS.'Miso.CSS.gap'            (CSS.'Miso.CSS.px' 8)
+--         , CSS.'Miso.CSS.padding'        (CSS.'Miso.CSS.px' 16)
+--         , CSS.'Miso.CSS.backgroundColor' 'Miso.CSS.Color.red'
+--         , CSS.'Miso.CSS.borderRadius'   (CSS.'Miso.CSS.px' 4)
+--         ]
+--     ] [ 'Miso.text' "Hello, miso!" ]
+-- @
+--
+-- = Global Stylesheets
+--
+-- Construct a 'StyleSheet' with 'sheet_' and 'selector_', then render it to
+-- a 'MisoString' with 'renderStyleSheet' for injection into a @\<style\>@ tag:
+--
+-- @
+-- mySheet :: 'StyleSheet'
+-- mySheet = 'sheet_'
+--   [ 'selector_' "body"
+--       [ CSS.'margin'     (CSS.'px' 0)
+--       , CSS.'fontFamily' "sans-serif"
+--       ]
+--   , 'selector_' ".card"
+--       [ CSS.'backgroundColor' ('rgba' 255 255 255 0.9)
+--       , CSS.'borderRadius'    (CSS.'px' 4)
+--       ]
+--   ]
+-- @
+--
+-- = Animations and Media Queries
+--
+-- @
+-- myAnimation :: 'Styles'
+-- myAnimation = 'keyframes_' "slide-in"
+--   [ "from" '=:' [ CSS.'transform' "translateX(-100%)" ]
+--   , "to"   '=:' [ CSS.'transform' "translateX(0)" ]
+--   ]
+--
+-- myMedia :: 'Styles'
+-- myMedia = 'media_' "screen and (min-width: 480px)"
+--   [ "header" '=:' [ CSS.'height' "auto" ]
+--   , "nav"    '=:' [ CSS.'display' "flex" ]
+--   ]
+-- @
+--
+-- = CSS Units
+--
+-- Use the unit helpers to build length and time values:
+-- 'px', 'pt', 'em', 'rem', 'vh', 'vw', 'pct', 'ms', 's', 'deg', 'rad', 'turn'.
+--
+-- @
+-- CSS.'style_'
+--   [ CSS.'width'      (CSS.'pct' 100)
+--   , CSS.'fontSize'   (CSS.'rem' 1.5)
+--   , CSS.'transition' ("opacity " <> CSS.'ms' 300 <> " ease")
+--   ]
+-- @
+--
+-- = Colors
+--
+-- The 'Color' type and named colors are re-exported from "Miso.CSS.Color":
+--
+-- @
+-- CSS.'backgroundColor' (CSS.'rgb' 30 144 255)
+-- CSS.'color'           CSS.'white'
+-- CSS.'borderColor'     (CSS.'rgba' 0 0 0 0.2)
+-- @
+--
+-- __Note:__ 'color' in this module and 'Miso.Canvas.color' share the same
+-- name but have different types. Always qualify @import qualified Miso.CSS as CSS@
+-- when also importing "Miso.Canvas".
 --
 -----------------------------------------------------------------------------
 module Miso.CSS
@@ -383,24 +477,40 @@ s x = MS.ms x <> "s"
 ms :: Double -> MisoString
 ms x = MS.ms x <> "ms"
 -----------------------------------------------------------------------------
--- | CSS function for specifying a [URL](https://developer.mozilla.org/en-US/docs/Web/API/StyleSheet)
+-- | Wraps a value in the CSS @url()@ function, used for background images and similar.
 --
 -- @
 -- >>> url "dog.png"
--- "url(\"dog.png\")"
+-- "url(dog.png)"
 -- @
+--
+-- @
+-- backgroundImage (url "banner.png")
+-- @
+--
+-- <https://developer.mozilla.org/en-US/docs/Web/CSS/url>
 --
 url :: MisoString -> MisoString
 url x = "url(" <> x <> ")"
 -----------------------------------------------------------------------------
--- | https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function/matrix
+-- | Constructs a 2D CSS transformation matrix string: @matrix(a, b, c, d, tx, ty)@.
+--
+-- The six parameters define a 2D affine transformation: @a@ and @d@ scale,
+-- @b@ and @c@ skew, and @tx@\/@ty@ translate.
+--
+-- @
+-- transform (matrix 1 0 0 1 50 100)  -- translate by (50, 100)
+-- @
+--
+-- <https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function/matrix>
+--
 matrix
-  :: Double
-  -> Double
-  -> Double
-  -> Double
-  -> Double
-  -> Double
+  :: Double  -- ^ a  — scale x
+  -> Double  -- ^ b  — skew y
+  -> Double  -- ^ c  — skew x
+  -> Double  -- ^ d  — scale y
+  -> Double  -- ^ tx — translate x
+  -> Double  -- ^ ty — translate y
   -> MisoString
 matrix a b c d tx ty = "matrix(" <> values <> ")"
   where
@@ -414,49 +524,93 @@ matrix a b c d tx ty = "matrix(" <> values <> ")"
       , MS.ms ty
       ]
 -----------------------------------------------------------------------------
--- | https://developer.mozilla.org/en-US/docs/Web/CSS/percentage
+-- | Percentage unit.
+--
+-- @
+-- >>> pct 50.0
+-- "50.0%"
+-- @
+--
+-- <https://developer.mozilla.org/en-US/docs/Web/CSS/percentage>
 pct :: Double -> MisoString
 pct x = MS.ms x <> "%"
 -----------------------------------------------------------------------------
--- | ppx unit of measure
+-- | Physical pixel unit (@ppx@), used in some native\/mobile rendering contexts.
+--
+-- @
+-- >>> ppx 2.0
+-- "2.0ppx"
+-- @
+--
 ppx :: Double -> MisoString
 ppx x = MS.ms x <> "ppx"
 -----------------------------------------------------------------------------
--- | Used when constructing a t'StyleSheet'
+-- | Constructs a 'Styles' entry pairing a CSS selector with a list of properties.
+-- Combine multiple entries with 'sheet_'.
 --
 -- @
 -- sheet_
---   [ selector_ ".name"
---     [ backgroundColor red
---     , alignContent "top"
---     ]
+--   [ selector_ ".card"  [ backgroundColor white, borderRadius (px 4) ]
+--   , selector_ ".title" [ fontSize (rem 1.5), fontWeight "bold" ]
 --   ]
 -- @
 --
 selector_ :: MisoString -> [Style] -> Styles
 selector_ k v = Styles (k,v)
 -----------------------------------------------------------------------------
--- | Smart constructor for t'StyleSheet'
+-- | Constructs a 'StyleSheet' from a list of 'Styles' entries.
+--
+-- Combine with 'selector_', 'keyframes_', and 'media_' to build a full
+-- stylesheet, then render it to a 'MisoString' with 'renderStyleSheet'.
+--
+-- @
+-- mySheet :: StyleSheet
+-- mySheet = sheet_
+--   [ selector_ "body"   [ margin (px 0), fontFamily "sans-serif" ]
+--   , selector_ "button" [ cursor "pointer", borderRadius (px 4) ]
+--   ]
+-- @
+--
 sheet_ :: [Styles] -> StyleSheet
 sheet_ = StyleSheet
 -----------------------------------------------------------------------------
--- | @style_@ is an attribute that will set the @style@
--- attribute of the associated DOM node to @attrs@.
+-- | Constructs a structured @style@ attribute from a list of CSS properties.
 --
--- @style@ attributes not contained in @attrs@ will be deleted.
+-- Each 'Style' is a @(property, value)@ pair produced by the combinators in
+-- this module. Miso tracks the properties as a 'Data.Map.Map', diffs them on
+-- each render, and applies only the changed properties to the DOM. Properties
+-- absent from the list are removed from the node.
 --
--- > div_ [ style_ [ backgroundColor "red" ] [ ]
+-- @
+-- div_
+--   [ style_
+--       [ display       "flex"
+--       , flexDirection "column"
+--       , gap           (px 8)
+--       , backgroundColor red
+--       ]
+--   ] []
+-- @
+--
+-- See also 'styleInline_' for setting raw CSS strings.
 --
 -- <https://developer.mozilla.org/en-US/docs/Web/CSS>
 --
 style_ :: [Style] -> Attribute action
 style_ = MT.Styles . M.fromList
 -----------------------------------------------------------------------------
--- | Set "style" property
+-- | Sets the @style@ attribute to a raw CSS string.
 --
--- > view m = div_ [ styleInline_ "background-color:red;color:blue;" ] [ "foo" ]
+-- Unlike 'style_', the string is applied verbatim and is not tracked or
+-- diffed by the virtual DOM. Suitable for static styles or CSS values that
+-- the structured combinators do not yet cover.
 --
--- https://developer.mozilla.org/en-US/docs/Web/CSS
+-- @
+-- div_ [ styleInline_ "background-color:red; color:blue;" ] [ "foo" ]
+-- @
+--
+-- <https://developer.mozilla.org/en-US/docs/Web/CSS>
+--
 styleInline_ ::  MisoString -> Attribute action
 styleInline_ = textProp "style"
 -----------------------------------------------------------------------------
@@ -496,7 +650,13 @@ renderStyles indent (Media name frames) = MS.intercalate " "
   , "}\n"
   ]
 -----------------------------------------------------------------------------
--- | Render t'StyleSheet' as 'MisoString'
+-- | Renders a 'StyleSheet' to a 'MisoString' suitable for injection into a
+-- @\<style\>@ tag.
+--
+-- @
+-- view_ :: View model action
+-- view_ = style [] [ text (renderStyleSheet mySheet) ]
+-- @
 --
 renderStyleSheet :: StyleSheet -> MisoString
 renderStyleSheet styleSheet = MS.intercalate "\n"
@@ -504,41 +664,39 @@ renderStyleSheet styleSheet = MS.intercalate "\n"
   | styles <- getStyleSheet styleSheet
   ]
 -----------------------------------------------------------------------------
--- | https://developer.mozilla.org/en-US/docs/Web/CSS/@keyframes
+-- | Constructs a CSS @\@keyframes@ animation rule.
+--
+-- The first argument is the animation name; the second is a list of
+-- @(keyframe-selector, [Style])@ pairs. Keyframe selectors are either
+-- @"from"@\/@"to"@ or a percentage string produced by 'pct'.
 --
 -- @
--- testKeyFrame :: Styles
--- testKeyFrame = keyframes "slide-in"
---   [ "from" =:
---       [ transform "translateX(0%)"
---       ]
---   , "to" =:
---       [ transform "translateX(100%)"
---       , backgroundColor red
---       , backgroundSize "10px"
---       , backgroundRepeat "true"
---       ]
---   , pct 10 =:
---     [ "foo" =: "bar"
---     ]
---  ]
+-- slideIn :: Styles
+-- slideIn = keyframes_ "slide-in"
+--   [ "from" =: [ transform "translateX(-100%)" ]
+--   , "to"   =: [ transform "translateX(0)" ]
+--   ]
 -- @
+--
+-- <https://developer.mozilla.org/en-US/docs/Web/CSS/@keyframes>
 --
 keyframes_ :: MisoString -> [(MisoString, [Style])] -> Styles
 keyframes_ = KeyFrame
 -----------------------------------------------------------------------------
--- | https://developer.mozilla.org/en-US/docs/Web/CSS/@media
+-- | Constructs a CSS @\@media@ query rule.
+--
+-- The first argument is the media condition string; the second is a list of
+-- @(selector, [Style])@ pairs scoped to that query.
 --
 -- @
--- media_ "screen and (min-width: 480px)"
---   [ "header" =:
---       [ height "auto"
---       ]
---   , "ul" =:
---       [ display "block"
---       ]
+-- responsive :: 'Styles'
+-- responsive = 'media_' "screen and (min-width: 480px)"
+--   [ "header" =: [ 'height' "auto" ]
+--   , "ul"     =: [ 'display' "block" ]
 --   ]
 -- @
+--
+-- <https://developer.mozilla.org/en-US/docs/Web/CSS/@media>
 --
 media_ :: MisoString -> [(MisoString, [Style])] -> Styles
 media_ = Media
@@ -573,7 +731,7 @@ animationDirection x = "animation-direction" =: x
 animationDuration :: MisoString -> Style
 animationDuration x = "animation-duration" =: x
 -----------------------------------------------------------------------------
--- | https://developer.mozilla.org/en-US/docs/Web/CSS/animation-fill-mode
+-- | <https://developer.mozilla.org/en-US/docs/Web/CSS/animation-fill-mode>
 --
 animationFillMode :: MisoString -> Style
 animationFillMode x = "animation-fill-mode" =: x
@@ -593,8 +751,7 @@ animation x = "animation" =: x
 animationName :: MisoString -> Style
 animationName x = "animation-name" =: x
 -----------------------------------------------------------------------------
--- |  https://developer.mozilla.org/en-US/docs/Web/CSS/animation-play-state
--- > style_ [ animationPlayState =: "value" ]
+-- | <https://developer.mozilla.org/en-US/docs/Web/CSS/animation-play-state>
 --
 animationPlayState :: MisoString -> Style
 animationPlayState x = "animation-play-state" =: x

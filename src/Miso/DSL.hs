@@ -17,13 +17,97 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.DSL
--- Copyright   :  (C) 2016-2026 David M. Johnson (@dmjio)
+-- Copyright   :  (C) 2016-2026 David M. Johnson
 -- License     :  BSD3-style (see the file LICENSE)
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- A JavaScript DSL for interacting with the browser or JS runtime environments.
+-- = Overview
+--
+-- "Miso.DSL" is the low-level JavaScript interop layer for miso. It provides
+-- the marshaling typeclasses, JS value types, and combinators needed to call
+-- browser APIs and exchange data with JavaScript from Haskell.
+--
+-- Most miso users never import this module directly — higher-level modules
+-- ("Miso.FFI", "Miso.Canvas", "Miso.Fetch", etc.) build on top of it.
+-- Import it directly when writing custom FFI bindings or inline JS.
+--
+-- = Marshaling
+--
+-- Two typeclasses handle the Haskell ↔ JavaScript boundary:
+--
+-- * 'ToJSVal' — converts a Haskell value into a 'JSVal'. Instances exist
+--   for all primitive types, lists, tuples (up to 6), 'Maybe', and
+--   'Data.Map.Strict.Map' 'Miso.String.MisoString'. Product record types can
+--   derive 'ToJSVal' via @GHC.Generics@ (sum types are not supported).
+--
+-- * 'FromJSVal' — parses a 'JSVal' back into Haskell, returning
+--   @'Maybe' a@ ('Nothing' on type mismatch or missing field).
+--   Use 'fromJSValUnchecked' when the shape is guaranteed by the caller.
+--   Product record types can derive 'FromJSVal' via @GHC.Generics@.
+--
+-- Two auxiliary classes support the calling convention:
+--
+-- * 'ToArgs' — marshals a Haskell value to a @['JSVal']@ argument list.
+--   Tuples up to arity 6 automatically produce the correct positional list.
+--
+-- * 'ToObject' — promotes a value to a JS 'Object' for use as the @this@
+--   receiver in method calls.
+--
+-- = Accessing the global scope
+--
+-- @
+-- -- Read a global variable
+-- x <- 'jsg' \"innerWidth\"          -- globalThis.innerWidth
+--
+-- -- Call a global function
+-- 'jsg0' \"requestAnimationFrame\"   -- no args
+-- 'jsg1' \"parseInt\" (\"42\" :: 'Miso.String.MisoString')  -- one arg
+-- 'jsgf' \"encodeURIComponent\" args -- arbitrary ToArgs
+-- @
+--
+-- = Property access and method calls
+--
+-- @
+-- obj '!' \"name\"          -- get obj.name   :: IO JSVal
+-- obj '!!' 3            -- get obj[3]     :: IO JSVal
+-- obj '#' \"push\" [val]   -- call obj.push(val) :: IO JSVal
+-- 'setField' obj \"x\" 10  -- obj.x = 10
+-- 'getProp' \"x\" obj      -- obj.x
+-- 'setProp' \"x\" 10 obj   -- obj.x = 10
+-- @
+--
+-- = Object creation
+--
+-- @
+-- o <- 'create'                            -- new empty object  {}
+-- o <- 'createWith' [(\"x\", 1), (\"y\", 2)]  -- { x: 1, y: 2 }
+-- v <- 'new' constructor args              -- new Constructor(...args)
+-- @
+--
+-- = Callbacks
+--
+-- Wrap a Haskell @IO@ action as a JS function. Variants ending in @\'@
+-- return the 'JSVal' of the callback's return value.
+--
+-- @
+-- cb  <- 'syncCallback'  action         -- () -> ()
+-- cb1 <- 'syncCallback1' (\\x -> …)     -- (x) -> ()
+-- cb2 <- 'syncCallback2' (\\x y -> …)   -- (x, y) -> ()
+-- @
+--
+-- Always free callbacks when they are no longer needed to avoid leaks:
+--
+-- @
+-- 'freeFunction' cb
+-- @
+--
+-- = See also
+--
+-- * "Miso.FFI" — higher-level browser API wrappers built on this module
+-- * "Miso.FFI.QQ" — the @[js| … |]@ quasi-quoter for inline JavaScript
+-- * "Miso.Canvas" — canvas 2D API using 'ToArgs' and 'ToJSVal'
 -----------------------------------------------------------------------------
 module Miso.DSL
   ( -- * Classes
@@ -372,7 +456,13 @@ jsg key = global ! key
 {-# INLINABLE jsg #-}
 -----------------------------------------------------------------------------
 -- | Invokes a function with a specified argument list
-jsgf :: ToArgs args => MisoString -> args -> IO JSVal
+jsgf
+  :: ToArgs args
+  => MisoString
+  -- ^ Global function name on @globalThis@
+  -> args
+  -- ^ Arguments to pass to the function
+  -> IO JSVal
 jsgf name = global # name
 {-# INLINABLE jsgf #-}
 -----------------------------------------------------------------------------
@@ -387,7 +477,13 @@ jsg1 name arg = jsgf name [arg]
 {-# INLINABLE jsg1 #-}
 -----------------------------------------------------------------------------
 -- | Invokes a function with 2 arguments
-jsg2 :: (ToJSVal arg1, ToJSVal arg2) => MisoString -> arg1 -> arg2 -> IO JSVal
+jsg2
+  :: (ToJSVal arg1, ToJSVal arg2)
+  => MisoString
+  -- ^ Global function name on @globalThis@
+  -> arg1 -- ^ First argument
+  -> arg2 -- ^ Second argument
+  -> IO JSVal
 jsg2 name arg1 arg2 = do
   arg1_ <- toJSVal arg1
   arg2_ <- toJSVal arg2
@@ -395,12 +491,14 @@ jsg2 name arg1 arg2 = do
 {-# INLINABLE jsg2 #-}
 -----------------------------------------------------------------------------
 -- | Invokes a function with 3 arguments
-jsg3 :: (ToJSVal arg1, ToJSVal arg2, ToJSVal arg3)
-     => MisoString
-     -> arg1
-     -> arg2
-     -> arg3
-     -> IO JSVal
+jsg3
+  :: (ToJSVal arg1, ToJSVal arg2, ToJSVal arg3)
+  => MisoString
+  -- ^ Global function name on @globalThis@
+  -> arg1 -- ^ First argument
+  -> arg2 -- ^ Second argument
+  -> arg3 -- ^ Third argument
+  -> IO JSVal
 jsg3 name arg1 arg2 arg3 = do
   arg1_ <- toJSVal arg1
   arg2_ <- toJSVal arg2
@@ -443,7 +541,15 @@ jsg5 name arg1 arg2 arg3 arg4 arg5 = do
 {-# INLINABLE jsg5 #-}
 -----------------------------------------------------------------------------
 -- | Sets a field on an Object at a specified field
-setField :: (ToObject o, ToJSVal v) => o -> MisoString -> v -> IO ()
+setField
+  :: (ToObject o, ToJSVal v)
+  => o
+  -- ^ JavaScript object to mutate
+  -> MisoString
+  -- ^ Field name to set
+  -> v
+  -- ^ Value to assign
+  -> IO ()
 setField o k v = do
   o' <- toJSVal =<< toObject o
   v' <- toJSVal v
@@ -472,7 +578,15 @@ listProps (Object jsval) = do
 {-# INLINABLE listProps #-}
 -----------------------------------------------------------------------------
 -- | Calls a JS function on an t'Object' at a field with specified arguments.
-call :: (ToObject obj, ToObject this, ToArgs args) => obj -> this -> args -> IO JSVal
+call
+  :: (ToObject obj, ToObject this, ToArgs args)
+  => obj
+  -- ^ The function object to call
+  -> this
+  -- ^ The @this@ context to bind for the call
+  -> args
+  -- ^ Arguments to pass to the function
+  -> IO JSVal
 call o this args = do
   o' <- toJSVal =<< toObject o
   this' <- toJSVal =<< toObject this
@@ -490,7 +604,13 @@ infixr 2 #
   invokeFunction func o' args'
 {-# INLINABLE (#) #-}
 -----------------------------------------------------------------------------
-apply :: (FromJSVal a, ToArgs args) => Function -> args -> IO a
+apply
+  :: (FromJSVal a, ToArgs args)
+  => Function
+  -- ^ JavaScript function to invoke
+  -> args
+  -- ^ Arguments to pass to the function
+  -> IO a
 apply (Function func) args = do
   o <- toJSVal global
   fromJSValUnchecked =<< do
@@ -499,7 +619,13 @@ apply (Function func) args = do
 {-# INLINABLE apply #-}
 -----------------------------------------------------------------------------
 -- | Instantiates a new JS t'Object'.
-new :: (ToObject constructor, ToArgs args) => constructor -> args -> IO JSVal
+new
+  :: (ToObject constructor, ToArgs args)
+  => constructor
+  -- ^ JavaScript constructor function (e.g. @jsg \"Array\"@)
+  -> args
+  -- ^ Constructor arguments
+  -> IO JSVal
 new constr args = do
   obj <- toJSVal =<< toObject constr
   argv <- toJSVal =<< toArgs args
@@ -531,12 +657,26 @@ createWith kvs = do
 {-# INLINABLE createWith #-}
 -----------------------------------------------------------------------------
 -- | Sets a property on a JS t'Object'
-setProp :: ToJSVal val => MisoString -> val -> Object -> IO ()
+setProp
+  :: ToJSVal val
+  => MisoString
+  -- ^ Property name to set
+  -> val
+  -- ^ Value to assign
+  -> Object
+  -- ^ Target JavaScript object
+  -> IO ()
 setProp k v (Object o) = flip (setProp_ffi k) o =<< toJSVal v
 {-# INLINABLE setProp #-}
 -----------------------------------------------------------------------------
 -- | Retrieves a property from a JS t'Object'
-getProp :: ToObject o => MisoString -> o -> IO JSVal
+getProp
+  :: ToObject o
+  => MisoString
+  -- ^ Property name to read
+  -> o
+  -- ^ JavaScript object to read from
+  -> IO JSVal
 getProp k v = getProp_ffi k =<< toJSVal (toObject v)
 {-# INLINABLE getProp #-}
 -----------------------------------------------------------------------------
