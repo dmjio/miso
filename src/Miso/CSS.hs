@@ -254,6 +254,21 @@ module Miso.CSS
   -- *** Media Queries
   , media_
   , rule_
+    -- *** Media query combinators
+  , screen_
+  , print_
+  , all_
+  , and_
+  , or_
+  , not_
+  , minWidth_
+  , maxWidth_
+  , minHeight_
+  , maxHeight_
+  , orientation_
+  , prefersColorScheme_
+  , prefersReducedMotion_
+  , hover_
   ) where
 -----------------------------------------------------------------------------
 import qualified Data.Map as M
@@ -540,14 +555,14 @@ at stop styles = KeyframeStop (stop, styles)
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/@media
 --
 -- @
--- media_ "screen and (min-width: 480px)"
+-- media_ (screen_ \`and_\` minWidth_ (px 480))
 --   [ rule_ "header" [ height "auto" ]
 --   , rule_ "ul"     [ display "block" ]
 --   ]
 -- @
 --
-media_ :: MisoString -> [MediaRule] -> Styles
-media_ name rules = Media name (map getMediaRule rules)
+media_ :: MediaQuery -> [MediaRule] -> Styles
+media_ (MediaQuery q) rules = Media q (map getMediaRule rules)
 -----------------------------------------------------------------------------
 -- | A selector rule inside a 'media_' block.
 --
@@ -555,6 +570,71 @@ media_ name rules = Media name (map getMediaRule rules)
 --
 rule_ :: MisoString -> [Style] -> MediaRule
 rule_ sel styles = MediaRule (sel, styles)
+-----------------------------------------------------------------------------
+-- | The @screen@ media type.
+screen_ :: MediaQuery
+screen_ = MediaQuery "screen"
+-----------------------------------------------------------------------------
+-- | The @print@ media type.
+print_ :: MediaQuery
+print_ = MediaQuery "print"
+-----------------------------------------------------------------------------
+-- | The @all@ media type (matches all devices).
+all_ :: MediaQuery
+all_ = MediaQuery "all"
+-----------------------------------------------------------------------------
+-- | Logical @and@ for media queries.
+--
+-- > screen_ \`and_\` minWidth_ (px 480)
+--
+and_ :: MediaQuery -> MediaQuery -> MediaQuery
+and_ (MediaQuery a) (MediaQuery b) = MediaQuery (a <> " and " <> b)
+-----------------------------------------------------------------------------
+-- | Logical @or@ for media queries (comma-separated).
+--
+-- > screen_ \`or_\` print_
+--
+or_ :: MediaQuery -> MediaQuery -> MediaQuery
+or_ (MediaQuery a) (MediaQuery b) = MediaQuery (a <> ", " <> b)
+-----------------------------------------------------------------------------
+-- | Logical @not@ for media queries.
+--
+-- > not_ print_
+--
+not_ :: MediaQuery -> MediaQuery
+not_ (MediaQuery q) = MediaQuery ("not " <> q)
+-----------------------------------------------------------------------------
+-- | @min-width@ media feature. Use unit constructors like 'px' or 'em'.
+minWidth_ :: MisoString -> MediaQuery
+minWidth_ x = MediaQuery ("(min-width: " <> x <> ")")
+-----------------------------------------------------------------------------
+-- | @max-width@ media feature.
+maxWidth_ :: MisoString -> MediaQuery
+maxWidth_ x = MediaQuery ("(max-width: " <> x <> ")")
+-----------------------------------------------------------------------------
+-- | @min-height@ media feature.
+minHeight_ :: MisoString -> MediaQuery
+minHeight_ x = MediaQuery ("(min-height: " <> x <> ")")
+-----------------------------------------------------------------------------
+-- | @max-height@ media feature.
+maxHeight_ :: MisoString -> MediaQuery
+maxHeight_ x = MediaQuery ("(max-height: " <> x <> ")")
+-----------------------------------------------------------------------------
+-- | @orientation@ media feature. Use @\"portrait\"@ or @\"landscape\"@.
+orientation_ :: MisoString -> MediaQuery
+orientation_ x = MediaQuery ("(orientation: " <> x <> ")")
+-----------------------------------------------------------------------------
+-- | @prefers-color-scheme@ media feature. Use @\"light\"@ or @\"dark\"@.
+prefersColorScheme_ :: MisoString -> MediaQuery
+prefersColorScheme_ x = MediaQuery ("(prefers-color-scheme: " <> x <> ")")
+-----------------------------------------------------------------------------
+-- | @prefers-reduced-motion@ media feature. Use @\"reduce\"@ or @\"no-preference\"@.
+prefersReducedMotion_ :: MisoString -> MediaQuery
+prefersReducedMotion_ x = MediaQuery ("(prefers-reduced-motion: " <> x <> ")")
+-----------------------------------------------------------------------------
+-- | @hover@ media feature. Use @\"hover\"@ or @\"none\"@.
+hover_ :: MisoString -> MediaQuery
+hover_ x = MediaQuery ("(hover: " <> x <> ")")
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/align-content
 --

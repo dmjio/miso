@@ -17,6 +17,7 @@ module Miso.CSS.Types
   , StyleSheet (..)
   , KeyframeStop (..)
   , MediaRule (..)
+  , MediaQuery (..)
   ) where
 -----------------------------------------------------------------------------
 import Miso.String (MisoString)
@@ -43,7 +44,7 @@ import Miso.String (MisoString)
 --        ]
 --      , to_ [ transforms [ translateX (pct 100) ] ]
 --      ]
---    , media_ "screen and (min-width: 480px)"
+--    , media_ (screen_ `and_` minWidth_ (px 480))
 --      [ rule_ "header" [ height "auto" ]
 --      , rule_ "ul"     [ display "block" ]
 --      ]
@@ -71,5 +72,11 @@ newtype KeyframeStop = KeyframeStop { getKeyframeStop :: (MisoString, [Style]) }
 -----------------------------------------------------------------------------
 -- | A selector rule inside a '@media' block. Construct with 'rule_'.
 newtype MediaRule = MediaRule { getMediaRule :: (MisoString, [Style]) }
+  deriving (Eq, Show)
+-----------------------------------------------------------------------------
+-- | A CSS [media query](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_media_queries).
+-- Construct with 'screen_', 'print_', 'all_', 'minWidth_', etc.,
+-- and compose with 'and_', 'or_', 'not_'.
+newtype MediaQuery = MediaQuery { renderMediaQuery :: MisoString }
   deriving (Eq, Show)
 -----------------------------------------------------------------------------
