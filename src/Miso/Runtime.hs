@@ -101,8 +101,8 @@ import           Control.Monad (forM, forM_, when, void, (<=<), zipWithM_, forev
 import           Control.Monad.Reader (ask, asks)
 import           Control.Monad.State hiding (state)
 import           Miso.JSON (FromJSON, ToJSON, Result(..), Value, encode, fromJSON, jsonStringify, toJSON)
-import           Data.Foldable (toList)
-import qualified Data.List as List
+
+import           Data.Foldable (foldl')
 import           Data.Maybe
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
@@ -209,9 +209,9 @@ initialize events _componentParentId hydrate isRoot initialProps maybeKey comp@C
         atomicWriteIORef _componentVTree newVTree
         FFI.flush
 
-  let _componentApplyActions = \(actions :: [action]) model_ comps currentProps -> do
+  let _componentApplyActions = \(actions :: Seq action) model_ comps currentProps -> do
         let info = ComponentInfo _componentId _componentParentId _componentDOMRef currentProps
-        List.foldl' (\(vcomps, m, ss, dirtySet) a ->
+        foldl' (\(vcomps, m, ss, dirtySet) a ->
           case runEffect (update a) info m of
             (n, sss) ->
               let (newComps, newDirty)
@@ -320,7 +320,7 @@ scheduler =
   forever $ do
     getBatch >>= \case
       Nothing -> wait globalWaiter
-      Just (vcompId, [])
+      Just (vcompId, S.Empty)
         | vcompId < 0 -> do
             -- props propagation, negated 'ComponentId' indicates render-phase only.
             vcomps <- readIORef components
@@ -335,11 +335,11 @@ scheduler =
     -----------------------------------------------------------------------------
     -- | Execute the commit phase against the model, perform top-down render
     -- of the entire Component tree.
-    run :: ComponentId -> [action] -> IO ()
+    run :: ComponentId -> Seq action -> IO ()
     run vcompId = renderComponents <=< commit vcompId
     -----------------------------------------------------------------------------
     -- | Apply the actions across the model, evaluate async and sync IO.
-    commit :: ComponentId -> [action] -> IO ComponentIds
+    commit :: ComponentId -> Seq action -> IO ComponentIds
     commit vcompId events = do
       (updatedModel, schedules, dirtySet, ComponentState{..}) <- do
         atomicModifyIORef' components $ \vcomps -> do
@@ -367,13 +367,15 @@ scheduler =
 -- Reset the dirty bit if a render occurs
 --
 renderComponents :: ComponentIds -> IO ()
-renderComponents dirtySet = do
-  forM_ (IS.toAscList dirtySet) $ \vcompId ->
-    IM.lookup vcompId <$> readIORef components >>= mapM \ComponentState {..} -> do
-      when _componentIsDirty $ do
-        _componentDraw _componentModel
-        FFI.modelHydration _componentId =<< toObject jsNull
-      modifyComponent _componentId (isDirty .= False)
+renderComponents dirtySet =
+  IS.foldr (\vcompId acc -> renderOne vcompId >> acc) (pure ()) dirtySet
+  where
+    renderOne vcompId =
+      IM.lookup vcompId <$> readIORef components >>= mapM_ \ComponentState {..} -> do
+        when _componentIsDirty $ do
+          _componentDraw _componentModel
+          FFI.modelHydration _componentId =<< toObject jsNull
+        modifyComponent _componentId (isDirty .= False)
 -----------------------------------------------------------------------------
 -- | Modify a single t'Component p m a' at a t'ComponentId'.
 --
@@ -560,7 +562,7 @@ initialDraw initializedModel events hydrate isRoot Component {..} ComponentState
 -----------------------------------------------------------------------------
 -- | Pulls the next Component for processing out of the queue, along with
 -- its events.
-getBatch :: IO (Maybe (ComponentId, [action]))
+getBatch :: IO (Maybe (ComponentId, Seq action))
 getBatch = do
   atomicModifyIORef' globalQueue $ \q ->
     case dequeue q of
@@ -569,7 +571,7 @@ getBatch = do
         (newQueue, Just (vcompId, actions))
 -----------------------------------------------------------------------------
 -- | Helper for event extraction at a specific 'ComponentId'
-drainQueueAt :: ComponentId -> IO [a]
+drainQueueAt :: ComponentId -> IO (Seq a)
 drainQueueAt vcompId = atomicModifyIORef' globalQueue (dequeueAt vcompId)
 -----------------------------------------------------------------------------
 -- | Data type for holding the events in the system along with
@@ -616,7 +618,7 @@ enqueueSchedule vcompId =
 dequeue
   :: forall action
    . Queue action
-  -> Maybe (ComponentId, [action], Queue action)
+  -> Maybe (ComponentId, Seq action, Queue action)
 dequeue q =
   case q ^. queueSchedule of
     S.Empty -> Nothing
@@ -624,7 +626,7 @@ dequeue q =
       case q ^. queue . at vcompId of
         Nothing ->
           let (_, remaining) = S.spanl (== vcompId) sched
-          in Just (vcompId, [], q & queueSchedule .~ remaining)
+          in Just (vcompId, S.empty, q & queueSchedule .~ remaining)
         Just actions ->
           case S.spanl (==vcompId) sched of
             (scheduled, remaining) ->
@@ -633,7 +635,7 @@ dequeue q =
                   let updated =
                         q & queueSchedule .~ remaining
                           & queue.at vcompId .~ do if null rest then Nothing else Just rest
-                  Just (vcompId, toList process, updated)
+                  Just (vcompId, process, updated)
 -----------------------------------------------------------------------------
 -- | Dequeues everything from the Queue at a specific t'ComponentId', draining
 -- both the queue events and the queue schedule.
@@ -641,15 +643,15 @@ dequeueAt
   :: forall action
    . ComponentId
   -> Queue action
-  -> (Queue action, [action])
+  -> (Queue action, Seq action)
 dequeueAt vcompId q =
   case q ^. queue . at vcompId of
-    Nothing -> (q, [])
+    Nothing -> (q, S.empty)
     Just actions -> do
       -- dmj: remove from schedule, extract all events
       let updated = q & queueSchedule %~ S.filter (/=vcompId)
                       & queue.at vcompId .~ Nothing
-      (updated, toList actions)
+      (updated, actions)
 -----------------------------------------------------------------------------
 globalWaiter :: Waiter
 {-# NOINLINE globalWaiter #-}
@@ -736,7 +738,7 @@ data ComponentState parent props model action
   , _componentModelDirty :: model -> model -> Bool
   -- ^ Model diffing
   , _componentApplyActions
-      :: [action]
+      :: Seq action
       -> model
       -> IntMap (ComponentState parent props model action)
       -> props
@@ -1021,7 +1023,7 @@ drain
   -> IO ()
 drain ComponentState {..} = do
   drainQueueAt _componentId >>= \case
-    [] -> pure ()
+    S.Empty -> pure ()
     actions -> do
        vcomps <- readIORef components
        case _componentApplyActions actions _componentModel vcomps _componentProps of
