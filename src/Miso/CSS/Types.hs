@@ -15,6 +15,8 @@ module Miso.CSS.Types
     Style
   , Styles (..)
   , StyleSheet (..)
+  , KeyframeStop (..)
+  , MediaRule (..)
   ) where
 -----------------------------------------------------------------------------
 import Miso.String (MisoString)
@@ -34,26 +36,16 @@ import Miso.String (MisoString)
 --        , alignContent "center"
 --        ]
 --    , keyframes_ "slide-in"
---      [ "from" =:
---        [ transform "translateX(0%)"
---        ]
---      , "to" =:
---        [ transform "translateX(100%)"
---        , backgroundColor red
+--      [ from_ [ transforms [ translateX (pct 0) ] ]
+--      , at (pct 50)
+--        [ backgroundColor red
 --        , backgroundSize "10px"
---        , backgroundRepeat "true"
 --        ]
---      , pct 10 =:
---        [ "foo" =: "bar"
---        ]
+--      , to_ [ transforms [ translateX (pct 100) ] ]
 --      ]
 --    , media_ "screen and (min-width: 480px)"
---      [ "header" =:
---        [ height "auto"
---        ]
---      , "ul" =:
---        [ display "block"
---        ]
+--      [ rule_ "header" [ height "auto" ]
+--      , rule_ "ul"     [ display "block" ]
 --      ]
 --    ]
 -- @
@@ -71,5 +63,13 @@ data Styles
   = Styles (MisoString, [Style])
   | KeyFrame MisoString [(MisoString, [Style])]
   | Media MisoString [(MisoString, [Style])]
+  deriving (Eq, Show)
+-----------------------------------------------------------------------------
+-- | A single stop in a '@keyframes' rule. Construct with 'from_', 'to_', or 'at'.
+newtype KeyframeStop = KeyframeStop { getKeyframeStop :: (MisoString, [Style]) }
+  deriving (Eq, Show)
+-----------------------------------------------------------------------------
+-- | A selector rule inside a '@media' block. Construct with 'rule_'.
+newtype MediaRule = MediaRule { getMediaRule :: (MisoString, [Style]) }
   deriving (Eq, Show)
 -----------------------------------------------------------------------------
