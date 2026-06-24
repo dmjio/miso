@@ -28,7 +28,7 @@
 </p>
 
 <p align="center"> 
-Inspired by <a href="http://elm-lang.org/">Elm</a> and <a href="http://react.dev/">React</a>. Try it <a href="https://try.haskell-miso.org">live</a>. See the <a href="https://github.com/haskell-miso">GitHub</a> org. Read the <a href="https://haddocks.haskell-miso.org/miso/Miso.html">docs</a>.
+Inspired by <a href="http://elm-lang.org/">Elm</a> and <a href="http://react.dev/">React</a>. <a href="https://try.haskell-miso.org">Try </a> it. See the <a href="https://github.com/haskell-miso">GitHub</a> org. Read the <a href="https://haddocks.haskell-miso.org/miso/Miso.html">docs</a>.
 </p>
 
 ## Key features
