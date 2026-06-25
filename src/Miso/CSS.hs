@@ -67,14 +67,14 @@
 -- @
 -- myAnimation :: 'Styles'
 -- myAnimation = 'keyframes_' "slide-in"
---   [ "from" '=:' [ CSS.'transform' "translateX(-100%)" ]
---   , "to"   '=:' [ CSS.'transform' "translateX(0)" ]
+--   [ 'from_' [ CSS.'transform' "translateX(-100%)" ]
+--   , 'to_'   [ CSS.'transform' "translateX(0)" ]
 --   ]
 --
 -- myMedia :: 'Styles'
--- myMedia = 'media_' "screen and (min-width: 480px)"
---   [ "header" '=:' [ CSS.'height' "auto" ]
---   , "nav"    '=:' [ CSS.'display' "flex" ]
+-- myMedia = 'media_' ('screen_' \`and_\` 'minWidth_' (CSS.'px' 480))
+--   [ 'rule_' "header" [ CSS.'height' "auto" ]
+--   , 'rule_' "nav"    [ CSS.'display' "flex" ]
 --   ]
 -- @
 --
@@ -178,6 +178,10 @@ module Miso.CSS
   , boxShadow
   , boxSizing
   , clipPath
+  , accentColor
+  , appearance
+  , backdropFilter
+  , caretColor
   , color
   , columnGap
   , cursor
@@ -194,15 +198,19 @@ module Miso.CSS
   , flexWrap
   , fontFamily
   , fontSize
+  , fontStretch
   , fontStyle
+  , fontVariant
   , fontWeight
   , gap
   , gridAutoColumns
   , gridAutoFlow
   , gridAutoRows
+  , gridColumn
   , gridColumnEnd
   , gridColumnSpan
   , gridColumnStart
+  , gridRow
   , gridRowEnd
   , gridRowSpan
   , gridRowStart
@@ -237,11 +245,20 @@ module Miso.CSS
   , maxWidth
   , minHeight
   , minWidth
+  , mixBlendMode
+  , objectFit
+  , objectPosition
   , opacity
   , order
+  , outline
+  , outlineColor
+  , outlineOffset
+  , outlineStyle
+  , outlineWidth
   , overflow
   , overflowX
   , overflowY
+  , overscrollBehavior
   , paddingBottom
   , paddingInlineEnd
   , paddingInlineStart
@@ -250,6 +267,7 @@ module Miso.CSS
   , paddingRight
   , paddingTop
   , perspective
+  , pointerEvents
   , position
   , relativeAlignBottom
   , relativeAlignInlineEnd
@@ -266,8 +284,10 @@ module Miso.CSS
   , relativeLeftOf
   , relativeRightOf
   , relativeTopOf
+  , resize
   , right
   , rowGap
+  , scrollBehavior
   , stroke
   , strokeWidth
   , textAlign
@@ -278,6 +298,7 @@ module Miso.CSS
   , textStrokeColor
   , textStroke
   , textStrokeWidth
+  , textTransform
   , top
   , transform
   , transforms
@@ -309,10 +330,12 @@ module Miso.CSS
   , transition
   , transitionProperty
   , transitionTimingFunction
+  , userSelect
   , verticalAlign
   , visibility
   , whiteSpace
   , width
+  , willChange
   , wordBreak
   , xAutoFontSize
   , xAutoFontSizePresetSizes
@@ -341,8 +364,27 @@ module Miso.CSS
   , matrix
   -- *** Animation
   , keyframes_
+  , from_
+  , to_
+  , at
   -- *** Media Queries
   , media_
+  , rule_
+    -- *** Media query combinators
+  , screen_
+  , print_
+  , all_
+  , and_
+  , or_
+  , not_
+  , minWidth_
+  , maxWidth_
+  , minHeight_
+  , maxHeight_
+  , orientation_
+  , prefersColorScheme_
+  , prefersReducedMotion_
+  , hover_
   ) where
 -----------------------------------------------------------------------------
 import qualified Data.Map as M
@@ -673,15 +715,31 @@ renderStyleSheet styleSheet = MS.intercalate "\n"
 -- @
 -- slideIn :: Styles
 -- slideIn = keyframes_ "slide-in"
---   [ "from" =: [ transform "translateX(-100%)" ]
---   , "to"   =: [ transform "translateX(0)" ]
+--   [ from_ [ transform "translateX(-100%)" ]
+--   , at (pct 50) [ opacity 0.5 ]
+--   , to_   [ transform "translateX(0)" ]
 --   ]
 -- @
 --
 -- <https://developer.mozilla.org/en-US/docs/Web/CSS/@keyframes>
 --
-keyframes_ :: MisoString -> [(MisoString, [Style])] -> Styles
-keyframes_ = KeyFrame
+keyframes_ :: MisoString -> [KeyframeStop] -> Styles
+keyframes_ name stops = KeyFrame name (map getKeyframeStop stops)
+-----------------------------------------------------------------------------
+-- | The @from@ stop in a '@keyframes' rule (equivalent to @0%@).
+from_ :: [Style] -> KeyframeStop
+from_ styles = KeyframeStop ("from", styles)
+-----------------------------------------------------------------------------
+-- | The @to@ stop in a '@keyframes' rule (equivalent to @100%@).
+to_ :: [Style] -> KeyframeStop
+to_ styles = KeyframeStop ("to", styles)
+-----------------------------------------------------------------------------
+-- | A keyframe stop at a given position, typically built with 'pct'.
+--
+-- > at (pct 50) [ opacity 0.5 ]
+--
+at :: MisoString -> [Style] -> KeyframeStop
+at stop styles = KeyframeStop (stop, styles)
 -----------------------------------------------------------------------------
 -- | Constructs a CSS @\@media@ query rule.
 --
@@ -690,16 +748,88 @@ keyframes_ = KeyFrame
 --
 -- @
 -- responsive :: 'Styles'
--- responsive = 'media_' "screen and (min-width: 480px)"
---   [ "header" =: [ 'height' "auto" ]
---   , "ul"     =: [ 'display' "block" ]
+-- responsive = 'media_' ('screen_' \`and_\` 'minWidth_' (px 480))
+--   [ 'rule_' "header" [ 'height' "auto" ]
+--   , 'rule_' "ul"     [ 'display' "block" ]
 --   ]
 -- @
 --
 -- <https://developer.mozilla.org/en-US/docs/Web/CSS/@media>
 --
-media_ :: MisoString -> [(MisoString, [Style])] -> Styles
-media_ = Media
+media_ :: MediaQuery -> [MediaRule] -> Styles
+media_ (MediaQuery q) rules = Media q (map getMediaRule rules)
+-----------------------------------------------------------------------------
+-- | A selector rule inside a 'media_' block.
+--
+-- > rule_ "header" [ height "auto" ]
+--
+rule_ :: MisoString -> [Style] -> MediaRule
+rule_ sel styles = MediaRule (sel, styles)
+-----------------------------------------------------------------------------
+-- | The @screen@ media type.
+screen_ :: MediaQuery
+screen_ = MediaQuery "screen"
+-----------------------------------------------------------------------------
+-- | The @print@ media type.
+print_ :: MediaQuery
+print_ = MediaQuery "print"
+-----------------------------------------------------------------------------
+-- | The @all@ media type (matches all devices).
+all_ :: MediaQuery
+all_ = MediaQuery "all"
+-----------------------------------------------------------------------------
+-- | Logical @and@ for media queries.
+--
+-- > screen_ \`and_\` minWidth_ (px 480)
+--
+and_ :: MediaQuery -> MediaQuery -> MediaQuery
+and_ (MediaQuery a) (MediaQuery b) = MediaQuery (a <> " and " <> b)
+-----------------------------------------------------------------------------
+-- | Logical @or@ for media queries (comma-separated).
+--
+-- > screen_ \`or_\` print_
+--
+or_ :: MediaQuery -> MediaQuery -> MediaQuery
+or_ (MediaQuery a) (MediaQuery b) = MediaQuery (a <> ", " <> b)
+-----------------------------------------------------------------------------
+-- | Logical @not@ for media queries.
+--
+-- > not_ print_
+--
+not_ :: MediaQuery -> MediaQuery
+not_ (MediaQuery q) = MediaQuery ("not " <> q)
+-----------------------------------------------------------------------------
+-- | @min-width@ media feature. Use unit constructors like 'px' or 'em'.
+minWidth_ :: MisoString -> MediaQuery
+minWidth_ x = MediaQuery ("(min-width: " <> x <> ")")
+-----------------------------------------------------------------------------
+-- | @max-width@ media feature.
+maxWidth_ :: MisoString -> MediaQuery
+maxWidth_ x = MediaQuery ("(max-width: " <> x <> ")")
+-----------------------------------------------------------------------------
+-- | @min-height@ media feature.
+minHeight_ :: MisoString -> MediaQuery
+minHeight_ x = MediaQuery ("(min-height: " <> x <> ")")
+-----------------------------------------------------------------------------
+-- | @max-height@ media feature.
+maxHeight_ :: MisoString -> MediaQuery
+maxHeight_ x = MediaQuery ("(max-height: " <> x <> ")")
+-----------------------------------------------------------------------------
+-- | @orientation@ media feature. Use @\"portrait\"@ or @\"landscape\"@.
+orientation_ :: MisoString -> MediaQuery
+orientation_ x = MediaQuery ("(orientation: " <> x <> ")")
+-----------------------------------------------------------------------------
+-- | @prefers-color-scheme@ media feature. Use @\"light\"@ or @\"dark\"@.
+prefersColorScheme_ :: MisoString -> MediaQuery
+prefersColorScheme_ x = MediaQuery ("(prefers-color-scheme: " <> x <> ")")
+-----------------------------------------------------------------------------
+-- | @prefers-reduced-motion@ media feature. Use @\"reduce\"@ or @\"no-preference\"@.
+prefersReducedMotion_ :: MisoString -> MediaQuery
+prefersReducedMotion_ x = MediaQuery ("(prefers-reduced-motion: " <> x <> ")")
+-----------------------------------------------------------------------------
+-- | @hover@ media feature. Use @\"hover\"@ or @\"none\"@.
+hover_ :: MisoString -> MediaQuery
+hover_ x = MediaQuery ("(hover: " <> x <> ")")
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/align-content
 --
@@ -1006,6 +1136,26 @@ boxSizing x = "box-sizing" =: x
 clipPath :: MisoString -> Style
 clipPath x = "clip-path" =: x
 -----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/accent-color
+--
+accentColor :: Color -> Style
+accentColor x = "accent-color" =: renderColor x
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/appearance
+--
+appearance :: MisoString -> Style
+appearance x = "appearance" =: x
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/backdrop-filter
+--
+backdropFilter :: MisoString -> Style
+backdropFilter x = "backdrop-filter" =: x
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/caret-color
+--
+caretColor :: Color -> Style
+caretColor x = "caret-color" =: renderColor x
+-----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/color
 --
 color :: Color -> Style
@@ -1026,10 +1176,12 @@ direction x = "direction" =: x
 display :: MisoString -> Style
 display x = "display" =: x
 -----------------------------------------------------------------------------
--- | https://developer.mozilla.org/en-US/docs/Web/CSS/fill
+-- | SVG [fill](https://developer.mozilla.org/en-US/docs/Web/CSS/fill) color.
 --
-fill :: MisoString -> Style
-fill x = "fill" =: x
+-- > fill red
+--
+fill :: Color -> Style
+fill x = "fill" =: renderColor x
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/filter
 --
@@ -1053,8 +1205,8 @@ flexFlow x = "flex-flow" =: x
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/flex-grow
 --
-flexGrow :: MisoString -> Style
-flexGrow x = "flex-grow" =: x
+flexGrow :: Double -> Style
+flexGrow x = "flex-grow" =: MS.ms x
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/flex
 --
@@ -1063,8 +1215,8 @@ flex x = "flex" =: x
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/flex-shrink
 --
-flexShrink :: MisoString -> Style
-flexShrink x = "flex-shrink" =: x
+flexShrink :: Double -> Style
+flexShrink x = "flex-shrink" =: MS.ms x
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/flex-wrap
 --
@@ -1081,10 +1233,20 @@ fontFamily x = "font-family" =: x
 fontSize :: MisoString -> Style
 fontSize x = "font-size" =: x
 -----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/font-stretch
+--
+fontStretch :: MisoString -> Style
+fontStretch x = "font-stretch" =: x
+-----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/font-style
 --
 fontStyle :: MisoString -> Style
 fontStyle x = "font-style" =: x
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/font-variant
+--
+fontVariant :: MisoString -> Style
+fontVariant x = "font-variant" =: x
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/font-weight
 --
@@ -1116,6 +1278,11 @@ gridAutoFlow x = "grid-auto-flow" =: x
 gridAutoRows :: MisoString -> Style
 gridAutoRows x = "grid-auto-rows" =: x
 -----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/grid-column
+--
+gridColumn :: MisoString -> Style
+gridColumn x = "grid-column" =: x
+-----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/grid-column-end
 --
 gridColumnEnd :: MisoString -> Style
@@ -1130,6 +1297,11 @@ gridColumnSpan x = "grid-column-span" =: x
 --
 gridColumnStart :: MisoString -> Style
 gridColumnStart x = "grid-column-start" =: x
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/grid-row
+--
+gridRow :: MisoString -> Style
+gridRow x = "grid-row" =: x
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/grid-row-end
 --
@@ -1301,15 +1473,55 @@ minHeight x = "min-height" =: x
 minWidth :: MisoString -> Style
 minWidth x = "min-width" =: x
 -----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/mix-blend-mode
+--
+mixBlendMode :: MisoString -> Style
+mixBlendMode x = "mix-blend-mode" =: x
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/object-fit
+--
+objectFit :: MisoString -> Style
+objectFit x = "object-fit" =: x
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/object-position
+--
+objectPosition :: MisoString -> Style
+objectPosition x = "object-position" =: x
+-----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/opacity
 --
-opacity :: MisoString -> Style
-opacity x = "opacity" =: x
+opacity :: Double -> Style
+opacity x = "opacity" =: MS.ms x
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/order
 --
-order :: MisoString -> Style
-order x = "order" =: x
+order :: Int -> Style
+order x = "order" =: MS.ms x
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/outline
+--
+outline :: MisoString -> Style
+outline x = "outline" =: x
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/outline-color
+--
+outlineColor :: Color -> Style
+outlineColor x = "outline-color" =: renderColor x
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/outline-offset
+--
+outlineOffset :: MisoString -> Style
+outlineOffset x = "outline-offset" =: x
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/outline-style
+--
+outlineStyle :: MisoString -> Style
+outlineStyle x = "outline-style" =: x
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/outline-width
+--
+outlineWidth :: MisoString -> Style
+outlineWidth x = "outline-width" =: x
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/overflow
 --
@@ -1325,6 +1537,11 @@ overflowX x = "overflow-x" =: x
 --
 overflowY :: MisoString -> Style
 overflowY x = "overflow-y" =: x
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/overscroll-behavior
+--
+overscrollBehavior :: MisoString -> Style
+overscrollBehavior x = "overscroll-behavior" =: x
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/padding-bottom
 --
@@ -1365,6 +1582,11 @@ paddingTop x = "padding-top" =: x
 --
 perspective :: MisoString -> Style
 perspective x = "perspective" =: x
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/pointer-events
+--
+pointerEvents :: MisoString -> Style
+pointerEvents x = "pointer-events" =: x
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/position
 --
@@ -1446,6 +1668,11 @@ relativeRightOf x = "relative-right-of" =: x
 relativeTopOf :: MisoString -> Style
 relativeTopOf x = "relative-top-of" =: x
 -----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/resize
+--
+resize :: MisoString -> Style
+resize x = "resize" =: x
+-----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/right
 --
 right :: MisoString -> Style
@@ -1456,10 +1683,17 @@ right x = "right" =: x
 rowGap :: MisoString -> Style
 rowGap x = "row-gap" =: x
 -----------------------------------------------------------------------------
--- | https://developer.mozilla.org/en-US/docs/Web/CSS/stroke
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/scroll-behavior
 --
-stroke :: MisoString -> Style
-stroke x = "stroke" =: x
+scrollBehavior :: MisoString -> Style
+scrollBehavior x = "scroll-behavior" =: x
+-----------------------------------------------------------------------------
+-- | SVG [stroke](https://developer.mozilla.org/en-US/docs/Web/CSS/stroke) color.
+--
+-- > stroke black
+--
+stroke :: Color -> Style
+stroke x = "stroke" =: renderColor x
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/stroke-width
 --
@@ -1505,6 +1739,11 @@ textStroke x = "text-stroke" =: x
 --
 textStrokeWidth :: MisoString -> Style
 textStrokeWidth x = "text-stroke-width" =: x
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/text-transform
+--
+textTransform :: MisoString -> Style
+textTransform x = "text-transform" =: x
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/top
 --
@@ -1692,6 +1931,11 @@ transitionProperty x = "transition-property" =: x
 transitionTimingFunction :: MisoString -> Style
 transitionTimingFunction x = "transition-timing-function" =: x
 -----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/user-select
+--
+userSelect :: MisoString -> Style
+userSelect x = "user-select" =: x
+-----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/vertical-align
 --
 verticalAlign :: MisoString -> Style
@@ -1711,6 +1955,11 @@ whiteSpace x = "white-space" =: x
 --
 width :: MisoString -> Style
 width x = "width" =: x
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/will-change
+--
+willChange :: MisoString -> Style
+willChange x = "will-change" =: x
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/word-break
 --
@@ -1739,6 +1988,6 @@ xHandleSize x = "-x-handle-size" =: x
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/z-index
 --
-zIndex :: MisoString -> Style
-zIndex x = "z-index" =: x
+zIndex :: Int -> Style
+zIndex x = "z-index" =: MS.ms x
 -----------------------------------------------------------------------------
