@@ -90,7 +90,6 @@ module Miso.CSS
   , caretColor
   , color
   , columnGap
-  , cssVariable
   , cursor
   , direction
   , display
@@ -972,11 +971,6 @@ color x = "color" =: renderColor x
 columnGap :: MisoString -> Style
 columnGap x = "column-gap" =: x
 -----------------------------------------------------------------------------
--- | https://developer.mozilla.org/en-US/docs/Web/CSS/css-variable
---
-cssVariable :: MisoString -> Style
-cssVariable x = "css-variable" =: x
------------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/direction
 --
 direction :: MisoString -> Style
@@ -989,8 +983,8 @@ display x = "display" =: x
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/fill
 --
-fill :: MisoString -> Style
-fill x = "fill" =: x
+fill :: Color -> Style
+fill x = "fill" =: renderColor x
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/filter
 --
@@ -1499,8 +1493,8 @@ scrollBehavior x = "scroll-behavior" =: x
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/stroke
 --
-stroke :: MisoString -> Style
-stroke x = "stroke" =: x
+stroke :: Color -> Style
+stroke x = "stroke" =: renderColor x
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/stroke-width
 --
