@@ -528,7 +528,7 @@ renderStyleSheet styleSheet = MS.intercalate "\n"
 -- @
 -- keyframes_ "slide-in"
 --   [ from_ [ transforms [ translateX (pct 0) ] ]
---   , at (pct 50) [ opacity "0.5" ]
+--   , at (pct 50) [ opacity 0.5 ]
 --   , to_   [ transforms [ translateX (pct 100) ], backgroundColor red ]
 --   ]
 -- @
@@ -546,7 +546,7 @@ to_ styles = KeyframeStop ("to", styles)
 -----------------------------------------------------------------------------
 -- | A keyframe stop at a given position, typically built with 'pct'.
 --
--- > at (pct 50) [ opacity "0.5" ]
+-- > at (pct 50) [ opacity 0.5 ]
 --
 at :: MisoString -> [Style] -> KeyframeStop
 at stop styles = KeyframeStop (stop, styles)
@@ -665,7 +665,7 @@ animationDirection x = "animation-direction" =: x
 animationDuration :: MisoString -> Style
 animationDuration x = "animation-duration" =: x
 -----------------------------------------------------------------------------
--- | https://animation-mozilla.org/en-US/docs/Web/CSS/align-content/animation-fill-mode
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/animation-fill-mode
 --
 animationFillMode :: MisoString -> Style
 animationFillMode x = "animation-fill-mode" =: x
@@ -981,7 +981,9 @@ direction x = "direction" =: x
 display :: MisoString -> Style
 display x = "display" =: x
 -----------------------------------------------------------------------------
--- | https://developer.mozilla.org/en-US/docs/Web/CSS/fill
+-- | SVG [fill](https://developer.mozilla.org/en-US/docs/Web/CSS/fill) color.
+--
+-- > fill red
 --
 fill :: Color -> Style
 fill x = "fill" =: renderColor x
@@ -1491,7 +1493,9 @@ rowGap x = "row-gap" =: x
 scrollBehavior :: MisoString -> Style
 scrollBehavior x = "scroll-behavior" =: x
 -----------------------------------------------------------------------------
--- | https://developer.mozilla.org/en-US/docs/Web/CSS/stroke
+-- | SVG [stroke](https://developer.mozilla.org/en-US/docs/Web/CSS/stroke) color.
+--
+-- > stroke black
 --
 stroke :: Color -> Style
 stroke x = "stroke" =: renderColor x
