@@ -228,7 +228,30 @@ module Miso.CSS
   , textTransform
   , top
   , transform
+  , transforms
   , transformOrigin
+    -- *** Transform functions
+  , translate
+  , translateX
+  , translateY
+  , translateZ
+  , translate3d
+  , rotate
+  , rotateX
+  , rotateY
+  , rotateZ
+  , rotate3d
+  , scale
+  , scaleXY
+  , scale3d
+  , scaleX
+  , scaleY
+  , scaleZ
+  , perspectiveFn
+  , matrix3d
+  , skew
+  , skewX
+  , skewY
   , transitionDelay
   , transitionDuration
   , transition
@@ -1573,10 +1596,156 @@ top x = "top" =: x
 transform :: MisoString -> Style
 transform x = "transform" =: x
 -----------------------------------------------------------------------------
+-- | Apply a list of t'TransformFn' values as a @transform@ style.
+--
+-- @
+-- transforms [ translate (px 10) (pct 50), rotate (deg 45), scaleX 1.5 ]
+-- @
+--
+transforms :: [TransformFn] -> Style
+transforms fns = "transform" =: MS.intercalate " " (map renderTransformFn fns)
+-----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/transform-origin
 --
 transformOrigin :: MisoString -> Style
 transformOrigin x = "transform-origin" =: x
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function/translate
+--
+-- >>> renderTransformFn (translate (px 10) (pct 50))
+-- "translate(10px,50.0%)"
+--
+translate :: MisoString -> MisoString -> TransformFn
+translate x y = TransformFn $ "translate(" <> x <> "," <> y <> ")"
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function/translateX
+--
+translateX :: MisoString -> TransformFn
+translateX x = TransformFn $ "translateX(" <> x <> ")"
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function/translateY
+--
+translateY :: MisoString -> TransformFn
+translateY y = TransformFn $ "translateY(" <> y <> ")"
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function/translateZ
+--
+translateZ :: MisoString -> TransformFn
+translateZ z = TransformFn $ "translateZ(" <> z <> ")"
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function/translate3d
+--
+translate3d :: MisoString -> MisoString -> MisoString -> TransformFn
+translate3d x y z = TransformFn $ "translate3d(" <> MS.intercalate "," [x, y, z] <> ")"
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function/rotate
+--
+-- >>> renderTransformFn (rotate (deg 45))
+-- "rotate(45.0deg)"
+--
+rotate :: MisoString -> TransformFn
+rotate a = TransformFn $ "rotate(" <> a <> ")"
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function/rotateX
+--
+rotateX :: MisoString -> TransformFn
+rotateX a = TransformFn $ "rotateX(" <> a <> ")"
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function/rotateY
+--
+rotateY :: MisoString -> TransformFn
+rotateY a = TransformFn $ "rotateY(" <> a <> ")"
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function/rotateZ
+--
+rotateZ :: MisoString -> TransformFn
+rotateZ a = TransformFn $ "rotateZ(" <> a <> ")"
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function/rotate3d
+-- x, y, z are unitless direction vector components; angle uses a unit constructor like 'deg'.
+--
+rotate3d :: Double -> Double -> Double -> MisoString -> TransformFn
+rotate3d x y z a = TransformFn $ "rotate3d(" <> MS.intercalate "," [MS.ms x, MS.ms y, MS.ms z, a] <> ")"
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function/scale
+-- Uniform scale on both axes.
+--
+-- >>> renderTransformFn (scale 1.5)
+-- "scale(1.5)"
+--
+scale :: Double -> TransformFn
+scale n = TransformFn $ "scale(" <> MS.ms n <> ")"
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function/scale
+-- Non-uniform scale: separate X and Y factors.
+--
+scaleXY :: Double -> Double -> TransformFn
+scaleXY x y = TransformFn $ "scale(" <> MS.ms x <> "," <> MS.ms y <> ")"
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function/scale3d
+--
+scale3d :: Double -> Double -> Double -> TransformFn
+scale3d x y z = TransformFn $ "scale3d(" <> MS.intercalate "," [MS.ms x, MS.ms y, MS.ms z] <> ")"
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function/scaleX
+--
+scaleX :: Double -> TransformFn
+scaleX n = TransformFn $ "scaleX(" <> MS.ms n <> ")"
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function/scaleY
+--
+scaleY :: Double -> TransformFn
+scaleY n = TransformFn $ "scaleY(" <> MS.ms n <> ")"
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function/scaleZ
+--
+scaleZ :: Double -> TransformFn
+scaleZ n = TransformFn $ "scaleZ(" <> MS.ms n <> ")"
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function/perspective
+-- The @perspective()@ transform function, distinct from the @perspective@ CSS property.
+--
+-- >>> renderTransformFn (perspectiveFn (px 500))
+-- "perspective(500px)"
+--
+perspectiveFn :: MisoString -> TransformFn
+perspectiveFn d = TransformFn $ "perspective(" <> d <> ")"
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function/matrix3d
+-- 4x4 homogeneous matrix in column-major order; each tuple is one column.
+--
+-- > matrix3d (1,0,0,0) (0,1,0,0) (0,0,1,0) (10,20,0,1)
+--
+matrix3d
+  :: (Double, Double, Double, Double)
+  -> (Double, Double, Double, Double)
+  -> (Double, Double, Double, Double)
+  -> (Double, Double, Double, Double)
+  -> TransformFn
+matrix3d (a1,b1,c1,d1) (a2,b2,c2,d2) (a3,b3,c3,d3) (a4,b4,c4,d4) =
+  TransformFn $ "matrix3d(" <> values <> ")"
+  where
+    values = MS.intercalate ","
+      [ MS.ms a1, MS.ms b1, MS.ms c1, MS.ms d1
+      , MS.ms a2, MS.ms b2, MS.ms c2, MS.ms d2
+      , MS.ms a3, MS.ms b3, MS.ms c3, MS.ms d3
+      , MS.ms a4, MS.ms b4, MS.ms c4, MS.ms d4
+      ]
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function/skew
+--
+skew :: MisoString -> MisoString -> TransformFn
+skew x y = TransformFn $ "skew(" <> x <> "," <> y <> ")"
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function/skewX
+--
+skewX :: MisoString -> TransformFn
+skewX a = TransformFn $ "skewX(" <> a <> ")"
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function/skewY
+--
+skewY :: MisoString -> TransformFn
+skewY a = TransformFn $ "skewY(" <> a <> ")"
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/transition-delay
 --
