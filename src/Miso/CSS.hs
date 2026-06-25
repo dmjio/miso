@@ -9,7 +9,28 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- Module for constructing CSS styles and stylesheets in miso
+-- CSS DSL for constructing inline styles and t'StyleSheet' values in miso.
+--
+-- __Inline styles__ attach to a single DOM node via 'style_':
+--
+-- @
+-- div_ [ style_ [ backgroundColor blue, padding (px 8) ] ] []
+-- @
+--
+-- __Stylesheets__ are built with 'sheet_', 'selector_', 'keyframes_', and 'media_',
+-- then injected into the document via 'Miso.style_':
+--
+-- @
+-- sheet_
+--   [ selector_ ".card" [ backgroundColor white, borderRadius (px 4) ]
+--   , keyframes_ "fade-in"
+--       [ from_ [ opacity 0 ]
+--       , to_   [ opacity 1 ]
+--       ]
+--   , media_ (screen_ \`and_\` minWidth_ (px 768))
+--       [ rule_ ".card" [ padding (px 16) ] ]
+--   ]
+-- @
 --
 -----------------------------------------------------------------------------
 module Miso.CSS
@@ -441,30 +462,22 @@ pct x = MS.ms x <> "%"
 ppx :: Double -> MisoString
 ppx x = MS.ms x <> "ppx"
 -----------------------------------------------------------------------------
--- | Used when constructing a t'StyleSheet'
+-- | A CSS selector rule for use inside 'sheet_'.
 --
--- @
--- sheet_
---   [ selector_ ".name"
---     [ backgroundColor red
---     , alignContent "top"
---     ]
---   ]
--- @
+-- > selector_ ".card" [ backgroundColor white, borderRadius (px 4) ]
 --
 selector_ :: MisoString -> [Style] -> Styles
 selector_ k v = Styles (k,v)
 -----------------------------------------------------------------------------
--- | Smart constructor for t'StyleSheet'
+-- | Build a t'StyleSheet' from a list of t'Styles' rules.
+-- Pass the result to 'Miso.style_' to inject it into the document.
 sheet_ :: [Styles] -> StyleSheet
 sheet_ = StyleSheet
 -----------------------------------------------------------------------------
--- | @style_@ is an attribute that will set the @style@
--- attribute of the associated DOM node to @attrs@.
+-- | @style_@ is an attribute that sets the @style@ attribute of a DOM node.
+-- Properties absent from the list are removed.
 --
--- @style@ attributes not contained in @attrs@ will be deleted.
---
--- > div_ [ style_ [ backgroundColor "red" ] [ ]
+-- > div_ [ style_ [ backgroundColor red, padding (px 8) ] ] []
 --
 -- <https://developer.mozilla.org/en-US/docs/Web/CSS>
 --
