@@ -36,7 +36,7 @@
 --
 -- * __Client__ (WASM \/ GHC JS backend) — 'encode' calls @JSON.stringify()@ and
 --   'decode' calls @JSON.parse()@ via FFI for maximum performance.
--- * __Server__ (@-fssr@ \/ @VANILLA@ build) — a pure Haskell
+-- * __Server__ (SSR build) — a pure Haskell
 --   lexer\/parser pipeline ("Miso.JSON.Lexer" + "Miso.JSON.Parser") is used
 --   instead, with no JavaScript dependency.
 --
@@ -1067,7 +1067,7 @@ typeMismatch expected actual =
 -- | Encode a value as a JSON 'MisoString'.
 --
 -- On the client (WASM \/ GHC JS backend) calls @JSON.stringify()@ via FFI for
--- maximum performance. On the server (@VANILLA@) falls back to 'encodePure'.
+-- maximum performance. On the server falls back to 'encodePure'.
 #ifdef VANILLA
 encode :: ToJSON a => a -> MisoString
 encode = encodePure
@@ -1163,13 +1163,13 @@ foreign import javascript unsafe
 #endif
 -----------------------------------------------------------------------------
 -- | Like 'encodePretty' but with a custom 'Config'.
--- Not available in the @VANILLA@ build.
+-- Not available in the server build.
 #ifdef VANILLA
 encodePretty' :: ToJSON a => Config -> a -> MisoString
 encodePretty' = error "encodePretty': not implemented"
 -----------------------------------------------------------------------------
 -- | Encode a value as indented (pretty-printed) JSON using 'defConfig'
--- (4-space indentation). Not available in the @VANILLA@ build.
+-- (4-space indentation). Not available in the server build.
 encodePretty :: ToJSON a => a -> MisoString
 encodePretty _ = error "encodePretty: not implemented"
 -----------------------------------------------------------------------------

@@ -20,8 +20,8 @@
 -- * On the client (WASM \/ GHC JS backend) it is @JSString@ — a zero-copy
 --   wrapper around a native JavaScript string, giving optimal interop with
 --   the DOM and JSON APIs.
--- * On the server (@VANILLA@ build) it is 'Data.Text.Text', enabling
---   server-side rendering without any FFI dependency.
+-- * On the server it is 'Data.Text.Text', enabling server-side rendering
+--   without any FFI dependency.
 --
 -- Use 'ms' (short for 'toMisoString') to convert from 'String', 'T.Text',
 -- numeric types, etc. into 'MisoString'.
@@ -60,7 +60,7 @@ import           Miso.DSL.FFI
 ----------------------------------------------------------------------------
 -- | The primary string type in Miso applications.
 --
--- * @VANILLA@ (server\/SSR build): alias for 'Data.Text.Text'
+-- * Server (SSR build): alias for 'Data.Text.Text'
 -- * WASM \/ GHC JS backend: alias for @JSString@ — a zero-copy wrapper around
 --   a native JavaScript string, giving optimal interop with the DOM and JSON APIs
 --
