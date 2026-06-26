@@ -69,15 +69,13 @@
 -- MVU (model-view-update) interface. This is similar to a left-fold over @action@s — the 'Component'
 -- @model@ is updated by 'Miso.Types.update' and rendered by 'Miso.Types.view'.
 --
--- * __model__: This can be any user-defined type in Haskell. An 'Eq' constraint
+-- * __'model'__: This can be any user-defined type in Haskell. An 'Eq' constraint
 --   is required. We recommend using the default derived 'Eq' instance.
 --
--- * __view__: @'view' :: props -> model -> 'View' model action@
---   This is the templating function that is used to construct a new virtual DOM
+-- * __'view'__: This is the templating function that is used to construct a new virtual DOM
 --   (or HTML if rendering on the server).
 --
--- * __update__: @'update' :: action -> 'Effect' parent props model action@
---   The 'update' function handles how the 'model' evolves over time in response
+-- * __'update'__: The 'update' function handles how the 'model' evolves over time in response
 --   to events that are raised by the application. This function takes any @action@,
 --   updating the @model@ and optionally introduces 'IO' into the system.
 --
@@ -104,6 +102,7 @@
 -- counter :: 'Component' 'ROOT' () 'Int' Action
 -- counter = 'vcomp' m u v
 --   where
+--     -- | Initial 'model' value
 --     m :: 'Int'
 --     m = 0
 --                             * - The type of the parent 'Component' 'model'
@@ -517,7 +516,7 @@
 -- @
 -- data 'Decoder' a
 --   = 'Decoder'
---   { 'decoder' :: 'Value' -> 'Miso.Util.Parser.Parser' a
+--   { 'decoder' :: 'Miso.JSON.Value' -> 'Miso.Util.Parser.Parser' a
 --   , 'decodeAt' :: 'DecodeTarget'
 --   }
 --

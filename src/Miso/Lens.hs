@@ -13,10 +13,9 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- This modules exposes a very simple t'Miso.Lens.Lens' formulation that is compatible with other lens libraries.
+-- A simple t'Lens' formulation compatible with @lens@ and @microlens@.
 --
--- For state management of miso applications, this module should meet all of your needs. It also
--- ensures a smaller payload size during compilation.
+-- The t'Lens' type is defined as:
 --
 -- @
 -- data 'Lens' record field
@@ -26,67 +25,56 @@
 --  }
 -- @
 --
--- The goal is to provide users with an out-of-the box lens experience without the large
--- dependency footprint and cognitive load. This module also aims to preserve semantics of
--- existing lens combinators using a simple formulation (not the van Laarhoven). It must be imported
--- separately (@import Miso.Lens@) and can be used with the @Effect@ Monad inside of a miso
--- application (as described below).
+-- Key features:
 --
--- This module is at fixity and interface parity with @lens@ and @microlens@ and can therefore
--- be used interchangeably with them. Simply replace the @Miso.Lens@ import with @Control.Lens@.
--- For convenience we re-export the t'Miso.Lens.Lens'' synonym to ease the transition into [lens](https://hackage.haskell.org/package/lens) or [microlens](https://hackage.haskell.org/package/microlens)
+-- * Provides an out-of-the-box lens experience with a minimal dependency footprint.
+-- * Uses a simple formulation (not van Laarhoven) for smaller compilation payload.
+-- * Import separately: @import Miso.Lens@.
+-- * Works with the @Effect@ monad inside miso applications.
+-- * Fixity and interface parity with @lens@ and @microlens@; replace
+--   @import Miso.Lens@ with @import Control.Lens@ to switch seamlessly.
+-- * Re-exports t'Lens'' for easy migration to
+--   [lens](https://hackage.haskell.org/package/lens) or
+--   [microlens](https://hackage.haskell.org/package/microlens).
 --
--- For the curious reader, if you'd like more information on 'lens' and the van Laarhoven
--- formulation, we recommend the [lens](https://hackage.haskell.org/package/lens) library.
+-- For more on the van Laarhoven formulation, see the
+-- [lens](https://hackage.haskell.org/package/lens) library.
+--
+-- === Example: Lenses for a nested record
 --
 -- @
--- -- Person type
 -- data Person = Person
 --   { _name :: String
 --   , _address :: Address
 --   , _age  :: Int
 --   } deriving (Show, Eq, Generic)
 --
--- -- Address type
 -- newtype Address
 --   = Address
 --   { _zipCode :: Zip
 --   } deriving (Show, Eq)
 --
--- -- | Zip code type synonym
 -- type Zip = String
 --
--- -- | Name Lens
 -- name :: Lens Person String
 -- name = 'lens' _name $ \\record x -> record { _name = x }
 --
--- -- | Address Lens
 -- address :: Lens Person Address
 -- address = 'lens' _address $ \\record x -> record { _address = x }
 --
--- -- | Zip Code Lens
 -- zipCode :: Lens Address Zip
 -- zipCode = 'lens' _zipCode $ \\record x -> record { _zipCode = x }
 --
--- -- | Lens Composition example
+-- -- Lenses compose via '.'
 -- personZip :: Lens Person Zip
 -- personZip = zipCode . address
 --
--- -- | Person example
--- person :: Person
--- person = Person "john" (Address "90210") 33
---
 -- main :: IO ()
--- main = print $ john '&' address '.~' Address "10012"
---
--- -- Person
--- --  { _name = "john"
--- --  , _age = 33
--- --  , _address = Address {_zipCode = "10012"}
--- --  }
+-- main = print $ person '&' address '.~' Address "10012"
+--   -- Person { _name = "john", _age = 33, _address = Address {_zipCode = "10012"} }
 -- @
 --
--- Example usage with miso's @Effect@ @Monad@
+-- === Example: Usage with the @Effect@ monad
 --
 -- @
 -- newtype Model = Model { _value :: Int }
@@ -98,7 +86,7 @@
 --
 -- updateModel :: Action -> Effect parent Model Action
 -- updateModel = \\case
---   AddOne -> value '+=' 1
+--   AddOne    -> value '+=' 1
 --   SubtractOne -> value '-=' 1
 -- @
 ----------------------------------------------------------------------------
@@ -212,11 +200,11 @@ data LensCore field record
 -- | van Laarhoven formulation, used for conversion w/ 'Miso.miso' t'Lens'.
 type Lens' s a = forall (f :: Type -> Type). Functor f => (a -> f a) -> s -> f s
 ----------------------------------------------------------------------------
--- | Convert from 'Miso.miso' t'Lens' to van Laarhoven t'Lens''
+-- | Convert a t'Lens' to a van Laarhoven t'Lens''
 toVL :: Lens record field -> Lens' record field
 toVL Lens {..} = \f record -> flip _set record <$> f (_get record)
 ----------------------------------------------------------------------------
--- | Convert from 'Miso.miso' t'Lens' to van Laarhoven t'Lens''
+-- | Convert a van Laarhoven t'Lens'' to a t'Lens'
 fromVL
   :: Lens' record field
   -- ^ Van Laarhoven lens to convert
@@ -789,44 +777,62 @@ lens
   -> Lens record field
 lens getter setter = Lens getter (flip setter)
 ----------------------------------------------------------------------------
+-- | A t'Prism' is a first-class reference into a sum type constructor.
+--
+-- 'Prism' values can be used with 'preview' to try to extract a value,
+-- and with 'review' to embed a value back into the sum type.
 data Prism s a
   = Prism
   { _up :: a -> s
-  -- ^ Embed a value @a@ back into the sum type @s@ (the @review@ direction)
+  -- ^ Embed a value @a@ back into the sum type @s@ (the @review@ direction).
   , _down :: s -> Maybe a
-  -- ^ Try to extract a value @a@ from @s@; 'Nothing' if the wrong constructor
+  -- ^ Try to extract a value @a@ from @s@; 'Nothing' if the wrong constructor.
   }
 ----------------------------------------------------------------------------
+-- | Embed a value into a sum type using a t'Prism'.
 review :: Prism s a -> a -> s
 review = _up
 ----------------------------------------------------------------------------
+-- | Try to extract a value from a sum type using a t'Prism' inside 'MonadReader'.
 preview :: MonadReader r m => Prism r a -> m (Maybe a)
 preview = asks . preview
 ----------------------------------------------------------------------------
+-- | Try to extract a value from a sum type using a t'Prism' inside 'MonadState'.
 preuse :: MonadState s m => Prism s a -> m (Maybe a)
 preuse = gets . preview
 ----------------------------------------------------------------------------
+-- | t'Prism' for the 'Left' constructor of 'Either'.
 _Left :: Prism (Either a b) a
 _Left = prism Left $ either Just (const Nothing)
 ----------------------------------------------------------------------------
+-- | t'Prism' for the 'Right' constructor of 'Either'.
 _Right :: Prism (Either a b) b
 _Right = prism Right (either (const Nothing) Just)
 ----------------------------------------------------------------------------
+-- | t'Prism' for the 'Just' constructor of 'Maybe'.
 _Just :: Prism (Maybe a) a
 _Just = prism Just Prelude.id
 ----------------------------------------------------------------------------
+-- | t'Prism' that matches a 'Nothing' value.
 _Nothing :: Prism (Maybe a) a
 _Nothing = prism (const Nothing) Prelude.id
 ----------------------------------------------------------------------------
+-- | Infix alias for 'preview'. Try to extract a value using a t'Prism'.
+--
+-- @
+-- Right 42 '^?' '_Right' == Just 42
+-- Left  "x" '^?' '_Right' == Nothing
+-- @
 infixl 8 ^?
 (^?) :: s -> Prism s a -> Maybe a
 (^?) = flip preview
 ----------------------------------------------------------------------------
+-- | Smart constructor for t'Prism'.
 prism
   :: (a -> s)
-  -- ^ Embed direction: construct @s@ from @a@
+  -- ^ Embed direction: construct @s@ from @a@.
   -> (s -> Maybe a)
-  -- ^ Match direction: try to extract @a@ from @s@
+  -- ^ Match direction: try to extract @a@ from @s@.
   -> Prism s a
 prism = Prism
 ----------------------------------------------------------------------------
