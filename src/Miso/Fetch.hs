@@ -13,27 +13,26 @@
 -- Portability :  non-portable
 --
 -- Interface to the browser's
--- [Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API)
+-- <https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API Fetch API>
 -- for making HTTP requests inside Miso's 'Effect' monad.
 --
--- Every function takes a URL, optional request headers, a success callback,
--- and an error callback — both @('Response' x -> action)@. The resulting
--- @'Effect' parent props model action@ dispatches the appropriate action into
--- the MVU loop when the response arrives.
+-- Each function accepts a URL, optional request headers, a success callback,
+-- and an error callback of the form @'Response' x -> action@. The resulting
+-- 'Effect' dispatches the appropriate action into the MVU loop when the
+-- response arrives.
 --
--- Functions are organised by HTTP method and body\/response type:
+-- Functions are grouped by HTTP method and body\/response type:
 --
--- @
--- ─── JSON ─────────────  getJSON   postJSON \/ postJSON'  putJSON
--- ─── Text ─────────────  getText   postText               putText
--- ─── Blob ─────────────  getBlob   postBlob               putBlob
--- ─── FormData ─────────  getFormData  postFormData        putFormData
--- ─── Uint8Array ───────  getUint8Array  postUint8Array    putUint8Array
--- ─── ArrayBuffer ──────  getArrayBuffer postArrayBuffer   putArrayBuffer
--- @
+-- * __JSON__        — 'getJSON', 'postJSON', 'postJSON'', 'putJSON'
+-- * __Text__        — 'getText', 'postText', 'putText'
+-- * __Blob__        — 'getBlob', 'postBlob', 'putBlob'
+-- * __FormData__    — 'getFormData', 'postFormData', 'putFormData'
+-- * __Uint8Array__  — 'getUint8Array', 'postUint8Array', 'putUint8Array'
+-- * __ArrayBuffer__ — 'getArrayBuffer', 'postArrayBuffer', 'putArrayBuffer'
+-- * __Image__       — 'postImage', 'putImage'
 --
--- Use 'getJSON' \/ 'postJSON' for typical REST calls. Use 'postJSON'' when
--- the server returns a JSON body in the response.
+-- Use 'getJSON' or 'postJSON' for typical REST calls; use 'postJSON'' when
+-- the server also returns a JSON response body.
 --
 -- For Servant-style typed client generation, see the miso README.
 --
@@ -91,9 +90,7 @@ import           Miso.String (MisoString, ms)
 import           Miso.Util ((=:))
 import           Miso.FFI.Internal (Response(..), Blob, FormData, ArrayBuffer, Uint8Array, Image, fetch, CONTENT_TYPE(..))
 ----------------------------------------------------------------------------
--- | Retrieves JSON using the Fetch API.
---
--- See <https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API>
+-- | Retrieve a JSON resource via GET.
 --
 -- @
 -- data Action
