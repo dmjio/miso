@@ -232,7 +232,6 @@ import           Control.Monad.Trans.Maybe
 import           System.IO.Unsafe (unsafePerformIO)
 import qualified Data.Text as T
 #endif
-
 ----------------------------------------------------------------------------
 -- | Construct a JSON key\/value 'Pair'. Infix alias for @\\k v -> (k, 'toJSON' v)@.
 --
@@ -404,7 +403,7 @@ instance GToFields V1 where
 instance (GToFields f, GToFields g) => GToFields (f :*: g) where
   gToFields opts (x :*: y) = combineFields (gToFields opts x) (gToFields opts y)
 ----------------------------------------------------------------------------
-instance (Selector m, GToFields f) => GToFields (S1 m f) where
+instance {-# OVERLAPPABLE #-} (Selector m, GToFields f) => GToFields (S1 m f) where
   gToFields opts (M1 x) =
     let n = selName (M1 undefined :: S1 m f ())
     in if null n
