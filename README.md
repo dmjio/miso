@@ -48,7 +48,7 @@ Inspired by <a href="http://elm-lang.org/">Elm</a> and <a href="http://react.dev
 It makes heavy use of the [GHC JavaScript FFI](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/wasm.html#javascript-ffi-in-the-wasm-backend) and maintains minimal dependencies. It can be considered a shallow [embedded domain-specific language](https://wiki.haskell.org/Embedded_domain_specific_language) for modern web programming. Compilation targets include [JavaScript](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/javascript.html) and [WebAssembly](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/wasm.html) via [GHC](https://www.haskell.org/ghc/). Hot reload is provided through [WASM browser mode](https://www.tweag.io/blog/2025-04-17-wasm-ghci-browser/) integrated with [ghciwatch](https://github.com/MercuryTechnologies/ghciwatch).
 
 > [!TIP]
-> See the [Haskell miso organization](https://github.com/haskell-miso) on GitHub for the full ecosystem of packages and examples 🍜
+> See the [miso organization](https://github.com/haskell-miso) on GitHub for the full ecosystem of packages and examples 🍜
 
 ## Table of Contents
 - [Playground](#playground-)
