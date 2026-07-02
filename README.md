@@ -6,7 +6,7 @@
   <img width=10% src="https://em-content.zobj.net/thumbs/240/apple/325/steaming-bowl_1f35c.png">
 
    </a>
-<p align="center">A <a href="https://www.haskell.org/"><strong>Haskell</strong></a> library for building web and <a href="https://github.com/haskell-miso/miso-lynx">mobile</a> applications</p>
+<p align="center">A library for building web and <a href="https://github.com/haskell-miso/miso-lynx">mobile</a> applications</p>
 </p>
 
 <p align="center"> 
