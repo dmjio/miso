@@ -445,7 +445,7 @@ unfoldrN n f seed = go seed mempty
 foreign import javascript unsafe
   """
   if ($1 < 1) return "";
-  return $2.slice(0, $1);
+  return Array.from($2).slice(0, $1).join('');
   """ take :: Int -> JSString -> JSString
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
@@ -791,7 +791,7 @@ foldl' f x ys =
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """
-  return $1.length
+  return Array.from($1).length;
   """ length :: JSString -> Int
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
