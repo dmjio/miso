@@ -300,8 +300,10 @@ cookieDeleteWith cookie successful errorful = withSink $ \sink -> do
 -----------------------------------------------------------------------------
 -- | Synchronous API variant of 'cookieSet'.
 --
--- Blocks until the browser resolves the promise, returning @'Right' ()@ on
--- success or @'Left' err@ on failure.
+-- Blocks the calling thread until the browser resolves the promise, returning
+-- @'Right' ()@ on success or @'Left' err@ on failure.
+--
+-- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
 cookieSet_ :: MisoString -> MisoString -> IO (Either MisoString ())
 cookieSet_ name val = do
   mvar <- newEmptyMVar :: IO (MVar (Either MisoString ()))
@@ -314,9 +316,11 @@ cookieSet_ name val = do
 -----------------------------------------------------------------------------
 -- | Synchronous API variant of 'cookieGet'.
 --
--- Blocks until the browser resolves the promise, returning
+-- Blocks the calling thread until the browser resolves the promise, returning
 -- @'Right' ('Just' value)@ when the cookie exists, @'Right' 'Nothing'@
 -- when absent, or @'Left' err@ on failure.
+--
+-- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
 cookieGet_ :: MisoString -> IO (Either MisoString (Maybe MisoString))
 cookieGet_ name = do
   mvar <- newEmptyMVar :: IO (MVar (Either MisoString (Maybe MisoString)))
@@ -328,8 +332,10 @@ cookieGet_ name = do
 -----------------------------------------------------------------------------
 -- | Synchronous API variant of 'cookieDelete'.
 --
--- Blocks until the browser resolves the promise, returning @'Right' ()@ on
--- success or @'Left' err@ on failure.
+-- Blocks the calling thread until the browser resolves the promise, returning
+-- @'Right' ()@ on success or @'Left' err@ on failure.
+--
+-- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
 cookieDelete_ :: MisoString -> IO (Either MisoString ())
 cookieDelete_ name = do
   mvar <- newEmptyMVar :: IO (MVar (Either MisoString ()))
@@ -341,8 +347,10 @@ cookieDelete_ name = do
 -----------------------------------------------------------------------------
 -- | Synchronous API variant of 'cookieGetAll'.
 --
--- Blocks until the browser resolves the promise, returning
+-- Blocks the calling thread until the browser resolves the promise, returning
 -- @'Right' cookies@ on success or @'Left' err@ on failure.
+--
+-- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
 cookieGetAll_ :: IO (Either MisoString [Cookie])
 cookieGetAll_ = do
   mvar <- newEmptyMVar :: IO (MVar (Either MisoString [Cookie]))
