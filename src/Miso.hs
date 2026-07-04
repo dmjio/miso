@@ -112,8 +112,8 @@
 --                             |   |   |   |
 --     u :: Action -> 'Effect' 'ROOT' () 'Int' Action
 --     u = \\case
---       Add -> 'Miso.Lens.this' += 1
---       Subtract -> 'Miso.Lens.this' -= 1
+--       Add -> 'Miso.Lens.this' 'Miso.Lens.+=' 1
+--       Subtract -> 'Miso.Lens.this' 'Miso.Lens.-=' 1
 --
 --           * - The type of the parent 'Component' props
 --           |      * - The type of the current 'Component' 'model'
@@ -809,7 +809,7 @@
 -- @
 -- data Action
 --   = ReceivedMsg MyMsg
---   | MailError   t'Miso.String.MisoString'
+--   | MailError   'MisoString'
 --
 -- myComp :: 'Component' parent props model Action
 -- myComp = ('vcomp' m u v) { 'mailbox' = 'checkMail' ReceivedMsg MailError }
@@ -883,7 +883,7 @@
 --
 -- @
 -- update = \\case
---   StartTimer -> 'startSub' ("timer" :: MisoString) timerSub
+--   StartTimer -> 'startSub' ("timer" :: 'MisoString') timerSub
 --   StopTimer -> 'stopSub' "timer"
 --   Log -> 'io_' ('consoleLog' "log")
 --     where
@@ -908,19 +908,19 @@
 -- == Basic lens operations
 --
 -- @
--- 'view' l               -- read a field (MonadReader)
--- 'set'  l v             -- write a field
--- 'over' l f            -- modify a field
--- r '^.' l              -- infix read
--- r '&' l '.~' v         -- infix write
+-- 'Miso.Lens.view' l               -- read a field (MonadReader)
+-- 'Miso.Lens.set'  l v             -- write a field
+-- 'Miso.Lens.over' l f            -- modify a field
+-- r 'Miso.Lens.^.' l              -- infix read
+-- r '&' l 'Miso.Lens..~' v         -- infix write
 -- @
 --
 -- == 'MonadState' operators (for use inside 'Effect')
 --
 -- @
--- l '+=' n   -- increment a numeric field
--- l '-=' n   -- decrement
--- l '*=' n   -- multiply
+-- l 'Miso.Lens.+=' n   -- increment a numeric field
+-- l 'Miso.Lens.-=' n   -- decrement
+-- l 'Miso.Lens.*=' n   -- multiply
 -- @
 --
 -- == 'Miso.Lens.this' — the identity lens
@@ -963,15 +963,15 @@
 -- {-# LANGUAGE OverloadedLabels   #-}
 -- {-# LANGUAGE TypeApplications   #-}
 --
--- import GHC.Generics (Generic)
+-- import "GHC.Generics" ('GHC.Generics.Generic')
 -- import "Miso.Lens.Generic" ('Miso.Lens.Generic.field')
 --
--- data Model = Model { count :: Int, name :: 'MisoString' }
---   deriving (Eq, Generic)
+-- data Model = Model { count :: 'Int', name :: 'MisoString' }
+--   deriving ('Eq', 'GHC.Generics.Generic')
 --
 -- update = \\case
 --   Increment -> 'field' \@\"count\" 'Miso.Lens.+=' 1  -- via TypeApplications
---   Rename n  -> #name '.=' n            -- via OverloadedLabels
+--   Rename n  -> #name 'Miso.Lens..=' n            -- via OverloadedLabels
 -- @
 --
 -- * __Hand-written__: construct a 'Lens' directly using 'lens' and the @'Lens' s a@ synonym.
@@ -1173,7 +1173,7 @@
 -- {-# LANGUAGE DeriveGeneric  #-}
 -- {-# LANGUAGE DeriveAnyClass #-}
 --
--- import GHC.Generics
+-- import "GHC.Generics"
 -- import "Miso.Router"
 --
 -- data Route
