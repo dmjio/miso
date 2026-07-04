@@ -23,6 +23,11 @@ import {
    getRandomValues,
    splitmix32,
    getDOMRef,
+   cookieGet,
+   cookieGetAll,
+   cookieSet,
+   cookieDelete,
+   cookieDeleteWith,
 } from './miso/util';
 
 import {
@@ -114,6 +119,11 @@ export {
   splitmix32,
   delegateEvent,
   getDOMRef,
+  cookieGet,
+  cookieGetAll,
+  cookieSet,
+  cookieDelete,
+  cookieDeleteWith,
 
   /* Types */
   VTree,

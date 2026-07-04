@@ -49,6 +49,7 @@ import           Miso.Test
 import           Miso.Html
 import           Miso.JSON.Parser (decodePure)
 import           Miso.Html.Property
+import           Miso.Cookie (Cookie (..), cookieValue, defaultCookie, cookieSet_, cookieGet_, cookieDelete_, cookieDeleteWith_, cookieGetAll_)
 import           Miso.Runtime.Internal (ComponentState (..), components, componentIds)
 -----------------------------------------------------------------------------
 -- | Clears the component state and DOM between each test
@@ -214,6 +215,47 @@ main = withJS $ do
         (`shouldBe` Nothing) =<< liftIO (getSessionStorage "key2")
         liftIO clearSessionStorage
         (`shouldBe` 0) =<< liftIO sessionStorageLength
+
+    describe "Miso.Cookie FFI tests" $ do
+      it "Should set a cookie" $ do
+        result <- liftIO (cookieSet_ (defaultCookie "miso-test-set" "hello"))
+        result `shouldBe` Right ()
+
+      it "Should get a cookie that exists" $ do
+        Right _ <- liftIO (cookieSet_ (defaultCookie "miso-test-get" "world"))
+        Right mc <- liftIO (cookieGet_ "miso-test-get")
+        mc `shouldBe` Just "world"
+
+      it "Should return Nothing for a missing cookie" $ do
+        result <- liftIO (cookieGet_ "miso-nonexistent-xyzabc123")
+        result `shouldBe` (Right Nothing :: Either MisoString (Maybe MisoString))
+
+      it "Should get all cookies" $ do
+        Right _ <- liftIO (cookieSet_ (defaultCookie "miso-test-getall" "allvalue"))
+        Right cs <- liftIO cookieGetAll_
+        cs `shouldSatisfy` (not . null)
+
+      it "Should delete a cookie" $ do
+        Right _ <- liftIO (cookieSet_ (defaultCookie "miso-test-delete" "bye"))
+        Right _ <- liftIO (cookieDelete_ "miso-test-delete")
+        result <- liftIO (cookieGet_ "miso-test-delete")
+        result `shouldBe` (Right Nothing :: Either MisoString (Maybe MisoString))
+
+      it "Should delete a cookie with cookieDeleteWith by path" $ do
+        let cookie = (defaultCookie "miso-test-deletewith" "pathval") { cookiePath = "/" }
+        Right _ <- liftIO (cookieSet_ cookie)
+        Right _ <- liftIO (cookieDeleteWith_ cookie)
+        result <- liftIO (cookieGet_ "miso-test-deletewith")
+        result `shouldBe` (Right Nothing :: Either MisoString (Maybe MisoString))
+
+      it "Should delete a cookie by name without a hardcoded path" $ do
+        -- cookieDelete passes the name as a bare string, not { name, path: "/" },
+        -- so the browser matches cookies on any path the current page can see.
+        let cookie = (defaultCookie "miso-test-delete-nopath" "val") { cookiePath = "/" }
+        Right _ <- liftIO (cookieSet_ cookie)
+        Right _ <- liftIO (cookieDelete_ "miso-test-delete-nopath")
+        result <- liftIO (cookieGet_ "miso-test-delete-nopath")
+        result `shouldBe` (Right Nothing :: Either MisoString (Maybe MisoString))
 
     describe "Miso.Data.Array tests" $ do
       it "Should create a new array" $ do

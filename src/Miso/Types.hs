@@ -227,6 +227,9 @@ data Component parent props model action
 #endif
   -- ^ Optional 'IO' to load component 'model' state, such as reading data from page.
   --   The resulting 'model' is only used during initial hydration, not on remounts.
+  --
+  --   __Note:__ only synchronous 'IO' should be used here (e.g. reading from
+  --   @localStorage@ via 'getLocalStorage').
   , update :: action -> Effect parent props model action
   -- ^ Updates model, optionally providing effects.
   , view :: props -> model -> View model action

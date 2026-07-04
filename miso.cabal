@@ -112,6 +112,7 @@ library
     Miso
     Miso.Binding
     Miso.Canvas
+    Miso.Cookie
     Miso.Concurrent
     Miso.Date
     Miso.Data.Map
@@ -153,6 +154,7 @@ library
     Miso.Subscription.History
     Miso.Subscription.Keyboard
     Miso.Subscription.Mouse
+    Miso.Subscription.Cookie
     Miso.Subscription.OnLine
     Miso.Subscription.RAF
     Miso.Subscription.Util

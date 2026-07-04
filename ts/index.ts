@@ -21,6 +21,11 @@ import {
   getRandomValues,
   splitmix32,
   delegateEvent,
+  cookieGet,
+  cookieGetAll,
+  cookieSet,
+  cookieDelete,
+  cookieDeleteWith,
 } from './miso';
 
 import {
@@ -58,6 +63,11 @@ globalThis['miso'] = {
     splitmix32,
     populateClass,
     delegateEvent,
+    cookieGet,
+    cookieGetAll,
+    cookieSet,
+    cookieDelete,
+    cookieDeleteWith,
     delegator : eventContext.delegator,
     setDrawingContext : function (name) {
       // dmj: this looks for a custom globally defined rendering / event context
