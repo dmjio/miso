@@ -44,6 +44,7 @@
 -- ['windowSubWithOptions'] any window event — "Miso.Subscription.Window"
 -- ['onLineSub'] @online@ \/ @offline@ change — "Miso.Subscription.OnLine"
 -- ['rAFSub'] every @requestAnimationFrame@ tick — "Miso.Subscription.RAF"
+-- ['cookieChangeSub'] @cookieStore change@ events — "Miso.Subscription.Cookie"
 --
 -- = History helpers
 --
@@ -74,6 +75,8 @@ module Miso.Subscription
   , module Miso.Subscription.OnLine
     -- ** requestForAnimationFrame
   , module Miso.Subscription.RAF
+    -- ** Cookie Store
+  , module Miso.Subscription.Cookie
   ) where
 -----------------------------------------------------------------------------
 import Miso.Subscription.Mouse
@@ -82,4 +85,5 @@ import Miso.Subscription.History
 import Miso.Subscription.Window
 import Miso.Subscription.OnLine
 import Miso.Subscription.RAF
+import Miso.Subscription.Cookie
 -----------------------------------------------------------------------------

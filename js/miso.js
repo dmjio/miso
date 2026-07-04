@@ -265,6 +265,34 @@ function getLastDOMRef(tree) {
       return tree.domRef;
   }
 }
+function cookieGet(name, errorful, successful) {
+  try {
+    globalThis.cookieStore.get(name).then((c) => successful(c ? c.value : null)).catch((err) => errorful(err.message));
+  } catch (err) {
+    errorful(err.message);
+  }
+}
+function cookieGetAll(errorful, successful) {
+  try {
+    globalThis.cookieStore.getAll().then(successful).catch((err) => errorful(err.message));
+  } catch (err) {
+    errorful(err.message);
+  }
+}
+function cookieSet(cookie, errorful, successful) {
+  try {
+    globalThis.cookieStore.set(cookie).then(successful).catch((err) => errorful(err.message));
+  } catch (err) {
+    errorful(err.message);
+  }
+}
+function cookieDelete(name, errorful, successful) {
+  try {
+    globalThis.cookieStore.delete(name).then(successful).catch((err) => errorful(err.message));
+  } catch (err) {
+    errorful(err.message);
+  }
+}
 
 // ts/miso/dom.ts
 function diff(c, n, parent, context) {
@@ -1275,6 +1303,10 @@ globalThis["miso"] = {
   splitmix32,
   populateClass,
   delegateEvent,
+  cookieGet,
+  cookieGetAll,
+  cookieSet,
+  cookieDelete,
   delegator: eventContext.delegator,
   setDrawingContext: function(name) {
     const drawing = globalThis[name]["drawingContext"];

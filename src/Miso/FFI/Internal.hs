@@ -202,6 +202,13 @@ module Miso.FFI.Internal
    , copyClipboard
    , getUserMedia
    , isOnLine
+   -- * Cookie Store
+   , cookieGet
+   , cookieGetAll
+   , cookieSet
+   , cookieDelete
+   , cookieStoreAddEventListener
+   , cookieStoreRemoveEventListener
    -- * FileReader
    , FileReader (..)
    , newFileReader
@@ -1280,4 +1287,97 @@ unmountComponent :: Int -> IO ()
 unmountComponent vcompId = do
   comp <- getComponentContext
   void $ comp # "unmountComponent" $ [vcompId]
+-----------------------------------------------------------------------------
+-- | Retrieve a single cookie by name from the
+-- <https://developer.mozilla.org/en-US/docs/Web/API/CookieStore CookieStore API>.
+--
+-- The successful callback receives a @null@ 'JSVal' when no cookie with
+-- that name exists. The errorful callback receives the error message string.
+--
+-- See <https://developer.mozilla.org/en-US/docs/Web/API/CookieStore/get>
+cookieGet
+  :: MisoString
+  -- ^ Cookie name
+  -> (JSVal -> IO ())
+  -- ^ Successful callback
+  -> (MisoString -> IO ())
+  -- ^ Errorful callback
+  -> IO ()
+{-# INLINABLE cookieGet #-}
+cookieGet name successful errorful = do
+  s_ <- toJSVal =<< asyncCallback1 successful
+  e_ <- toJSVal =<< asyncCallback1 (errorful <=< fromJSValUnchecked)
+  n_ <- toJSVal name
+  void $ jsg "miso" # "cookieGet" $ [n_, e_, s_]
+-----------------------------------------------------------------------------
+-- | Retrieve all cookies from the
+-- <https://developer.mozilla.org/en-US/docs/Web/API/CookieStore CookieStore API>.
+--
+-- See <https://developer.mozilla.org/en-US/docs/Web/API/CookieStore/getAll>
+cookieGetAll
+  :: (JSVal -> IO ())
+  -- ^ Successful callback (receives a JS array of cookie objects)
+  -> (MisoString -> IO ())
+  -- ^ Errorful callback
+  -> IO ()
+{-# INLINABLE cookieGetAll #-}
+cookieGetAll successful errorful = do
+  s_ <- toJSVal =<< asyncCallback1 successful
+  e_ <- toJSVal =<< asyncCallback1 (errorful <=< fromJSValUnchecked)
+  void $ jsg "miso" # "cookieGetAll" $ [e_, s_]
+-----------------------------------------------------------------------------
+-- | Set a cookie via the
+-- <https://developer.mozilla.org/en-US/docs/Web/API/CookieStore CookieStore API>.
+--
+-- See <https://developer.mozilla.org/en-US/docs/Web/API/CookieStore/set>
+cookieSet
+  :: JSVal
+  -- ^ Cookie options object (serialised 'Miso.Cookie.Cookie')
+  -> IO ()
+  -- ^ Successful callback
+  -> (MisoString -> IO ())
+  -- ^ Errorful callback
+  -> IO ()
+{-# INLINABLE cookieSet #-}
+cookieSet cookie successful errorful = do
+  s_ <- toJSVal =<< asyncCallback successful
+  e_ <- toJSVal =<< asyncCallback1 (errorful <=< fromJSValUnchecked)
+  void $ jsg "miso" # "cookieSet" $ [cookie, e_, s_]
+-----------------------------------------------------------------------------
+-- | Delete a cookie by name via the
+-- <https://developer.mozilla.org/en-US/docs/Web/API/CookieStore CookieStore API>.
+--
+-- See <https://developer.mozilla.org/en-US/docs/Web/API/CookieStore/delete>
+cookieDelete
+  :: MisoString
+  -- ^ Cookie name
+  -> IO ()
+  -- ^ Successful callback
+  -> (MisoString -> IO ())
+  -- ^ Errorful callback
+  -> IO ()
+{-# INLINABLE cookieDelete #-}
+cookieDelete name successful errorful = do
+  s_ <- toJSVal =<< asyncCallback successful
+  e_ <- toJSVal =<< asyncCallback1 (errorful <=< fromJSValUnchecked)
+  n_ <- toJSVal name
+  void $ jsg "miso" # "cookieDelete" $ [n_, e_, s_]
+-----------------------------------------------------------------------------
+-- | Register a listener for
+-- <https://developer.mozilla.org/en-US/docs/Web/API/CookieStore/change_event cookieStore change>
+-- events. Returns the 'Function' handle needed to remove the listener later.
+cookieStoreAddEventListener :: (JSVal -> IO ()) -> IO Function
+{-# INLINABLE cookieStoreAddEventListener #-}
+cookieStoreAddEventListener cb = do
+  cs <- jsg "cookieStore"
+  addEventListener cs "change" cb
+-----------------------------------------------------------------------------
+-- | Remove a previously registered
+-- <https://developer.mozilla.org/en-US/docs/Web/API/CookieStore/change_event cookieStore change>
+-- listener.
+cookieStoreRemoveEventListener :: Function -> IO ()
+{-# INLINABLE cookieStoreRemoveEventListener #-}
+cookieStoreRemoveEventListener cb = do
+  cs <- jsg "cookieStore"
+  removeEventListener cs "change" cb
 -----------------------------------------------------------------------------

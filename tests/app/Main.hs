@@ -26,6 +26,7 @@ import           GHC.Generics
 import           Control.Monad
 import           Data.Either
 import           Data.IORef
+import           Control.Concurrent (MVar, newEmptyMVar, putMVar, takeMVar)
 import           Data.Text (Text)
 import           GHC.Natural (Natural)
 import qualified Data.Text as T
@@ -49,6 +50,8 @@ import           Miso.Test
 import           Miso.Html
 import           Miso.JSON.Parser (decodePure)
 import           Miso.Html.Property
+import           Miso.Cookie (Cookie (..), cookieValue, defaultCookie)
+import qualified Miso.FFI.Internal as MFFI
 import           Miso.Runtime.Internal (ComponentState (..), components, componentIds)
 -----------------------------------------------------------------------------
 -- | Clears the component state and DOM between each test
@@ -214,6 +217,71 @@ main = withJS $ do
         (`shouldBe` Nothing) =<< liftIO (getSessionStorage "key2")
         liftIO clearSessionStorage
         (`shouldBe` 0) =<< liftIO sessionStorageLength
+
+    describe "Miso.Cookie FFI tests" $ do
+      -- Helpers: bridge async FFI callbacks to synchronous MVar waits
+      let cookieSet_ name val = do
+            mvar <- newEmptyMVar :: IO (MVar (Either MisoString ()))
+            c_ <- toJSVal (defaultCookie name val)
+            MFFI.cookieSet c_
+              (putMVar mvar (Right ()))
+              (\e -> putMVar mvar (Left e))
+            takeMVar mvar
+          cookieGet_ name = do
+            mvar <- newEmptyMVar :: IO (MVar (Either MisoString (Maybe MisoString)))
+            MFFI.cookieGet name
+              (\v -> fromJSValUnchecked v >>= putMVar mvar . Right)
+              (\e -> putMVar mvar (Left e))
+            takeMVar mvar
+          cookieDelete_ name = do
+            mvar <- newEmptyMVar :: IO (MVar (Either MisoString ()))
+            MFFI.cookieDelete name
+              (putMVar mvar (Right ()))
+              (\e -> putMVar mvar (Left e))
+            takeMVar mvar
+          cookieGetAll_ = do
+            mvar <- newEmptyMVar :: IO (MVar (Either MisoString [Cookie]))
+            MFFI.cookieGetAll
+              (\v -> fromJSValUnchecked v >>= putMVar mvar . Right)
+              (\e -> putMVar mvar (Left e))
+            takeMVar mvar
+
+      it "Should set a cookie" $ do
+        result <- liftIO (cookieSet_ "miso-test-set" "hello")
+        result `shouldBe` Right ()
+
+      it "Should get a cookie that exists" $ do
+        Right _ <- liftIO (cookieSet_ "miso-test-get" "world")
+        Right mc <- liftIO (cookieGet_ "miso-test-get")
+        mc `shouldBe` Just "world"
+
+      it "Should return Nothing for a missing cookie" $ do
+        result <- liftIO (cookieGet_ "miso-nonexistent-xyzabc123")
+        result `shouldBe` (Right Nothing :: Either MisoString (Maybe MisoString))
+
+      it "Should get all cookies" $ do
+        Right _ <- liftIO (cookieSet_ "miso-test-getall" "allvalue")
+        Right cs <- liftIO cookieGetAll_
+        cs `shouldSatisfy` (not . null)
+
+      it "Should delete a cookie" $ do
+        Right _ <- liftIO (cookieSet_ "miso-test-delete" "bye")
+        Right _ <- liftIO (cookieDelete_ "miso-test-delete")
+        result <- liftIO (cookieGet_ "miso-test-delete")
+        result `shouldBe` (Right Nothing :: Either MisoString (Maybe MisoString))
+
+      it "Should delete a cookie by name without a hardcoded path" $ do
+        -- cookieDelete passes the name as a bare string, not { name, path: "/" },
+        -- so the browser matches cookies on any path the current page can see.
+        let cookie = (defaultCookie "miso-test-delete-nopath" "val") { cookiePath = "/" }
+        Right _ <- liftIO $ do
+          mvar <- newEmptyMVar :: IO (MVar (Either MisoString ()))
+          c_ <- toJSVal cookie
+          MFFI.cookieSet c_ (putMVar mvar (Right ())) (\e -> putMVar mvar (Left e))
+          takeMVar mvar
+        Right _ <- liftIO (cookieDelete_ "miso-test-delete-nopath")
+        result <- liftIO (cookieGet_ "miso-test-delete-nopath")
+        result `shouldBe` (Right Nothing :: Either MisoString (Maybe MisoString))
 
     describe "Miso.Data.Array tests" $ do
       it "Should create a new array" $ do

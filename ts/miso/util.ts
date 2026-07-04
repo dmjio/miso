@@ -327,3 +327,58 @@ export function getLastDOMRef<T>(tree: VTree<T>): T | null {
 
 // Alias — kept for backwards-compatible public API.
 export function getDOMRef<T>(tree: VTree<T>): T | null { return getFirstDOMRef(tree); }
+
+export function cookieGet(
+  name: string,
+  errorful: (err: string) => void,
+  successful: (value: string | null) => void
+): void {
+  try {
+    (globalThis as any).cookieStore.get(name)
+      .then((c: any) => successful(c ? c.value : null))
+      .catch((err: Error) => errorful(err.message));
+  } catch (err) {
+    errorful((err as Error).message);
+  }
+}
+
+export function cookieGetAll(
+  errorful: (err: string) => void,
+  successful: (cookies: any[]) => void
+): void {
+  try {
+    (globalThis as any).cookieStore.getAll()
+      .then(successful)
+      .catch((err: Error) => errorful(err.message));
+  } catch (err) {
+    errorful((err as Error).message);
+  }
+}
+
+export function cookieSet(
+  cookie: any,
+  errorful: (err: string) => void,
+  successful: () => void
+): void {
+  try {
+    (globalThis as any).cookieStore.set(cookie)
+      .then(successful)
+      .catch((err: Error) => errorful(err.message));
+  } catch (err) {
+    errorful((err as Error).message);
+  }
+}
+
+export function cookieDelete(
+  name: string,
+  errorful: (err: string) => void,
+  successful: () => void
+): void {
+  try {
+    (globalThis as any).cookieStore.delete(name)
+      .then(successful)
+      .catch((err: Error) => errorful(err.message));
+  } catch (err) {
+    errorful((err as Error).message);
+  }
+}
