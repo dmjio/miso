@@ -138,6 +138,9 @@ fromJSValUnchecked_Double = undefined
 fromJSVal_JSString :: JSVal -> IO (Maybe Text)
 fromJSVal_JSString = undefined
 -----------------------------------------------------------------------------
+await :: JSVal -> IO JSVal
+await = undefined
+-----------------------------------------------------------------------------
 -- | A asynchronous callback
 asyncCallback :: IO () -> IO JSVal
 asyncCallback = undefined

@@ -158,6 +158,7 @@ module Miso.DSL
   , syncCallback1'
   , syncCallback2'
   , syncCallback3'
+  , await
   , asyncCallback
   , asyncCallback1
   , asyncCallback2

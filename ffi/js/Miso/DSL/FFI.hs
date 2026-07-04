@@ -1,6 +1,7 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE CPP               #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE InterruptibleFFI  #-}
 -----------------------------------------------------------------------------
 {-# OPTIONS_GHC -fno-warn-orphans  #-}
 -----------------------------------------------------------------------------
@@ -36,6 +37,8 @@ module Miso.DSL.FFI
   , fromJSVal_Maybe
   , fromJSValUnchecked_Maybe
   -- * Callback FFI
+  , awaitPromise_ffi
+  , await
   , asyncCallback
   , asyncCallback1
   , asyncCallback2
@@ -79,6 +82,7 @@ module Miso.DSL.FFI
 -----------------------------------------------------------------------------
 import           Data.JSString
 import           Data.Text
+import           Control.Exception (throwIO)
 -----------------------------------------------------------------------------
 import qualified GHCJS.Marshal as Marshal
 import           GHCJS.Types
@@ -319,6 +323,26 @@ fromJSVal_Float = Marshal.fromJSVal
 fromJSValUnchecked_Float :: JSVal -> IO Float
 fromJSValUnchecked_Float = Marshal.fromJSValUnchecked
 {-# INLINE fromJSValUnchecked_Float #-}
+-----------------------------------------------------------------------------
+-- | Suspends the current Haskell thread and yields to the JS event loop
+-- until the given JavaScript Promise resolves or rejects.
+foreign import javascript interruptible
+#if GHCJS_NEW
+  "((promise, $c) => { promise.then(s => $c(null, s), e => $c(e, null)); })"
+#else
+  "$1.then(function(s) { $c(null, s); }, function(e) { $c(e, null); });"
+#endif
+  awaitPromise_ffi :: JSVal -> IO (JSVal, JSVal)
+
+-- | Awaits a JS Promise. If the promise rejects, it throws a 'JSException',
+-- mirroring the exact behavior of the GHC WASM backend's 'safe' imports.
+await :: JSVal -> IO JSVal
+await promise = do
+  (err, val) <- awaitPromise_ffi promise
+  -- If the error argument is null/undefined, the promise resolved successfully
+  if isNull_ffi err || isUndefined_ffi err
+    then pure val
+    else throwIO =<< mkJSException err
 -----------------------------------------------------------------------------
 asyncCallback :: IO () -> IO JSVal
 asyncCallback x = jsval <$> Callback.asyncCallback x
