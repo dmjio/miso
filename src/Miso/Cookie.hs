@@ -81,6 +81,7 @@ module Miso.Cookie
   , cookieSet_
   , cookieGet_
   , cookieDelete_
+  , cookieDeleteWith_
   , cookieGetAll_
   ) where
 -----------------------------------------------------------------------------
@@ -304,10 +305,10 @@ cookieDeleteWith cookie successful errorful = withSink $ \sink -> do
 -- @'Right' ()@ on success or @'Left' err@ on failure.
 --
 -- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
-cookieSet_ :: MisoString -> MisoString -> IO (Either MisoString ())
-cookieSet_ name val = do
+cookieSet_ :: Cookie -> IO (Either MisoString ())
+cookieSet_ cookie = do
   mvar <- newEmptyMVar :: IO (MVar (Either MisoString ()))
-  c_ <- toJSVal (defaultCookie name val)
+  c_ <- toJSVal cookie
   FFI.cookieSet c_
     (putMVar mvar (Right ()))
     (\e -> putMVar mvar (Left e))
@@ -344,6 +345,22 @@ cookieDelete_ name = do
     (\e -> putMVar mvar (Left e))
   takeMVar mvar
 {-# INLINE cookieDelete_ #-}
+-----------------------------------------------------------------------------
+-- | Synchronous API variant of 'cookieDeleteWith'.
+--
+-- Blocks the calling thread until the browser resolves the promise, returning
+-- @'Right' ()@ on success or @'Left' err@ on failure.
+--
+-- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+cookieDeleteWith_ :: Cookie -> IO (Either MisoString ())
+cookieDeleteWith_ cookie = do
+  mvar <- newEmptyMVar :: IO (MVar (Either MisoString ()))
+  c_ <- toJSVal cookie
+  FFI.cookieDeleteWith c_
+    (putMVar mvar (Right ()))
+    (\e -> putMVar mvar (Left e))
+  takeMVar mvar
+{-# INLINE cookieDeleteWith_ #-}
 -----------------------------------------------------------------------------
 -- | Synchronous API variant of 'cookieGetAll'.
 --

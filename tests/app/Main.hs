@@ -26,7 +26,6 @@ import           GHC.Generics
 import           Control.Monad
 import           Data.Either
 import           Data.IORef
-import           Control.Concurrent (MVar, newEmptyMVar, putMVar, takeMVar)
 import           Data.Text (Text)
 import           GHC.Natural (Natural)
 import qualified Data.Text as T
@@ -50,9 +49,8 @@ import           Miso.Test
 import           Miso.Html
 import           Miso.JSON.Parser (decodePure)
 import           Miso.Html.Property
-import           Miso.Cookie (Cookie (..), cookieValue, defaultCookie, cookieSet_, cookieGet_, cookieDelete_, cookieGetAll_)
+import           Miso.Cookie (Cookie (..), cookieValue, defaultCookie, cookieSet_, cookieGet_, cookieDelete_, cookieDeleteWith_, cookieGetAll_)
 import           Miso.Runtime.Internal (ComponentState (..), components, componentIds)
-import qualified Miso.Runtime.Internal as FFI
 -----------------------------------------------------------------------------
 -- | Clears the component state and DOM between each test
 clearComponentState :: IO ()
@@ -220,11 +218,11 @@ main = withJS $ do
 
     describe "Miso.Cookie FFI tests" $ do
       it "Should set a cookie" $ do
-        result <- liftIO (cookieSet_ "miso-test-set" "hello")
+        result <- liftIO (cookieSet_ (defaultCookie "miso-test-set" "hello"))
         result `shouldBe` Right ()
 
       it "Should get a cookie that exists" $ do
-        Right _ <- liftIO (cookieSet_ "miso-test-get" "world")
+        Right _ <- liftIO (cookieSet_ (defaultCookie "miso-test-get" "world"))
         Right mc <- liftIO (cookieGet_ "miso-test-get")
         mc `shouldBe` Just "world"
 
@@ -233,28 +231,20 @@ main = withJS $ do
         result `shouldBe` (Right Nothing :: Either MisoString (Maybe MisoString))
 
       it "Should get all cookies" $ do
-        Right _ <- liftIO (cookieSet_ "miso-test-getall" "allvalue")
+        Right _ <- liftIO (cookieSet_ (defaultCookie "miso-test-getall" "allvalue"))
         Right cs <- liftIO cookieGetAll_
         cs `shouldSatisfy` (not . null)
 
       it "Should delete a cookie" $ do
-        Right _ <- liftIO (cookieSet_ "miso-test-delete" "bye")
+        Right _ <- liftIO (cookieSet_ (defaultCookie "miso-test-delete" "bye"))
         Right _ <- liftIO (cookieDelete_ "miso-test-delete")
         result <- liftIO (cookieGet_ "miso-test-delete")
         result `shouldBe` (Right Nothing :: Either MisoString (Maybe MisoString))
 
       it "Should delete a cookie with cookieDeleteWith by path" $ do
         let cookie = (defaultCookie "miso-test-deletewith" "pathval") { cookiePath = "/" }
-        Right _ <- liftIO $ do
-          mvar <- newEmptyMVar :: IO (MVar (Either MisoString ()))
-          c_ <- toJSVal cookie
-          FFI.cookieSet c_ (putMVar mvar (Right ())) (\e -> putMVar mvar (Left e))
-          takeMVar mvar
-        Right _ <- liftIO $ do
-          mvar <- newEmptyMVar :: IO (MVar (Either MisoString ()))
-          c_ <- toJSVal cookie
-          FFI.cookieDeleteWith c_ (putMVar mvar (Right ())) (\e -> putMVar mvar (Left e))
-          takeMVar mvar
+        Right _ <- liftIO (cookieSet_ cookie)
+        Right _ <- liftIO (cookieDeleteWith_ cookie)
         result <- liftIO (cookieGet_ "miso-test-deletewith")
         result `shouldBe` (Right Nothing :: Either MisoString (Maybe MisoString))
 
@@ -262,11 +252,7 @@ main = withJS $ do
         -- cookieDelete passes the name as a bare string, not { name, path: "/" },
         -- so the browser matches cookies on any path the current page can see.
         let cookie = (defaultCookie "miso-test-delete-nopath" "val") { cookiePath = "/" }
-        Right _ <- liftIO $ do
-          mvar <- newEmptyMVar :: IO (MVar (Either MisoString ()))
-          c_ <- toJSVal cookie
-          FFI.cookieSet c_ (putMVar mvar (Right ())) (\e -> putMVar mvar (Left e))
-          takeMVar mvar
+        Right _ <- liftIO (cookieSet_ cookie)
         Right _ <- liftIO (cookieDelete_ "miso-test-delete-nopath")
         result <- liftIO (cookieGet_ "miso-test-delete-nopath")
         result `shouldBe` (Right Nothing :: Either MisoString (Maybe MisoString))
