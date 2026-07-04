@@ -74,6 +74,7 @@ module Miso.Cookie
   , cookieSet
     -- ** Delete
   , cookieDelete
+  , cookieDeleteWith
     -- ** Construction
   , defaultCookie
   ) where
@@ -264,4 +265,30 @@ cookieDelete
   -> Effect parent props model action
 cookieDelete name successful errorful = withSink $ \sink ->
   FFI.cookieDelete name (sink successful) (sink . errorful)
+-----------------------------------------------------------------------------
+-- | Delete a cookie by matching on name, path, domain, and\/or partitioned
+-- flag — useful when multiple cookies share the same name across different
+-- paths or domains.
+--
+-- Use 'defaultCookie' to build the argument and override only the fields
+-- you need:
+--
+-- @
+-- 'cookieDeleteWith' ('defaultCookie' \"session\" \"\") { 'cookiePath' = \"\/admin\" }
+--   Deleted
+--   SessionError
+-- @
+--
+-- <https://developer.mozilla.org/en-US/docs/Web/API/CookieStore/delete>
+cookieDeleteWith
+  :: Cookie
+  -- ^ Cookie whose name, path, domain and partitioned fields are used for matching
+  -> action
+  -- ^ Successful callback
+  -> (MisoString -> action)
+  -- ^ Errorful callback
+  -> Effect parent props model action
+cookieDeleteWith cookie successful errorful = withSink $ \sink -> do
+  c_ <- toJSVal cookie
+  FFI.cookieDeleteWith c_ (sink successful) (sink . errorful)
 -----------------------------------------------------------------------------

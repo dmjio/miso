@@ -293,6 +293,20 @@ function cookieDelete(name, errorful, successful) {
     errorful(err.message);
   }
 }
+function cookieDeleteWith(cookie, errorful, successful) {
+  const opts = { name: cookie.name };
+  if (cookie.path != null)
+    opts.path = cookie.path;
+  if (cookie.domain != null)
+    opts.domain = cookie.domain;
+  if (cookie.partitioned != null)
+    opts.partitioned = cookie.partitioned;
+  try {
+    globalThis.cookieStore.delete(opts).then(successful).catch((err) => errorful(err.message));
+  } catch (err) {
+    errorful(err.message);
+  }
+}
 
 // ts/miso/dom.ts
 function diff(c, n, parent, context) {
@@ -1307,6 +1321,7 @@ globalThis["miso"] = {
   cookieGetAll,
   cookieSet,
   cookieDelete,
+  cookieDeleteWith,
   delegator: eventContext.delegator,
   setDrawingContext: function(name) {
     const drawing = globalThis[name]["drawingContext"];

@@ -51,8 +51,8 @@ import           Miso.Html
 import           Miso.JSON.Parser (decodePure)
 import           Miso.Html.Property
 import           Miso.Cookie (Cookie (..), cookieValue, defaultCookie)
-import qualified Miso.FFI.Internal as MFFI
 import           Miso.Runtime.Internal (ComponentState (..), components, componentIds)
+import qualified Miso.Runtime.Internal as FFI
 -----------------------------------------------------------------------------
 -- | Clears the component state and DOM between each test
 clearComponentState :: IO ()
@@ -223,25 +223,25 @@ main = withJS $ do
       let cookieSet_ name val = do
             mvar <- newEmptyMVar :: IO (MVar (Either MisoString ()))
             c_ <- toJSVal (defaultCookie name val)
-            MFFI.cookieSet c_
+            FFI.cookieSet c_
               (putMVar mvar (Right ()))
               (\e -> putMVar mvar (Left e))
             takeMVar mvar
           cookieGet_ name = do
             mvar <- newEmptyMVar :: IO (MVar (Either MisoString (Maybe MisoString)))
-            MFFI.cookieGet name
+            FFI.cookieGet name
               (\v -> fromJSValUnchecked v >>= putMVar mvar . Right)
               (\e -> putMVar mvar (Left e))
             takeMVar mvar
           cookieDelete_ name = do
             mvar <- newEmptyMVar :: IO (MVar (Either MisoString ()))
-            MFFI.cookieDelete name
+            FFI.cookieDelete name
               (putMVar mvar (Right ()))
               (\e -> putMVar mvar (Left e))
             takeMVar mvar
           cookieGetAll_ = do
             mvar <- newEmptyMVar :: IO (MVar (Either MisoString [Cookie]))
-            MFFI.cookieGetAll
+            FFI.cookieGetAll
               (\v -> fromJSValUnchecked v >>= putMVar mvar . Right)
               (\e -> putMVar mvar (Left e))
             takeMVar mvar
@@ -270,6 +270,21 @@ main = withJS $ do
         result <- liftIO (cookieGet_ "miso-test-delete")
         result `shouldBe` (Right Nothing :: Either MisoString (Maybe MisoString))
 
+      it "Should delete a cookie with cookieDeleteWith by path" $ do
+        let cookie = (defaultCookie "miso-test-deletewith" "pathval") { cookiePath = "/" }
+        Right _ <- liftIO $ do
+          mvar <- newEmptyMVar :: IO (MVar (Either MisoString ()))
+          c_ <- toJSVal cookie
+          FFI.cookieSet c_ (putMVar mvar (Right ())) (\e -> putMVar mvar (Left e))
+          takeMVar mvar
+        Right _ <- liftIO $ do
+          mvar <- newEmptyMVar :: IO (MVar (Either MisoString ()))
+          c_ <- toJSVal cookie
+          FFI.cookieDeleteWith c_ (putMVar mvar (Right ())) (\e -> putMVar mvar (Left e))
+          takeMVar mvar
+        result <- liftIO (cookieGet_ "miso-test-deletewith")
+        result `shouldBe` (Right Nothing :: Either MisoString (Maybe MisoString))
+
       it "Should delete a cookie by name without a hardcoded path" $ do
         -- cookieDelete passes the name as a bare string, not { name, path: "/" },
         -- so the browser matches cookies on any path the current page can see.
@@ -277,7 +292,7 @@ main = withJS $ do
         Right _ <- liftIO $ do
           mvar <- newEmptyMVar :: IO (MVar (Either MisoString ()))
           c_ <- toJSVal cookie
-          MFFI.cookieSet c_ (putMVar mvar (Right ())) (\e -> putMVar mvar (Left e))
+          FFI.cookieSet c_ (putMVar mvar (Right ())) (\e -> putMVar mvar (Left e))
           takeMVar mvar
         Right _ <- liftIO (cookieDelete_ "miso-test-delete-nopath")
         result <- liftIO (cookieGet_ "miso-test-delete-nopath")

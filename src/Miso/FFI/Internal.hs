@@ -207,6 +207,7 @@ module Miso.FFI.Internal
    , cookieGetAll
    , cookieSet
    , cookieDelete
+   , cookieDeleteWith
    , cookieStoreAddEventListener
    , cookieStoreRemoveEventListener
    -- * FileReader
@@ -1362,6 +1363,24 @@ cookieDelete name successful errorful = do
   e_ <- toJSVal =<< asyncCallback1 (errorful <=< fromJSValUnchecked)
   n_ <- toJSVal name
   void $ jsg "miso" # "cookieDelete" $ [n_, e_, s_]
+-----------------------------------------------------------------------------
+-- | Delete a cookie by options object via the
+-- <https://developer.mozilla.org/en-US/docs/Web/API/CookieStore CookieStore API>.
+--
+-- See <https://developer.mozilla.org/en-US/docs/Web/API/CookieStore/delete>
+cookieDeleteWith
+  :: JSVal
+  -- ^ Cookie options object (name, path, domain, partitioned)
+  -> IO ()
+  -- ^ Successful callback
+  -> (MisoString -> IO ())
+  -- ^ Errorful callback
+  -> IO ()
+{-# INLINABLE cookieDeleteWith #-}
+cookieDeleteWith opts successful errorful = do
+  s_ <- toJSVal =<< asyncCallback successful
+  e_ <- toJSVal =<< asyncCallback1 (errorful <=< fromJSValUnchecked)
+  void $ jsg "miso" # "cookieDeleteWith" $ [opts, e_, s_]
 -----------------------------------------------------------------------------
 -- | Register a listener for
 -- <https://developer.mozilla.org/en-US/docs/Web/API/CookieStore/change_event cookieStore change>

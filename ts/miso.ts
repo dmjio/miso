@@ -27,6 +27,7 @@ import {
    cookieGetAll,
    cookieSet,
    cookieDelete,
+   cookieDeleteWith,
 } from './miso/util';
 
 import {
@@ -122,6 +123,7 @@ export {
   cookieGetAll,
   cookieSet,
   cookieDelete,
+  cookieDeleteWith,
 
   /* Types */
   VTree,

@@ -43,7 +43,9 @@ module Miso.Runtime.Internal
   , rootComponentId
   , ComponentState(..)
   , schedulerThread
+  , module FFI
   ) where
 ----------------------------------------------------------------------------
 import Miso.Runtime (components, ComponentState(..), componentIds, rootComponentId, schedulerThread)
+import Miso.FFI.Internal as FFI
 ----------------------------------------------------------------------------

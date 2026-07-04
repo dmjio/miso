@@ -1,4 +1,4 @@
-import { cookieGet, cookieGetAll, cookieSet, cookieDelete } from '../miso/util';
+import { cookieGet, cookieGetAll, cookieSet, cookieDelete, cookieDeleteWith } from '../miso/util';
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
 
 beforeAll(() => {
@@ -232,5 +232,91 @@ describe('cookieDelete', () => {
 
     expect(typeof captured).toBe('string');
     expect(captured).not.toHaveProperty('path');
+  });
+});
+
+describe('cookieDeleteWith', () => {
+  test('passes name and path as options object', async () => {
+    let captured: any = null;
+    (globalThis as any).cookieStore = {
+      delete: (arg: any) => { captured = arg; return Promise.resolve(); },
+    };
+
+    cookieDeleteWith({ name: 'session', path: '/admin' }, () => {}, () => {});
+    await tick();
+
+    expect(captured).toEqual({ name: 'session', path: '/admin' });
+  });
+
+  test('passes name and domain', async () => {
+    let captured: any = null;
+    (globalThis as any).cookieStore = {
+      delete: (arg: any) => { captured = arg; return Promise.resolve(); },
+    };
+
+    cookieDeleteWith({ name: 'session', domain: 'example.com' }, () => {}, () => {});
+    await tick();
+
+    expect(captured).toEqual({ name: 'session', domain: 'example.com' });
+  });
+
+  test('passes partitioned flag', async () => {
+    let captured: any = null;
+    (globalThis as any).cookieStore = {
+      delete: (arg: any) => { captured = arg; return Promise.resolve(); },
+    };
+
+    cookieDeleteWith({ name: 'session', partitioned: true }, () => {}, () => {});
+    await tick();
+
+    expect(captured).toEqual({ name: 'session', partitioned: true });
+  });
+
+  test('omits null/undefined fields from options', async () => {
+    let captured: any = null;
+    (globalThis as any).cookieStore = {
+      delete: (arg: any) => { captured = arg; return Promise.resolve(); },
+    };
+
+    cookieDeleteWith({ name: 'session', path: null, domain: null, partitioned: null }, () => {}, () => {});
+    await tick();
+
+    expect(captured).toEqual({ name: 'session' });
+  });
+
+  test('calls successful on resolution', async () => {
+    (globalThis as any).cookieStore = {
+      delete: () => Promise.resolve(),
+    };
+
+    let called = false;
+    cookieDeleteWith({ name: 'session' }, () => {}, () => { called = true; });
+    await tick();
+
+    expect(called).toBe(true);
+  });
+
+  test('calls errorful on rejected promise', async () => {
+    (globalThis as any).cookieStore = {
+      delete: () => Promise.reject(new Error('delete failed')),
+    };
+
+    let errMsg: any = undefined;
+    cookieDeleteWith({ name: 'session' }, (e) => { errMsg = e; }, () => {});
+    await tick();
+
+    expect(errMsg).toBe('delete failed');
+  });
+
+  test('calls errorful when cookieStore throws synchronously', async () => {
+    (globalThis as any).cookieStore = {
+      delete: () => { throw new Error('not in secure context'); },
+    };
+
+    let errMsg: any = undefined;
+    cookieDeleteWith({ name: 'session' }, (e) => { errMsg = e; }, () => {});
+    await tick();
+
+    expect(errMsg).toBe('not in secure context');
   });
 });

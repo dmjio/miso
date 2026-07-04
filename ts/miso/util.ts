@@ -382,3 +382,21 @@ export function cookieDelete(
     errorful((err as Error).message);
   }
 }
+
+export function cookieDeleteWith(
+  cookie: any,
+  errorful: (err: string) => void,
+  successful: () => void
+): void {
+  const opts: any = { name: cookie.name };
+  if (cookie.path != null) opts.path = cookie.path;
+  if (cookie.domain != null) opts.domain = cookie.domain;
+  if (cookie.partitioned != null) opts.partitioned = cookie.partitioned;
+  try {
+    (globalThis as any).cookieStore.delete(opts)
+      .then(successful)
+      .catch((err: Error) => errorful(err.message));
+  } catch (err) {
+    errorful((err as Error).message);
+  }
+}

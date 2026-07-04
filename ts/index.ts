@@ -25,6 +25,7 @@ import {
   cookieGetAll,
   cookieSet,
   cookieDelete,
+  cookieDeleteWith,
 } from './miso';
 
 import {
@@ -66,6 +67,7 @@ globalThis['miso'] = {
     cookieGetAll,
     cookieSet,
     cookieDelete,
+    cookieDeleteWith,
     delegator : eventContext.delegator,
     setDrawingContext : function (name) {
       // dmj: this looks for a custom globally defined rendering / event context
