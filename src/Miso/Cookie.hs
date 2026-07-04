@@ -77,8 +77,14 @@ module Miso.Cookie
   , cookieDeleteWith
     -- ** Construction
   , defaultCookie
+    -- ** Synchronous API variants
+  , cookieSet_
+  , cookieGet_
+  , cookieDelete_
+  , cookieGetAll_
   ) where
 -----------------------------------------------------------------------------
+import           Control.Concurrent (MVar, newEmptyMVar, putMVar, takeMVar)
 import           Control.Monad ((<=<), forM_, join)
 import           Prelude hiding ((!!))
 -----------------------------------------------------------------------------
@@ -291,4 +297,58 @@ cookieDeleteWith
 cookieDeleteWith cookie successful errorful = withSink $ \sink -> do
   c_ <- toJSVal cookie
   FFI.cookieDeleteWith c_ (sink successful) (sink . errorful)
+-----------------------------------------------------------------------------
+-- | Synchronous API variant of 'cookieSet'.
+--
+-- Blocks until the browser resolves the promise, returning @'Right' ()@ on
+-- success or @'Left' err@ on failure.
+cookieSet_ :: MisoString -> MisoString -> IO (Either MisoString ())
+cookieSet_ name val = do
+  mvar <- newEmptyMVar :: IO (MVar (Either MisoString ()))
+  c_ <- toJSVal (defaultCookie name val)
+  FFI.cookieSet c_
+    (putMVar mvar (Right ()))
+    (\e -> putMVar mvar (Left e))
+  takeMVar mvar
+{-# INLINE cookieSet_ #-}
+-----------------------------------------------------------------------------
+-- | Synchronous API variant of 'cookieGet'.
+--
+-- Blocks until the browser resolves the promise, returning
+-- @'Right' ('Just' value)@ when the cookie exists, @'Right' 'Nothing'@
+-- when absent, or @'Left' err@ on failure.
+cookieGet_ :: MisoString -> IO (Either MisoString (Maybe MisoString))
+cookieGet_ name = do
+  mvar <- newEmptyMVar :: IO (MVar (Either MisoString (Maybe MisoString)))
+  FFI.cookieGet name
+    (\v -> fromJSValUnchecked v >>= putMVar mvar . Right)
+    (\e -> putMVar mvar (Left e))
+  takeMVar mvar
+{-# INLINE cookieGet_ #-}
+-----------------------------------------------------------------------------
+-- | Synchronous API variant of 'cookieDelete'.
+--
+-- Blocks until the browser resolves the promise, returning @'Right' ()@ on
+-- success or @'Left' err@ on failure.
+cookieDelete_ :: MisoString -> IO (Either MisoString ())
+cookieDelete_ name = do
+  mvar <- newEmptyMVar :: IO (MVar (Either MisoString ()))
+  FFI.cookieDelete name
+    (putMVar mvar (Right ()))
+    (\e -> putMVar mvar (Left e))
+  takeMVar mvar
+{-# INLINE cookieDelete_ #-}
+-----------------------------------------------------------------------------
+-- | Synchronous API variant of 'cookieGetAll'.
+--
+-- Blocks until the browser resolves the promise, returning
+-- @'Right' cookies@ on success or @'Left' err@ on failure.
+cookieGetAll_ :: IO (Either MisoString [Cookie])
+cookieGetAll_ = do
+  mvar <- newEmptyMVar :: IO (MVar (Either MisoString [Cookie]))
+  FFI.cookieGetAll
+    (\v -> fromJSValUnchecked v >>= putMVar mvar . Right)
+    (\e -> putMVar mvar (Left e))
+  takeMVar mvar
+{-# INLINE cookieGetAll_ #-}
 -----------------------------------------------------------------------------

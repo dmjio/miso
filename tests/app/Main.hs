@@ -50,7 +50,7 @@ import           Miso.Test
 import           Miso.Html
 import           Miso.JSON.Parser (decodePure)
 import           Miso.Html.Property
-import           Miso.Cookie (Cookie (..), cookieValue, defaultCookie)
+import           Miso.Cookie (Cookie (..), cookieValue, defaultCookie, cookieSet_, cookieGet_, cookieDelete_, cookieGetAll_)
 import           Miso.Runtime.Internal (ComponentState (..), components, componentIds)
 import qualified Miso.Runtime.Internal as FFI
 -----------------------------------------------------------------------------
@@ -219,33 +219,6 @@ main = withJS $ do
         (`shouldBe` 0) =<< liftIO sessionStorageLength
 
     describe "Miso.Cookie FFI tests" $ do
-      -- Helpers: bridge async FFI callbacks to synchronous MVar waits
-      let cookieSet_ name val = do
-            mvar <- newEmptyMVar :: IO (MVar (Either MisoString ()))
-            c_ <- toJSVal (defaultCookie name val)
-            FFI.cookieSet c_
-              (putMVar mvar (Right ()))
-              (\e -> putMVar mvar (Left e))
-            takeMVar mvar
-          cookieGet_ name = do
-            mvar <- newEmptyMVar :: IO (MVar (Either MisoString (Maybe MisoString)))
-            FFI.cookieGet name
-              (\v -> fromJSValUnchecked v >>= putMVar mvar . Right)
-              (\e -> putMVar mvar (Left e))
-            takeMVar mvar
-          cookieDelete_ name = do
-            mvar <- newEmptyMVar :: IO (MVar (Either MisoString ()))
-            FFI.cookieDelete name
-              (putMVar mvar (Right ()))
-              (\e -> putMVar mvar (Left e))
-            takeMVar mvar
-          cookieGetAll_ = do
-            mvar <- newEmptyMVar :: IO (MVar (Either MisoString [Cookie]))
-            FFI.cookieGetAll
-              (\v -> fromJSValUnchecked v >>= putMVar mvar . Right)
-              (\e -> putMVar mvar (Left e))
-            takeMVar mvar
-
       it "Should set a cookie" $ do
         result <- liftIO (cookieSet_ "miso-test-set" "hello")
         result `shouldBe` Right ()
