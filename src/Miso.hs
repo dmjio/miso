@@ -56,6 +56,14 @@
 --
 -- * __State management__: 'Component' @model@ state can be manipulated using "Miso.Lens" or "Miso.State" in response to application events.
 --
+-- * __HTTP \/ Cookies__: "Miso.Fetch" wraps the browser's
+--   [Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API) and "Miso.Cookie" wraps the
+--   [CookieStore API](https://developer.mozilla.org/en-US/docs/Web/API/CookieStore). Both offer two calling
+--   conventions for every operation: an asynchronous callback-based 'Effect' (e.g. 'getJSON', 'Miso.Cookie.cookieGet')
+--   that dispatches an @action@ when the browser resolves the underlying promise, and a synchronous, @_@-suffixed
+--   'IO' variant (e.g. 'getJSON_', 'Miso.Cookie.cookieGet_') that blocks the calling thread and returns an 'Either'
+--   directly — best paired with 'io' \/ 'io_' so the blocking call doesn't stall the scheduler thread.
+--
 -- = Architecture
 --
 -- * __React__: miso implements a subset of the [React](https://react.dev) architecture including 'Component', Lifecycle Hooks, Virtual DOM, Event delegation,
@@ -1623,7 +1631,8 @@ module Miso
     -- | Functions for specifying component lifecycle events and event handlers.
   , module Miso.Event
     -- * Fetch
-    -- | Interface to the Fetch API for making HTTP requests.
+    -- | Interface to the Fetch API for making HTTP requests. Each function has an
+    -- asynchronous, callback-based 'Effect' variant and a synchronous, @_@-suffixed 'IO' variant.
   , module Miso.Fetch
     -- * PubSub
     -- | Publish / Subscribe primitives for communication between components.
