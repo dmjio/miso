@@ -13,7 +13,7 @@
 --
 -- = miso 🍜
 --
--- @miso@ is a library for building web and native user interface applications in Haskell. See the [GitHub group](https://github.com/haskell-miso).
+-- @miso@ is a library for building web and native user interface applications. See the [GitHub group](https://github.com/haskell-miso).
 --
 -- It provides a [React](https://react.dev)-like programming experience for a simple [Haskell](https://haskell.org) dialect that emphasizes
 --
@@ -69,7 +69,7 @@
 -- MVU (model-view-update) interface. This is similar to a left-fold over @action@s — the 'Component'
 -- @model@ is updated by 'Miso.Types.update' and rendered by 'Miso.Types.view'.
 --
--- * __'model'__: This can be any user-defined type in Haskell. An 'Eq' constraint
+-- * __'model'__: This can be any user-defined type. An 'Eq' constraint
 --   is required. We recommend using the default derived 'Eq' instance.
 --
 -- * __'view'__: This is the templating function that is used to construct a new virtual DOM
@@ -908,11 +908,11 @@
 -- == Basic lens operations
 --
 -- @
--- 'Miso.Lens.view' l               -- read a field (MonadReader)
--- 'Miso.Lens.set'  l v             -- write a field
+-- 'Miso.Lens.view' l              -- read a field (MonadReader)
+-- 'Miso.Lens.set'  l v            -- write a field
 -- 'Miso.Lens.over' l f            -- modify a field
 -- r 'Miso.Lens.^.' l              -- infix read
--- r '&' l 'Miso.Lens..~' v         -- infix write
+-- r 'Data.Function.&' l 'Miso.Lens..~' v         -- infix write
 -- @
 --
 -- == 'MonadState' operators (for use inside 'Effect')
@@ -944,7 +944,7 @@
 --
 -- import "Miso.Lens.TH" ('Miso.Lens.TH.makeLenses')
 --
--- data Model = Model { _count :: Int, _name :: 'MisoString' }
+-- data Model = Model { _count :: 'Int', _name :: 'MisoString' }
 --
 -- 'Miso.Lens.TH.makeLenses' ''Model
 --
@@ -953,7 +953,7 @@
 --   Rename n  -> name 'Miso.Lens..=' n
 -- @
 --
--- * __Generics__ ("Miso.Lens.Generic"): 'field' \/ 'HasLens' derive lenses at compile time
+-- * __Generics__ ("Miso.Lens.Generic"): 'Miso.Lens.Generic.field' \/ 'Miso.Lens.Generic.HasLens' derive lenses at compile time
 --   using @GHC.Generics@ — no TH splice required. Requires @TypeApplications@ and,
 --   optionally, @OverloadedLabels@ for the @#field@ shorthand.
 --
@@ -970,7 +970,7 @@
 --   deriving ('Eq', 'GHC.Generics.Generic')
 --
 -- update = \\case
---   Increment -> 'field' \@\"count\" 'Miso.Lens.+=' 1  -- via TypeApplications
+--   Increment -> 'Miso.Lens.Generic.field' \@\"count\" 'Miso.Lens.+=' 1  -- via TypeApplications
 --   Rename n  -> #name 'Miso.Lens..=' n            -- via OverloadedLabels
 -- @
 --
@@ -1071,7 +1071,7 @@
 -- import "Miso.Html.Render" ('Miso.Html.Render.toHtml')
 --
 -- pageHtml :: 'Data.ByteString.Lazy.ByteString'
--- pageHtml = 'toHtml' $ 'Miso.Html.Element.div_' [ 'Miso.Html.Property.id_' "root" ] [ "Hello, world!" ]
+-- pageHtml = 'Miso.Html.Render.toHtml' $ 'Miso.Html.Element.div_' [ 'Miso.Html.Property.id_' "root" ] [ "Hello, world!" ]
 -- @
 --
 -- This is typically wired into a Servant handler on the server using the
@@ -1196,7 +1196,7 @@
 -- For full control, implement 'Miso.Router.routeParser' and 'Miso.Router.fromRoute' directly:
 --
 -- @
--- data Route = Product Int
+-- data Route = Product 'Int'
 --
 -- instance 'Miso.Router.Router' Route where
 --   'Miso.Router.routeParser' = 'Miso.Router.routes' [ Product \<$\> ('path' "product" *\> 'capture') ]
@@ -1245,9 +1245,9 @@
 --
 -- * __JS / WASM backends__: t'MisoString' is @JSString@, a direct reference to a
 --   JavaScript string — no marshalling cost when passing to the DOM or FFI.
--- * __Server / vanilla GHC__ (@ssr@ flag): t'MisoString' is t'Data.Text'.
+-- * __Server / vanilla GHC__ (@-fssr@ flag): t'MisoString' is t'Data.Text'.
 --
--- Use t'MisoString' anywhere you would otherwise reach for 'String' or 'Text' in a
+-- Use t'MisoString' anywhere you would otherwise reach for 'String' or t'Data.Text' in a
 -- miso application. See "Miso.String" for the full API.
 --
 -- == Converting to 'MisoString'
@@ -1274,7 +1274,7 @@
 -- @
 -- 'Miso.String.fromMisoString' "42"     :: 'Int'     -- 42
 -- 'Miso.String.fromMisoString' "3.14"   :: 'Double'  -- 3.14
--- 'Miso.String.fromMisoStringEither' s  :: Either 'String' 'Int'
+-- 'Miso.String.fromMisoStringEither' s  :: 'Either' 'String' 'Int'
 -- @
 --
 -- 'Miso.String.FromMisoString' instances are provided for 'String', t'Data.Text.Text',
@@ -1335,7 +1335,7 @@
 --
 -- @
 -- 'Miso.JSON.decode' s            :: 'Maybe' a      -- returns 'Nothing' on failure
--- 'Miso.JSON.eitherDecode' s      :: Either 'MisoString' a
+-- 'Miso.JSON.eitherDecode' s      :: 'Either' 'MisoString' a
 -- @
 --
 -- == 'Miso.JSON.ToJSON' \/ 'Miso.JSON.FromJSON'
@@ -1356,7 +1356,7 @@
 -- @
 --
 -- Use 'Miso.JSON.genericToJSON' \/ 'Miso.JSON.genericParseJSON' with 'Options' to customise field and
--- constructor names. 'camelTo2' is provided for converting @camelCase@ to
+-- constructor names. 'Miso.JSON.camelTo2' is provided for converting @camelCase@ to
 -- @snake_case@ (or any separator):
 --
 -- @
@@ -1368,10 +1368,10 @@
 --
 -- @
 -- -- Build
--- 'Miso.JSON.object' [ "name" 'Miso.JSON..=' 'ms' "Alice", "age" 'Miso.JSON..=' (30 :: Int) ]
+-- 'Miso.JSON.object' [ "name" 'Miso.JSON..=' 'ms' \"Alice\", "age" 'Miso.JSON..=' (30 :: 'Int') ]
 --
 -- -- Parse (inside a 'withObject' callback or event decoder)
--- 'Miso.JSON.withObject' "User" $ \\o -> User
+-- 'Miso.JSON.withObject' \"User\" $ \\o -> User
 --   '<$>' o 'Miso.JSON..:' "name"     -- required field
 --   '<*>' o 'Miso.JSON..:' "age"
 --
@@ -1400,7 +1400,7 @@
 --
 -- == 1. Structured DSL ("Miso.CSS")
 --
--- 'Miso.CSS.style_' takes a list of @'Style'@ values (which are @(MisoString, MisoString)@ pairs).
+-- 'Miso.CSS.style_' takes a list of @'Style'@ values (which are @('MisoString', 'MisoString')@ pairs).
 -- Miso manages individual properties on the 'DOMRef', merging and diffing them efficiently:
 --
 -- @
@@ -1524,7 +1524,7 @@
 --
 -- > [DEBUG_HYDRATE] Successfully prerendered page
 --
--- See the [Haskell miso](https://haskell-miso.org) website console for an example usage of static prerendering with 'miso' and [miso-ui](https://ui.haskell-miso.org) for 'prerender' usage.
+-- See the [miso](https://haskell-miso.org) website console for an example usage of static prerendering with 'miso' and [miso-ui](https://ui.haskell-miso.org) for 'prerender' usage.
 --
 -- == Dynamic prerendering
 --

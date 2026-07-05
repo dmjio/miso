@@ -4,6 +4,9 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE CPP                   #-}
+#ifdef SSR
+{-# LANGUAGE RecordWildCards       #-}
+#endif
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Html.Render
@@ -259,7 +262,7 @@ toHtmlFromJSON (Array a)    = fromMisoString $ ms (show a)
 -- We use 'unsafePerformIO' here because @servant@'s 'MimeRender' is a pure function
 -- yet we need to allow the users to hydrate in 'IO'.
 --
-getInitialComponentModel :: Component parent model action -> model
+getInitialComponentModel :: Component parent props model action -> model
 getInitialComponentModel Component {..} =
   case hydrateModel of
     Nothing -> model
