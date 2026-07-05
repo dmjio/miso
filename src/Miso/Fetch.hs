@@ -34,6 +34,13 @@
 -- Use 'getJSON' or 'postJSON' for typical REST calls; use 'postJSON'' when
 -- the server also returns a JSON response body.
 --
+-- Every function above has a synchronous counterpart suffixed with @_@
+-- (e.g. 'getJSON_', 'postJSON_') that blocks the calling thread until the
+-- browser resolves the underlying promise, returning @'Right' response@ on
+-- success or @'Left' response@ on failure instead of dispatching an action.
+-- These are best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid
+-- blocking the scheduler thread.
+--
 -- For Servant-style typed client generation, see the miso README.
 --
 ----------------------------------------------------------------------------
@@ -76,10 +83,33 @@ module Miso.Fetch
   , Body
   , Response (..)
   , CONTENT_TYPE (..)
+    -- ** Synchronous API variants
+  , getJSON_
+  , postJSON_
+  , postJSON'_
+  , putJSON_
+  , getText_
+  , postText_
+  , putText_
+  , getBlob_
+  , postBlob_
+  , putBlob_
+  , getFormData_
+  , postFormData_
+  , putFormData_
+  , getUint8Array_
+  , postUint8Array_
+  , putUint8Array_
+  , postImage_
+  , putImage_
+  , getArrayBuffer_
+  , postArrayBuffer_
+  , putArrayBuffer_
     -- ** Internal
   , fetch
   ) where
 ----------------------------------------------------------------------------
+import           Control.Concurrent (MVar, newEmptyMVar, putMVar, takeMVar)
 import           Miso.JSON
 import qualified Data.Map.Strict as M
 ----------------------------------------------------------------------------
@@ -700,4 +730,585 @@ biasHeaders :: Ord k => [(k, a)] -> [(k, a)] -> [(k, a)]
 biasHeaders userDefined contentSpecific
   = M.toList
   $ M.fromList userDefined <> M.fromList contentSpecific
+----------------------------------------------------------------------------
+-- | Synchronous API variant of 'getJSON'.
+--
+-- Blocks the calling thread until the browser resolves the promise, returning
+-- @'Right' response@ on success or @'Left' response@ on failure.
+--
+-- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+getJSON_
+  :: (FromJSON body, FromJSVal error)
+  => MisoString
+  -- ^ url
+  -> [(MisoString, MisoString)]
+  -- ^ headers
+  -> IO (Either (Response error) (Response body))
+getJSON_ url headers_ = do
+  mvar <- newEmptyMVar :: IO (MVar (Either (Response error) (Response body)))
+  FFI.fetch url "GET" Nothing jsonHeaders
+    (handleJSON mvar)
+    (putMVar mvar . Left)
+    JSON
+  takeMVar mvar
+  where
+    jsonHeaders = biasHeaders headers_ [accept =: applicationJSON]
+    handleJSON mvar resp@Response {..} =
+      fmap fromJSON <$> fromJSVal body >>= \case
+        Nothing -> do
+          err <- fromJSValUnchecked body
+          putMVar mvar $ Left $ Response
+            { body = err
+            , errorMessage = Just "Not a valid JSON object"
+            , ..
+            }
+        Just (Success result) ->
+          putMVar mvar $ Right resp { body = result }
+        Just (Error msg) -> do
+          err <- fromJSValUnchecked body
+          putMVar mvar $ Left $ Response
+            { body = err
+            , errorMessage = Just (ms msg)
+            , ..
+            }
+{-# INLINE getJSON_ #-}
+----------------------------------------------------------------------------
+-- | Synchronous API variant of 'postJSON'.
+--
+-- Blocks the calling thread until the browser resolves the promise, returning
+-- @'Right' response@ on success or @'Left' response@ on failure.
+--
+-- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+postJSON_
+  :: (FromJSVal error, ToJSON body)
+  => MisoString
+  -- ^ url
+  -> body
+  -- ^ Body
+  -> [(MisoString, MisoString)]
+  -- ^ headers_
+  -> IO (Either (Response error) (Response ()))
+postJSON_ url body_ headers_ = do
+  mvar <- newEmptyMVar :: IO (MVar (Either (Response error) (Response ())))
+  bodyVal <- toJSVal (encode body_)
+  FFI.fetch url "POST" (Just bodyVal) jsonHeaders_
+    (putMVar mvar . Right)
+    (putMVar mvar . Left)
+    NONE
+  takeMVar mvar
+  where
+    jsonHeaders_ = biasHeaders headers_ [contentType =: applicationJSON]
+{-# INLINE postJSON_ #-}
+----------------------------------------------------------------------------
+-- | Synchronous API variant of 'postJSON''.
+--
+-- Blocks the calling thread until the browser resolves the promise, returning
+-- @'Right' response@ on success or @'Left' response@ on failure.
+--
+-- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+postJSON'_
+  :: (FromJSVal error, ToJSON body, FromJSON return)
+  => MisoString
+  -- ^ url
+  -> body
+  -- ^ Body
+  -> [(MisoString, MisoString)]
+  -- ^ headers_
+  -> IO (Either (Response error) (Response return))
+postJSON'_ url body_ headers_ = do
+  mvar <- newEmptyMVar :: IO (MVar (Either (Response error) (Response return)))
+  bodyVal <- toJSVal (encode body_)
+  FFI.fetch url "POST" (Just bodyVal) jsonHeaders_
+    (handleJSON mvar)
+    (putMVar mvar . Left)
+    JSON
+  takeMVar mvar
+  where
+    jsonHeaders_ = biasHeaders headers_ [contentType =: applicationJSON, accept =: applicationJSON]
+    handleJSON mvar resp@Response {..} =
+      fmap fromJSON <$> fromJSVal body >>= \case
+        Nothing -> do
+          err <- fromJSValUnchecked body
+          putMVar mvar $ Left $ Response
+            { body = err
+            , errorMessage = Just "Not a valid JSON object"
+            , ..
+            }
+        Just (Success result) ->
+          putMVar mvar $ Right resp { body = result }
+        Just (Error msg) -> do
+          err <- fromJSValUnchecked body
+          putMVar mvar $ Left $ Response
+            { body = err
+            , errorMessage = Just (ms msg)
+            , ..
+            }
+{-# INLINE postJSON'_ #-}
+----------------------------------------------------------------------------
+-- | Synchronous API variant of 'putJSON'.
+--
+-- Blocks the calling thread until the browser resolves the promise, returning
+-- @'Right' response@ on success or @'Left' response@ on failure.
+--
+-- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+putJSON_
+  :: (FromJSVal error, ToJSON body)
+  => MisoString
+  -- ^ url
+  -> body
+  -- ^ Body
+  -> [(MisoString, MisoString)]
+  -- ^ headers_
+  -> IO (Either (Response error) (Response ()))
+putJSON_ url body_ headers_ = do
+  mvar <- newEmptyMVar :: IO (MVar (Either (Response error) (Response ())))
+  bodyVal <- toJSVal (encode body_)
+  FFI.fetch url "PUT" (Just bodyVal) jsonHeaders_
+    (putMVar mvar . Right)
+    (putMVar mvar . Left)
+    NONE
+  takeMVar mvar
+  where
+    jsonHeaders_ = biasHeaders headers_ [contentType =: applicationJSON]
+{-# INLINE putJSON_ #-}
+----------------------------------------------------------------------------
+-- | Synchronous API variant of 'getText'.
+--
+-- Blocks the calling thread until the browser resolves the promise, returning
+-- @'Right' response@ on success or @'Left' response@ on failure.
+--
+-- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+getText_
+  :: FromJSVal error
+  => MisoString
+  -- ^ url
+  -> [(MisoString, MisoString)]
+  -- ^ headers_
+  -> IO (Either (Response error) (Response MisoString))
+getText_ url headers_ = do
+  mvar <- newEmptyMVar :: IO (MVar (Either (Response error) (Response MisoString)))
+  FFI.fetch url "GET" Nothing textHeaders_
+    (putMVar mvar . Right)
+    (putMVar mvar . Left)
+    TEXT
+  takeMVar mvar
+  where
+    textHeaders_ = biasHeaders headers_ [accept =: textPlain]
+{-# INLINE getText_ #-}
+----------------------------------------------------------------------------
+-- | Synchronous API variant of 'postText'.
+--
+-- Blocks the calling thread until the browser resolves the promise, returning
+-- @'Right' response@ on success or @'Left' response@ on failure.
+--
+-- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+postText_
+  :: FromJSVal error
+  => MisoString
+  -- ^ url
+  -> MisoString
+  -- ^ Body
+  -> [(MisoString, MisoString)]
+  -- ^ headers_
+  -> IO (Either (Response error) (Response ()))
+postText_ url body_ headers_ = do
+  mvar <- newEmptyMVar :: IO (MVar (Either (Response error) (Response ())))
+  bodyVal <- toJSVal (encode body_)
+  FFI.fetch url "POST" (Just bodyVal) textHeaders_
+    (putMVar mvar . Right)
+    (putMVar mvar . Left)
+    NONE
+  takeMVar mvar
+  where
+    textHeaders_ = biasHeaders headers_ [contentType =: textPlain]
+{-# INLINE postText_ #-}
+----------------------------------------------------------------------------
+-- | Synchronous API variant of 'putText'.
+--
+-- Blocks the calling thread until the browser resolves the promise, returning
+-- @'Right' response@ on success or @'Left' response@ on failure.
+--
+-- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+putText_
+  :: FromJSVal error
+  => MisoString
+  -- ^ url
+  -> MisoString
+  -- ^ Body
+  -> [(MisoString, MisoString)]
+  -- ^ headers_
+  -> IO (Either (Response error) (Response ()))
+putText_ url imageBody headers_ = do
+  mvar <- newEmptyMVar :: IO (MVar (Either (Response error) (Response ())))
+  body_ <- toJSVal imageBody
+  FFI.fetch url "PUT" (Just body_) textHeaders_
+    (putMVar mvar . Right)
+    (putMVar mvar . Left)
+    NONE
+  takeMVar mvar
+  where
+    textHeaders_ = biasHeaders headers_ [contentType =: textPlain]
+{-# INLINE putText_ #-}
+----------------------------------------------------------------------------
+-- | Synchronous API variant of 'getBlob'.
+--
+-- Blocks the calling thread until the browser resolves the promise, returning
+-- @'Right' response@ on success or @'Left' response@ on failure.
+--
+-- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+getBlob_
+  :: FromJSVal error
+  => MisoString
+  -- ^ url
+  -> [(MisoString, MisoString)]
+  -- ^ headers_
+  -> IO (Either (Response error) (Response Blob))
+getBlob_ url headers_ = do
+  mvar <- newEmptyMVar :: IO (MVar (Either (Response error) (Response Blob)))
+  FFI.fetch url "GET" Nothing blobHeaders_
+    (putMVar mvar . Right)
+    (putMVar mvar . Left)
+    BLOB
+  takeMVar mvar
+  where
+    blobHeaders_ = biasHeaders headers_ [accept =: octetStream]
+{-# INLINE getBlob_ #-}
+----------------------------------------------------------------------------
+-- | Synchronous API variant of 'postBlob'.
+--
+-- Blocks the calling thread until the browser resolves the promise, returning
+-- @'Right' response@ on success or @'Left' response@ on failure.
+--
+-- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+postBlob_
+  :: FromJSVal error
+  => MisoString
+  -- ^ url
+  -> Blob
+  -- ^ Body
+  -> [(MisoString, MisoString)]
+  -- ^ headers_
+  -> IO (Either (Response error) (Response ()))
+postBlob_ url body_ headers_ = do
+  mvar <- newEmptyMVar :: IO (MVar (Either (Response error) (Response ())))
+  bodyVal <- toJSVal body_
+  FFI.fetch url "POST" (Just bodyVal) blobHeaders_
+    (putMVar mvar . Right)
+    (putMVar mvar . Left)
+    NONE
+  takeMVar mvar
+  where
+    blobHeaders_ = biasHeaders headers_ [contentType =: octetStream]
+{-# INLINE postBlob_ #-}
+----------------------------------------------------------------------------
+-- | Synchronous API variant of 'putBlob'.
+--
+-- Blocks the calling thread until the browser resolves the promise, returning
+-- @'Right' response@ on success or @'Left' response@ on failure.
+--
+-- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+putBlob_
+  :: FromJSVal error
+  => MisoString
+  -- ^ url
+  -> Blob
+  -- ^ Body
+  -> [(MisoString, MisoString)]
+  -- ^ headers_
+  -> IO (Either (Response error) (Response ()))
+putBlob_ url imageBody headers_ = do
+  mvar <- newEmptyMVar :: IO (MVar (Either (Response error) (Response ())))
+  body_ <- toJSVal imageBody
+  FFI.fetch url "PUT" (Just body_) blobHeaders_
+    (putMVar mvar . Right)
+    (putMVar mvar . Left)
+    NONE
+  takeMVar mvar
+  where
+    blobHeaders_ = biasHeaders headers_ [contentType =: octetStream]
+{-# INLINE putBlob_ #-}
+----------------------------------------------------------------------------
+-- | Synchronous API variant of 'getFormData'.
+--
+-- Blocks the calling thread until the browser resolves the promise, returning
+-- @'Right' response@ on success or @'Left' response@ on failure.
+--
+-- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+getFormData_
+  :: FromJSVal error
+  => MisoString
+  -- ^ url
+  -> [(MisoString, MisoString)]
+  -- ^ headers_
+  -> IO (Either (Response error) (Response FormData))
+getFormData_ url headers_ = do
+  mvar <- newEmptyMVar :: IO (MVar (Either (Response error) (Response FormData)))
+  FFI.fetch url "GET" Nothing formDataHeaders_
+    (putMVar mvar . Right)
+    (putMVar mvar . Left)
+    FORM_DATA
+  takeMVar mvar
+  where
+    formDataHeaders_ = biasHeaders headers_ [accept =: formData]
+{-# INLINE getFormData_ #-}
+----------------------------------------------------------------------------
+-- | Synchronous API variant of 'postFormData'.
+--
+-- Blocks the calling thread until the browser resolves the promise, returning
+-- @'Right' response@ on success or @'Left' response@ on failure.
+--
+-- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+postFormData_
+  :: FromJSVal error
+  => MisoString
+  -- ^ url
+  -> FormData
+  -- ^ Body
+  -> [(MisoString, MisoString)]
+  -- ^ headers_
+  -> IO (Either (Response error) (Response ()))
+postFormData_ url body_ headers_ = do
+  mvar <- newEmptyMVar :: IO (MVar (Either (Response error) (Response ())))
+  bodyVal <- toJSVal body_
+  FFI.fetch url "POST" (Just bodyVal) formDataHeaders_
+    (putMVar mvar . Right)
+    (putMVar mvar . Left)
+    NONE
+  takeMVar mvar
+  where
+    formDataHeaders_ = biasHeaders headers_ [contentType =: formData]
+{-# INLINE postFormData_ #-}
+----------------------------------------------------------------------------
+-- | Synchronous API variant of 'putFormData'.
+--
+-- Blocks the calling thread until the browser resolves the promise, returning
+-- @'Right' response@ on success or @'Left' response@ on failure.
+--
+-- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+putFormData_
+  :: FromJSVal error
+  => MisoString
+  -- ^ url
+  -> FormData
+  -- ^ Body
+  -> [(MisoString, MisoString)]
+  -- ^ headers_
+  -> IO (Either (Response error) (Response ()))
+putFormData_ url imageBody headers_ = do
+  mvar <- newEmptyMVar :: IO (MVar (Either (Response error) (Response ())))
+  body_ <- toJSVal imageBody
+  FFI.fetch url "PUT" (Just body_) formDataHeaders_
+    (putMVar mvar . Right)
+    (putMVar mvar . Left)
+    NONE
+  takeMVar mvar
+  where
+    formDataHeaders_ = biasHeaders headers_ [contentType =: formData]
+{-# INLINE putFormData_ #-}
+----------------------------------------------------------------------------
+-- | Synchronous API variant of 'getArrayBuffer'.
+--
+-- Blocks the calling thread until the browser resolves the promise, returning
+-- @'Right' response@ on success or @'Left' response@ on failure.
+--
+-- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+getArrayBuffer_
+  :: FromJSVal error
+  => MisoString
+  -- ^ url
+  -> [(MisoString, MisoString)]
+  -- ^ headers_
+  -> IO (Either (Response error) (Response ArrayBuffer))
+getArrayBuffer_ url headers_ = do
+  mvar <- newEmptyMVar :: IO (MVar (Either (Response error) (Response ArrayBuffer)))
+  FFI.fetch url "GET" Nothing arrayBufferHeaders_
+    (putMVar mvar . Right)
+    (putMVar mvar . Left)
+    ARRAY_BUFFER
+  takeMVar mvar
+  where
+    arrayBufferHeaders_ = biasHeaders headers_ [accept =: octetStream]
+{-# INLINE getArrayBuffer_ #-}
+----------------------------------------------------------------------------
+-- | Synchronous API variant of 'postArrayBuffer'.
+--
+-- Blocks the calling thread until the browser resolves the promise, returning
+-- @'Right' response@ on success or @'Left' response@ on failure.
+--
+-- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+postArrayBuffer_
+  :: FromJSVal error
+  => MisoString
+  -- ^ url
+  -> ArrayBuffer
+  -- ^ Body
+  -> [(MisoString, MisoString)]
+  -- ^ headers_
+  -> IO (Either (Response error) (Response ()))
+postArrayBuffer_ url body_ headers_ = do
+  mvar <- newEmptyMVar :: IO (MVar (Either (Response error) (Response ())))
+  bodyVal <- toJSVal body_
+  FFI.fetch url "POST" (Just bodyVal) arrayBufferHeaders_
+    (putMVar mvar . Right)
+    (putMVar mvar . Left)
+    NONE
+  takeMVar mvar
+  where
+    arrayBufferHeaders_ = biasHeaders headers_ [contentType =: octetStream]
+{-# INLINE postArrayBuffer_ #-}
+----------------------------------------------------------------------------
+-- | Synchronous API variant of 'putArrayBuffer'.
+--
+-- Blocks the calling thread until the browser resolves the promise, returning
+-- @'Right' response@ on success or @'Left' response@ on failure.
+--
+-- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+putArrayBuffer_
+  :: FromJSVal error
+  => MisoString
+  -- ^ url
+  -> ArrayBuffer
+  -- ^ Body
+  -> [(MisoString, MisoString)]
+  -- ^ headers_
+  -> IO (Either (Response error) (Response ()))
+putArrayBuffer_ url arrayBuffer_ headers_ = do
+  mvar <- newEmptyMVar :: IO (MVar (Either (Response error) (Response ())))
+  body_ <- toJSVal arrayBuffer_
+  FFI.fetch url "PUT" (Just body_) arrayBufferHeaders_
+    (putMVar mvar . Right)
+    (putMVar mvar . Left)
+    NONE
+  takeMVar mvar
+  where
+    arrayBufferHeaders_ = biasHeaders headers_ [contentType =: octetStream]
+{-# INLINE putArrayBuffer_ #-}
+----------------------------------------------------------------------------
+-- | Synchronous API variant of 'getUint8Array'.
+--
+-- Blocks the calling thread until the browser resolves the promise, returning
+-- @'Right' response@ on success or @'Left' response@ on failure.
+--
+-- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+getUint8Array_
+  :: FromJSVal error
+  => MisoString
+  -- ^ url
+  -> [(MisoString, MisoString)]
+  -- ^ headers_
+  -> IO (Either (Response error) (Response Uint8Array))
+getUint8Array_ url headers_ = do
+  mvar <- newEmptyMVar :: IO (MVar (Either (Response error) (Response Uint8Array)))
+  FFI.fetch url "GET" Nothing uint8ArrayHeaders_
+    (putMVar mvar . Right)
+    (putMVar mvar . Left)
+    BYTES
+  takeMVar mvar
+  where
+    uint8ArrayHeaders_ = biasHeaders headers_ [accept =: octetStream]
+{-# INLINE getUint8Array_ #-}
+----------------------------------------------------------------------------
+-- | Synchronous API variant of 'postUint8Array'.
+--
+-- Blocks the calling thread until the browser resolves the promise, returning
+-- @'Right' response@ on success or @'Left' response@ on failure.
+--
+-- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+postUint8Array_
+  :: FromJSVal error
+  => MisoString
+  -- ^ url
+  -> Uint8Array
+  -- ^ Body
+  -> [(MisoString, MisoString)]
+  -- ^ headers_
+  -> IO (Either (Response error) (Response ()))
+postUint8Array_ url body_ headers_ = do
+  mvar <- newEmptyMVar :: IO (MVar (Either (Response error) (Response ())))
+  bodyVal <- toJSVal body_
+  FFI.fetch url "POST" (Just bodyVal) uint8ArrayHeaders_
+    (putMVar mvar . Right)
+    (putMVar mvar . Left)
+    NONE
+  takeMVar mvar
+  where
+    uint8ArrayHeaders_ = biasHeaders headers_ [contentType =: octetStream]
+{-# INLINE postUint8Array_ #-}
+----------------------------------------------------------------------------
+-- | Synchronous API variant of 'putUint8Array'.
+--
+-- Blocks the calling thread until the browser resolves the promise, returning
+-- @'Right' response@ on success or @'Left' response@ on failure.
+--
+-- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+putUint8Array_
+  :: FromJSVal error
+  => MisoString
+  -- ^ url
+  -> Uint8Array
+  -- ^ Body
+  -> [(MisoString, MisoString)]
+  -- ^ headers_
+  -> IO (Either (Response error) (Response ()))
+putUint8Array_ url uint8Array_ headers_ = do
+  mvar <- newEmptyMVar :: IO (MVar (Either (Response error) (Response ())))
+  body_ <- toJSVal uint8Array_
+  FFI.fetch url "PUT" (Just body_) uint8ArrayHeaders_
+    (putMVar mvar . Right)
+    (putMVar mvar . Left)
+    NONE
+  takeMVar mvar
+  where
+    uint8ArrayHeaders_ = biasHeaders headers_ [contentType =: octetStream]
+{-# INLINE putUint8Array_ #-}
+----------------------------------------------------------------------------
+-- | Synchronous API variant of 'postImage'.
+--
+-- Blocks the calling thread until the browser resolves the promise, returning
+-- @'Right' response@ on success or @'Left' response@ on failure.
+--
+-- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+postImage_
+  :: FromJSVal error
+  => MisoString
+  -- ^ url
+  -> Image
+  -- ^ Body
+  -> [(MisoString, MisoString)]
+  -- ^ headers_
+  -> IO (Either (Response error) (Response ()))
+postImage_ url body_ headers_ = do
+  mvar <- newEmptyMVar :: IO (MVar (Either (Response error) (Response ())))
+  bodyVal <- toJSVal body_
+  FFI.fetch url "POST" (Just bodyVal) headers_
+    (putMVar mvar . Right)
+    (putMVar mvar . Left)
+    NONE
+  takeMVar mvar
+{-# INLINE postImage_ #-}
+----------------------------------------------------------------------------
+-- | Synchronous API variant of 'putImage'.
+--
+-- Blocks the calling thread until the browser resolves the promise, returning
+-- @'Right' response@ on success or @'Left' response@ on failure.
+--
+-- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+putImage_
+  :: FromJSVal error
+  => MisoString
+  -- ^ url
+  -> Image
+  -- ^ Body
+  -> [(MisoString, MisoString)]
+  -- ^ headers_
+  -> IO (Either (Response error) (Response ()))
+putImage_ url imageBody headers_ = do
+  mvar <- newEmptyMVar :: IO (MVar (Either (Response error) (Response ())))
+  body_ <- toJSVal imageBody
+  FFI.fetch url "PUT" (Just body_) headers_
+    (putMVar mvar . Right)
+    (putMVar mvar . Left)
+    NONE
+  takeMVar mvar
+{-# INLINE putImage_ #-}
 ----------------------------------------------------------------------------
