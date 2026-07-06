@@ -157,7 +157,13 @@ data Color = Red | Green | Blue
 -- Single-constructor record (no tag)
 data Point = Point { px :: Int, py :: Int }
   deriving stock (Generic, Show, Eq)
-  deriving anyclass (JSON.ToJSON, JSON.FromJSON)
+
+instance JSON.ToJSON Point where
+  toJSON (Point x y) = JSON.object [("px", JSON.toJSON x), ("py", JSON.toJSON y)]
+
+instance JSON.FromJSON Point where
+  parseJSON = JSON.withObject "Point" $ \o ->
+    Point <$> o JSON..: "px" <*> o JSON..: "py"
 ----------------------------------------------------------------------------
 -- Single-constructor newtype-like (unwrapped)
 data Wrapper = Wrapper Int
@@ -630,14 +636,12 @@ main = withJS $ do
         (JSON.fromJSON (JSON.toJSON Green) :: JSON.Result Color) `shouldBe` JSON.Success Green
         (JSON.fromJSON (JSON.toJSON Blue)  :: JSON.Result Color) `shouldBe` JSON.Success Blue
       -- Single-constructor record → flat object, no tag
-#ifndef GHCJS_OLD
       it "encodes single-constructor records as flat objects" $ do
         JSON.toJSON (Point 3 4)
           `shouldBe` JSON.object [("px", JSON.Number 3), ("py", JSON.Number 4)]
       it "round-trips single-constructor records" $ do
         (JSON.fromJSON (JSON.toJSON (Point 3 4)) :: JSON.Result Point)
           `shouldBe` JSON.Success (Point 3 4)
-#endif
       -- Single-constructor positional → unwrapped value
       it "encodes single-constructor positional as unwrapped value" $ do
         JSON.toJSON (Wrapper 42) `shouldBe` JSON.Number 42
@@ -776,7 +780,6 @@ main = withJS $ do
         JSON.parseEither (JSON.genericParseJSON opts) val
           `shouldBe` Right (CamelRecord "John" "Doe")
       -- #7: full string round-trip via encodePure / decodePure
-#ifndef GHCJS_OLD
       it "round-trips Point through encodePure/decodePure" $ do
         let s = JSON.encodePure (Point 7 8)
             result = do
@@ -785,7 +788,6 @@ main = withJS $ do
                 JSON.Success x -> Right (x :: Point)
                 JSON.Error e   -> Left (S.unpack e)
         result `shouldBe` Right (Point 7 8)
-#endif
       it "round-trips Animal through encodePure/decodePure" $ do
         let s = JSON.encodePure (Cat "Mittens" 9)
             result = do
