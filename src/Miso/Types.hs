@@ -241,11 +241,15 @@ data Component parent props model action
   -- These styles are appended dynamically to the \<head\> section of your HTML page
   -- before the initial draw on \<body\> occurs.
   --
+  -- __Note:__ This field should only be used in development mode.
+  --
   -- @since 1.9.0.0
   , scripts :: [JS]
   -- ^ JavaScript scripts expressed as either a URL ('Src') or raw JS text.
   -- These scripts are appended dynamically to the \<head\> section of your HTML page
   -- before the initial draw on \<body\> occurs.
+  --
+  -- __Note:__ This field should only be used in development mode.
   --
   -- @since 1.9.0.0
   , mountPoint :: Maybe MountPoint
