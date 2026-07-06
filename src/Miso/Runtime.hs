@@ -12,6 +12,12 @@
 -----------------------------------------------------------------------------
 {-# OPTIONS_GHC -fno-warn-orphans       #-}
 -----------------------------------------------------------------------------
+#ifdef PRODUCTION
+#define MISO_JS_PATH "js/miso.prod.js"
+#else
+#define MISO_JS_PATH "js/miso.js"
+#endif
+-----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Runtime
 -- Copyright   :  (C) 2016-2026 David M. Johnson
@@ -159,6 +165,7 @@ initialize
   -- ^ Callback function is used for obtaining the t'Miso.Types.Component' 'DOMRef'.
   -> IO (ComponentState parent props model action)
 initialize events _componentParentId hydrate isRoot initialProps maybeKey comp@Component {..} getComponentMountPoint = do
+  (_mts, bts, web) <- FFI.getThreads
   _componentId <- freshComponentId
   let
     _componentProps = initialProps
@@ -180,9 +187,13 @@ initialize events _componentParentId hydrate isRoot initialProps maybeKey comp@C
           Nothing -> pure model
       _ -> pure model
   _componentScripts <-
-    IM.lookup _componentId <$> readIORef components >>= \case
-      Nothing -> (++) <$> renderScripts scripts <*> renderStyles styles
-      Just cs -> pure (_componentScripts cs) -- hot reload scenario, reuse already mounted scripts
+    if web
+    then
+      IM.lookup _componentId <$> readIORef components >>= \case
+        Nothing -> (++) <$> renderScripts scripts <*> renderStyles styles
+        Just cs -> pure (_componentScripts cs) -- hot reload scenario, reuse already mounted scripts
+    else
+      pure []
 
   _componentDOMRef <- getComponentMountPoint
   let _componentIsDirty = False
@@ -250,7 +261,7 @@ initialize events _componentParentId hydrate isRoot initialProps maybeKey comp@C
   initSubs subs _componentSubThreads _componentSink
   initialDraw _componentModel events hydrate isRoot comp vcomponent
   forM_ mount _componentSink
-  FFI.mountComponent _componentId =<< toObject jsNull
+  when bts (FFI.mountComponent _componentId =<< toObject jsNull)
   pure vcomponent
 -----------------------------------------------------------------------------
 inheritParentBindings
@@ -2009,6 +2020,12 @@ blob = BLOB
 arrayBuffer :: ArrayBuffer -> Payload value
 arrayBuffer = BUFFER
 -----------------------------------------------------------------------------
+#ifdef WASM
+loadedJS :: IORef Bool
+{-# NOINLINE loadedJS #-}
+loadedJS = unsafePerformIO (newIORef False)
+#endif
+-----------------------------------------------------------------------------
 initComponent
   :: (Eq parent, Eq model)
   => Events
@@ -2017,11 +2034,16 @@ initComponent
   -> Component parent () model action
   -> IO ()
 initComponent events hydrate live vcomp_@Component {..} = do
+#ifdef WASM
+  $(evalFile MISO_JS_PATH)
+  atomicWriteIORef loadedJS True
+#endif
+  (_mts, bts, web) <- FFI.getThreads
   withJS $ do
     root <- Diff.mountElement (getMountPoint mountPoint)
-    cleanup live root
+    when web (cleanup live root)
     void $ initialize events rootComponentId hydrate True () Nothing vcomp_ (pure root)
-    atomicWriteIORef schedulerThread =<< forkIO scheduler
+    when (bts || web) (atomicWriteIORef schedulerThread =<< forkIO scheduler)
 ----------------------------------------------------------------------------
 -- | Global variable to hold the scheduler thread
 --
@@ -2034,26 +2056,21 @@ schedulerThread :: IORef ThreadId
 {-# NOINLINE schedulerThread #-}
 schedulerThread = unsafePerformIO (newIORef undefined)
 ----------------------------------------------------------------------------
--- | Load miso's javascript.
+-- | Loads miso's JavaScript (if not already loaded) and runs an 'IO' action.
 --
--- You don't need to use this function if you're compiling w/ WASM and using `miso` or `startApp`.
--- It's already invoked for you. This is a no-op w/ the JS backend.
+-- On WASM, @miso.js@ is evaluated once on first call and skipped on subsequent calls.
+-- It is safe to call 'withJS' directly (e.g. when implementing WASM tests in Playwright);
+-- 'startApp' \/ 'miso' call it for you.
 --
--- If you need access to `Miso.FFI` to call functions from `miso.js`, but you're not
--- using `startApp` or `miso`, you'll need to call this function (w/ WASM only).
---
-#ifdef PRODUCTION
-#define MISO_JS_PATH "js/miso.prod.js"
-#else
-#define MISO_JS_PATH "js/miso.js"
-#endif
 withJS
   :: IO a
   -- ^ 'IO' action to execute in between 'evalFile'
   -> IO a
 withJS action = do
 #ifdef WASM
-  $(evalFile MISO_JS_PATH)
+  loaded <- readIORef loadedJS
+  unless loaded $(evalFile MISO_JS_PATH)
+  atomicWriteIORef loadedJS True
 #endif
   action
 -----------------------------------------------------------------------------

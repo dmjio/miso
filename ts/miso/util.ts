@@ -3,6 +3,17 @@ import { VTreeType, PRNG, VComp, VNode, VTree, Response } from './types';
 /* current miso version */
 export const version: string = '1.9.0.0';
 
+/* Returns true when running on the Lynx background thread, false otherwise.
+   Safe for web builds: __BACKGROUND__ is undefined there, so typeof guards it. */
+export function onBTS(): boolean {
+  return typeof __BACKGROUND__ !== 'undefined' && __BACKGROUND__;
+}
+
+/* Returns true when running on the Lynx main thread, false on BTS and web. */
+export function onMTS(): boolean {
+  return typeof __MAIN_THREAD__ !== 'undefined' && __MAIN_THREAD__;
+}
+
 /* various utilities */
 export function callFocus(id: string, delay: number): void {
   var setFocus = function () {

@@ -1,5 +1,11 @@
 // ts/miso/util.ts
 var version = "1.9.0.0";
+function onBTS() {
+  return typeof __BACKGROUND__ !== "undefined" && __BACKGROUND__;
+}
+function onMTS() {
+  return typeof __MAIN_THREAD__ !== "undefined" && __MAIN_THREAD__;
+}
 function callFocus(id, delay) {
   var setFocus = function() {
     var e = document.getElementById(id);
@@ -1298,6 +1304,8 @@ globalThis["miso"] = {
   diff,
   hydrate,
   version,
+  onBTS,
+  onMTS,
   callBlur,
   callFocus,
   callSelect,

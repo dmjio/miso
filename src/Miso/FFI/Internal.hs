@@ -202,6 +202,9 @@ module Miso.FFI.Internal
    , copyClipboard
    , getUserMedia
    , isOnLine
+   , onBTS
+   , onMTS
+   , getThreads
    -- * Cookie Store
    , cookieGet
    , cookieGetAll
@@ -603,8 +606,8 @@ delegator mountPoint events debug getVTree = do
   cb <- syncCallback1 $ \continuation -> void (call continuation global =<< getVTree)
 #endif
   d <- toJSVal debug
-  moduleMiso <- jsg "miso"
-  void $ moduleMiso # "delegator" $ [mountPoint,events,cb,d,ctx]
+  eventContext <- getEventContext
+  void $ eventContext # "delegator" $ [mountPoint,events,cb,d,ctx]
 -----------------------------------------------------------------------------
 -- | Copies DOM pointers into virtual dom entry point into isomorphic javascript
 --
@@ -1103,6 +1106,33 @@ eventSourceClose eventSource = void $ do
 isOnLine :: IO Bool
 {-# INLINABLE isOnLine #-}
 isOnLine = fromJSValUnchecked =<< jsg "navigator" ! "onLine"
+-----------------------------------------------------------------------------
+-- | Returns 'True' when executing on the Lynx background thread (BTS),
+-- 'False' on the main thread or in a web build.
+--
+-- Backed by @miso.onBTS()@, which uses the @__BACKGROUND__@ compile-time
+-- define injected by rspeedy. In web builds where @__BACKGROUND__@ is
+-- undefined the function safely returns @false@.
+--
+onBTS :: IO Bool
+{-# INLINABLE onBTS #-}
+onBTS = fromJSValUnchecked =<< do jsg "miso" # "onBTS" $ ()
+-----------------------------------------------------------------------------
+-- | Returns 'True' when executing on the Lynx main thread (MTS),
+-- 'False' on the background thread and in web builds.
+--
+onMTS :: IO Bool
+{-# INLINABLE onMTS #-}
+onMTS = fromJSValUnchecked =<< do jsg "miso" # "onMTS" $ ()
+-----------------------------------------------------------------------------
+-- | Returns @(mts, bts, web)@: whether the current execution context is the
+-- Lynx main thread, Lynx background thread, or a plain web build.
+--
+getThreads :: IO (Bool, Bool, Bool)
+getThreads = do
+  mts <- onMTS
+  bts <- onBTS
+  pure (mts, bts, not mts && not bts)
 -----------------------------------------------------------------------------
 -- | [Blob](https://developer.mozilla.org/en-US/docs/Web/API/FormData)
 newtype Blob = Blob JSVal

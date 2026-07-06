@@ -5,6 +5,8 @@ import { hydrate } from './miso/hydrate';
 
 import {
    version,
+   onBTS,
+   onMTS,
    callFocus,
    callBlur,
    callSelect,
@@ -98,6 +100,8 @@ export {
   delegator,
   hydrate,
   version,
+  onBTS,
+  onMTS,
   callBlur,
   callFocus,
   callSelect,
