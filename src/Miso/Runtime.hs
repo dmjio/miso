@@ -12,6 +12,12 @@
 -----------------------------------------------------------------------------
 {-# OPTIONS_GHC -fno-warn-orphans       #-}
 -----------------------------------------------------------------------------
+#ifdef PRODUCTION
+#define MISO_JS_PATH "js/miso.prod.js"
+#else
+#define MISO_JS_PATH "js/miso.js"
+#endif
+-----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Runtime
 -- Copyright   :  (C) 2016-2026 David M. Johnson
@@ -2056,11 +2062,6 @@ schedulerThread = unsafePerformIO (newIORef undefined)
 -- It is safe to call 'withJS' directly (e.g. when implementing WASM tests in Playwright);
 -- 'startApp' \/ 'miso' call it for you.
 --
-#ifdef PRODUCTION
-#define MISO_JS_PATH "js/miso.prod.js"
-#else
-#define MISO_JS_PATH "js/miso.js"
-#endif
 withJS
   :: IO a
   -- ^ 'IO' action to execute in between 'evalFile'
@@ -2069,7 +2070,7 @@ withJS action = do
 #ifdef WASM
   loaded <- readIORef loadedJS
   unless loaded $(evalFile MISO_JS_PATH)
-  atomicWriteIORef loaded True
+  atomicWriteIORef loadedJS True
 #endif
   action
 -----------------------------------------------------------------------------
