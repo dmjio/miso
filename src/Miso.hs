@@ -637,9 +637,9 @@
 --
 -- = 'Component' communication
 --
--- Miso provides three mechanisms for 'Component' to exchange data:
+-- @miso@ provides three mechanisms for 'Component' to exchange data:
 --
--- * __Props__ — synchronous, parent-to-child read-only data passed at mount time (see below).
+-- * __Props__ — synchronous, parent-to-child read-only data passed at mount time (see below). Props are updated in the child in response to parent changes.
 -- * __Async mailbox__ — message-passing via 'mail', 'broadcast', 'checkMail'; any 'Component' can send a t'Miso.JSON.Value' to any other by 'ComponentId'.
 -- * __PubSub__ ("Miso.PubSub") — publish\/subscribe for fan-out messaging across unrelated 'Component'.
 --
@@ -649,17 +649,17 @@
 -- @miso@ allows a parent 'Component' to pass read-only data down to a child 'Component'
 -- via a mechanism called /props/ (short for /properties/).
 --
--- === Props vs. Component-local state
+-- === Props vs. 'Component'-local state
 --
--- * __model__: Component-local state. It is owned and mutated exclusively by the 'Component'
+-- * __model__: 'Component'-local state. It is owned and mutated exclusively by the 'Component'
 --   itself through its 'Miso.Types.update' function. No other 'Component' can write to it directly.
 --
 -- * __props__: Data /inherited/ from the @parent@ 'Component'. Props flow downward through
---   the component hierarchy and are read-only from the child's perspective. The parent decides
---   what props to pass at mount time; the child cannot mutate them. Props that change in a
+--   the 'Component' hierarchy and are read-only from the child's perspective. The parent decides
+--   which props to pass at mount time; the child cannot mutate them. Props that change in
 --   the parent cause the child to re-render.
 --
--- This mirrors the distinction in React between component state (@useState@) and props
+-- This mirrors the distinction in React between 'Component'-local state (@useState@) and props
 -- received from above (@function MyComponent({ name }) { ... }@).
 --
 -- ==== When to use props
