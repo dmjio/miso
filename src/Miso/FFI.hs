@@ -86,6 +86,10 @@ module Miso.FFI
   , files
     -- ** Navigator
   , isOnLine
+    -- ** Lynx
+  , onBTS
+  , onMTS
+  , getThreads
     -- ** ArrayBuffer
   , ArrayBuffer (..)
     -- ** Blob
