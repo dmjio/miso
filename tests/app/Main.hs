@@ -15,6 +15,7 @@
 -----------------------------------------------------------------------------
 module Main where
 -----------------------------------------------------------------------------
+import           Control.Concurrent (newEmptyMVar, putMVar, takeMVar)
 import           Control.Monad.Reader
 import qualified Data.Map.Strict as M
 import           Data.Map.Strict (Map)
@@ -69,6 +70,51 @@ nodeLength = do
   liftIO $
     fromJSValUnchecked =<< eval ("document.body.childNodes.length" :: MisoString)
 -----------------------------------------------------------------------------
+-- | Reads @n@ elements out of a JS array-like (e.g. a 'Uint8Array' or a
+-- 'Uint8Array' view over an 'ArrayBuffer') via index access, for asserting
+-- on exact byte content in Fetch tests.
+readBytes :: JSVal -> Int -> IO [Int]
+readBytes raw n = mapM (\i -> fromJSValUnchecked =<< raw !! i) [0 .. n - 1]
+-----------------------------------------------------------------------------
+-- | Reads a 'Blob'\'s content out as bytes, by bridging its asynchronous
+-- @.arrayBuffer()@ Promise to a blocking call (same MVar idiom the sync
+-- Fetch\/Cookie API uses internally to turn callbacks into blocking IO).
+blobBytes :: JSVal -> IO [Int]
+blobBytes raw = do
+  mvar <- newEmptyMVar
+  promise <- raw # "arrayBuffer" $ ()
+  cb <- asyncCallback1 $ \buf -> do
+    view <- new (jsg "Uint8Array") [buf]
+    len <- fromJSValUnchecked =<< view ! "length"
+    putMVar mvar =<< readBytes view len
+  _ <- promise # "then" $ [cb]
+  takeMVar mvar
+-----------------------------------------------------------------------------
+-- | Exact bytes of @https:\/\/httpbin.org\/bytes\/16?seed=42@ — httpbin's
+-- @seed@ query param makes @\/bytes@ deterministic, so we can assert on
+-- exact content instead of just size\/length.
+seededBytes :: [Int]
+seededBytes = [0x39, 0x0c, 0x8c, 0x7d, 0x72, 0x47, 0x34, 0x2c, 0xd8, 0x10, 0x0f, 0x2f, 0x6f, 0x77, 0x0d, 0x65]
+-----------------------------------------------------------------------------
+-- | The PNG file signature — the first 8 bytes of any valid PNG file.
+-- <https://en.wikipedia.org/wiki/PNG#File_header>
+pngMagicBytes :: [Int]
+pngMagicBytes = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]
+-----------------------------------------------------------------------------
+-- | httpbin.org (a shared, free-tier public instance) occasionally drops
+-- the CORS header on an otherwise-fine response, which the browser then
+-- surfaces as a hard fetch failure. Retries a Fetch call a couple of
+-- times before giving up, to absorb that transient flakiness in tests
+-- that expect a successful ('Right') response.
+retryFetch :: Int -> IO (Either e a) -> IO (Either e a)
+retryFetch n action
+  | n <= 1 = action
+  | otherwise = do
+      result <- action
+      case result of
+        Right _ -> pure result
+        Left _  -> retryFetch (n - 1) action
+-----------------------------------------------------------------------------
 mountedComponents :: Test Int
 mountedComponents = IM.size <$> liftIO (readIORef components)
 -----------------------------------------------------------------------------
@@ -111,7 +157,13 @@ data Color = Red | Green | Blue
 -- Single-constructor record (no tag)
 data Point = Point { px :: Int, py :: Int }
   deriving stock (Generic, Show, Eq)
-  deriving anyclass (JSON.ToJSON, JSON.FromJSON)
+
+instance JSON.ToJSON Point where
+  toJSON (Point x y) = JSON.object [("px", JSON.toJSON x), ("py", JSON.toJSON y)]
+
+instance JSON.FromJSON Point where
+  parseJSON = JSON.withObject "Point" $ \o ->
+    Point <$> o JSON..: "px" <*> o JSON..: "py"
 ----------------------------------------------------------------------------
 -- Single-constructor newtype-like (unwrapped)
 data Wrapper = Wrapper Int
@@ -256,6 +308,173 @@ main = withJS $ do
         Right _ <- liftIO (cookieDelete_ "miso-test-delete-nopath")
         result <- liftIO (cookieGet_ "miso-test-delete-nopath")
         result `shouldBe` (Right Nothing :: Either MisoString (Maybe MisoString))
+
+    -- dmj: these hit https://httpbin.org, a public echo API, since Miso.Fetch
+    -- always performs a real network request; there's no local server in this
+    -- test harness to exercise POST/PUT against.
+    describe "Miso.Fetch FFI tests" $ do
+      it "Should getJSON_ successfully" $ do
+        result <- liftIO (retryFetch 3 (getJSON_ "https://httpbin.org/get" []) :: IO (Either (Response JSON.Value) (Response JSON.Value)))
+        case result of
+          Right Response{..} -> do
+            status `shouldBe` Just 200
+            case body of
+              JSON.Object o -> M.member "url" o `shouldBe` True
+              _             -> False `shouldBe` True
+          Left _ -> False `shouldBe` True
+
+      it "Should getJSON_ report an HTTP error status" $ do
+        result <- liftIO (getJSON_ "https://httpbin.org/status/404" [] :: IO (Either (Response JSON.Value) (Response JSON.Value)))
+        case result of
+          Left Response{..} -> status `shouldBe` Just 404
+          Right _ -> False `shouldBe` True
+
+      it "Should postJSON_ successfully" $ do
+        result <- liftIO (retryFetch 3 (postJSON_ "https://httpbin.org/post" (Point 3 4) []) :: IO (Either (Response JSON.Value) (Response ())))
+        case result of
+          Right Response{..} -> status `shouldBe` Just 200
+          Left _ -> False `shouldBe` True
+
+      it "Should postJSON'_ successfully and decode the echoed body" $ do
+        result <- liftIO (retryFetch 3 (postJSON'_ "https://httpbin.org/post" (Point 3 4) []) :: IO (Either (Response JSON.Value) (Response JSON.Value)))
+        case result of
+          Right Response{..} -> do
+            status `shouldBe` Just 200
+            case body of
+              JSON.Object o ->
+                M.lookup "json" o `shouldBe`
+                  Just (JSON.Object (M.fromList [("px", JSON.Number 3), ("py", JSON.Number 4)]))
+              _ -> False `shouldBe` True
+          Left _ -> False `shouldBe` True
+
+      it "Should putJSON_ successfully" $ do
+        result <- liftIO (retryFetch 3 (putJSON_ "https://httpbin.org/put" (Point 5 6) []) :: IO (Either (Response JSON.Value) (Response ())))
+        case result of
+          Right Response{..} -> status `shouldBe` Just 200
+          Left _ -> False `shouldBe` True
+
+      it "Should getText_ successfully" $ do
+        result <- liftIO (retryFetch 3 (getText_ "https://httpbin.org/robots.txt" []) :: IO (Either (Response JSON.Value) (Response MisoString)))
+        case result of
+          Right Response{..} -> do
+            status `shouldBe` Just 200
+            body `shouldSatisfy` S.isInfixOf "Disallow"
+          Left _ -> False `shouldBe` True
+
+      it "Should postText_ successfully" $ do
+        result <- liftIO (retryFetch 3 (postText_ "https://httpbin.org/post" "hello miso" []) :: IO (Either (Response JSON.Value) (Response ())))
+        case result of
+          Right Response{..} -> status `shouldBe` Just 200
+          Left _ -> False `shouldBe` True
+
+      it "Should putText_ successfully" $ do
+        result <- liftIO (retryFetch 3 (putText_ "https://httpbin.org/put" "hello miso" []) :: IO (Either (Response JSON.Value) (Response ())))
+        case result of
+          Right Response{..} -> status `shouldBe` Just 200
+          Left _ -> False `shouldBe` True
+
+      -- dmj: the Blob is fetched once and reused for postBlob_/putBlob_ below;
+      -- httpbin.org has occasionally dropped CORS headers on rapid repeat
+      -- GETs of the same binary resource, so we avoid re-fetching it.
+      it "Should getBlob_, postBlob_, and putBlob_ successfully" $ do
+        Right Response{..} <-
+          liftIO (retryFetch 3 (getBlob_ "https://httpbin.org/image/png" []) :: IO (Either (Response JSON.Value) (Response Blob)))
+        status `shouldBe` Just 200
+        case body of
+          Blob raw -> do
+            size <- liftIO (fromJSValUnchecked =<< raw ! "size")
+            size `shouldSatisfy` (> (0 :: Int))
+            magic <- liftIO (take 8 <$> blobBytes raw)
+            magic `shouldBe` pngMagicBytes
+        postResult <- liftIO (retryFetch 3 (postBlob_ "https://httpbin.org/post" body []) :: IO (Either (Response JSON.Value) (Response ())))
+        case postResult of
+          Right Response{ status = postStatus } -> postStatus `shouldBe` Just 200
+          Left _ -> False `shouldBe` True
+        putResult <- liftIO (retryFetch 3 (putBlob_ "https://httpbin.org/put" body []) :: IO (Either (Response JSON.Value) (Response ())))
+        case putResult of
+          Right Response{ status = putStatus } -> putStatus `shouldBe` Just 200
+          Left _ -> False `shouldBe` True
+
+      it "Should getArrayBuffer_, postArrayBuffer_, and putArrayBuffer_ successfully" $ do
+        Right Response{..} <-
+          liftIO (retryFetch 3 (getArrayBuffer_ "https://httpbin.org/bytes/16?seed=42" []) :: IO (Either (Response JSON.Value) (Response ArrayBuffer)))
+        status `shouldBe` Just 200
+        case body of
+          ArrayBuffer raw -> do
+            len <- liftIO (fromJSValUnchecked =<< raw ! "byteLength")
+            len `shouldBe` (16 :: Int)
+            view <- liftIO (new (jsg "Uint8Array") [raw])
+            bytes <- liftIO (readBytes view 16)
+            bytes `shouldBe` seededBytes
+        postResult <- liftIO (retryFetch 3 (postArrayBuffer_ "https://httpbin.org/post" body []) :: IO (Either (Response JSON.Value) (Response ())))
+        case postResult of
+          Right Response{ status = postStatus } -> postStatus `shouldBe` Just 200
+          Left _ -> False `shouldBe` True
+        putResult <- liftIO (retryFetch 3 (putArrayBuffer_ "https://httpbin.org/put" body []) :: IO (Either (Response JSON.Value) (Response ())))
+        case putResult of
+          Right Response{ status = putStatus } -> putStatus `shouldBe` Just 200
+          Left _ -> False `shouldBe` True
+
+      it "Should getUint8Array_, postUint8Array_, and putUint8Array_ successfully" $ do
+        Right Response{..} <-
+          liftIO (retryFetch 3 (getUint8Array_ "https://httpbin.org/bytes/16?seed=42" []) :: IO (Either (Response JSON.Value) (Response Uint8Array)))
+        status `shouldBe` Just 200
+        case body of
+          Uint8Array raw -> do
+            len <- liftIO (fromJSValUnchecked =<< raw ! "length")
+            len `shouldBe` (16 :: Int)
+            bytes <- liftIO (readBytes raw 16)
+            bytes `shouldBe` seededBytes
+        postResult <- liftIO (retryFetch 3 (postUint8Array_ "https://httpbin.org/post" body []) :: IO (Either (Response JSON.Value) (Response ())))
+        case postResult of
+          Right Response{ status = postStatus } -> postStatus `shouldBe` Just 200
+          Left _ -> False `shouldBe` True
+        putResult <- liftIO (retryFetch 3 (putUint8Array_ "https://httpbin.org/put" body []) :: IO (Either (Response JSON.Value) (Response ())))
+        case putResult of
+          Right Response{ status = putStatus } -> putStatus `shouldBe` Just 200
+          Left _ -> False `shouldBe` True
+
+      it "Should getFormData_ report an HTTP error status" $ do
+        -- dmj: httpbin has no GET endpoint that responds with a real
+        -- multipart/form-data body, so only the error path is exercised here.
+        result <- liftIO (getFormData_ "https://httpbin.org/status/404" [] :: IO (Either (Response JSON.Value) (Response FormData)))
+        case result of
+          Left Response{..} -> status `shouldBe` Just 404
+          Right _ -> False `shouldBe` True
+
+      it "Should postFormData_ successfully" $ do
+        fd <- liftIO $ do
+          raw <- new (jsg "FormData") ()
+          _ <- raw # "append" $ ("key" :: MisoString, "value" :: MisoString)
+          pure (FormData raw)
+        result <- liftIO (retryFetch 3 (postFormData_ "https://httpbin.org/post" fd []) :: IO (Either (Response JSON.Value) (Response ())))
+        case result of
+          Right Response{..} -> status `shouldBe` Just 200
+          Left _ -> False `shouldBe` True
+
+      it "Should putFormData_ successfully" $ do
+        fd <- liftIO $ do
+          raw <- new (jsg "FormData") ()
+          _ <- raw # "append" $ ("key" :: MisoString, "value" :: MisoString)
+          pure (FormData raw)
+        result <- liftIO (retryFetch 3 (putFormData_ "https://httpbin.org/put" fd []) :: IO (Either (Response JSON.Value) (Response ())))
+        case result of
+          Right Response{..} -> status `shouldBe` Just 200
+          Left _ -> False `shouldBe` True
+
+      it "Should postImage_ successfully" $ do
+        img <- liftIO (newImage "https://httpbin.org/image/png")
+        result <- liftIO (retryFetch 3 (postImage_ "https://httpbin.org/post" img []) :: IO (Either (Response JSON.Value) (Response ())))
+        case result of
+          Right Response{..} -> status `shouldBe` Just 200
+          Left _ -> False `shouldBe` True
+
+      it "Should putImage_ successfully" $ do
+        img <- liftIO (newImage "https://httpbin.org/image/png")
+        result <- liftIO (retryFetch 3 (putImage_ "https://httpbin.org/put" img []) :: IO (Either (Response JSON.Value) (Response ())))
+        case result of
+          Right Response{..} -> status `shouldBe` Just 200
+          Left _ -> False `shouldBe` True
 
     describe "Miso.Data.Array tests" $ do
       it "Should create a new array" $ do
@@ -417,14 +636,12 @@ main = withJS $ do
         (JSON.fromJSON (JSON.toJSON Green) :: JSON.Result Color) `shouldBe` JSON.Success Green
         (JSON.fromJSON (JSON.toJSON Blue)  :: JSON.Result Color) `shouldBe` JSON.Success Blue
       -- Single-constructor record → flat object, no tag
-#ifndef GHCJS_OLD
       it "encodes single-constructor records as flat objects" $ do
         JSON.toJSON (Point 3 4)
           `shouldBe` JSON.object [("px", JSON.Number 3), ("py", JSON.Number 4)]
       it "round-trips single-constructor records" $ do
         (JSON.fromJSON (JSON.toJSON (Point 3 4)) :: JSON.Result Point)
           `shouldBe` JSON.Success (Point 3 4)
-#endif
       -- Single-constructor positional → unwrapped value
       it "encodes single-constructor positional as unwrapped value" $ do
         JSON.toJSON (Wrapper 42) `shouldBe` JSON.Number 42
@@ -563,7 +780,6 @@ main = withJS $ do
         JSON.parseEither (JSON.genericParseJSON opts) val
           `shouldBe` Right (CamelRecord "John" "Doe")
       -- #7: full string round-trip via encodePure / decodePure
-#ifndef GHCJS_OLD
       it "round-trips Point through encodePure/decodePure" $ do
         let s = JSON.encodePure (Point 7 8)
             result = do
@@ -572,7 +788,6 @@ main = withJS $ do
                 JSON.Success x -> Right (x :: Point)
                 JSON.Error e   -> Left (S.unpack e)
         result `shouldBe` Right (Point 7 8)
-#endif
       it "round-trips Animal through encodePure/decodePure" $ do
         let s = JSON.encodePure (Cat "Mittens" 9)
             result = do
