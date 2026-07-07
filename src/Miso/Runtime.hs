@@ -165,7 +165,6 @@ initialize
   -- ^ Callback function is used for obtaining the t'Miso.Types.Component' 'DOMRef'.
   -> IO (ComponentState parent props model action)
 initialize events _componentParentId hydrate isRoot initialProps maybeKey comp@Component {..} getComponentMountPoint = do
-  (_mts, bts, web) <- FFI.getThreads
   _componentId <- freshComponentId
   let
     _componentProps = initialProps
@@ -2038,7 +2037,6 @@ initComponent events hydrate live vcomp_@Component {..} = do
   $(evalFile MISO_JS_PATH)
   atomicWriteIORef loadedJS True
 #endif
-  (_mts, bts, web) <- FFI.getThreads
   withJS $ do
     root <- Diff.mountElement (getMountPoint mountPoint)
     when web (cleanup live root)
@@ -2055,6 +2053,19 @@ initComponent events hydrate live vcomp_@Component {..} = do
 schedulerThread :: IORef ThreadId
 {-# NOINLINE schedulerThread #-}
 schedulerThread = unsafePerformIO (newIORef undefined)
+----------------------------------------------------------------------------
+-- | Whether this JS execution context is the Lynx main thread, background
+-- thread, or a plain web build.
+--
+-- N.B. this is invariant for the lifetime of a given JS context, so it's
+-- safe to compute once and cache via 'unsafePerformIO' rather than making
+-- an FFI call on every 'initialize' \/ 'initComponent'.
+--
+_mts, bts, web :: Bool
+{-# NOINLINE _mts #-}
+{-# NOINLINE bts #-}
+{-# NOINLINE web #-}
+(_mts, bts, web) = unsafePerformIO FFI.getThreads
 ----------------------------------------------------------------------------
 -- | Loads miso's JavaScript (if not already loaded) and runs an 'IO' action.
 --
