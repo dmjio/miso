@@ -472,6 +472,10 @@
 --
 -- If two `VNode` are being compared (or two `VComp`) and their keys differ, the old node will be destroyed and a new one created. Otherwise, the underlying DOM node won't be removed, but its properties will be diffed. In the case of diffing two t'Component' (the 'VComp' case), if the keys differ, the 'unmount' phase will be triggered for the old 'VComp' and the 'mount' phase will be triggered for the new 'Component'. The underlying DOM reference will be replaced.
 --
+-- * Keys preserve the DOM reference across updates.
+--
+-- Because a stable key keeps the same underlying DOM node in place, CSS animations on that node will not be interrupted by re-renders. Without a key, the diffing algorithm may replace or recreate the node, resetting any in-progress animation. Assigning a stable key to an animated element guarantees the DOM reference is preserved and the animation runs to completion.
+--
 -- See the 'key_' property for usage (and smart constructors like 'textKey_' and ('+>') as well).
 --
 -- @
