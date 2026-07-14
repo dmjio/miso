@@ -17,6 +17,7 @@ module Main where
 -----------------------------------------------------------------------------
 import           Control.Concurrent (newEmptyMVar, putMVar, takeMVar)
 import           Control.Monad.Reader
+import           Control.Exception (try, evaluate)
 import qualified Data.Map.Strict as M
 import           Data.Map.Strict (Map)
 import qualified Data.IntMap.Strict as IM
@@ -1642,3 +1643,25 @@ main = withJS $ do
           component (0 :: Int) noop $ \_ _ ->
             div_ [] (replicate 999 (mount_ testComponent))
         mountedComponents >>= (`shouldBe` 1000)
+
+    describe "Miso.DSL `await` tests" $ do
+      it "Successful Promise resolution should result in a value" $ do
+        -- Create a Promise and immediately resolve it with `42`
+        val <- liftIO $ do
+          promise <- jsg ("Promise" :: MisoString)
+          p <- promise # ("resolve" :: MisoString) $ (42 :: Int)
+          result <- await p
+          fromJSValUnchecked result
+
+        val `shouldBe` (42 :: Int)
+
+      it "A rejected Promise will throw an error we can catch" $ do
+        result <- liftIO $ do
+          promise <- jsg ("Promise" :: MisoString)
+          p <- promise # ("reject" :: MisoString) $ ("TEST_ERROR" :: MisoString)
+
+          -- await p returns a thunk, without evaluate here the exception would
+          -- only be thrown when the result is evaluated, so we force its evaluation here
+          try @JSException (await p >>= evaluate)
+
+        Data.Either.isLeft result `shouldBe` True

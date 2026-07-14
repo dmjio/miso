@@ -78,6 +78,7 @@ module Miso.DSL.FFI
   , toString_Float
   , toString_Word
   , toString_Int
+  , JSException
   ) where
 -----------------------------------------------------------------------------
 import           Data.JSString

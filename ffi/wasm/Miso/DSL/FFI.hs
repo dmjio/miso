@@ -76,6 +76,7 @@ module Miso.DSL.FFI
   , parseDouble
   , parseWord
   , parseFloat
+  , JSException
   ) where
 -----------------------------------------------------------------------------
 import           Data.Text (Text)

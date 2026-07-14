@@ -164,6 +164,7 @@ module Miso.DSL
   , asyncCallback2
   , asyncCallback3
   , apply
+  , JSException
   ) where
 -----------------------------------------------------------------------------
 import           Control.Applicative

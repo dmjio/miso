@@ -7,6 +7,8 @@ import           Text.Read (readMaybe)
 -- | A type that represents any JS value
 data JSVal = JSVal
 -----------------------------------------------------------------------------
+data JSException
+-----------------------------------------------------------------------------
 instance Eq JSVal where
   JSVal == JSVal = True
 -----------------------------------------------------------------------------
