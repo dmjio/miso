@@ -70,10 +70,12 @@ with pkgs.haskell.lib;
     export PATH="${pkgs.lib.makeBinPath [ pkgs.http-server pkgs.bun ]}:$PATH"
     bun install playwright@1.53
     http-server ${legacyPkgs.haskell.packages.ghcjs.miso-tests}/bin/component-tests.jsexe &
+    bun run ts/echo-server.ts &
     cd tests
     bun run ../ts/playwright.ts
     exit_code=$?
     pkill http-server
+    pkill -f echo-server
     exit "$exit_code"
   '';
 
@@ -83,10 +85,12 @@ with pkgs.haskell.lib;
     export PATH="${pkgs.lib.makeBinPath [ pkgs.http-server pkgs.bun ]}:$PATH"
     bun install playwright@1.53
     http-server ${pkgs.pkgsCross.ghcjs.haskell.packages.ghc9122.miso-tests}/bin/component-tests.jsexe &
+    bun run ts/echo-server.ts &
     cd tests
     bun run ../ts/playwright.ts
     exit_code=$?
     pkill http-server
+    pkill -f echo-server
     exit "$exit_code"
   '';
 
@@ -98,9 +102,11 @@ with pkgs.haskell.lib;
     cd tests
     nix develop .#wasm --command bash -c 'make'
     http-server ./public &
+    bun run ../ts/echo-server.ts &
     bun run ../ts/playwright.ts
     exit_code=$?
     pkill http-server
+    pkill -f echo-server
     exit "$exit_code"
   '';
 
