@@ -7,6 +7,8 @@ import           Text.Read (readMaybe)
 -- | A type that represents any JS value
 data JSVal = JSVal
 -----------------------------------------------------------------------------
+data JSException
+-----------------------------------------------------------------------------
 instance Eq JSVal where
   JSVal == JSVal = True
 -----------------------------------------------------------------------------
@@ -137,6 +139,9 @@ fromJSValUnchecked_Double = undefined
 -----------------------------------------------------------------------------
 fromJSVal_JSString :: JSVal -> IO (Maybe Text)
 fromJSVal_JSString = undefined
+-----------------------------------------------------------------------------
+await :: JSVal -> IO JSVal
+await = undefined
 -----------------------------------------------------------------------------
 -- | A asynchronous callback
 asyncCallback :: IO () -> IO JSVal

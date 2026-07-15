@@ -3,6 +3,7 @@
 {-# LANGUAGE TemplateHaskell          #-}
 {-# LANGUAGE MultilineStrings         #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
+{-# LANGUAGE InterruptibleFFI  #-}
 -----------------------------------------------------------------------------
 {-# OPTIONS_GHC -fno-warn-orphans  #-}
 -----------------------------------------------------------------------------
@@ -39,6 +40,7 @@ module Miso.DSL.FFI
   , fromJSVal_Maybe
   , fromJSValUnchecked_Maybe
   -- * Callback FFI
+  , await
   , asyncCallback
   , asyncCallback1
   , asyncCallback2
@@ -74,6 +76,7 @@ module Miso.DSL.FFI
   , parseDouble
   , parseWord
   , parseFloat
+  , JSException
   ) where
 -----------------------------------------------------------------------------
 import           Data.Text (Text)
@@ -250,6 +253,9 @@ foreign import javascript unsafe
   """ jsNull :: JSVal
 -----------------------------------------------------------------------------
 foreign import javascript unsafe "return globalThis" global :: JSVal
+-----------------------------------------------------------------------------
+foreign import javascript interruptible "return await $1;"
+  await :: JSVal -> IO JSVal
 -----------------------------------------------------------------------------
 foreign import javascript "wrapper"
   asyncCallback
