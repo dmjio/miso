@@ -91,9 +91,9 @@ blobBytes raw = do
   _ <- promise # "then" $ [cb]
   takeMVar mvar
 -----------------------------------------------------------------------------
--- | Exact bytes of @https:\/\/httpbin.org\/bytes\/16?seed=42@ — httpbin's
--- @seed@ query param makes @\/bytes@ deterministic, so we can assert on
--- exact content instead of just size\/length.
+-- | Exact bytes served by the local echo server at @\/bytes\/16?seed=42@.
+-- They match the original @https:\/\/httpbin.org\/bytes\/16?seed=42@ response
+-- so the test can assert on exact content instead of just size\/length.
 seededBytes :: [Int]
 seededBytes = [0x39, 0x0c, 0x8c, 0x7d, 0x72, 0x47, 0x34, 0x2c, 0xd8, 0x10, 0x0f, 0x2f, 0x6f, 0x77, 0x0d, 0x65]
 -----------------------------------------------------------------------------
@@ -102,9 +102,8 @@ seededBytes = [0x39, 0x0c, 0x8c, 0x7d, 0x72, 0x47, 0x34, 0x2c, 0xd8, 0x10, 0x0f,
 pngMagicBytes :: [Int]
 pngMagicBytes = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]
 -----------------------------------------------------------------------------
--- | httpbin.org (a shared, free-tier public instance) occasionally drops
--- the CORS header on an otherwise-fine response, which the browser then
--- surfaces as a hard fetch failure. Retries a Fetch call a couple of
+-- | The local echo server occasionally needs a retry if the background
+-- process hasn't fully started yet. Retries a Fetch call a couple of
 -- times before giving up, to absorb that transient flakiness in tests
 -- that expect a successful ('Right') response.
 retryFetch :: Int -> IO (Either e a) -> IO (Either e a)
@@ -310,12 +309,14 @@ main = withJS $ do
         result <- liftIO (cookieGet_ "miso-test-delete-nopath")
         result `shouldBe` (Right Nothing :: Either MisoString (Maybe MisoString))
 
-    -- dmj: these hit https://httpbin.org, a public echo API, since Miso.Fetch
-    -- always performs a real network request; there's no local server in this
-    -- test harness to exercise POST/PUT against.
+    -- dmj: these hit a local echo server (echo-server.ts, port 8081) started
+    -- by the playwright-wasm/playwright-js/playwright-ghcjs Nix scripts.
+    -- The echo server mimics the httpbin.org endpoints used below and sets
+    -- the appropriate CORS headers so the browser can reach it from the
+    -- test page served on port 8080.
     describe "Miso.Fetch FFI tests" $ do
       it "Should getJSON_ successfully" $ do
-        result <- liftIO (retryFetch 3 (getJSON_ "https://httpbin.org/get" []) :: IO (Either (Response JSON.Value) (Response JSON.Value)))
+        result <- liftIO (retryFetch 3 (getJSON_ "http://127.0.0.1:8081/get" []) :: IO (Either (Response JSON.Value) (Response JSON.Value)))
         case result of
           Right Response{..} -> do
             status `shouldBe` Just 200
@@ -325,19 +326,19 @@ main = withJS $ do
           Left _ -> False `shouldBe` True
 
       it "Should getJSON_ report an HTTP error status" $ do
-        result <- liftIO (getJSON_ "https://httpbin.org/status/404" [] :: IO (Either (Response JSON.Value) (Response JSON.Value)))
+        result <- liftIO (getJSON_ "http://127.0.0.1:8081/status/404" [] :: IO (Either (Response JSON.Value) (Response JSON.Value)))
         case result of
           Left Response{..} -> status `shouldBe` Just 404
           Right _ -> False `shouldBe` True
 
       it "Should postJSON_ successfully" $ do
-        result <- liftIO (retryFetch 3 (postJSON_ "https://httpbin.org/post" (Point 3 4) []) :: IO (Either (Response JSON.Value) (Response ())))
+        result <- liftIO (retryFetch 3 (postJSON_ "http://127.0.0.1:8081/post" (Point 3 4) []) :: IO (Either (Response JSON.Value) (Response ())))
         case result of
           Right Response{..} -> status `shouldBe` Just 200
           Left _ -> False `shouldBe` True
 
       it "Should postJSON'_ successfully and decode the echoed body" $ do
-        result <- liftIO (retryFetch 3 (postJSON'_ "https://httpbin.org/post" (Point 3 4) []) :: IO (Either (Response JSON.Value) (Response JSON.Value)))
+        result <- liftIO (retryFetch 3 (postJSON'_ "http://127.0.0.1:8081/post" (Point 3 4) []) :: IO (Either (Response JSON.Value) (Response JSON.Value)))
         case result of
           Right Response{..} -> do
             status `shouldBe` Just 200
@@ -349,13 +350,13 @@ main = withJS $ do
           Left _ -> False `shouldBe` True
 
       it "Should putJSON_ successfully" $ do
-        result <- liftIO (retryFetch 3 (putJSON_ "https://httpbin.org/put" (Point 5 6) []) :: IO (Either (Response JSON.Value) (Response ())))
+        result <- liftIO (retryFetch 3 (putJSON_ "http://127.0.0.1:8081/put" (Point 5 6) []) :: IO (Either (Response JSON.Value) (Response ())))
         case result of
           Right Response{..} -> status `shouldBe` Just 200
           Left _ -> False `shouldBe` True
 
       it "Should getText_ successfully" $ do
-        result <- liftIO (retryFetch 3 (getText_ "https://httpbin.org/robots.txt" []) :: IO (Either (Response JSON.Value) (Response MisoString)))
+        result <- liftIO (retryFetch 3 (getText_ "http://127.0.0.1:8081/robots.txt" []) :: IO (Either (Response JSON.Value) (Response MisoString)))
         case result of
           Right Response{..} -> do
             status `shouldBe` Just 200
@@ -363,23 +364,22 @@ main = withJS $ do
           Left _ -> False `shouldBe` True
 
       it "Should postText_ successfully" $ do
-        result <- liftIO (retryFetch 3 (postText_ "https://httpbin.org/post" "hello miso" []) :: IO (Either (Response JSON.Value) (Response ())))
+        result <- liftIO (retryFetch 3 (postText_ "http://127.0.0.1:8081/post" "hello miso" []) :: IO (Either (Response JSON.Value) (Response ())))
         case result of
           Right Response{..} -> status `shouldBe` Just 200
           Left _ -> False `shouldBe` True
 
       it "Should putText_ successfully" $ do
-        result <- liftIO (retryFetch 3 (putText_ "https://httpbin.org/put" "hello miso" []) :: IO (Either (Response JSON.Value) (Response ())))
+        result <- liftIO (retryFetch 3 (putText_ "http://127.0.0.1:8081/put" "hello miso" []) :: IO (Either (Response JSON.Value) (Response ())))
         case result of
           Right Response{..} -> status `shouldBe` Just 200
           Left _ -> False `shouldBe` True
 
-      -- dmj: the Blob is fetched once and reused for postBlob_/putBlob_ below;
-      -- httpbin.org has occasionally dropped CORS headers on rapid repeat
-      -- GETs of the same binary resource, so we avoid re-fetching it.
+      -- dmj: the Blob is fetched once and reused for postBlob_/putBlob_ below
+      -- to avoid making extra round-trips to the local echo server.
       it "Should getBlob_, postBlob_, and putBlob_ successfully" $ do
         Right Response{..} <-
-          liftIO (retryFetch 3 (getBlob_ "https://httpbin.org/image/png" []) :: IO (Either (Response JSON.Value) (Response Blob)))
+          liftIO (retryFetch 3 (getBlob_ "http://127.0.0.1:8081/image/png" []) :: IO (Either (Response JSON.Value) (Response Blob)))
         status `shouldBe` Just 200
         case body of
           Blob raw -> do
@@ -387,18 +387,18 @@ main = withJS $ do
             size `shouldSatisfy` (> (0 :: Int))
             magic <- liftIO (take 8 <$> blobBytes raw)
             magic `shouldBe` pngMagicBytes
-        postResult <- liftIO (retryFetch 3 (postBlob_ "https://httpbin.org/post" body []) :: IO (Either (Response JSON.Value) (Response ())))
+        postResult <- liftIO (retryFetch 3 (postBlob_ "http://127.0.0.1:8081/post" body []) :: IO (Either (Response JSON.Value) (Response ())))
         case postResult of
           Right Response{ status = postStatus } -> postStatus `shouldBe` Just 200
           Left _ -> False `shouldBe` True
-        putResult <- liftIO (retryFetch 3 (putBlob_ "https://httpbin.org/put" body []) :: IO (Either (Response JSON.Value) (Response ())))
+        putResult <- liftIO (retryFetch 3 (putBlob_ "http://127.0.0.1:8081/put" body []) :: IO (Either (Response JSON.Value) (Response ())))
         case putResult of
           Right Response{ status = putStatus } -> putStatus `shouldBe` Just 200
           Left _ -> False `shouldBe` True
 
       it "Should getArrayBuffer_, postArrayBuffer_, and putArrayBuffer_ successfully" $ do
         Right Response{..} <-
-          liftIO (retryFetch 3 (getArrayBuffer_ "https://httpbin.org/bytes/16?seed=42" []) :: IO (Either (Response JSON.Value) (Response ArrayBuffer)))
+          liftIO (retryFetch 3 (getArrayBuffer_ "http://127.0.0.1:8081/bytes/16?seed=42" []) :: IO (Either (Response JSON.Value) (Response ArrayBuffer)))
         status `shouldBe` Just 200
         case body of
           ArrayBuffer raw -> do
@@ -407,18 +407,18 @@ main = withJS $ do
             view <- liftIO (new (jsg "Uint8Array") [raw])
             bytes <- liftIO (readBytes view 16)
             bytes `shouldBe` seededBytes
-        postResult <- liftIO (retryFetch 3 (postArrayBuffer_ "https://httpbin.org/post" body []) :: IO (Either (Response JSON.Value) (Response ())))
+        postResult <- liftIO (retryFetch 3 (postArrayBuffer_ "http://127.0.0.1:8081/post" body []) :: IO (Either (Response JSON.Value) (Response ())))
         case postResult of
           Right Response{ status = postStatus } -> postStatus `shouldBe` Just 200
           Left _ -> False `shouldBe` True
-        putResult <- liftIO (retryFetch 3 (putArrayBuffer_ "https://httpbin.org/put" body []) :: IO (Either (Response JSON.Value) (Response ())))
+        putResult <- liftIO (retryFetch 3 (putArrayBuffer_ "http://127.0.0.1:8081/put" body []) :: IO (Either (Response JSON.Value) (Response ())))
         case putResult of
           Right Response{ status = putStatus } -> putStatus `shouldBe` Just 200
           Left _ -> False `shouldBe` True
 
       it "Should getUint8Array_, postUint8Array_, and putUint8Array_ successfully" $ do
         Right Response{..} <-
-          liftIO (retryFetch 3 (getUint8Array_ "https://httpbin.org/bytes/16?seed=42" []) :: IO (Either (Response JSON.Value) (Response Uint8Array)))
+          liftIO (retryFetch 3 (getUint8Array_ "http://127.0.0.1:8081/bytes/16?seed=42" []) :: IO (Either (Response JSON.Value) (Response Uint8Array)))
         status `shouldBe` Just 200
         case body of
           Uint8Array raw -> do
@@ -426,19 +426,19 @@ main = withJS $ do
             len `shouldBe` (16 :: Int)
             bytes <- liftIO (readBytes raw 16)
             bytes `shouldBe` seededBytes
-        postResult <- liftIO (retryFetch 3 (postUint8Array_ "https://httpbin.org/post" body []) :: IO (Either (Response JSON.Value) (Response ())))
+        postResult <- liftIO (retryFetch 3 (postUint8Array_ "http://127.0.0.1:8081/post" body []) :: IO (Either (Response JSON.Value) (Response ())))
         case postResult of
           Right Response{ status = postStatus } -> postStatus `shouldBe` Just 200
           Left _ -> False `shouldBe` True
-        putResult <- liftIO (retryFetch 3 (putUint8Array_ "https://httpbin.org/put" body []) :: IO (Either (Response JSON.Value) (Response ())))
+        putResult <- liftIO (retryFetch 3 (putUint8Array_ "http://127.0.0.1:8081/put" body []) :: IO (Either (Response JSON.Value) (Response ())))
         case putResult of
           Right Response{ status = putStatus } -> putStatus `shouldBe` Just 200
           Left _ -> False `shouldBe` True
 
       it "Should getFormData_ report an HTTP error status" $ do
-        -- dmj: httpbin has no GET endpoint that responds with a real
-        -- multipart/form-data body, so only the error path is exercised here.
-        result <- liftIO (getFormData_ "https://httpbin.org/status/404" [] :: IO (Either (Response JSON.Value) (Response FormData)))
+        -- dmj: the local echo server has no GET endpoint that responds with a
+        -- real multipart/form-data body, so only the error path is exercised here.
+        result <- liftIO (getFormData_ "http://127.0.0.1:8081/status/404" [] :: IO (Either (Response JSON.Value) (Response FormData)))
         case result of
           Left Response{..} -> status `shouldBe` Just 404
           Right _ -> False `shouldBe` True
@@ -448,7 +448,7 @@ main = withJS $ do
           raw <- new (jsg "FormData") ()
           _ <- raw # "append" $ ("key" :: MisoString, "value" :: MisoString)
           pure (FormData raw)
-        result <- liftIO (retryFetch 3 (postFormData_ "https://httpbin.org/post" fd []) :: IO (Either (Response JSON.Value) (Response ())))
+        result <- liftIO (retryFetch 3 (postFormData_ "http://127.0.0.1:8081/post" fd []) :: IO (Either (Response JSON.Value) (Response ())))
         case result of
           Right Response{..} -> status `shouldBe` Just 200
           Left _ -> False `shouldBe` True
@@ -458,21 +458,21 @@ main = withJS $ do
           raw <- new (jsg "FormData") ()
           _ <- raw # "append" $ ("key" :: MisoString, "value" :: MisoString)
           pure (FormData raw)
-        result <- liftIO (retryFetch 3 (putFormData_ "https://httpbin.org/put" fd []) :: IO (Either (Response JSON.Value) (Response ())))
+        result <- liftIO (retryFetch 3 (putFormData_ "http://127.0.0.1:8081/put" fd []) :: IO (Either (Response JSON.Value) (Response ())))
         case result of
           Right Response{..} -> status `shouldBe` Just 200
           Left _ -> False `shouldBe` True
 
       it "Should postImage_ successfully" $ do
-        img <- liftIO (newImage "https://httpbin.org/image/png")
-        result <- liftIO (retryFetch 3 (postImage_ "https://httpbin.org/post" img []) :: IO (Either (Response JSON.Value) (Response ())))
+        img <- liftIO (newImage "http://127.0.0.1:8081/image/png")
+        result <- liftIO (retryFetch 3 (postImage_ "http://127.0.0.1:8081/post" img []) :: IO (Either (Response JSON.Value) (Response ())))
         case result of
           Right Response{..} -> status `shouldBe` Just 200
           Left _ -> False `shouldBe` True
 
       it "Should putImage_ successfully" $ do
-        img <- liftIO (newImage "https://httpbin.org/image/png")
-        result <- liftIO (retryFetch 3 (putImage_ "https://httpbin.org/put" img []) :: IO (Either (Response JSON.Value) (Response ())))
+        img <- liftIO (newImage "http://127.0.0.1:8081/image/png")
+        result <- liftIO (retryFetch 3 (putImage_ "http://127.0.0.1:8081/put" img []) :: IO (Either (Response JSON.Value) (Response ())))
         case result of
           Right Response{..} -> status `shouldBe` Just 200
           Left _ -> False `shouldBe` True
