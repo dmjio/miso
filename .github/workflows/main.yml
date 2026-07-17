@@ -100,6 +100,9 @@ jobs:
      - name: (GHCJS) Miso integration tests
        run: nix-build -A playwright-ghcjs && ./result/bin/playwright
 
+     - name: (x86) Miso Native GHC (GHC 9.12.2)
+       run: nix-build -A miso-native-ghc-9122
+
   build-macos:
     runs-on: macos-latest
     steps:

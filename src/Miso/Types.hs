@@ -8,9 +8,9 @@
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE RecordWildCards            #-}
 {-# LANGUAGE DeriveAnyClass             #-}
+{-# LANGUAGE StaticPointers             #-}
 {-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE DeriveFunctor              #-}
-{-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE RankNTypes                 #-}
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE DataKinds                  #-}
@@ -152,8 +152,8 @@ module Miso.Types
   -- ** Smart Constructors
   , emptyURI
   , component
-  , vcomp
   -- ** Component mounting
+  , vcomp
   , (+>)
   , mount_
   , mountUseContext
@@ -195,12 +195,16 @@ import           Data.Maybe (fromMaybe, isJust)
 import           Data.String (IsString, fromString)
 import qualified Data.Text as T
 import           GHC.Generics
+import           GHC.StaticPtr
 import           Prelude
 -----------------------------------------------------------------------------
 import           Miso.DSL
 import           Miso.Effect (Effect, Sub, Sink, DOMRef, ComponentId)
 import           Miso.Event.Types
 import           Miso.JSON (Value, ToJSON(..), encode)
+#ifdef NATIVE
+import           Miso.JSON (FromJSON(..))
+#endif
 import qualified Miso.String as MS
 import           Miso.String (ToMisoString, MisoString, toMisoString, ms, fromMisoString)
 import           Miso.CSS.Types (StyleSheet)
@@ -362,17 +366,6 @@ component m u v = Component
   , onPropsChanged = Nothing
   }
 -----------------------------------------------------------------------------
--- | Synonym for 'component'
-vcomp
-  :: model
-  -- ^ model
-  -> (action -> Effect context props model action)
-  -- ^ update
-  -> (context -> props -> model -> View context action)
-  -- ^ view
-  -> Component context props model action
-vcomp = component
------------------------------------------------------------------------------
 -- | A miso application is a top-level t'Miso.Types.Component'. Its app-global
 -- @context@ defaults to @()@ (see 'Miso.startAppWithContext' to supply a
 -- non-trivial context), and its @props@ are fixed to @()@.
@@ -406,7 +399,7 @@ type Tag = MisoString
 data View context action
   = VNode Namespace Tag [Attribute action] [View context action]
   | VText (Maybe Key) MisoString
-  | VComp (Maybe Key) (SomeComponent context)
+  | VComp (StaticPtr (SomeComponent context))
   | VFrag (Maybe Key) [View context action]
   deriving Functor
 -----------------------------------------------------------------------------
@@ -415,17 +408,22 @@ data View context action
 -- The @context@ type parameter is shared with the enclosing 'View', so every
 -- nested t'Miso.Types.Component' participates in the same app-global context.
 data SomeComponent context
+#ifdef NATIVE
+   = forall model action props . (FromJSON model, ToJSON model, FromJSON action, ToJSON action, Eq context, Eq model, Eq props)
+#else
    = forall model action props . (Eq context, Eq model, Eq props)
-  => SomeComponent props (Component context props model action)
+#endif
+  => SomeComponent (Maybe Key) props (Component context props model action)
 -----------------------------------------------------------------------------
 -- | Like '+>' but operates on any 'View', not just 'Component'.
 --
 -- This appends a 'Key' to any 'View'.
 --
+-- N.B. this is a no-op for 'VComp'. See '+>' for keying 'Component'
+--
 -- @
 -- keyed "key" ("some text" :: View context action)
 -- keyed "key" $ div_ [ id_ "container" ] [ "content" ]
--- keyed "key" (mount_ calendarComponent)
 -- @
 --
 -- @since 1.10.0.0
@@ -436,8 +434,8 @@ keyed
 keyed key = \case
     VText _ txt ->
       VText (Just (Key key)) txt
-    VComp _ comp ->
-      VComp (Just (Key key)) comp
+    VComp ptr ->
+      VComp ptr
     VFrag _ kids ->
       VFrag (Just (Key key)) kids
     VNode ns tag attrs kids ->
@@ -486,14 +484,18 @@ fragment_ key = VFrag (Just (Key key))
 --
 -- @since 1.9.0.0
 (+>)
-  :: forall context model action a . (Eq context, Eq model)
+#ifdef NATIVE
+  :: (FromJSON model, ToJSON model, FromJSON action, ToJSON action, Eq context, Eq model)
+#else
+  :: (Eq context, Eq model)
+#endif
   => MisoString
   -- ^ 'VComp' 'key_'
   -> Component context () model action
   -- ^ 'Component'
-  -> View context a
+  -> SomeComponent context
 infixr 0 +>
-key +> comp = VComp (Just (toKey key)) (SomeComponent () comp)
+key +> child = SomeComponent (Just (toKey key)) () child
 -----------------------------------------------------------------------------
 -- | t'Miso.Types.Component' mounting combinator.
 --
@@ -508,13 +510,17 @@ key +> comp = VComp (Just (toKey key)) (SomeComponent () comp)
 --
 -- @since 1.11.0.0
 mountWithProps
-  :: (Eq context, Eq model, Eq props)
+#ifdef NATIVE
+  :: (Eq context, Eq props, Eq model, FromJSON model, ToJSON model, FromJSON action, ToJSON action)
+#else
+  :: (Eq context, Eq props, Eq model)
+#endif
   => props
   -- ^ 'props' to use
   -> Component context props model action
   -- ^ 'Component' to mount
-  -> View context a
-mountWithProps props comp  = VComp Nothing (SomeComponent props comp)
+  -> SomeComponent context
+mountWithProps props child = SomeComponent Nothing props child
 -----------------------------------------------------------------------------
 -- | t'Miso.Types.Component' mounting combinator.
 --
@@ -525,15 +531,18 @@ mountWithProps props comp  = VComp Nothing (SomeComponent props comp)
 --
 -- @since 1.11.0.0
 mountWithProps_
+#ifdef NATIVE
+  :: (Eq context, Eq props, Eq model, FromJSON action, FromJSON model, ToJSON model, ToJSON action)
+#else
   :: (Eq context, Eq model, Eq props)
+#endif
   => MisoString
-  -- ^ 'key' to use
   -> props
   -- ^ 'props' to use
   -> Component context props model action
   -- ^ 'Component' to mount
-  -> View context a
-mountWithProps_ key props comp  = VComp (Just (Key key)) (SomeComponent props comp)
+  -> SomeComponent context
+mountWithProps_ key = SomeComponent (Just (Key key))
 -----------------------------------------------------------------------------
 -- | t'Miso.Types.Component' mounting combinator.
 --
@@ -548,11 +557,30 @@ mountWithProps_ key props comp  = VComp (Just (Key key)) (SomeComponent props co
 --
 -- @since 1.9.0.0
 mount_
+#ifdef NATIVE
+  :: (Eq context, Eq model, FromJSON model, ToJSON model, FromJSON action, ToJSON action)
+#else
   :: (Eq context, Eq model)
+#endif
   => Component context () model action
   -- ^ 'Component' to mount
-  -> View context a
-mount_ comp = VComp Nothing (SomeComponent () comp)
+  -> SomeComponent context
+mount_ = SomeComponent Nothing ()
+-----------------------------------------------------------------------------
+-- | Embed a 'SomeComponent' as a child 'View'.
+--
+-- Smart constructor for 'VComp', mirroring 'vnode' \/ 'vtext' \/ 'vfrag'.
+--
+-- Because 'VComp' holds a 'StaticPtr', the argument must be constructed with
+-- the @static@ keyword and refer to a closed, top-level binding.
+--
+-- @
+-- div_ [] [ vcomp (static (mount_ myComp)) ]
+-- @
+--
+-- @since 1.12.0.0
+vcomp :: StaticPtr (SomeComponent context) -> View context action
+vcomp = VComp
 -----------------------------------------------------------------------------
 -- | t'Miso.Types.Component' mounting combinator that opts the child into
 -- app-global React-style @context@ updates.
@@ -569,10 +597,14 @@ mount_ comp = VComp Nothing (SomeComponent () comp)
 --
 -- @since 1.9.0.0
 mountUseContext
+#ifdef NATIVE
+  :: (Eq context, Eq model, FromJSON model, ToJSON model, FromJSON action, ToJSON action)
+#else
   :: (Eq context, Eq model)
+#endif
   => Component context () model action
   -- ^ 'Component' to mount
-  -> View context a
+  -> SomeComponent context
 mountUseContext comp = mount_ comp { useContext = True }
 -----------------------------------------------------------------------------
 -- | DOM element namespace.

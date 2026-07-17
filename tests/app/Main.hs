@@ -9,6 +9,7 @@
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE DerivingStrategies  #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StaticPointers      #-}
 #ifndef GHCJS_OLD
 {-# LANGUAGE QuasiQuotes #-}
 #endif
@@ -29,7 +30,9 @@ import           Control.Monad
 import           Data.Either
 import           Data.IORef
 import           Data.Text (Text)
+import           GHC.Fingerprint (Fingerprint(..), fingerprint0)
 import           GHC.Natural (Natural)
+import           GHC.StaticPtr (StaticKey)
 import qualified Data.Text as T
 import           Control.Monad.State
 -----------------------------------------------------------------------------
@@ -118,14 +121,15 @@ retryFetch n action
 mountedComponents :: Test Int
 mountedComponents = IM.size <$> liftIO (readIORef components)
 -----------------------------------------------------------------------------
-testComponent :: Component context props Int Action
+testComponent :: Component () () Int Action
 testComponent = component (0 :: Int) update_ $ \_ _ _ -> button_ [ id_ "foo", onClick AddOne ] [ "click me " ]
   where
     update_ = \case
       AddOne -> this += 1
 -----------------------------------------------------------------------------
 data Action = AddOne
-  deriving (Show, Eq)
+  deriving stock (Show, Eq, Generic)
+  deriving anyclass (JSON.FromJSON, JSON.ToJSON)
 -----------------------------------------------------------------------------
 #ifdef WASM
 #ifndef INTERACTIVE
@@ -1611,6 +1615,31 @@ main = withJS $ do
       it "Should marshal a Text" $ do
         (`shouldBe` Just ("foo" :: Text)) =<< liftIO (fromJSVal =<< toJSVal ("foo" :: Text))
 
+    describe "StaticKey / Fingerprint tests" $ do
+      it "serializes Fingerprint 0 0 as 32 zero hex chars" $ do
+        toMisoString (Fingerprint 0 0) `shouldBe` "00000000000000000000000000000000"
+      it "serializes Fingerprint with known values" $ do
+        toMisoString (Fingerprint 1 1) `shouldBe` "00000000000000010000000000000001"
+        toMisoString (Fingerprint 0xdeadbeef 0xcafebabe)
+          `shouldBe` "00000000deadbeef00000000cafebabe"
+      it "fingerprint0 equals Fingerprint 0 0" $ do
+        fingerprint0 `shouldBe` Fingerprint 0 0
+      it "round-trips fingerprint0 through toMisoString / fromMisoString" $ do
+        (fromMisoString (toMisoString fingerprint0) :: Fingerprint) `shouldBe` fingerprint0
+      it "round-trips Fingerprint 0 0 through toMisoString / fromMisoString" $ do
+        (fromMisoString (toMisoString (Fingerprint 0 0)) :: Fingerprint) `shouldBe` Fingerprint 0 0
+      it "round-trips arbitrary Fingerprint through toMisoString / fromMisoString" $ do
+        let fp = Fingerprint 0xdeadbeefcafebabe 0x0123456789abcdef
+        (fromMisoString (toMisoString fp) :: Fingerprint) `shouldBe` fp
+      it "returns Left on non-hex input" $ do
+        (S.fromMisoStringEither "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz" :: Either String Fingerprint)
+          `shouldSatisfy` isLeft
+      it "returns Left on too-short input" $ do
+        (S.fromMisoStringEither "deadbeef" :: Either String Fingerprint)
+          `shouldSatisfy` isLeft
+      it "returns Left on empty input" $ do
+        (S.fromMisoStringEither "" :: Either String Fingerprint)
+          `shouldSatisfy` isLeft
     describe "DOM tests" $ do
       it "Should have access to document.body" $ do
         nodeLength >>= (`shouldBe` (0 :: Int))
@@ -1620,11 +1649,11 @@ main = withJS $ do
 
     describe "Component tests" $ do
       it "Should mount one component" $ do
-        liftIO (startApp mempty testComponent)
+        liftIO (startApp mempty (static (mount_ testComponent)))
         mountedComponents >>= (`shouldBe` 1)
 
       it "Should have parent field present on VDOM nodes" $ do
-        _ <- liftIO (startApp mempty testComponent)
+        _ <- liftIO (startApp mempty (static (mount_ testComponent)))
         ComponentState {..} <- liftIO $ (IM.! 1) <$> readIORef components
         VTree (Object ref) <- liftIO (readIORef _componentVTree)
         parentDomRef <- liftIO (ref ! "domRef")
@@ -1636,9 +1665,9 @@ main = withJS $ do
         parentFieldUndefined `shouldBe` False
 
       it "Should mount 1000 components" $ do
-        liftIO $ startApp mempty $
-          component (0 :: Int) noop $ \_ _ _ ->
-            div_ [] (replicate 999 (mount_ testComponent))
+        liftIO $ startApp mempty $ static (mount_ $
+          ((component (0 :: Int) noop $ \_ _ _ ->
+            div_ [] (replicate 999 (vcomp (static (mount_ testComponent))))) :: Component () () Int Action))
         mountedComponents >>= (`shouldBe` 1000)
 
     describe "Miso.DSL `await` tests" $ do

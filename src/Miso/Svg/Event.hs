@@ -1,6 +1,5 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}

@@ -2,13 +2,17 @@
 {-# LANGUAGE CPP                        #-}
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE LambdaCase                 #-}
+{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE DeriveAnyClass             #-}
 {-# LANGUAGE KindSignatures             #-}
 {-# LANGUAGE BlockArguments             #-}
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE RecordWildCards            #-}
 {-# LANGUAGE TypeApplications           #-}
 {-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE DerivingStrategies         #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE DuplicateRecordFields      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -----------------------------------------------------------------------------
 {-# OPTIONS_GHC -fno-warn-orphans       #-}
@@ -98,6 +102,19 @@ module Miso.Runtime
   , topLevelComponentId
   , initComponent
   , withJS
+  -- * Lynx cross-thread
+  , MTS (..)
+  , BTS (..)
+  , getMTSContext
+  , getBTSContext
+  , dispatchEvent
+  , mts
+  , bts
+  , web
+  -- ** Protocol types
+  , ComponentType (..)
+  , COMPONENT (..)
+  , EFFECT (..)
   ) where
 -----------------------------------------------------------------------------
 import qualified Data.IntSet as IS
@@ -111,7 +128,9 @@ import           Control.Monad.Reader (ask, asks)
 import           Control.Monad.State hiding (state)
 import           Miso.JSON (FromJSON, ToJSON, Result(..), Value, encode, fromJSON, jsonStringify, toJSON)
 
-import           Data.Foldable (foldl')
+#if !MIN_VERSION_base(4,20,0)
+import           Data.List (foldl')
+#endif
 import           Data.Maybe
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
@@ -121,6 +140,13 @@ import           Data.IORef (IORef, newIORef, atomicModifyIORef', readIORef, ato
 import qualified Data.Sequence as S
 import           Data.Sequence (Seq)
 import           GHC.Conc (ThreadStatus(ThreadDied, ThreadFinished), threadStatus)
+import           Data.Word (Word64)
+import           GHC.Fingerprint (Fingerprint(..))
+import           Numeric (readHex)
+import           GHC.StaticPtr (StaticKey, staticKey, deRefStaticPtr)
+#ifdef NATIVE
+import           GHC.StaticPtr (unsafeLookupStaticPtr)
+#endif
 import           Prelude hiding ((.))
 import           System.IO.Unsafe (unsafePerformIO)
 import           System.Mem.StableName (makeStableName)
@@ -130,6 +156,9 @@ import           Text.Printf
 #endif
 -----------------------------------------------------------------------------
 import           Miso.Concurrent (Waiter(..), waiter)
+#ifdef NATIVE
+import           Miso.Concurrent (oneshot)
+#endif
 import           Miso.CSS (renderStyleSheet)
 import           Miso.Delegate (delegator)
 import qualified Miso.Diff as Diff
@@ -141,17 +170,22 @@ import           Miso.Effect
   ( ComponentInfo(..), Sub, Sink, Effect, Schedule(..), runEffect
   , io_, withSink, Synchronicity(..)
   )
+import qualified Miso.Effect as E (Thread(..))
 import qualified Miso.FFI.Internal as FFI
 import           Miso.FFI.Internal (Blob(..), ArrayBuffer(..))
 import qualified Miso.Hydrate as Hydrate
 import           Miso.Lens hiding (view)
-import           Miso.String (ToMisoString(..))
+import           Miso.String (ToMisoString(..), FromMisoString(..))
 import           Miso.Types
 import           Miso.Util
 -----------------------------------------------------------------------------
 -- | Helper function to abstract out initialization of t'Miso.Types.Component' between top-level API functions.
 initialize
+#ifdef NATIVE
+  :: (Eq context, Eq model, Eq props, ToJSON model, ToJSON action, FromJSON action)
+#else
   :: (Eq context, Eq model, Eq props)
+#endif
   => Events
   -> ComponentId
   -> Hydrate
@@ -161,11 +195,13 @@ initialize
   -- ^ Initial props for this component
   -> Maybe Key
   -- ^ Optional key for stable hot-reload model recovery
+  -> StaticKey
+  -- ^ 'StaticPtr' key for cross-thread (Lynx) child component lifecycle
   -> Component context props model action
   -> IO DOMRef
   -- ^ Callback function is used for obtaining the t'Miso.Types.Component' 'DOMRef'.
   -> IO (ComponentState context props model action)
-initialize events _componentParentId hydrate isRoot initialProps maybeKey comp@Component {..} getComponentMountPoint = do
+initialize events _componentParentId hydrate isRoot initialProps maybeKey _componentStaticKey comp@Component {..} getComponentMountPoint = do
   _componentId <- freshComponentId
   let
     _componentProps = initialProps
@@ -220,12 +256,24 @@ initialize events _componentParentId hydrate isRoot initialProps maybeKey comp@C
         atomicWriteIORef _componentVTree newVTree
         FFI.flush
 
+#ifdef NATIVE
+  let _componentHydrate = \newModel -> do
+        when bts $ postComponent HYDRATE _componentStaticKey _componentId _componentParentId
+          (Just (toJSON newModel))
+
+  let _componentPostEffect = \action ->
+        postEffect _componentStaticKey _componentId (toJSON action)
+#else
+  let _componentHydrate = \_ -> pure ()
+  let _componentPostEffect = \_ -> pure ()
+#endif
+
   let _componentApplyActions = \(actions :: Seq action) model_ currentProps ctx -> do
         let info = ComponentInfo _componentId _componentParentId _componentDOMRef currentProps ctx
-        foldl'
-          (\(m, ss) a ->
-              case runEffect (update a) info m of
-                (n, sss) -> (n, ss <> sss)) (model_, []) actions
+        foldl' (\(m, ss) a ->
+          case runEffect (update a) info m of
+            (n, sss) -> (n, ss <> [(a, s) | s <- sss ]))
+          (model_, []) actions
 
   let vcomponent = ComponentState
         { _componentEvents = events
@@ -246,11 +294,13 @@ initialize events _componentParentId hydrate isRoot initialProps maybeKey comp@C
 
   when isRoot (delegator _componentDOMRef _componentVTree events (logLevel `elem` [DebugEvents, DebugAll]))
   registerComponent vcomponent
-
   initSubs subs _componentSubThreads _componentSink
   initialDraw initializedModel events hydrate isRoot comp vcomponent
   forM_ mount _componentSink
-  when bts (FFI.mountComponent _componentId =<< toObject jsNull)
+#ifdef NATIVE
+  when (bts && not isRoot) $
+    postComponent MOUNT _componentStaticKey _componentId _componentParentId Nothing
+#endif
   pure vcomponent
 -----------------------------------------------------------------------------
 initSubs :: [Sub action] -> IORef (Map MisoString ThreadId) -> Sink action -> IO ()
@@ -279,6 +329,9 @@ isMounted vcompId = isJust . IM.lookup vcompId <$> readIORef components
 scheduler :: forall context . Eq context => Proxy context -> IO ()
 scheduler Proxy =
   forever $ do
+#ifdef NATIVE
+    when mts (wait btsReady)
+#endif
     getBatch >>= \case
       Nothing -> wait globalWaiter
       Just (vcompId, S.Empty)
@@ -315,13 +368,23 @@ scheduler Proxy =
       let ComponentState {..} = vcomps IM.! vcompId
           (updatedModel, schedules) =
             _componentApplyActions events _componentModel _componentProps currentContext
-      forM_ schedules $ \case
-        Schedule Async action ->
-          evalScheduled Async (action _componentSink)
-        Schedule Sync action ->
-          evalScheduled Sync (action _componentSink)
+      -- Route each scheduled effect. When the effect is tagged for the
+      -- opposite Lynx thread, do not evaluate its 'IO' here; forward the
+      -- originating @action@ via 'postEffect' so 'update' re-runs on the other
+      -- thread, where the same effect is now same-thread and executes its 'IO'
+      -- locally. Otherwise run it locally against the component's own sink.
+      let
+        crossThread = \case
+            Just E.BTS -> mts   -- on MTS, effect wants BTS
+            Just E.MTS -> bts   -- on BTS, effect wants MTS
+            _          -> False -- same thread / no preference / web
+      forM_ schedules $ \(originating, sched) -> case sched of
         ContextModify f ->
           atomicModifyIORef' globalContext $ \ctx -> (f ctx, ())
+        Schedule mThread synch effect ->
+          if crossThread mThread
+            then _componentPostEffect originating
+            else evalScheduled synch (effect _componentSink)
       updatedContext <- readIORef globalContext
       when (currentContext /= updatedContext) enqueueContextPropagation
       if _componentModelDirty _componentModel updatedModel
@@ -338,7 +401,7 @@ scheduler Proxy =
 renderComponent :: ComponentId -> IO ()
 renderComponent vcompId = IM.lookup vcompId <$> readIORef components >>= mapM_ \ComponentState {..} -> do
   _componentDraw _componentModel
-  FFI.modelHydration _componentId =<< toObject jsNull
+  _componentHydrate _componentModel
 -----------------------------------------------------------------------------
 -- | Modify a single t'Component p m a' at a t'ComponentId'.
 --
@@ -350,7 +413,7 @@ modifyComponent
 modifyComponent vcompId go =
   atomicModifyIORef' components $ \vcomps ->
     (IM.adjust (execState go) vcompId vcomps, ())
-----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
 type ComponentIds = IntSet
 -----------------------------------------------------------------------------
 initialDraw
@@ -499,6 +562,12 @@ globalWaiter :: Waiter
 {-# NOINLINE globalWaiter #-}
 globalWaiter = unsafePerformIO waiter
 -----------------------------------------------------------------------------
+#ifdef NATIVE
+btsReady :: Waiter
+{-# NOINLINE btsReady #-}
+btsReady = unsafePerformIO oneshot
+#endif
+-----------------------------------------------------------------------------
 globalQueue :: IORef (Queue action)
 {-# NOINLINE globalQueue #-}
 globalQueue = unsafePerformIO (newIORef emptyQueue)
@@ -560,6 +629,10 @@ data ComponentState context props model action
   -- ^ The ID of the current t'Miso.Types.Component'
   , _componentKey :: Maybe Key
   -- ^ Optional key for stable hot-reload model recovery
+  , _componentStaticKey :: StaticKey
+  -- ^ 'StaticPtr' key of the originating t'VComp', used to instruct the MTS
+  -- to mount, hydrate, or unmount this child across the Lynx thread boundary.
+  -- 'Nothing' for the root (each thread mounts the root locally).
   , _componentParentId :: ComponentId
   -- ^ The ID of the t'Miso.Types.Component''s parent
   , _componentProps :: props
@@ -574,6 +647,11 @@ data ComponentState context props model action
   -- ^ A reference to the current virtual DOM (i.e. t'VTree')
   , _componentSink :: action -> IO ()
   -- ^ t'Miso.Types.Component' t'Sink' used to enter events into the system
+  , _componentPostEffect :: Sink action
+  -- ^ Cross-thread (Lynx) t'Sink': serializes the @action@ and ships it to the
+  -- opposite thread via 'postEffect'. Captures the t'Miso.Types.Component''s
+  -- 'ToJSON' instance at 'initialize' time. Used for effects tagged
+  -- 'Miso.Effect.runOnMain' \/ 'Miso.Effect.runOnBackground'.
   , _componentModel :: model
   -- ^ t'Miso.Types.Component' state
   , _componentScripts :: [DOMRef]
@@ -587,6 +665,10 @@ data ComponentState context props model action
   -- ^ Mailbox for asynchronous t'Miso.Types.Component' communication
   , _componentDraw :: model -> IO ()
   -- ^ Helper function for t'Miso.Types.Component' rendering
+  , _componentHydrate :: model -> IO ()
+  -- ^ Posts the model to the MTS for cross-thread (Lynx) hydration.
+  -- Captures the t'Miso.Types.Component''s 'ToJSON' instance at 'initialize'
+  -- time; a no-op unless running on the background thread ('bts').
   , _componentPropsPhase :: props -> props -> IO ()
   -- ^ Helper function for t'Miso.Types.Component' props changed phase.
   , _componentModelDirty :: model -> model -> Bool
@@ -596,10 +678,13 @@ data ComponentState context props model action
       -> model
       -> props
       -> context
-      -> (model, [Schedule context action])
+      -> (model, [(action, Schedule context action)])
   -- ^ t'Miso.Types.Component' actions application. Given the pending actions,
   --   current @model@ and @props@, returns the updated @model@ and the
-  --   'Schedule's to run (async \/ sync IO and 'ContextModify's).
+  --   'Schedule's to run (async \/ sync IO, cross-thread effects, and
+  --   'ContextModify's). Each 'Schedule' is paired with the @action@ whose
+  --   'update' produced it, so cross-thread effects can be forwarded (via
+  --   'postEffect') to run on the opposite Lynx thread.
   , _componentTopics :: Map MisoString (Value -> IO ())
   -- ^ t'Miso.Types.Component' topics using for Pub Sub async communication.
   , _componentChildren :: ComponentIds
@@ -622,7 +707,10 @@ data ComponentState context props model action
 --
 -- @since 1.9.0.0
 newtype Topic a = Topic MisoString
-  deriving (Ord, Eq, Show, ToMisoString)
+  deriving stock (Ord, Eq, Show)
+-----------------------------------------------------------------------------
+instance ToMisoString (Topic a) where
+  toMisoString (Topic x) = x
 -----------------------------------------------------------------------------
 -- | Smart constructor for creating a @Topic message@ to write to
 --
@@ -887,14 +975,17 @@ drain ComponentState {..} = do
          (_, schedules) -> do
            forM_ schedules $ \case
              -- dmj: process all actions synchronously during unmount
-             Schedule _ action ->
-               action _componentSink
+             (_, Schedule _ _ effect) -> -- todo: dmj cross thread effects ...
+               effect _componentSink
                  `catch` (\(e :: SomeException) -> void (evaluate e))
-             ContextModify f -> do
+             (_, ContextModify f) ->
                atomicModifyIORef' globalContext $ \ctx -> (f ctx, ())
            newContext <- readIORef globalContext
            when (currentContext /= newContext) enqueueContextPropagation
-           -- dmj: One last context propagation before aborting
+           -- dmj: One last context propagation before aborting.
+           -- Don't recurse on drain, we only fire-off the last set
+           -- of events for 'onBeforeUnmounted' hooks. The queue will
+           -- ignore the rest of these.
 -----------------------------------------------------------------------------
 -- | Post unmount call to drop the <style> and <script> in <head>
 unloadScripts :: ComponentState context props model action -> IO ()
@@ -926,7 +1017,10 @@ unmountComponent cs@ComponentState {..} = do
   modifyComponent _componentParentId $ do
     children.at _componentId .= Nothing
   atomicModifyIORef' components $ \m -> (IM.delete _componentId m, ())
-  FFI.unmountComponent _componentId
+#ifdef NATIVE
+  when bts $ do
+    postComponent UNMOUNT _componentStaticKey _componentId _componentParentId Nothing
+#endif
 -----------------------------------------------------------------------------
 -- | Internal function for construction of a Virtual DOM.
 --
@@ -946,50 +1040,51 @@ buildVTree
   -> View context action
   -> IO VTree
 buildVTree events_ parentId_ vcompId hydrate snk logLevel_ = \case
-  VComp maybeKey (SomeComponent newProps app) -> do
-    vcomp_ <- create
+  VComp ptr -> case deRefStaticPtr ptr of
+    SomeComponent maybeKey newProps app -> do
+      vcomp_ <- create
 
-    mountCallback <- do
-      syncCallback1' $ \parent_ -> do
-        ComponentState {..} <- initialize events_ vcompId hydrate False newProps maybeKey app (pure parent_)
-        modifyComponent vcompId (children %= IS.insert _componentId)
-        vtree <- toJSVal =<< readIORef _componentVTree
-        FFI.set "parent" vcomp_ (Object vtree)
-        obj <- create
-        setProp "componentId" _componentId obj
-        setProp "componentTree" vtree obj
-        toJSVal obj
+      mountCallback <- do
+        syncCallback1' $ \parent_ -> do
+          ComponentState {..} <- initialize events_ vcompId hydrate False newProps maybeKey (staticKey ptr) app (pure parent_)
+          modifyComponent vcompId (children %= IS.insert _componentId)
+          vtree <- toJSVal =<< readIORef _componentVTree
+          FFI.set "parent" vcomp_ (Object vtree)
+          obj <- create
+          setProp "componentId" _componentId obj
+          setProp "componentTree" vtree obj
+          toJSVal obj
 
-    unmountCallback <- toJSVal =<< do
-      FFI.syncCallback1 $ \vcompId_ -> do
-        componentId_ <- fromJSValUnchecked vcompId_
-        IM.lookup componentId_ <$> readIORef components >>= \case
-          Nothing -> pure ()
-          Just componentState -> do
-            forM_ (unmount app) (_componentSink componentState)
-            unmountComponent @context componentState
+      unmountCallback <- toJSVal =<< do
+        FFI.syncCallback1 $ \vcompId_ -> do
+          componentId_ <- fromJSValUnchecked vcompId_
+          IM.lookup componentId_ <$> readIORef components >>= \case
+            Nothing -> pure ()
+            Just componentState -> do
+              forM_ (unmount app) (_componentSink componentState)
+              unmountComponent @context componentState
 
-    -- When props are present, install a diffProps callback.
-    -- Comparison happens in Haskell against _componentLastProps — no round-trip.
-    -- TypeScript calls diffProps() unconditionally; Haskell decides whether to dispatch.
-    diffPropsCallback <- toJSVal =<< do
-      syncCallback $ do
-        componentId_ <- fromJSValUnchecked =<< vcomp_ ! ("componentId" :: MisoString)
-        currentProps <- _componentProps . (IM.! componentId_) <$> readIORef components
-        when (currentProps /= newProps) $ do
-          modifyComponent componentId_ $ do
-            componentProps .= newProps
-            prevComponentProps .= currentProps
-          enqueueSchedule componentId_
+      -- When props are present, install a diffProps callback.
+      -- Comparison happens in Haskell against _componentLastProps — no round-trip.
+      -- TypeScript calls diffProps() unconditionally; Haskell decides whether to dispatch.
+      diffPropsCallback <- toJSVal =<< do
+        syncCallback $ do
+          componentId_ <- fromJSValUnchecked =<< vcomp_ ! ("componentId" :: MisoString)
+          currentProps <- _componentProps . (IM.! componentId_) <$> readIORef components
+          when (currentProps /= newProps) $ do
+            modifyComponent componentId_ $ do
+              componentProps .= newProps
+              prevComponentProps .= currentProps
+            enqueueSchedule componentId_
 
-    FFI.set "diffProps" diffPropsCallback vcomp_
-    FFI.set "child" jsNull vcomp_
-    forM_ maybeKey (\key -> FFI.set "key" key vcomp_)
-    FFI.set "mount" mountCallback vcomp_
-    FFI.set "unmount" unmountCallback vcomp_
-    FFI.set "eventPropagation" (eventPropagation app) vcomp_
-    FFI.set "type" VCompType vcomp_
-    pure (VTree vcomp_)
+      FFI.set "diffProps" diffPropsCallback vcomp_
+      FFI.set "child" jsNull vcomp_
+      forM_ maybeKey (\key -> FFI.set "key" key vcomp_)
+      FFI.set "mount" mountCallback vcomp_
+      FFI.set "unmount" unmountCallback vcomp_
+      FFI.set "eventPropagation" (eventPropagation app) vcomp_
+      FFI.set "type" VCompType vcomp_
+      pure (VTree vcomp_)
   VNode ns tag attrs kids -> do
     vnode_ <- createNode "vnode" ns tag
     setAttrs vnode_ attrs snk logLevel_ events_
@@ -1695,7 +1790,8 @@ data CloseCode
 -----------------------------------------------------------------------------
 -- | Type for holding a t'WebSocket' file descriptor.
 newtype WebSocket = WebSocket Int
-  deriving (ToJSVal, Eq, Num)
+  deriving stock Eq
+  deriving newtype (ToJSVal, Num)
 -----------------------------------------------------------------------------
 -- | A null t'WebSocket' is one with a negative descriptor.
 emptyWebSocket :: WebSocket
@@ -1703,7 +1799,8 @@ emptyWebSocket = -1
 -----------------------------------------------------------------------------
 -- | A type for holding an t'EventSource' descriptor.
 newtype EventSource = EventSource Int
-  deriving (ToJSVal, Eq, Num)
+  deriving stock Eq
+  deriving newtype (Num, ToJSVal)
 -----------------------------------------------------------------------------
 -- | A null t'EventSource' is one with a negative descriptor.
 emptyEventSource :: EventSource
@@ -1856,30 +1953,160 @@ loadedJS = unsafePerformIO (newIORef False)
 #endif
 -----------------------------------------------------------------------------
 initComponent
-  :: forall context model action . (Eq context, Eq model)
+#ifdef NATIVE
+  :: forall context props model action . (Eq context, Eq model, Eq props, ToJSON model, ToJSON action, FromJSON action)
+#else
+  :: forall context props model action . (Eq context, Eq model, Eq props)
+#endif
   => Events
   -> Hydrate
   -> Bool
   -> context
   -- ^ Initial global @context@
-  -> Component context () model action
+  -> Component context props model action
+  -> Maybe Key
+  -> props
+  -> StaticKey
   -> IO ()
-initComponent events hydrate live initialContext vcomp_@Component {..} = do
+initComponent events hydrate live initialContext vcomp_@Component {..} key props sk = do
 #ifdef WASM
-  $(evalFile MISO_JS_PATH)
-  atomicWriteIORef loadedJS True
+      $(evalFile MISO_JS_PATH)
+      atomicWriteIORef loadedJS True
 #endif
-  withJS $ do
-    root <- Diff.mountElement (getMountPoint mountPoint)
-    let proxy = Proxy :: Proxy context
-    when web (cleanup proxy live root)
-    atomicWriteIORef globalContext initialContext
-    -- dmj: top-level Component always responsive to Context changes
-    let vcomp_' = vcomp_ { useContext = True }
-    void $ initialize events rootComponentId hydrate True () Nothing vcomp_' (pure root)
-    -- dmj: only the BTS (Lynx background) or plain web context drives the
-    -- scheduler; the Lynx main thread (MTS) is render-only and must not fork one.
-    when (bts || web) (atomicWriteIORef schedulerThread =<< forkIO (scheduler proxy))
+      withJS $ do
+        let proxy = Proxy :: Proxy context
+#ifdef NATIVE
+        when bts $ do
+          effectListener proxy =<< getMTSContext
+          FFI.consoleLog "posting READY message"
+          postComponent READY sk topLevelComponentId rootComponentId Nothing
+        when mts $ do
+          effectListener proxy =<< getBTSContext
+          componentListener proxy =<< getBTSContext
+#endif
+        root <- Diff.mountElement (getMountPoint mountPoint)
+        when web (cleanup proxy live root)
+        atomicWriteIORef globalContext initialContext
+        -- dmj: top-level Component always responsive to Context changes
+        let vcomp_' = vcomp_ { useContext = True }
+        void $ initialize events rootComponentId hydrate True props key sk vcomp_' (pure root)
+        atomicWriteIORef schedulerThread =<< forkIO (scheduler proxy)
+----------------------------------------------------------------------------
+-- | Used for bidirectional cross-thread communication.
+#ifdef NATIVE
+effectListener :: forall context jsval . ToJSVal jsval => Proxy context -> jsval -> IO ()
+effectListener Proxy jsval = void $ do
+  FFI.consoleLog "is context null?"
+  FFI.consoleLog $ ms $ show ("mts" :: String, mts, "bts" :: String, bts)
+  ctx <- toJSVal jsval
+  FFI.consoleLog' ctx
+  FFI.addEventListener ctx "Miso.effects" $ \msgEvent ->
+    flip catch (\(e :: SomeException) ->
+        FFI.consoleError ("effectListener: exception in callback: " <> ms (show e))) $ do
+      FFI.consoleLog $ ms $ show
+        ("effectListener FIRED" :: String, "mts" :: String, mts, "bts" :: String, bts)
+      msg <- Object msgEvent ! "data"
+      EFFECT {..} <- fromJSValUnchecked msg :: IO EFFECT
+      FFI.consoleLog $ ms $ show
+        ("  effectListener: decoded EFFECT, componentId=" :: String, effectComponentId)
+      unsafeLookupStaticPtr effectStaticKey >>= \case
+        Nothing ->
+          FFI.consoleError "  effectListener: staticPtr NOT found for effectStaticKey"
+        Just ptr ->
+          case deRefStaticPtr ptr of
+            SomeComponent _key _props (_ :: Component context props model action) ->
+              case fromJSON effectAction :: Result action of
+                Success action -> do
+                  comps <- readIORef components
+                  case IM.lookup effectComponentId comps of
+                    Nothing ->
+                      FFI.consoleError $ ms $ show
+                        ("  effectListener: component id NOT registered:" :: String, effectComponentId)
+                    Just ComponentState {..} -> do
+                      FFI.consoleLog "  effectListener: sinking action into component"
+                      _componentSink action
+                Error e ->
+                  FFI.consoleError ("  effectListener: action decode error: " <> ms e)
+#endif
+----------------------------------------------------------------------------
+-- | Used for unidirectional BTS -> MTS communication
+#ifdef NATIVE
+componentListener :: forall context . Eq context => Proxy context -> BTS -> IO ()
+componentListener Proxy (BTS ctx) = void $ do
+  FFI.addEventListener ctx "Miso.components" $ \msgEvent -> do
+    msg <- Object msgEvent ! "data"
+    COMPONENT {..} <- fromJSValUnchecked msg :: IO COMPONENT
+    Just ptr <- unsafeLookupStaticPtr componentComponentStaticKey
+    case deRefStaticPtr ptr of
+      SomeComponent _key _props (vcomp_ :: Component context props model action) ->
+        case componentComponentType of
+          READY -> do -- dmj: unblocks main thread scheduler
+#ifdef NATIVE
+            when mts (notify btsReady)
+#endif
+            pure ()
+          MOUNT -> do
+            o@(Object parent_) <- create
+            FFI.set "nodeId" componentComponentParentId o
+            void $ initialize mempty componentComponentId Draw False _props
+              Nothing (staticKey ptr) vcomp_ (pure parent_)
+          UNMOUNT ->
+            IM.lookup componentComponentId <$> readIORef components >>= \case
+              Nothing ->
+                FFI.consoleError $ "[COMPONENT]: Couldn't find Component to unmount " <>
+                  ms (show componentComponentId)
+              Just c -> unmountComponent @context c
+          HYDRATE -> do
+            case componentComponentModel of
+              Nothing ->
+                FFI.consoleError "[COMPONENT]: No model to hydrate"
+              Just m ->
+                case fromJSON m :: Result model of
+                  Success newModel ->
+                    modifyComponent componentComponentId $ do
+                      componentModel .= newModel
+                  Error e ->
+                    FFI.consoleError ("[COMPONENT]: Could not decode model: " <> e)
+#endif
+----------------------------------------------------------------------------
+-- | Dispatches a 'COMPONENT' lifecycle message (BTS → MTS) on the
+-- @\"Miso.components\"@ channel. No-op for components without a 'StaticKey'
+-- (e.g. the root), since the MTS locates the component via 'unsafeLookupStaticPtr'.
+#ifdef NATIVE
+postComponent
+  :: ComponentType
+  -> StaticKey
+  -> ComponentId
+  -> ComponentId
+  -> Maybe Value
+  -> IO ()
+postComponent componentType_ sk componentId_ parentId_ model_ = do
+  ctx <- getMTSContext
+  dispatchEvent ctx "Miso.components"
+    (COMPONENT componentType_ sk componentId_ parentId_ model_)
+#endif
+----------------------------------------------------------------------------
+-- | Dispatches an 'EFFECT' message carrying a serialized @action@ across the
+-- Lynx thread boundary on the @\"Miso.effects\"@ channel:
+--
+--   * MTS → BTS when called on the main thread ('mts').
+--   * BTS → MTS when called on the background thread ('bts').
+--
+-- A no-op on plain web builds (neither 'mts' nor 'bts').
+#ifdef NATIVE
+postEffect :: StaticKey -> ComponentId -> Value -> IO ()
+postEffect sk componentId_ action_ = do
+  when mts $ do
+    FFI.consoleLog $ ms $ show
+      ("postEffect: MTS dispatching Miso.effects -> BTS, componentId=" :: String, componentId_)
+    ctx <- getBTSContext
+    dispatchEvent ctx "Miso.effects" (EFFECT componentId_ action_ sk)
+  when bts $ do
+    FFI.consoleLog $ ms $ show
+      ("postEffect: BTS dispatching Miso.effects -> MTS, componentId=" :: String, componentId_)
+    ctx <- getMTSContext
+    dispatchEvent ctx "Miso.effects" (EFFECT componentId_ action_ sk)
+#endif
 ----------------------------------------------------------------------------
 -- | Global variable to hold the scheduler thread
 --
@@ -1899,11 +2126,151 @@ schedulerThread = unsafePerformIO (newIORef undefined)
 -- safe to compute once and cache via 'unsafePerformIO' rather than making
 -- an FFI call on every 'initialize' \/ 'initComponent'.
 --
-_mts, bts, web :: Bool
-{-# NOINLINE _mts #-}
+mts, bts, web :: Bool
+{-# NOINLINE mts #-}
 {-# NOINLINE bts #-}
 {-# NOINLINE web #-}
-(_mts, bts, web) = unsafePerformIO FFI.getThreads
+(mts, bts, web) = unsafePerformIO FFI.getThreads
+-----------------------------------------------------------------------------
+instance FromJSVal Fingerprint where
+  fromJSVal x = fmap (fmap fromMisoString) (fromJSVal x :: IO (Maybe MisoString))
+  {-# INLINE fromJSVal #-}
+-----------------------------------------------------------------------------
+-- | Serializes a 'StaticKey' as a 32-character hex string (two zero-padded 'Word64' values).
+instance ToMisoString Fingerprint where
+  toMisoString fp = ms (show fp)
+  {-# INLINE toMisoString #-}
+-----------------------------------------------------------------------------
+-- | Parses a 'StaticKey' from its 32-character hex 'MisoString' representation.
+instance FromMisoString Fingerprint where
+  fromMisoStringEither s =
+    let str      = fromMisoString s :: String
+        (h1, h2) = splitAt 16 str
+        parseHex h = case (readHex h :: [(Word64, String)]) of
+          [(w, "")] -> Right w
+          _         -> Left ("fromMisoString StaticKey: invalid hex chunk " <> h)
+    in Fingerprint <$> parseHex h1 <*> parseHex h2
+  {-# INLINE fromMisoStringEither #-}
+-----------------------------------------------------------------------------
+-- | Serializes a 'Fingerprint' ('StaticKey') to its 'Show' representation.
+instance ToJSVal Fingerprint where
+  toJSVal fp = toJSVal (ms fp :: MisoString)
+  {-# INLINE toJSVal #-}
+-----------------------------------------------------------------------------
+-- | The operation carried by a 'COMPONENT' message.
+data ComponentType = MOUNT | UNMOUNT | HYDRATE | READY
+  deriving (Show, Eq)
+-----------------------------------------------------------------------------
+instance ToJSVal ComponentType where
+  toJSVal = \case
+    MOUNT -> toJSVal ("mount"   :: MisoString)
+    UNMOUNT -> toJSVal ("unmount" :: MisoString)
+    HYDRATE -> toJSVal ("hydrate" :: MisoString)
+    READY -> toJSVal ("ready" :: MisoString)
+  {-# INLINE toJSVal #-}
+-----------------------------------------------------------------------------
+instance FromJSVal ComponentType where
+  fromJSVal x = do
+    fromJSVal x >>= \case
+      Just ("mount" :: MisoString) -> pure (Just MOUNT)
+      Just "unmount" -> pure (Just UNMOUNT)
+      Just "hydrate" -> pure (Just HYDRATE)
+      Just "ready" -> pure (Just READY)
+      _ -> pure Nothing
+  {-# INLINE fromJSVal #-}
+-----------------------------------------------------------------------------
+-- | Cross-thread component lifecycle message (BTS → MTS).
+data COMPONENT = COMPONENT
+  { componentComponentType :: ComponentType
+  , componentComponentStaticKey :: StaticKey
+  , componentComponentId :: ComponentId
+  , componentComponentParentId :: ComponentId
+  , componentComponentModel :: Maybe Value
+  } deriving (Show, Eq)
+-----------------------------------------------------------------------------
+instance ToJSVal COMPONENT where
+  toJSVal COMPONENT {..} = do
+    o <- create
+    setField o "componentType" componentComponentType
+    setField o "staticKey" componentComponentStaticKey
+    setField o "compId" componentComponentId
+    setField o "compParentId" componentComponentParentId
+    setField o "model" componentComponentModel
+    toJSVal o
+  {-# INLINE toJSVal #-}
+-----------------------------------------------------------------------------
+instance FromJSVal COMPONENT where
+  fromJSVal x = do
+    let o = Object x
+    mct  <- fromJSVal =<< getProp "componentType" o
+    msk  <- fromJSVal =<< getProp "staticKey" o
+    let key = fromMisoString <$> msk
+    mcid <- fromJSVal =<< getProp "compId" o
+    mcpid <- fromJSVal =<< getProp "compParentId" o
+    mm   <- fromJSVal =<< getProp "model" o
+    pure (COMPONENT <$> mct <*> key <*> mcid <*> mcpid <*> mm)
+  {-# INLINE fromJSVal #-}
+-----------------------------------------------------------------------------
+-- | Cross-thread effect message (MTS → BTS or BTS → MTS).
+data EFFECT = EFFECT
+  { effectComponentId :: ComponentId
+  , effectAction :: Value
+  , effectStaticKey :: StaticKey
+  } deriving (Show, Eq)
+-----------------------------------------------------------------------------
+instance ToJSVal EFFECT where
+  toJSVal EFFECT {..} = do
+    o <- create
+    setField o "componentId" effectComponentId
+    setField o "action" effectAction
+    setField o "staticKey" effectStaticKey
+    toJSVal o
+  {-# INLINE toJSVal #-}
+-----------------------------------------------------------------------------
+instance FromJSVal EFFECT where
+  fromJSVal x = do
+    let o = Object x
+    mcid <- fromJSVal =<< getProp "componentId" o
+    maction <- fromJSVal =<< getProp "action" o
+    mk <- fromJSVal =<< getProp "staticKey" o
+    pure (EFFECT <$> mcid <*> maction <*> mk)
+  {-# INLINE fromJSVal #-}
+-----------------------------------------------------------------------------
+-- | Opaque handle to the Lynx Main Thread (MTS) context proxy.
+-- Obtained via 'getMTSContext' on the background thread.
+newtype MTS = MTS JSVal
+  deriving stock Eq
+  deriving newtype ToJSVal
+-----------------------------------------------------------------------------
+-- | Opaque handle to the Lynx Background Thread (BTS) context proxy.
+-- Obtained via 'getBTSContext' on the main thread.
+newtype BTS = BTS JSVal
+  deriving stock Eq
+  deriving newtype ToJSVal
+-----------------------------------------------------------------------------
+-- | Returns the MTS context proxy (@lynx.getCoreContext()@).
+-- Call from the background thread to dispatch messages to the main thread.
+getMTSContext :: IO MTS
+{-# INLINABLE getMTSContext #-}
+getMTSContext = MTS <$> (jsg "lynx" # "getCoreContext" $ ())
+-----------------------------------------------------------------------------
+-- | Returns the BTS context proxy (@lynx.getJSContext()@).
+-- Call from the main thread to dispatch messages to the background thread.
+getBTSContext :: IO BTS
+{-# INLINABLE getBTSContext #-}
+getBTSContext = BTS <$> (jsg "lynx" # "getJSContext" $ ())
+-----------------------------------------------------------------------------
+-- | Dispatches a cross-thread message to the BTS via @context.dispatchEvent@.
+-- The @protocol@ string names the channel (e.g. @\"Miso.patches\"@).
+dispatchEvent :: (ToJSVal ctx, ToJSVal a) => ctx -> MisoString -> a -> IO ()
+{-# INLINABLE dispatchEvent #-}
+dispatchEvent ctx protocol payload = do
+  ctx_ <- toJSVal ctx
+  o <- create
+  setField o "type" protocol
+  setField o "data" =<< toJSVal payload
+  _ <- Object ctx_ # "dispatchEvent" $ [o]
+  pure ()
 ----------------------------------------------------------------------------
 -- | Loads miso's JavaScript (if not already loaded) and runs an 'IO' action.
 --

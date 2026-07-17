@@ -9,7 +9,6 @@
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE RecordWildCards            #-}
 {-# LANGUAGE TypeOperators              #-}
-{-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE PolyKinds                  #-}

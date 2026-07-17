@@ -183,13 +183,12 @@ export type Component = {
 
 export type Runtime<T> = {
   nodes : Record <number, T>,
-  components : Record <ComponentId, Component>
 };
 
 /* Convenience table to allow O(1) application of DOM references */
 export type NodeMap<T> = Record <number, T>;
 
-/* Message protocol for bidirectional synchronization between MTS / BTS */
+/* DOM mutation protocol: BTS → MTS */
 export type PATCH
   = InsertBefore
   | SwapDOMRefs
@@ -209,14 +208,10 @@ export type PATCH
   | ModelHydration
   | AddClass
   | RemoveClass
-  | ProcessEvent
-  | AddEventListeners
   | Flush;
 
-export type AddEventListeners = {
-  events: Array<EventCapture>,
-  type: "addEventListeners"
-};
+/* Event protocol: MTS → BTS */
+export type EVENT = ProcessEvent;
 
 export type ProcessEvent = {
   stack: Array<number>,

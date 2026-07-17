@@ -3,19 +3,6 @@ import { DrawingContext, PATCH, Runtime } from './types';
 /* Function for patch application */
 export function patch<T> (context: DrawingContext<T>, patch: PATCH, runtime: Runtime<T>) {
   switch (patch.type) {
-    case "mount":
-        runtime.components[patch.componentId] = {
-          model : patch.model,
-          mainThreadEvents : {},
-          rootId : patch.mountPoint
-        };
-        break;
-    case "unmount":
-        delete runtime.components[patch.componentId];
-        break;
-    case "modelHydration":
-        runtime.components[patch.componentId].model = patch.model;
-        break;
     case "createElement":
         runtime.nodes[patch.nodeId] = context.createElement (patch.tag);
         runtime.nodes[patch.nodeId]['nodeId'] = patch.nodeId;

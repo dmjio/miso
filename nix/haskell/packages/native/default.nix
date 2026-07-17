@@ -7,6 +7,11 @@ self: super:
 {
   /* miso */
   miso = self.callCabal2nix "miso" source.miso {};
+  miso-native = self.callCabal2nixWithOptions "miso" source.miso "-fnative" {};
+
+  /* examples */
+  sample-app-native =
+    self.callCabal2nix "app-native" source.sample-app-native { miso = self.miso-native; };
 
   /* deps */
   ghcjs-base = self.callCabal2nix "ghcjs-base" source.ghcjs-base {};
