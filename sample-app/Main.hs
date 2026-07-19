@@ -51,15 +51,15 @@ emptyModel :: Model
 emptyModel = Model 0
 ----------------------------------------------------------------------------
 -- | Updates model, optionally introduces side effects
-updateModel :: Action -> Effect parent props Model Action
+updateModel :: Action -> Effect context props Model Action
 updateModel = \case
   AddOne        -> counter += 1
   SubtractOne   -> counter -= 1
   SayHelloWorld -> io_ (consoleLog "Hello world")
 ----------------------------------------------------------------------------
 -- | Constructs a virtual DOM from a model
-viewModel :: props -> Model -> View Model Action
-viewModel _ x =
+viewModel :: context -> props -> Model -> View context Action
+viewModel _ _ x =
   vfrag
     [ H.button_ [ H.onClick AddOne ] [ text "+" ]
     , text $ ms (x ^. counter)

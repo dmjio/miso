@@ -80,13 +80,14 @@ import           Data.Set (Set)
 import           Data.ByteString.Builder
 import qualified Data.ByteString.Lazy as L
 import qualified Data.Map.Strict as M
-import           Unsafe.Coerce (unsafeCoerce)
+import           System.IO.Unsafe (unsafePerformIO)
 #ifdef SSR
 import           Control.Exception (SomeException, catch)
-import           System.IO.Unsafe (unsafePerformIO)
 #endif
 ----------------------------------------------------------------------------
+import           Data.IORef (readIORef)
 import           Miso.JSON
+import           Miso.Runtime (globalContext)
 import           Miso.String hiding (intercalate)
 import qualified Miso.String as MS
 import           Miso.Types
@@ -186,10 +187,16 @@ renderBuilder (VNode ns tag attrs children) = mconcat
 renderBuilder (VComp _ (SomeComponent props vcomp_)) =
   foldMap renderBuilder vkids
     where
+      -- The app-global @context@ is read from 'globalContext'. For the common
+      -- @context ~ ()@ case the 'view' ignores it, so the initial @undefined@ is
+      -- never forced. But if a 'view' here inspects a non-trivial @context@,
+      -- SSR must seed the cell with 'Miso.setContext' before serializing, or
+      -- forcing @ctx@ raises an exception. See 'Miso.setContext' for details.
+      ctx = unsafePerformIO (readIORef globalContext)
 #ifdef SSR
-      vkids = [ unsafeCoerce $ view vcomp_ props (getInitialComponentModel vcomp_) ]
+      vkids = [ view vcomp_ ctx props (getInitialComponentModel vcomp_) ]
 #else
-      vkids = [ unsafeCoerce $ view vcomp_ props (model vcomp_) ]
+      vkids = [ view vcomp_ ctx props (model vcomp_) ]
 #endif
 renderBuilder (VFrag _ kids) = foldMap renderBuilder kids
 ----------------------------------------------------------------------------
@@ -262,7 +269,7 @@ toHtmlFromJSON (Array a)    = fromMisoString $ ms (show a)
 -- We use 'unsafePerformIO' here because @servant@'s 'MimeRender' is a pure function
 -- yet we need to allow the users to hydrate in 'IO'.
 --
-getInitialComponentModel :: Component parent props model action -> model
+getInitialComponentModel :: Component context props model action -> model
 getInitialComponentModel Component {..} =
   case hydrateModel of
     Nothing -> model

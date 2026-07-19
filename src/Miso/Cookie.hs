@@ -203,7 +203,7 @@ cookieGet
   -- ^ Successful callback (@Nothing@ when the cookie is absent)
   -> (MisoString -> action)
   -- ^ Errorful callback
-  -> Effect parent props model action
+  -> Effect context props model action
 cookieGet name successful errorful = withSink $ \sink ->
   FFI.cookieGet name
     (sink . successful <=< fromJSVal)
@@ -217,7 +217,7 @@ cookieGetAll
   -- ^ Successful callback
   -> (MisoString -> action)
   -- ^ Errorful callback
-  -> Effect parent props model action
+  -> Effect context props model action
 cookieGetAll successful errorful = withSink $ \sink -> do
   FFI.cookieGetAll
     (sink . successful <=< fromJSValUnchecked)
@@ -254,7 +254,7 @@ cookieSet
   -- ^ Successful callback
   -> (MisoString -> action)
   -- ^ Errorful callback
-  -> Effect parent props model action
+  -> Effect context props model action
 cookieSet cookie successful errorful = withSink $ \sink -> do
   c_ <- toJSVal cookie
   FFI.cookieSet c_ (sink successful) (sink . errorful)
@@ -269,7 +269,7 @@ cookieDelete
   -- ^ Successful callback
   -> (MisoString -> action)
   -- ^ Errorful callback
-  -> Effect parent props model action
+  -> Effect context props model action
 cookieDelete name successful errorful = withSink $ \sink ->
   FFI.cookieDelete name (sink successful) (sink . errorful)
 -----------------------------------------------------------------------------
@@ -294,7 +294,7 @@ cookieDeleteWith
   -- ^ Successful callback
   -> (MisoString -> action)
   -- ^ Errorful callback
-  -> Effect parent props model action
+  -> Effect context props model action
 cookieDeleteWith cookie successful errorful = withSink $ \sink -> do
   c_ <- toJSVal cookie
   FFI.cookieDeleteWith c_ (sink successful) (sink . errorful)

@@ -84,7 +84,7 @@
 --
 -- data Action = AddOne | SubtractOne
 --
--- updateModel :: Action -> Effect parent Model Action
+-- updateModel :: Action -> Effect context props Model Action
 -- updateModel = \\case
 --   AddOne    -> value '+=' 1
 --   SubtractOne -> value '-=' 1
@@ -406,7 +406,7 @@ l <~ mb = do
 -- value :: Lens Model Int
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect parent Model Action
+-- update :: Action -> Effect context props Model Action
 -- update AddOne = do
 --   value %= (+1)
 -- @
@@ -432,7 +432,7 @@ modifying = (%=)
 -- value :: Lens Model Int
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect parent Model Action
+-- update :: Action -> Effect context props Model Action
 -- update AddOne = do
 --   result <- value <%= (+1)
 --   io_ $ consoleLog (ms result)
@@ -456,7 +456,7 @@ l <%= f = do
 -- value :: Lens Model Int
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect parent Model Action
+-- update :: Action -> Effect context props Model Action
 -- update (Assign x) = do
 --   result <- value <.= x
 --   io_ $ consoleLog (ms result) -- x
@@ -480,7 +480,7 @@ l <.= b = do
 -- value :: Lens Model (Maybe Int)
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect parent Model Action
+-- update :: Action -> Effect context props Model Action
 -- update (SetValue x) = do
 --   result <- value <?= x
 --   io_ $ consoleLog (ms result) -- Just 1
@@ -506,7 +506,7 @@ l <?= b = do
 -- value :: Lens Model Int
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect parent Model Action
+-- update :: Action -> Effect context props Model Action
 -- update (Assign x) = do
 --   value .= x
 --   previousValue <- value <<.= 1
@@ -532,7 +532,7 @@ l <<.= b = do
 -- value :: Lens Model Int
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect parent Model Action
+-- update :: Action -> Effect context props Model Action
 -- update PrintInt = do
 --   Model x <- view value
 --   io_ $ consoleLog (ms x) -- prints model value
@@ -555,7 +555,7 @@ view lens_ = asks (^. lens_)
 -- value :: Lens Model Int
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect parent Model Action
+-- update :: Action -> Effect context props Model Action
 -- update (Modify f) = do
 --   value .= 2
 --   result <- value <<%= f
@@ -579,7 +579,7 @@ l <<%= f = do
 -- value :: Lens Model Int
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update' :: Action -> Effect parent Model Action
+-- update' :: Action -> Effect context props Model Action
 -- update' (SetValue v) = value .= v
 -- @
 infix 4 .=
@@ -603,7 +603,7 @@ assign = (.=)
 -- value :: Lens Model Int
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect parent Model Action
+-- update :: Action -> Effect context props Model Action
 -- update (SetValue x) = do
 --   value .= x
 --   result <- use value
@@ -624,7 +624,7 @@ use _lens = gets (^. _lens)
 -- value :: Lens Model (Maybe Int)
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect parent Model Action
+-- update :: Action -> Effect context props Model Action
 -- update (AssignValue x) = value ?= x
 -- @
 infix 4 ?=
@@ -642,7 +642,7 @@ infix 4 ?=
 -- value :: Lens Model (Maybe Int)
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect parent Model Action
+-- update :: Action -> Effect context props Model Action
 -- update IncrementIfJust = value %?= (+1)
 --
 -- @
@@ -664,7 +664,7 @@ infix 4 %?=
 -- value :: Lens Model Int
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect parent Model Action
+-- update :: Action -> Effect context props Model Action
 -- update (IncrementBy x) = value '+=' x
 -- @
 infix 4 +=
@@ -683,7 +683,7 @@ infix 4 +=
 -- value :: Lens Model Int
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect parent Model Action
+-- update :: Action -> Effect context props Model Action
 -- update (MultiplyBy x) = value *= x
 -- @
 infix 4 *=
@@ -702,7 +702,7 @@ infix 4 *=
 -- value :: Lens Model Double
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect parent Model Action
+-- update :: Action -> Effect context props Model Action
 -- update (DivideBy x) = value //= x
 -- @
 infix 4 //=
@@ -721,7 +721,7 @@ infix 4 //=
 -- value :: Lens Model Double
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect parent Model Action
+-- update :: Action -> Effect context props Model Action
 -- update (SubtractBy x) = value -= x
 -- @
 infix 4 -=

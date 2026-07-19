@@ -69,7 +69,7 @@ connectText
   -- ^ @onMessage@ callback; receives each raw text message
   -> (MisoString -> action)
   -- ^ @onError@ callback; receives an error description
-  -> Effect parent props model action
+  -> Effect context props model action
 connectText = eventSourceConnectText
 -----------------------------------------------------------------------------
 -- | Open a Server-Sent Events connection that decodes each message as JSON.
@@ -90,7 +90,7 @@ connectJSON
   -- ^ @onMessage@ callback; receives each JSON-decoded message
   -> (MisoString -> action)
   -- ^ @onError@ callback; receives an error description
-  -> Effect parent props model action
+  -> Effect context props model action
 connectJSON = eventSourceConnectJSON
 -----------------------------------------------------------------------------
 -- | Close an open 'EventSource' connection.
@@ -101,6 +101,6 @@ connectJSON = eventSourceConnectJSON
 close
   :: EventSource
   -- ^ The 'EventSource' handle to close
-  -> Effect parent props model action
+  -> Effect context props model action
 close = eventSourceClose
 -----------------------------------------------------------------------------
