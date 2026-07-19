@@ -489,12 +489,12 @@ fragment_ key = VFrag (Just (Key key))
 --
 -- @since 1.9.0.0
 (+>)
-  :: forall context child childAction action . (Eq context, Eq child)
+  :: forall context model action a . (Eq context, Eq model)
   => MisoString
   -- ^ 'VComp' 'key_'
-  -> Component context () child childAction
+  -> Component context () model action
   -- ^ 'Component'
-  -> View context action
+  -> View context a
 infixr 0 +>
 key +> comp = VComp (Just (toKey key)) (SomeComponent () comp)
 -----------------------------------------------------------------------------
@@ -511,10 +511,10 @@ key +> comp = VComp (Just (toKey key)) (SomeComponent () comp)
 --
 -- @since 1.11.0.0
 mountWithProps
-  :: (Eq context, Eq child, Eq props)
+  :: (Eq context, Eq model, Eq props)
   => props
   -- ^ 'props' to use
-  -> Component context props child action
+  -> Component context props model action
   -- ^ 'Component' to mount
   -> View context a
 mountWithProps props comp  = VComp Nothing (SomeComponent props comp)
@@ -528,12 +528,12 @@ mountWithProps props comp  = VComp Nothing (SomeComponent props comp)
 --
 -- @since 1.11.0.0
 mountWithProps_
-  :: (Eq context, Eq child, Eq props)
+  :: (Eq context, Eq model, Eq props)
   => MisoString
   -- ^ 'key' to use
   -> props
   -- ^ 'props' to use
-  -> Component context props child action
+  -> Component context props model action
   -- ^ 'Component' to mount
   -> View context a
 mountWithProps_ key props comp  = VComp (Just (Key key)) (SomeComponent props comp)
@@ -551,10 +551,10 @@ mountWithProps_ key props comp  = VComp (Just (Key key)) (SomeComponent props co
 --
 -- @since 1.9.0.0
 mount_
-  :: (Eq context, Eq child)
-  => Component context () child childAction
+  :: (Eq context, Eq model)
+  => Component context () model action
   -- ^ 'Component' to mount
-  -> View context action
+  -> View context a
 mount_ comp = VComp Nothing (SomeComponent () comp)
 -----------------------------------------------------------------------------
 -- | DOM element namespace.

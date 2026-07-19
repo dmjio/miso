@@ -39,12 +39,12 @@
 --   This is a process known as \"hydration\". This avoids unnecessary page draws on initial page
 --   load and enhances search engine optimization. @miso@ provides its own HTML rendering
 --   ("Miso.Html.Render") to render HTML on the server and the 'miso' function exists on the client to \"hydrate\"
---   the virtual DOM with the DOM.
+--   the virtual DOM from the DOM.
 --
--- * __Components__: A 'Component' can be considered an instance of a @miso@ application. A 'Component'
---   contains user-defined state, logic for updating this state, and a function
---   for creating UI templates from this user-defined state. 'Component' can nest other 'Component',
---   enabling arbitrarily deep UI trees.
+-- * __Components__: A 'Component' is a self-contained @miso@ application. Each
+--   bundles its own state, the logic for updating that state, and a function that
+--   renders the state to a UI template. Components can nest other components,
+--   forming UI trees of arbitrary depth.
 --
 -- * __Custom renderers__: The underlying DOM operations are able to be abstracted.
 -- This allows a custom rendering engine to be used. This is seen in the [miso-lynx](https://github.com/haskell-miso/miso-lynx) project
@@ -301,9 +301,9 @@
 --
 -- @
 -- ('+>')
---   :: forall context child action a . ('Eq' context, 'Eq' child)
+--   :: forall context model action a . ('Eq' context, 'Eq' model)
 --   => 'MisoString'
---   -> 'Component' context () child action
+--   -> 'Component' context () model action
 --   -> 'View' context a
 -- key '+>' comp = 'VComp' (Just ('toKey' key)) ('SomeComponent' () comp)
 -- @
@@ -803,10 +803,10 @@
 --
 -- @
 -- 'mountWithProps_'
---   :: ('Eq' context, 'Eq' child, 'Eq' props)
+--   :: ('Eq' context, 'Eq' model, 'Eq' props)
 --   => 'MisoString'
 --   -> props
---   -> 'Component' context props child action
+--   -> 'Component' context props model action
 --   -> 'View' context a
 -- @
 --
