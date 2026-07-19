@@ -15,7 +15,7 @@
 -----------------------------------------------------------------------------
 module Main where
 -----------------------------------------------------------------------------
-import           Control.Concurrent (newEmptyMVar, putMVar, takeMVar)
+import           Control.Concurrent (newEmptyMVar, putMVar, takeMVar, threadDelay)
 import           Control.Monad.Reader
 import           Control.Exception (try, evaluate)
 import qualified Data.Map.Strict as M
@@ -129,6 +129,75 @@ testComponent = component (0 :: Int) update_ $ \_ _ _ -> button_ [ id_ "foo", on
 -----------------------------------------------------------------------------
 data Action = AddOne
   deriving (Show, Eq)
+-----------------------------------------------------------------------------
+-- Context feature fixtures (see "Miso.Context tests")
+--
+-- The app-global @context@ is a 'MisoString' here so a 'view' can render it
+-- directly into the DOM for assertion.
+-----------------------------------------------------------------------------
+data CtxAction = ToggleCtx
+  deriving (Show, Eq)
+-----------------------------------------------------------------------------
+-- | Flip the global context between @"A"@ and @"B"@ from within 'update'.
+toggleCtx :: CtxAction -> Effect MisoString () Int CtxAction
+toggleCtx ToggleCtx = modifyContext (\c -> if c == "A" then "B" else "A")
+-----------------------------------------------------------------------------
+-- | A root component that reads the context into @#ctx@ and can mutate it.
+-- @useContext = True@, so it re-renders whenever the context changes.
+ctxToggleComp :: Component MisoString () Int CtxAction
+ctxToggleComp =
+  (component (0 :: Int) toggleCtx (\ctx _ _ -> div_ [ id_ "ctx" ] [ text ctx ]))
+    { useContext = True }
+-----------------------------------------------------------------------------
+-- | A nested child that renders the same app-global context into @#child-ctx@.
+sharedChild :: Component MisoString () Int CtxAction
+sharedChild =
+  component (0 :: Int) noop (\ctx _ _ -> span_ [ id_ "child-ctx" ] [ text ctx ])
+-----------------------------------------------------------------------------
+-- | Renders its own context into @#parent-ctx@ and mounts 'sharedChild'.
+sharedRoot :: Component MisoString () Int CtxAction
+sharedRoot =
+  component (0 :: Int) noop $ \ctx _ _ ->
+    div_ [] [ span_ [ id_ "parent-ctx" ] [ text ctx ], mount_ sharedChild ]
+-----------------------------------------------------------------------------
+-- | @useContext = True@ child: re-renders @#live-ctx@ on context change.
+liveChild :: Component MisoString () Int CtxAction
+liveChild =
+  (component (0 :: Int) noop (\ctx _ _ -> span_ [ id_ "live-ctx" ] [ text ctx ]))
+    { useContext = True }
+-----------------------------------------------------------------------------
+-- | @useContext = False@ child (the default): @#stale-ctx@ must NOT re-render
+-- when the context changes.
+staleChild :: Component MisoString () Int CtxAction
+staleChild =
+  component (0 :: Int) noop (\ctx _ _ -> span_ [ id_ "stale-ctx" ] [ text ctx ])
+-----------------------------------------------------------------------------
+-- | Root (@useContext = False@, ignores context) that owns the toggle action
+-- and mounts both children as siblings. Because the root itself never
+-- re-renders on context change, it never remounts the children — so
+-- 'staleChild' is only ever redrawn by context propagation, which it opts out
+-- of.
+toggleRoot :: Component MisoString () Int CtxAction
+toggleRoot =
+  component (0 :: Int) toggleCtx $ \_ _ _ ->
+    div_ [] [ mount_ liveChild, mount_ staleChild ]
+-----------------------------------------------------------------------------
+-- | Read an element's @textContent@ by @id@.
+currentText :: MisoString -> IO MisoString
+currentText elemId =
+  fromJSValUnchecked =<< eval ("document.getElementById('" <> elemId <> "').textContent")
+-----------------------------------------------------------------------------
+-- | Poll an element's @textContent@ until it equals @expected@, then assert.
+-- Context re-renders happen on a 'requestAnimationFrame' on the scheduler
+-- thread, so they are observed asynchronously; this bounds the wait (~250ms).
+waitForText :: MisoString -> MisoString -> Test ()
+waitForText elemId expected = go (50 :: Int)
+  where
+    go n = do
+      actual <- liftIO (currentText elemId)
+      if actual == expected || n <= 0
+        then actual `shouldBe` expected
+        else liftIO (threadDelay 5000) >> go (n - 1)
 -----------------------------------------------------------------------------
 #ifdef WASM
 #ifndef INTERACTIVE
@@ -1643,6 +1712,35 @@ main = withJS $ do
           component (0 :: Int) noop $ \_ _ _ ->
             div_ [] (replicate 999 (mount_ testComponent))
         mountedComponents >>= (`shouldBe` 1000)
+
+    describe "Miso.Context tests" $ do
+      it "threads the initial context into a component's view" $ do
+        liftIO (startAppWithContext mempty ("A" :: MisoString) ctxToggleComp)
+        waitForText "ctx" "A"
+
+      it "shares the app-global context with nested child components" $ do
+        liftIO (startAppWithContext mempty ("shared" :: MisoString) sharedRoot)
+        waitForText "parent-ctx" "shared"
+        waitForText "child-ctx" "shared"
+
+      it "re-renders a useContext component when the context changes" $ do
+        liftIO (startAppWithContext mempty ("A" :: MisoString) ctxToggleComp)
+        waitForText "ctx" "A"
+        cs <- getComponentById 1 :: Test (ComponentState MisoString () Int CtxAction)
+        liftIO (_componentSink cs ToggleCtx)
+        waitForText "ctx" "B"
+
+      it "does not re-render a useContext=False component on context change" $ do
+        liftIO (startAppWithContext mempty ("A" :: MisoString) toggleRoot)
+        waitForText "live-ctx" "A"
+        waitForText "stale-ctx" "A"
+        cs <- getComponentById 1 :: Test (ComponentState MisoString () Int CtxAction)
+        liftIO (_componentSink cs ToggleCtx)
+        -- Once the useContext=True sibling shows the new value, the context
+        -- propagation pass has completed; the useContext=False child was given
+        -- its chance in that same pass and correctly skipped.
+        waitForText "live-ctx" "B"
+        liftIO (currentText "stale-ctx") >>= (`shouldBe` "A")
 
     describe "Miso.DSL `await` tests" $ do
       it "Successful Promise resolution should result in a value" $ do
