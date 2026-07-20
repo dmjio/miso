@@ -156,6 +156,7 @@ module Miso.Types
   -- ** Component mounting
   , (+>)
   , mount_
+  , mountUseContext
   , mountWithProps_
   , mountWithProps
   -- ** Key combinators
@@ -556,6 +557,27 @@ mount_
   -- ^ 'Component' to mount
   -> View context a
 mount_ comp = VComp Nothing (SomeComponent () comp)
+-----------------------------------------------------------------------------
+-- | t'Miso.Types.Component' mounting combinator that opts the child into
+-- app-global React-style @context@ updates.
+--
+-- Equivalent to 'mount_', but sets @useContext = True@ on the mounted
+-- t'Miso.Types.Component' so it re-renders whenever the @context@ changes
+-- (see 'Miso.Effect.modifyContext'). Like 'mount_', this is unkeyed and so
+-- unsafe when diffing two t'Miso.Types.Component' against each other.
+--
+-- @
+-- mountUseContext $ component model noop $ \\ctx m ->
+--  div_ [ id_ "foo" ] [ text (ms m) ]
+-- @
+--
+-- @since 1.9.0.0
+mountUseContext
+  :: (Eq context, Eq model)
+  => Component context () model action
+  -- ^ 'Component' to mount
+  -> View context a
+mountUseContext comp = mount_ comp { useContext = True }
 -----------------------------------------------------------------------------
 -- | DOM element namespace.
 data Namespace
