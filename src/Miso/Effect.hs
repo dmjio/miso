@@ -121,6 +121,7 @@ module Miso.Effect
   , issue
   , withSink
   , modifyContext
+  , modifyContext_
   , putContext
   , mapSub
   , noop
@@ -142,6 +143,7 @@ module Miso.Effect
 import           Control.Monad (void)
 import           Data.Foldable (traverse_)
 import           Control.Monad.RWS (RWS, put, tell, execRWS, censor, MonadReader)
+import           Control.Monad.State (State, execState)
 -----------------------------------------------------------------------------
 import           Miso.DSL.FFI
 import           Miso.Lens
@@ -536,6 +538,25 @@ putContext
   -- ^ New global @context@ value
   -> Effect context props model action
 putContext = modifyContext . const
+-----------------------------------------------------------------------------
+-- | Mutate the app-global React-style @context@ using a 'State' computation.
+--
+-- A convenience wrapper around 'modifyContext' that runs the supplied
+-- @'State' context@ action over the current global context (via 'execState'),
+-- scheduling the resulting @context -> context@ transformation as a
+-- 'ContextModify'. This lets you use @put@ \/ @modify@ and the lens operators
+-- from "Miso.Lens" to update @context@, mirroring how @model@ is updated.
+--
+-- @
+-- 'update' Toggle = 'modifyContext_' $ theme '.=' Dark
+-- @
+--
+-- @since 1.9.0.0
+modifyContext_
+  :: State context ()
+  -- ^ 'State' computation describing the @context@ mutation
+  -> Effect context props model action
+modifyContext_ = modifyContext . execState
 -----------------------------------------------------------------------------
 -- | Issue a new @action@ to be processed by 'Miso.Types.update'.
 --
