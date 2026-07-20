@@ -321,7 +321,7 @@ scheduler Proxy =
         Schedule Sync action ->
           evalScheduled Sync (action _componentSink)
         ContextModify f ->
-          atomicModifyIORef' globalContext $ \ctx -> ((), f ctx)
+          atomicModifyIORef' globalContext $ \ctx -> (f ctx, ())
       updatedContext <- readIORef globalContext
       when (currentContext /= updatedContext) enqueueContextPropagation
       if _componentModelDirty _componentModel updatedModel
