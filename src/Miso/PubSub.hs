@@ -48,7 +48,6 @@
 --
 -- = See also
 --
--- * "Miso.Binding" — lens-based parent↔child model synchronisation
 -- * "Miso.Effect" — 'Miso.Effect.Sub', 'Miso.Effect.withSink'
 -- * "Miso.Runtime" — where 'Topic', 'subscribe', 'publish' are defined
 ----------------------------------------------------------------------------

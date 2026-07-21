@@ -146,7 +146,7 @@ getJSON
   -- ^ successful callback
   -> (Response error -> action)
   -- ^ errorful callback
-  -> Effect parent props model action
+  -> Effect context props model action
 getJSON url headers_ successful errorful =
   withSink $ \sink ->
     FFI.fetch url "GET" Nothing jsonHeaders
@@ -190,7 +190,7 @@ postJSON
   -- ^ successful callback
   -> (Response error -> action)
   -- ^ errorful callback
-  -> Effect parent props model action
+  -> Effect context props model action
 postJSON url body_ headers_ successful errorful =
   withSink $ \sink -> do
     bodyVal <- toJSVal (encode body_)
@@ -217,7 +217,7 @@ postJSON'
   -- ^ successful callback
   -> (Response error -> action)
   -- ^ errorful callback
-  -> Effect parent props model action
+  -> Effect context props model action
 postJSON' url body_ headers_ successful errorful =
   withSink $ \sink -> do
     bodyVal <- toJSVal (encode body_)
@@ -261,7 +261,7 @@ putJSON
   -- ^ successful callback
   -> (Response error -> action)
   -- ^ errorful callback
-  -> Effect parent props model action
+  -> Effect context props model action
 putJSON url body_ headers_ successful errorful =
   withSink $ \sink -> do
     bodyVal <- toJSVal (encode body_)
@@ -286,7 +286,7 @@ getText
   -- ^ successful callback
   -> (Response error -> action)
   -- ^ errorful callback
-  -> Effect parent props model action
+  -> Effect context props model action
 getText url headers_ successful errorful =
   withSink $ \sink ->
     FFI.fetch url "GET" Nothing textHeaders_
@@ -311,7 +311,7 @@ postText
   -- ^ successful callback
   -> (Response error -> action)
   -- ^ errorful callback
-  -> Effect parent props model action
+  -> Effect context props model action
 postText url body_ headers_ successful errorful =
   withSink $ \sink -> do
     bodyVal <- toJSVal (encode body_)
@@ -337,7 +337,7 @@ putText
   -- ^ successful callback
   -> (Response error -> action)
   -- ^ errorful callback
-  -> Effect parent props model action
+  -> Effect context props model action
 putText url imageBody headers_ successful errorful =
   withSink $ \sink -> do
     body_ <- toJSVal imageBody
@@ -361,7 +361,7 @@ getBlob
   -- ^ successful callback
   -> (Response error -> action)
   -- ^ errorful callback
-  -> Effect parent props model action
+  -> Effect context props model action
 getBlob url headers_ successful errorful =
   withSink $ \sink ->
     FFI.fetch url "GET" Nothing blobHeaders_
@@ -386,7 +386,7 @@ postBlob
   -- ^ successful callback
   -> (Response error -> action)
   -- ^ errorful callback
-  -> Effect parent props model action
+  -> Effect context props model action
 postBlob url body_ headers_ successful errorful =
   withSink $ \sink -> do
     bodyVal <- toJSVal body_
@@ -412,7 +412,7 @@ putBlob
   -- ^ successful callback
   -> (Response error -> action)
   -- ^ errorful callback
-  -> Effect parent props model action
+  -> Effect context props model action
 putBlob url imageBody headers_ successful errorful =
   withSink $ \sink -> do
     body_ <- toJSVal imageBody
@@ -436,7 +436,7 @@ getFormData
   -- ^ successful callback
   -> (Response error -> action)
   -- ^ errorful callback
-  -> Effect parent props model action
+  -> Effect context props model action
 getFormData url headers_ successful errorful =
   withSink $ \sink ->
     FFI.fetch url "GET" Nothing formDataHeaders_
@@ -461,7 +461,7 @@ postFormData
   -- ^ successful callback
   -> (Response error -> action)
   -- ^ errorful callback
-  -> Effect parent props model action 
+  -> Effect context props model action 
 postFormData url body_ headers_ successful errorful =
   withSink $ \sink -> do
     bodyVal <- toJSVal body_
@@ -487,7 +487,7 @@ putFormData
   -- ^ successful callback
   -> (Response error  -> action)
   -- ^ errorful callback
-  -> Effect parent props model action
+  -> Effect context props model action
 putFormData url imageBody headers_ successful errorful =
   withSink $ \sink -> do
     body_ <- toJSVal imageBody
@@ -511,7 +511,7 @@ getArrayBuffer
   -- ^ successful callback
   -> (Response error -> action)
   -- ^ errorful callback
-  -> Effect parent props model action
+  -> Effect context props model action
 getArrayBuffer url headers_ successful errorful =
   withSink $ \sink ->
     FFI.fetch url "GET" Nothing arrayBufferHeaders_
@@ -536,7 +536,7 @@ postArrayBuffer
   -- ^ successful callback
   -> (Response error -> action)
   -- ^ errorful callback
-  -> Effect parent props model action
+  -> Effect context props model action
 postArrayBuffer url body_ headers_ successful errorful =
   withSink $ \sink -> do
     bodyVal <- toJSVal body_
@@ -562,7 +562,7 @@ putArrayBuffer
   -- ^ successful callback
   -> (Response error -> action)
   -- ^ errorful callback
-  -> Effect parent props model action
+  -> Effect context props model action
 putArrayBuffer url arrayBuffer_ headers_ successful errorful =
   withSink $ \sink -> do
     body_ <- toJSVal arrayBuffer_
@@ -586,7 +586,7 @@ getUint8Array
   -- ^ successful callback
   -> (Response error -> action)
   -- ^ errorful callback
-  -> Effect parent props model action
+  -> Effect context props model action
 getUint8Array url headers_ successful errorful =
   withSink $ \sink ->
     FFI.fetch url "GET" Nothing uint8ArrayHeaders_
@@ -611,7 +611,7 @@ postUint8Array
   -- ^ successful callback
   -> (Response error -> action)
   -- ^ errorful callback
-  -> Effect parent props model action
+  -> Effect context props model action
 postUint8Array url body_ headers_ successful errorful =
   withSink $ \sink -> do
     bodyVal <- toJSVal body_
@@ -637,7 +637,7 @@ putUint8Array
   -- ^ successful callback
   -> (Response error -> action)
   -- ^ errorful callback
-  -> Effect parent props model action
+  -> Effect context props model action
 putUint8Array url uint8Array_ headers_ successful errorful =
   withSink $ \sink -> do
     body_ <- toJSVal uint8Array_
@@ -661,7 +661,7 @@ postImage
   -- ^ successful callback
   -> (Response error -> action)
   -- ^ errorful callback
-  -> Effect parent props model action
+  -> Effect context props model action
 postImage url body_ headers_ successful errorful =
   withSink $ \sink -> do
     bodyVal <- toJSVal body_
@@ -683,7 +683,7 @@ putImage
   -- ^ successful callback
   -> (Response error -> action)
   -- ^ errorful callback
-  -> Effect parent props model action
+  -> Effect context props model action
 putImage url imageBody headers_ successful errorful =
   withSink $ \sink -> do
     body_ <- toJSVal imageBody

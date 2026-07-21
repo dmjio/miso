@@ -118,11 +118,8 @@ retryFetch n action
 mountedComponents :: Test Int
 mountedComponents = IM.size <$> liftIO (readIORef components)
 -----------------------------------------------------------------------------
-getComponentById :: ComponentId -> Test (ComponentState p props m a)
-getComponentById vcompId = (IM.! vcompId) <$> liftIO (readIORef components)
------------------------------------------------------------------------------
-testComponent :: Component parent props Int Action
-testComponent = component (0 :: Int) update_ $ \_ _ -> button_ [ id_ "foo", onClick AddOne ] [ "click me " ]
+testComponent :: Component context props Int Action
+testComponent = component (0 :: Int) update_ $ \_ _ _ -> button_ [ id_ "foo", onClick AddOne ] [ "click me " ]
   where
     update_ = \case
       AddOne -> this += 1
@@ -1640,7 +1637,7 @@ main = withJS $ do
 
       it "Should mount 1000 components" $ do
         liftIO $ startApp mempty $
-          component (0 :: Int) noop $ \_ _ ->
+          component (0 :: Int) noop $ \_ _ _ ->
             div_ [] (replicate 999 (mount_ testComponent))
         mountedComponents >>= (`shouldBe` 1000)
 

@@ -34,22 +34,22 @@
 --
 -- = The Component record
 --
--- @'Component' parent props model action@ is the central record type. It
+-- @'Component' context props model action@ is the central record type. It
 -- wires together the MVU loop and all supporting runtime configuration:
 --
 -- @
--- data 'Component' parent props model action = Component
+-- data 'Component' context props model action = Component
 --   { model           :: model
 --   , hydrateModel    :: Maybe (IO model)
---   , update          :: action -> 'Miso.Effect.Effect' parent props model action
---   , view            :: props -> model -> 'View' model action
+--   , update          :: action -> 'Miso.Effect.Effect' context props model action
+--   , view            :: context -> props -> model -> 'View' context action
+--   , useContext      :: Bool
 --   , subs            :: ['Miso.Effect.Sub' action]
 --   , styles          :: ['CSS']
 --   , scripts         :: ['JS']
 --   , mountPoint      :: Maybe 'MountPoint'
 --   , logLevel        :: 'LogLevel'
 --   , mailbox         :: Value -> Maybe action
---   , bindings        :: ['Miso.Binding.Binding' parent model]
 --   , eventPropagation :: Bool
 --   , mount           :: Maybe action
 --   , unmount         :: Maybe action
@@ -70,7 +70,7 @@
 --
 -- = The View type
 --
--- @'View' model action@ is miso's virtual DOM tree. Its four constructors
+-- @'View' context action@ is miso's virtual DOM tree. Its four constructors
 -- map to the four node kinds the runtime handles:
 --
 -- * 'VNode' — a regular DOM element (@\<div\>@, @\<svg\>@, …)
@@ -81,8 +81,7 @@
 -- = Key types at a glance
 --
 -- ['Component'] full MVU application\/component record
--- ['App'] alias for @'Component' 'ROOT' () model action@
--- ['ROOT'] phantom type marking a top-level component
+-- ['App'] alias for @'Component' () () model action@
 -- ['View'] virtual DOM node
 -- ['Attribute'] DOM property, class list, event handler, or style
 -- ['Namespace'] @HTML@ \| @SVG@ \| @MATHML@
@@ -145,27 +144,19 @@ module Miso.Types
   , CacheBust
   , MountPoint
   , DOMRef
-  , ROOT
   , Events
   , Phase         (..)
   , URI           (..)
   -- ** Classes
   , ToKey         (..)
-  -- ** Data Bindings
-  , Binding       (..)
   -- ** Smart Constructors
   , emptyURI
   , component
   , vcomp
-  , (-->)
-  , (<--)
-  , (<-->)
-  , (<--->)
-  , (--->)
-  , (<---)
   -- ** Component mounting
   , (+>)
   , mount_
+  , mountUseContext
   , mountWithProps_
   , mountWithProps
   -- ** Key combinators
@@ -206,7 +197,6 @@ import qualified Data.Text as T
 import           GHC.Generics
 import           Prelude
 -----------------------------------------------------------------------------
-import           Miso.Binding ((<--), (-->), (<-->), (<---), (--->), (<--->), Binding(..))
 import           Miso.DSL
 import           Miso.Effect (Effect, Sub, Sink, DOMRef, ComponentId)
 import           Miso.Event.Types
@@ -216,7 +206,7 @@ import           Miso.String (ToMisoString, MisoString, toMisoString, ms, fromMi
 import           Miso.CSS.Types (StyleSheet)
 -----------------------------------------------------------------------------
 -- | Application entry point
-data Component parent props model action
+data Component context props model action
   = Component
   { model :: model
   -- ^ Initial model
@@ -230,10 +220,25 @@ data Component parent props model action
   --
   --   __Note:__ only synchronous 'IO' should be used here (e.g. reading from
   --   @localStorage@ via 'getLocalStorage').
-  , update :: action -> Effect parent props model action
+  , update :: action -> Effect context props model action
   -- ^ Updates model, optionally providing effects.
-  , view :: props -> model -> View model action
-  -- ^ Draws 'View'
+  , view :: context -> props -> model -> View context action
+  -- ^ Draws 'View'. Receives the app-global @context@, the @props@ passed by the
+  --   parent, and the current @model@.
+  , useContext :: Bool
+  -- ^ Whether this t'Miso.Types.Component' should be re-rendered when the
+  --   app-global @context@ changes (see 'Miso.Effect.modifyContext').
+  --
+  --   This controls whether a component __reacts__ to context changes, not
+  --   whether it may __change__ the context. A component may call
+  --   'Miso.Effect.modifyContext' \/ 'Miso.Effect.putContext' with
+  --   @useContext = False@; it simply won't re-render in response. Enable it on
+  --   the (usually nested) components whose 'view' reads the @context@ and must
+  --   refresh when it changes.
+  --
+  --   Defaults to 'False'.
+  --
+  -- @since 1.9.0.0
   , subs :: [ Sub action ]
   -- ^ Subscriptions to run during application lifetime
   , styles :: [CSS]
@@ -259,10 +264,6 @@ data Component parent props model action
   -- ^ Debugging configuration for prerendering and event delegation
   , mailbox :: Value -> Maybe action
   -- ^ Receives mail from other components
-  --
-  -- @since 1.9.0.0
-  , bindings :: [ Binding parent model ]
-  -- ^ Data bindings between parent and child t'Miso.Types.Component's
   --
   -- @since 1.9.0.0
   , eventPropagation :: Bool
@@ -342,23 +343,23 @@ getMountPoint = fromMaybe "body"
 component
   :: model
   -- ^ model
-  -> (action -> Effect parent props model action)
+  -> (action -> Effect context props model action)
   -- ^ update
-  -> (props -> model -> View model action)
+  -> (context -> props -> model -> View context action)
   -- ^ view
-  -> Component parent props model action
+  -> Component context props model action
 component m u v = Component
   { model = m
   , hydrateModel = Nothing
   , update = u
   , view = v
+  , useContext = False
   , subs = []
   , styles = []
   , scripts = []
   , mountPoint = Nothing
   , logLevel = Off
   , mailbox = const Nothing
-  , bindings = []
   , eventPropagation = False
   , mount = Nothing
   , unmount = Nothing
@@ -369,27 +370,18 @@ component m u v = Component
 vcomp
   :: model
   -- ^ model
-  -> (action -> Effect parent props model action)
+  -> (action -> Effect context props model action)
   -- ^ update
-  -> (props -> model -> View model action)
+  -> (context -> props -> model -> View context action)
   -- ^ view
-  -> Component parent props model action
-vcomp = component  
+  -> Component context props model action
+vcomp = component
 -----------------------------------------------------------------------------
--- | A top-level t'Miso.Types.Component' can have no @parent@.
+-- | A miso application is a top-level t'Miso.Types.Component'. Its app-global
+-- @context@ defaults to @()@ (see 'Miso.startAppWithContext' to supply a
+-- non-trivial context), and its @props@ are fixed to @()@.
 --
--- The 'ROOT' type is for disallowing a top-level mounted t'Miso.Types.Component' access
--- into its parent state. It has no inhabitants (spiritually 'Data.Void.Void')
---
-data ROOT
------------------------------------------------------------------------------
--- | 'Eq' instance for 'ROOT'
-instance Eq ROOT where _ == _ = True
------------------------------------------------------------------------------
--- | A miso application is a top-level t'Miso.Types.Component', which has no @parent@.
--- This is enforced by specializing the @parent@ type parameter to 'ROOT'.
---
-type App model action = Component ROOT () model action
+type App model action = Component () () model action
 -----------------------------------------------------------------------------
 -- | Logging configuration for debugging Miso internals (useful to see if prerendering is successful)
 data LogLevel
@@ -415,24 +407,27 @@ data LogLevel
 type Tag = MisoString
 -----------------------------------------------------------------------------
 -- | Core type for constructing a virtual DOM in Haskell
-data View model action
-  = VNode Namespace Tag [Attribute action] [View model action]
+data View context action
+  = VNode Namespace Tag [Attribute action] [View context action]
   | VText (Maybe Key) MisoString
-  | VComp (Maybe Key) (SomeComponent model)
-  | VFrag (Maybe Key) [View model action]
+  | VComp (Maybe Key) (SomeComponent context)
+  | VFrag (Maybe Key) [View context action]
   deriving Functor
 -----------------------------------------------------------------------------
--- | Existential wrapper allowing nesting of t'Miso.Types.Component' in t'Miso.Types.Component'
-data SomeComponent parent
-   = forall model action props . (Eq model, Eq props)
-  => SomeComponent props (Component parent props model action)
+-- | Existential wrapper allowing nesting of t'Miso.Types.Component' in t'Miso.Types.Component'.
+--
+-- The @context@ type parameter is shared with the enclosing 'View', so every
+-- nested t'Miso.Types.Component' participates in the same app-global context.
+data SomeComponent context
+   = forall model action props . (Eq context, Eq model, Eq props)
+  => SomeComponent props (Component context props model action)
 -----------------------------------------------------------------------------
 -- | Like '+>' but operates on any 'View', not just 'Component'.
 --
 -- This appends a 'Key' to any 'View'.
 --
 -- @
--- keyed "key" ("some text" :: View model action)
+-- keyed "key" ("some text" :: View context action)
 -- keyed "key" $ div_ [ id_ "container" ] [ "content" ]
 -- keyed "key" (mount_ calendarComponent)
 -- @
@@ -440,8 +435,8 @@ data SomeComponent parent
 -- @since 1.10.0.0
 keyed
   :: MisoString
-  -> View model action
-  -> View model action
+  -> View context action
+  -> View context action
 keyed key = \case
     VText _ txt ->
       VText (Just (Key key)) txt
@@ -460,7 +455,7 @@ keyed key = \case
 -- Synonym for `fragment'
 --
 -- @since 1.10.0.0
-vfrag :: [View model action] -> View model action
+vfrag :: [View context action] -> View context action
 vfrag = fragment
 -----------------------------------------------------------------------------
 -- | Create a fragment (keyless).
@@ -469,19 +464,19 @@ vfrag = fragment
 -- an extra DOM element.
 --
 -- @since 1.10.0.0
-fragment :: [View model action] -> View model action
+fragment :: [View context action] -> View context action
 fragment = VFrag Nothing
 -----------------------------------------------------------------------------
 -- | Like 'fragment', but keyed for efficient diffing.
 --
 -- @since 1.10.0.0
-vfrag_ :: MisoString -> [View model action] -> View model action
+vfrag_ :: MisoString -> [View context action] -> View context action
 vfrag_ key = VFrag (Just (Key key))
 -----------------------------------------------------------------------------
 -- | Like 'fragment', but keyed for efficient diffing.
 --
 -- @since 1.10.0.0
-fragment_ :: MisoString -> [View model action] -> View model action
+fragment_ :: MisoString -> [View context action] -> View context action
 fragment_ key = VFrag (Just (Key key))
 -----------------------------------------------------------------------------
 -- | t'Miso.Types.Component' mounting combinator
@@ -495,12 +490,12 @@ fragment_ key = VFrag (Just (Key key))
 --
 -- @since 1.9.0.0
 (+>)
-  :: forall child childAction model action . Eq child
+  :: forall context model action a . (Eq context, Eq model)
   => MisoString
   -- ^ 'VComp' 'key_'
-  -> Component model () child childAction
+  -> Component context () model action
   -- ^ 'Component'
-  -> View model action
+  -> View context a
 infixr 0 +>
 key +> comp = VComp (Just (toKey key)) (SomeComponent () comp)
 -----------------------------------------------------------------------------
@@ -517,12 +512,12 @@ key +> comp = VComp (Just (toKey key)) (SomeComponent () comp)
 --
 -- @since 1.11.0.0
 mountWithProps
-  :: (Eq child, Eq props)
+  :: (Eq context, Eq model, Eq props)
   => props
   -- ^ 'props' to use
-  -> Component parent props child action
+  -> Component context props model action
   -- ^ 'Component' to mount
-  -> View parent a
+  -> View context a
 mountWithProps props comp  = VComp Nothing (SomeComponent props comp)
 -----------------------------------------------------------------------------
 -- | t'Miso.Types.Component' mounting combinator.
@@ -534,14 +529,14 @@ mountWithProps props comp  = VComp Nothing (SomeComponent props comp)
 --
 -- @since 1.11.0.0
 mountWithProps_
-  :: (Eq child, Eq props)
+  :: (Eq context, Eq model, Eq props)
   => MisoString
   -- ^ 'key' to use
   -> props
   -- ^ 'props' to use
-  -> Component parent props child action
+  -> Component context props model action
   -- ^ 'Component' to mount
-  -> View parent a
+  -> View context a
 mountWithProps_ key props comp  = VComp (Just (Key key)) (SomeComponent props comp)
 -----------------------------------------------------------------------------
 -- | t'Miso.Types.Component' mounting combinator.
@@ -557,11 +552,32 @@ mountWithProps_ key props comp  = VComp (Just (Key key)) (SomeComponent props co
 --
 -- @since 1.9.0.0
 mount_
-  :: Eq child
-  => Component parent () child childAction
+  :: (Eq context, Eq model)
+  => Component context () model action
   -- ^ 'Component' to mount
-  -> View parent action
+  -> View context a
 mount_ comp = VComp Nothing (SomeComponent () comp)
+-----------------------------------------------------------------------------
+-- | t'Miso.Types.Component' mounting combinator that opts the child into
+-- app-global React-style @context@ updates.
+--
+-- Equivalent to 'mount_', but sets @useContext = True@ on the mounted
+-- t'Miso.Types.Component' so it re-renders whenever the @context@ changes
+-- (see 'Miso.Effect.modifyContext'). Like 'mount_', this is unkeyed and so
+-- unsafe when diffing two t'Miso.Types.Component' against each other.
+--
+-- @
+-- mountUseContext $ component model noop $ \\ctx m ->
+--  div_ [ id_ "foo" ] [ text (ms m) ]
+-- @
+--
+-- @since 1.9.0.0
+mountUseContext
+  :: (Eq context, Eq model)
+  => Component context () model action
+  -- ^ 'Component' to mount
+  -> View context a
+mountUseContext comp = mount_ comp { useContext = True }
 -----------------------------------------------------------------------------
 -- | DOM element namespace.
 data Namespace
@@ -661,7 +677,7 @@ instance Show (Attribute action) where
         ]
 -----------------------------------------------------------------------------
 -- | 'IsString' instance
-instance IsString (View model action) where
+instance IsString (View context action) where
   fromString = VText Nothing . fromString
 -----------------------------------------------------------------------------
 -- | Virtual DOM implemented as a JavaScript t'Object'.
@@ -684,9 +700,9 @@ node
   -- ^ Tag name (e.g. @\"div\"@, @\"circle\"@)
   -> [Attribute action]
   -- ^ Attributes, properties, and event handlers
-  -> [View model action]
+  -> [View context action]
   -- ^ Child nodes
-  -> View model action
+  -> View context action
 node = VNode
 -----------------------------------------------------------------------------
 -- | Create a new 'Miso.Types.VNode'.
@@ -700,13 +716,13 @@ vnode
   -- ^ Tag name (e.g. @\"div\"@, @\"circle\"@)
   -> [Attribute action]
   -- ^ Attributes, properties, and event handlers
-  -> [View model action]
+  -> [View context action]
   -- ^ Child nodes
-  -> View model action
+  -> View context action
 vnode = node
 -----------------------------------------------------------------------------
 -- | Create a new v'VText' with the given content.
-text :: MisoString -> View model action
+text :: MisoString -> View context action
 #ifdef SSR
 text = VText Nothing . htmlEncode
 #else
@@ -714,14 +730,14 @@ text = VText Nothing
 #endif
 -----------------------------------------------------------------------------
 -- | Synonym for 'text'
-vtext :: MisoString -> View model action
+vtext :: MisoString -> View context action
 vtext = text
 ----------------------------------------------------------------------------
 -- | Create a new v'VText', not subject to HTML escaping.
 --
 -- Like 'text', except will not escape HTML when used on the server.
 --
-textRaw :: MisoString -> View model action
+textRaw :: MisoString -> View context action
 textRaw = VText Nothing
 ----------------------------------------------------------------------------
 -- |
@@ -744,7 +760,7 @@ htmlEncode = MS.concatMap $ \case
 -- | Create a new v'VText' containing concatenation of the given strings.
 --
 -- @
---   view :: View model action
+--   view :: View context action
 --   view = div_
 --     [ className "container" ]
 --     [ text_
@@ -758,46 +774,46 @@ htmlEncode = MS.concatMap $ \case
 --
 -- A single additional space is added between elements.
 --
-text_ :: [MisoString] -> View model action
+text_ :: [MisoString] -> View context action
 text_ = VText Nothing . MS.intercalate " "
 -----------------------------------------------------------------------------
 -- | Like 'text', but allow the node to be keyed for efficient diffing.
 --
 -- @
--- view :: model -> View model action
+-- view :: model -> View context action
 -- view = \x -> div_ [] [ textKey (1 :: Int) "text here" ]
 -- @
 --
 -- @since 1.9.0.0
-textKey :: ToKey key => key -> MisoString -> View model action
+textKey :: ToKey key => key -> MisoString -> View context action
 textKey k = VText (Just (toKey k))
 -----------------------------------------------------------------------------
 -- | Like 'text_', but allow the node to be keyed for efficient diffing.
 --
 -- @
--- view :: model -> View model action
+-- view :: model -> View context action
 -- view = \x -> div_ [] [ textKey_ (1 :: Int) [ "text", "goes", "here" ] ]
 -- @
 --
 -- @since 1.9.0.0
-textKey_ :: ToKey key => key -> [MisoString] -> View model action
+textKey_ :: ToKey key => key -> [MisoString] -> View context action
 textKey_ k xs = VText (Just (toKey k)) (MS.intercalate " " xs)
 -----------------------------------------------------------------------------
 -- | Utility function to make it easy to specify conditional attributes
 --
 -- @
--- view :: Bool -> View model action
+-- view :: Bool -> View context action
 -- view danger = optionalAttrs div_ [ id_ "some-div" ] danger [ class_ "danger" ] ["child"]
 -- @
 --
 -- @since 1.9.0.0
 optionalAttrs
-  :: ([Attribute action] -> [View model action] -> View model action)
+  :: ([Attribute action] -> [View context action] -> View context action)
   -> [Attribute action] -- ^ Attributes to be added unconditionally
   -> Bool -- ^ A condition
   -> [Attribute action] -- ^ Additional attributes to add if the condition is True
-  -> [View model action] -- ^ Children
-  -> View model action
+  -> [View context action] -- ^ Children
+  -> View context action
 optionalAttrs element attrs condition opts kids =
   case element attrs kids of
     VNode ns name _ _ -> do
@@ -808,17 +824,17 @@ optionalAttrs element attrs condition opts kids =
 -- | Utility function to make it easy to specify conditional attributes for void elements.
 --
 -- @
--- view :: Bool -> View model action
+-- view :: Bool -> View context action
 -- view shouldClear = optionalVoidAttrs textarea_ [ value_ "" ] shouldClear [ id_ "text-area-id" ]
 -- @
 --
 -- @since 1.9.0.0
 optionalVoidAttrs
-  :: ([Attribute action] -> View model action)
+  :: ([Attribute action] -> View context action)
   -> [Attribute action] -- ^ Attributes to be added unconditionally
   -> Bool -- ^ A condition
   -> [Attribute action] -- ^ Additional attributes to add if the condition is True
-  -> View model action
+  -> View context action
 optionalVoidAttrs element attrs condition opts =
   case element attrs of
     VNode ns name _ kids -> do
@@ -829,18 +845,18 @@ optionalVoidAttrs element attrs condition opts =
 -- | Conditionally adds children.
 --
 -- @
--- view :: Bool -> View model action
+-- view :: Bool -> View context action
 -- view withChild = optionalChildren div_ [ id_ "txt" ] [] withChild [ "foo" ]
 -- @
 --
 -- @since 1.9.0.0
 optionalChildren
-  :: ([Attribute action] -> [View model action] -> View model action)
+  :: ([Attribute action] -> [View context action] -> View context action)
   -> [Attribute action] -- ^ Attributes to be added unconditionally
-  -> [View model action] -- ^ Children to be added unconditionally
+  -> [View context action] -- ^ Children to be added unconditionally
   -> Bool -- ^ A condition
-  -> [View model action] -- ^ Additional children to add if the condition is True
-  -> View model action
+  -> [View context action] -- ^ Additional children to add if the condition is True
+  -> View context action
 optionalChildren element attrs kids condition opts =
   case element attrs kids of
     VNode ns name _ _ -> do

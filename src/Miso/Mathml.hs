@@ -14,7 +14,7 @@
 -- __Example__ — render /x²/:
 --
 -- @
--- xSquared :: View model action
+-- xSquared :: View context action
 -- xSquared =
 --   math_ []
 --     [ msup_ []

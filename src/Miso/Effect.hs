@@ -31,8 +31,8 @@
 -- = The Effect monad
 --
 -- @
--- type 'Effect' parent props model action
---      = RWS ('ComponentInfo' parent props) ['Schedule' action] model ()
+-- type 'Effect' context props model action
+--      = RWS ('ComponentInfo' context props) ['Schedule' context action] model ()
 -- @
 --
 -- The @RWS@ decomposition:
@@ -120,6 +120,9 @@ module Miso.Effect
   , for
   , issue
   , withSink
+  , modifyContext
+  , modifyContext_
+  , putContext
   , mapSub
   , noop
   , beforeAll
@@ -140,6 +143,7 @@ module Miso.Effect
 import           Control.Monad (void)
 import           Data.Foldable (traverse_)
 import           Control.Monad.RWS (RWS, put, tell, execRWS, censor, MonadReader)
+import           Control.Monad.State (State, execState)
 -----------------------------------------------------------------------------
 import           Miso.DSL.FFI
 import           Miso.Lens
@@ -153,14 +157,15 @@ mkComponentInfo
   -> DOMRef
   -- ^ 'DOMRef'
   -> props
-  -> ComponentInfo parent props
+  -> ComponentInfo context props
 mkComponentInfo = ComponentInfo
 -----------------------------------------------------------------------------
 -- | This is the 'Reader r' in t'Miso.Effect'. Accessible via 'Control.Monad.Reader.ask'. It holds
--- a phantom type for @parent@. This is used as a witness when calling the
--- 'parent' function. It gives access to 'Component' metadata such as the 'DOMRef' the
--- 'Component' was mounted on and the 'ComponentId' associated with it.
-data ComponentInfo parent props
+-- a phantom type for @context@ (the app-global React-style context, which is
+-- write-only from within 'update'). It gives access to 'Component' metadata such
+-- as the 'DOMRef' the 'Component' was mounted on and the 'ComponentId' associated
+-- with it.
+data ComponentInfo context props
   = ComponentInfo
   { _componentInfoId :: ComponentId
   -- ^ Unique identifier for this component instance
@@ -182,7 +187,7 @@ data ComponentInfo parent props
 -- @
 --
 -- @since 1.9.0.0
-componentInfoId :: Lens (ComponentInfo parent props) ComponentId
+componentInfoId :: Lens (ComponentInfo context props) ComponentId
 componentInfoId = lens _componentInfoId $ \r x -> r { _componentInfoId = x }
 -----------------------------------------------------------------------------
 -- | Lens for accessing the parents's  t'ComponentId' from t'ComponentInfo'.
@@ -196,7 +201,7 @@ componentInfoId = lens _componentInfoId $ \r x -> r { _componentInfoId = x }
 -- @
 --
 -- @since 1.9.0.0
-componentInfoParentId :: Lens (ComponentInfo parent props) ComponentId
+componentInfoParentId :: Lens (ComponentInfo context props) ComponentId
 componentInfoParentId = lens _componentInfoParentId $ \r x -> r { _componentInfoParentId = x }
 -----------------------------------------------------------------------------
 -- | Lens for accessing the underlying t'Miso.Types.Component' t'DOMRef'.
@@ -209,7 +214,7 @@ componentInfoParentId = lens _componentInfoParentId $ \r x -> r { _componentInfo
 -- @
 --
 -- @since 1.9.0.0
-componentInfoDOMRef :: Lens (ComponentInfo parent props) DOMRef
+componentInfoDOMRef :: Lens (ComponentInfo context props) DOMRef
 componentInfoDOMRef = lens _componentInfoDOMRef $ \r x -> r { _componentInfoDOMRef = x }
 -----------------------------------------------------------------------------
 -- | Lens for accessing the underlying t'Miso.Types.Component' @props@.
@@ -222,7 +227,7 @@ componentInfoDOMRef = lens _componentInfoDOMRef $ \r x -> r { _componentInfoDOMR
 -- @
 --
 -- @since 1.9.0.0
-componentInfoProps :: Lens (ComponentInfo parent props) props
+componentInfoProps :: Lens (ComponentInfo context props) props
 componentInfoProps = lens _componentInfoProps $ \r x -> r { _componentInfoProps = x }
 -----------------------------------------------------------------------------
 -- | Lens for accessing the underlying t'Miso.Types.Component' @props@.
@@ -236,7 +241,7 @@ componentInfoProps = lens _componentInfoProps $ \r x -> r { _componentInfoProps 
 --       someAction =<< view props
 -- @
 --
-props :: Lens (ComponentInfo parent props) props
+props :: Lens (ComponentInfo context props) props
 props = componentInfoProps
 -----------------------------------------------------------------------------
 -- | @props@ retrieval from within the 'Effect' monad.
@@ -248,7 +253,7 @@ props = componentInfoProps
 --       someAction props
 -- @
 --
-getProps :: MonadReader (ComponentInfo parent props) m => m props
+getProps :: MonadReader (ComponentInfo context props) m => m props
 getProps = Miso.Lens.view props
 -----------------------------------------------------------------------------
 -- | 'ComponentId' of the current t'Miso.Types.Component'
@@ -266,15 +271,15 @@ type Sink action = action -> IO ()
 -----------------------------------------------------------------------------
 -- | Smart constructor for an 'Effect' with exactly one action.
 infixl 0 <#
-(<#) :: model -> IO action -> Effect parent props model action
+(<#) :: model -> IO action -> Effect context props model action
 (<#) m action = put m >> tell [ async $ \f -> f =<< action ]
 -----------------------------------------------------------------------------
-async :: (Sink action -> IO ()) -> Schedule action
+async :: (Sink action -> IO ()) -> Schedule context action
 async = Schedule Async
 -----------------------------------------------------------------------------
 -- | `Effect` smart constructor, flipped
 infixr 0 #>
-(#>) :: IO action -> model -> Effect parent props model action
+(#>) :: IO action -> model -> Effect context props model action
 (#>) = flip (<#)
 -----------------------------------------------------------------------------
 -- | Smart constructor for an 'Effect' with multiple 'IO' actions.
@@ -283,7 +288,7 @@ infixr 0 #>
 batch
   :: [IO action]
   -- ^ Batch of 'IO' actions to execute
-  -> Effect parent props model action
+  -> Effect context props model action
 batch actions = sequence_
   [ tell [ async $ \f -> f =<< action ]
   | action <- actions
@@ -292,7 +297,7 @@ batch actions = sequence_
 -- | Like @batch@ but actions are discarded
 --
 -- @since 1.9.0.0
-batch_ :: [IO ()] -> Effect parent props model action
+batch_ :: [IO ()] -> Effect context props model action
 batch_ actions = sequence_
   [ tell [ async (const action) ]
   | action <- actions
@@ -330,7 +335,7 @@ batch_ actions = sequence_
 --   , ...
 --   }
 -- @
-type Effect parent props model action = RWS (ComponentInfo parent props) [Schedule action] model ()
+type Effect context props model action = RWS (ComponentInfo context props) [Schedule context action] model ()
 -----------------------------------------------------------------------------
 -- | Represents a scheduled 'Effect' that is executed either synchronously
 -- or asynchronously.
@@ -342,18 +347,25 @@ type Effect parent props model action = RWS (ComponentInfo parent props) [Schedu
 -- N.B. During t'Miso.Types.Component' unmounting, all effects are evaluated
 -- synchronously.
 --
+-- The 'ContextModify' constructor carries a pending mutation to the app-global
+-- React-style @context@. It is emitted by 'modifyContext' \/ 'putContext' and
+-- applied to the global context during the scheduler's commit phase, triggering
+-- a re-render of every 'Component' with @useContext@ enabled.
+--
 -- @since 1.9.0.0
-data Schedule action = Schedule Synchronicity (Sink action -> IO ())
+data Schedule context action
+  = Schedule Synchronicity (Sink action -> IO ())
+  | ContextModify (context -> context)
 -----------------------------------------------------------------------------
 -- | Type to represent a DOM reference
 type DOMRef = JSVal
 -----------------------------------------------------------------------------
 -- | Internal function used to unwrap an @Effect@
 runEffect
-    :: Effect parent props model action
-    -> ComponentInfo parent props
+    :: Effect context props model action
+    -> ComponentInfo context props
     -> model
-    -> (model, [Schedule action])
+    -> (model, [Schedule context action])
 runEffect = execRWS
 -----------------------------------------------------------------------------
 -- | Turn a 'Sub' that consumes actions of type @a@ into a 'Sub' that consumes
@@ -375,7 +387,7 @@ mapSub f sub = \g -> sub (g . f)
 sync
   :: IO action
   -- ^ 'IO' action to execute synchronously
-  -> Effect parent props model action
+  -> Effect context props model action
 sync action = tell [ Schedule Sync $ \f -> f =<< action ]
 -----------------------------------------------------------------------------
 -- | Like 'sync', except discards the result.
@@ -384,7 +396,7 @@ sync action = tell [ Schedule Sync $ \f -> f =<< action ]
 sync_
   :: IO ()
   -- ^ 'IO' action to execute synchronously
-  -> Effect parent props model action
+  -> Effect context props model action
 sync_ action = tell [ Schedule Sync $ \_ -> action ]
 -----------------------------------------------------------------------------
 -- | Schedule a single 'IO' action for later execution.
@@ -396,7 +408,7 @@ sync_ action = tell [ Schedule Sync $ \_ -> action ]
 io
   :: IO action
   -- ^ 'IO' action to execute asynchronously
-  -> Effect parent props model action
+  -> Effect context props model action
 io action = withSink (action >>=)
 -----------------------------------------------------------------------------
 -- | Like 'io' but doesn't cause an action to be dispatched to
@@ -411,7 +423,7 @@ io action = withSink (action >>=)
 io_
   :: IO ()
   -- ^ 'IO' action to execute asynchronously
-  -> Effect parent props model action
+  -> Effect context props model action
 io_ action = withSink (\_ -> void action)
 -----------------------------------------------------------------------------
 -- | Like 'io' but generalized to any instance of 'Foldable'
@@ -423,7 +435,7 @@ for
   :: Foldable f
   => IO (f action)
   -- ^ @actions@ executed in batch.
-  -> Effect parent props model action
+  -> Effect context props model action
 for actions = withSink $ \sink -> actions >>= traverse_ sink
 -----------------------------------------------------------------------------
 -- | Performs the given 'IO' action before all IO actions collected by the given
@@ -438,9 +450,9 @@ for actions = withSink $ \sink -> actions >>= traverse_ sink
 beforeAll
   :: IO ()
   -- ^ 'IO' action to prepend before all scheduled effects
-  -> Effect parent props model action
+  -> Effect context props model action
   -- ^ Effect whose IO actions are modified
-  -> Effect parent props model action
+  -> Effect context props model action
 beforeAll = modifyAllIO . (*>)
 -----------------------------------------------------------------------------
 -- | Performs the given 'IO' action after all IO actions collected by the given
@@ -453,9 +465,9 @@ beforeAll = modifyAllIO . (*>)
 afterAll
   :: IO ()
   -- ^ 'IO' action to append after all scheduled effects
-  -> Effect parent props model action
+  -> Effect context props model action
   -- ^ Effect whose IO actions are modified
-  -> Effect parent props model action
+  -> Effect context props model action
 afterAll = modifyAllIO . (<*)
 -----------------------------------------------------------------------------
 -- | Modifies all 'IO' collected by the given Effect.
@@ -468,9 +480,9 @@ afterAll = modifyAllIO . (<*)
 modifyAllIO
   :: (IO () -> IO ())
   -- ^ Transform to apply to every scheduled 'IO' action in the effect
-  -> Effect parent props model action
+  -> Effect context props model action
   -- ^ Effect whose IO actions are modified
-  -> Effect parent props model action
+  -> Effect context props model action
 modifyAllIO f = censor $ \actions ->
   [ Schedule x (f <$> action)
   | Schedule x action <- actions
@@ -491,8 +503,60 @@ modifyAllIO f = censor $ \actions ->
 withSink
   :: (Sink action -> IO ())
   -- ^ Callback function that provides access to the underlying 'Sink'.
-  -> Effect parent props model action
+  -> Effect context props model action
 withSink f = tell [ async f ]
+-----------------------------------------------------------------------------
+-- | Mutate the app-global React-style @context@ from within 'update'.
+--
+-- The supplied function is scheduled as a 'ContextModify' and folded over the
+-- current global context during the scheduler's commit phase. If the context
+-- value changes (per its 'Eq' instance), every 'Component' with @useContext@
+-- enabled is re-rendered.
+--
+-- Note that @context@ is __write-only__ inside 'update'; to read it, use the
+-- @context@ argument threaded into the 'Miso.Types.view' function.
+--
+-- @
+-- 'update' Toggle = 'modifyContext' (\\theme -> if theme == Light then Dark else Light)
+-- @
+--
+-- @since 1.9.0.0
+modifyContext
+  :: (context -> context)
+  -- ^ Transformation to apply to the global @context@
+  -> Effect context props model action
+modifyContext f = tell [ ContextModify f ]
+-----------------------------------------------------------------------------
+-- | Replace the app-global React-style @context@ with a new value.
+--
+-- A convenience wrapper around 'modifyContext'. See 'modifyContext' for details
+-- of when re-renders are triggered.
+--
+-- @since 1.9.0.0
+putContext
+  :: context
+  -- ^ New global @context@ value
+  -> Effect context props model action
+putContext = modifyContext . const
+-----------------------------------------------------------------------------
+-- | Mutate the app-global React-style @context@ using a 'State' computation.
+--
+-- A convenience wrapper around 'modifyContext' that runs the supplied
+-- @'State' context@ action over the current global context (via 'execState'),
+-- scheduling the resulting @context -> context@ transformation as a
+-- 'ContextModify'. This lets you use @put@ \/ @modify@ and the lens operators
+-- from "Miso.Lens" to update @context@, mirroring how @model@ is updated.
+--
+-- @
+-- 'update' Toggle = 'modifyContext_' $ theme '.=' Dark
+-- @
+--
+-- @since 1.9.0.0
+modifyContext_
+  :: State context ()
+  -- ^ 'State' computation describing the @context@ mutation
+  -> Effect context props model action
+modifyContext_ = modifyContext . execState
 -----------------------------------------------------------------------------
 -- | Issue a new @action@ to be processed by 'Miso.Types.update'.
 --
@@ -500,7 +564,7 @@ withSink f = tell [ async f ]
 -- data Action = HelloWorld
 -- type Model  = Int
 --
--- 'update' :: Action -> 'Effect' parent Model Action
+-- 'update' :: Action -> 'Effect' context props Model Action
 -- 'update' = \\case
 --   Click -> 'issue' HelloWorld
 -- @
@@ -509,14 +573,14 @@ withSink f = tell [ async f ]
 issue
   :: action
   -- ^ @action@ to raise
-  -> Effect parent props model action
+  -> Effect context props model action
 issue action = tell [ async $ \f -> f action ]
 -----------------------------------------------------------------------------
 -- | Helper for t'Miso.Types.Component' construction, when you want to ignore the 'Miso.Types.update'
 -- function temporarily, or permanently.
 --
 -- @since 1.9.0.0
-noop :: action -> Effect parent props model action
+noop :: action -> Effect context props model action
 noop = const (pure ())
 -----------------------------------------------------------------------------
 -- | Type to indicate if effects should be handled asynchronously

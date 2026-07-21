@@ -340,7 +340,7 @@ onKeyDown f = on "keydown" keycodeDecoder (\action _ -> f action)
 --
 -- type Model = Int
 --
--- view :: Model -> View model Action
+-- view :: Model -> View context Action
 -- view entryId = input_ [ onEnter NoOp OnEnter ]
 -- @
 --

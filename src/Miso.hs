@@ -39,12 +39,12 @@
 --   This is a process known as \"hydration\". This avoids unnecessary page draws on initial page
 --   load and enhances search engine optimization. @miso@ provides its own HTML rendering
 --   ("Miso.Html.Render") to render HTML on the server and the 'miso' function exists on the client to \"hydrate\"
---   the virtual DOM with the DOM.
+--   the virtual DOM from the DOM.
 --
--- * __Components__: A 'Component' can be considered an instance of a @miso@ application. A 'Component'
---   contains user-defined state, logic for updating this state, and a function
---   for creating UI templates from this user-defined state. 'Component' can nest other 'Component',
---   enabling arbitrarily deep UI trees.
+-- * __Components__: A 'Component' is a self-contained @miso@ application. Each
+--   bundles its own state, the logic for updating that state, and a function that
+--   renders the state to a UI template. Components can nest other components,
+--   forming UI trees of arbitrary depth.
 --
 -- * __Custom renderers__: The underlying DOM operations are able to be abstracted.
 -- This allows a custom rendering engine to be used. This is seen in the [miso-lynx](https://github.com/haskell-miso/miso-lynx) project
@@ -67,7 +67,7 @@
 -- = Architecture
 --
 -- * __React__: miso implements a subset of the [React](https://react.dev) architecture including 'Component', Lifecycle Hooks, Virtual DOM, Event delegation,
--- [Fragment](https://react.dev/reference/react/Fragment) and [Props](https://react.dev/learn/passing-props-to-a-component).
+-- [Fragment](https://react.dev/reference/react/Fragment), [Props](https://react.dev/learn/passing-props-to-a-component) and [Context](https://react.dev/learn/passing-data-deeply-with-context)
 --
 -- * __Elm__: miso also implements the [Elm](https://elm-lang.org) architecture (MVU) and the 'mailbox' communication pattern.
 --
@@ -102,34 +102,34 @@
 -- import qualified "Miso.Html.Event" as HE
 -- import qualified "Miso.Html.Property" as HP
 -- -----------------------------------------------------------------------------
---                       * - The type of the parent 'Component' 'model'
---                       |    * - The type of the parent 'Component' 'props' accessible to the child
---                       |    |   * - The type of the current 'Component' 'model'
---                       |    |   |   * - The type of the action that updates the 'model'
---                       |    |   |   |
--- counter :: 'Component' 'ROOT' () 'Int' Action
+--                       * - The type of the global @context@
+--                       |  * - The type of the @props@ inherited from the parent 'Component'
+--                       |  |  * - The type of the current 'Component' 'model'
+--                       |  |  |  * - The type of the action that updates the 'model'
+--                       |  |  |  |
+-- counter :: 'Component' () () 'Int' Action
 -- counter = 'vcomp' m u v
 --   where
 --     -- | Initial 'model' value
 --     m :: 'Int'
 --     m = 0
---                             * - The type of the parent 'Component' 'model'
---                             |   * - The type of the parent 'Component' 'props' accessible to the child
---                             |   |   * - The type of the current 'Component' 'model'
---                             |   |   |   * - The type of the action that updates the 'model'
---                             |   |   |   |
---     u :: Action -> 'Effect' 'ROOT' () 'Int' Action
+--                           * - The type of the global @context@
+--                           |  * - The type of the @props@ inherited from the parent 'Component'
+--                           |  |  * - The type of the current 'Component' 'model'
+--                           |  |  |   * - The type of the action that updates the 'model'
+--                           |  |  |   |
+--     u :: Action -> 'Effect' () () 'Int' Action
 --     u = \\case
 --       Add -> 'Miso.Lens.this' 'Miso.Lens.+=' 1
 --       Subtract -> 'Miso.Lens.this' 'Miso.Lens.-=' 1
 --
---           * - The type of the parent 'Component' props
---           |      * - The type of the current 'Component' 'model'
---           |      |          * - The type of the 'Component' 'model' (used for 'Component' mounting with '+>')
---           |      |          |  * - The type of the action that updates 'Component' 'model'
---           |      |          |  |
---     v :: () -> 'Int' -> 'View' 'Int' Action
---     v _props x = 'vfrag'
+--           * - The type of the global @context@
+--           |     * - The type of the @props@ inherited from the parent 'Component'
+--           |     |     * - The type of the current 'Component' 'model'
+--           |     |     |             * - The type of the action that updates 'Component' 'model'
+--           |     |     |             |
+--     v :: () -> () -> 'Int' -> 'View' () Action
+--     v _context _props x = 'vfrag'
 --       [ H.'Miso.Html.Element.button_' [ HE.'Miso.Html.Event.onClick' Add, HP.'Miso.Html.Property.id_' "add" ] [ "+" ]
 --       , 'text' ('ms' x)
 --       , H.'Miso.Html.Elemment.button_' [ HE.'Miso.Html.Event.onClick' Subtract, HP.'Miso.Html.Property.id_' "subtract" ] [ "-" ]
@@ -184,16 +184,80 @@
 -- The 'App' type synonym is defined as:
 --
 -- @
--- type 'App' model action = 'Component' 'ROOT' () model action
+-- type 'App' model action = 'Component' () () model action
 -- @
 --
--- 'ROOT' is a type tag for top-level 'Component' — one with no @parent@.
+-- A top-level application fixes the global @context@ and @props@ to @()@.
+-- 'startApp' and 'miso' will always infer @context@ as @()@; use
+-- 'startAppWithContext' to seed a non-trivial context.
+--
+-- = The global @context@
+--
+-- @context@ is miso's analogue of [React Context](https://react.dev/learn/passing-data-deeply-with-context):
+-- a __single, global value__ that is shared by __every__ t'Component' in the
+-- tree, without having to thread it manually through @props@ at each level.
+--
+-- Contrast the three pieces of state a t'Component' sees, by scope:
+--
+-- * __'model'__ — private to a single t'Component'.
+-- * __@props@__ — passed from a parent to its immediate child.
+-- * __@context@__ — global; the same value is visible to the whole tree.
+--
+-- This is why @context@ is a type parameter on both t'Component' and 'View'
+-- (@'Component' context props model action@, @'View' context action@): the
+-- parameter is threaded through the entire view tree so that every nested
+-- t'Component' — reachable via 'SomeComponent' — is statically guaranteed to
+-- agree on __one__ @context@ type. There is exactly one live @context@ value per
+-- running application.
+--
+-- __Seeding__ (set the initial value):
+--
+-- * 'startAppWithContext' — the client entry point, replaces 'startApp'.
+-- * 'setContext' — seeds the value directly. Needed for __server-side
+--   rendering__, where a 'View' is serialized to HTML without ever starting
+--   the runtime.
+-- * 'Miso.Reload.liveWithContext' \/ 'Miso.Reload.reloadWithContext' — the
+--   context-aware variants of 'Miso.Reload.live' \/ 'Miso.Reload.reload' for
+--   interactive (GHCi) development.
+--
+-- __Reading__ (in 'Miso.Types.view'):
+--
+-- The current @context@ is delivered as the __first argument__ to every
+-- t'Component''s 'Miso.Types.view' function, so any component — however deeply
+-- nested — can read it synchronously during render:
 --
 -- @
--- data 'ROOT'
+-- view :: context -> props -> model -> 'View' context action
+-- view ctx _props _model = ...
 -- @
 --
--- 'startApp' and 'miso' will always infer @parent@ as 'ROOT'.
+-- __Updating__ (from 'Miso.Types.update'):
+--
+-- @context@ is __write-only__ inside 'update'; mutate it with
+-- 'Miso.Effect.modifyContext' (or 'Miso.Effect.putContext' to replace it):
+--
+-- @
+-- update Toggle = 'Miso.Effect.modifyContext' (\\theme -> if theme == Light then Dark else Light)
+-- @
+--
+-- __Re-rendering on change__:
+--
+-- When the @context@ value changes (per its 'Eq' instance), every t'Component'
+-- with @'Miso.Types.useContext' = True@ is re-rendered against the new value.
+-- @useContext@ defaults to 'False', so components opt in to context-driven
+-- re-renders:
+--
+-- @
+-- child = ('component' m u v) { 'Miso.Types.useContext' = True }
+-- @
+--
+-- __Note:__ @useContext@ controls whether a component __reacts__ to context
+-- changes, not whether it may __change__ the context. A component (typically the
+-- top-level one) can call 'Miso.Effect.modifyContext' \/ 'Miso.Effect.putContext'
+-- with @useContext = False@; it simply won't re-render in response to context
+-- changes it (or others) make. Set @useContext = True@ on precisely those
+-- (usually nested) components whose 'Miso.Types.view' depends on the @context@
+-- and must refresh when it changes.
 --
 -- = t'View' DSL
 --
@@ -201,19 +265,19 @@
 -- of nodes mutually recursive with 'Component' via the 'view' function.
 --
 -- @
--- data 'View' model action
---   = 'VNode' 'Namespace' 'Tag' ['Attribute' action] ['View' model action]
+-- data 'View' context action
+--   = 'VNode' 'Namespace' 'Tag' ['Attribute' action] ['View' context action]
 --   | 'VText' (Maybe 'Key') 'MisoString'
---   | 'VComp' (Maybe 'Key') ('SomeComponent' model)
---   | 'VFrag' (Maybe 'Key') ['View' model action]
+--   | 'VComp' (Maybe 'Key') ('SomeComponent' context)
+--   | 'VFrag' (Maybe 'Key') ['View' context action]
 -- @
 --
 -- 'VNode' and 'VText' have a one-to-one mapping from the virtual DOM to the physical DOM. The 'VComp' and 'VFrag' constructors are abstract (live only on the virtual DOM) and do not contain a reference to the physical DOM. The existential 'SomeComponent' is what allows embedding polymorphic 'Component' within a 'View'.
 --
 -- @
--- data 'SomeComponent' parent
---   = forall model action props . ('Eq' model, 'Eq' props)
---   => 'SomeComponent' props ('Component' parent props model action)
+-- data 'SomeComponent' context
+--   = forall model action props . ('Eq' context, 'Eq' model, 'Eq' props)
+--   => 'SomeComponent' props ('Component' context props model action)
 -- @
 --
 -- The smart constructors:
@@ -232,27 +296,23 @@
 --
 -- @miso@ 'Component' can contain other 'Component'. This is
 -- accomplished through the 'Component' mounting combinator ('+>'). This combinator
--- is responsible for encoding a typed 'Component' hierarchy, allowing 'Component'
--- type-safe read-only access to their @parent@ model state.
---
--- This combinator unifies the parent @model@ with the child @parent@, and
--- subsequently the grandchild @parent@ unifies with the child @model@. This
--- gives us a correct-by-construction 'Component' hierarchy.
+-- is responsible for encoding a typed 'Component' hierarchy. All 'Component' in a
+-- tree share the same global @context@ type.
 --
 -- @
 -- ('+>')
---   :: forall child model action a . Eq child
+--   :: forall context model action a . ('Eq' context, 'Eq' model)
 --   => 'MisoString'
---   -> 'Component' model () child action
---   -> 'View' model a
+--   -> 'Component' context () model action
+--   -> 'View' context a
 -- key '+>' comp = 'VComp' (Just ('toKey' key)) ('SomeComponent' () comp)
 -- @
 --
 -- Practically, using this combinator looks like:
 --
 -- @
--- viewModel :: props -> Int -> 'View' Int action
--- viewModel _ _ = 'Miso.Html.Element.div_' [ 'Miso.Html.Property.id_' "container" ] [ "counter" '+>' counter ]
+-- viewModel :: context -> props -> Int -> 'View' context action
+-- viewModel _ _ _ = 'Miso.Html.Element.div_' [ 'Miso.Html.Property.id_' "container" ] [ "counter" '+>' counter ]
 -- @
 --
 -- The @\"counter\"@ string is a unique 'Key' that identifies the 'Component' at runtime. These keys are very important when
@@ -326,7 +386,7 @@
 --
 -- data Action = Highlight t'Miso.Effect.DOMRef'
 --
--- update :: Action -> 'Effect' parent props model Action
+-- update :: Action -> 'Effect' context props model Action
 -- update = \\case
 --   Highlight domRef -> 'io_' $ do
 --     ['Miso.FFI.QQ.js'| hljs.highlight(${domRef}) |]
@@ -413,7 +473,7 @@
 -- by a string literal or 'text':
 --
 -- @
--- 'keyed' "greeting" ("Hello!" :: 'View' model action)
+-- 'keyed' "greeting" ("Hello!" :: 'View' context action)
 -- @
 --
 -- The smart constructors for 'VText' are:
@@ -607,7 +667,7 @@
 -- The 'Effect' type is defined as a 'Control.Monad.RWS.RWS'.
 --
 -- @
--- type 'Effect' parent props model action = 'Control.Monad.RWS.RWS' ('ComponentInfo' parent props) ['Schedule' action] model ()
+-- type 'Effect' context props model action = 'Control.Monad.RWS.RWS' ('ComponentInfo' context props) ['Schedule' context action] model ()
 -- @
 --
 -- * The 'Control.Monad.Reader' portion of 'Effect' is 'ComponentInfo'. 'ask', 'asks', 'Miso.Lens.view' can be used to access its fields.
@@ -706,7 +766,7 @@
 -- Use 'getProps' inside the 'Effect' monad to read the current value of @props@:
 --
 -- @
--- update :: Action -> 'Effect' parent props Model Action
+-- update :: Action -> 'Effect' context props Model Action
 -- update = \\case
 --   SomeAction -> do
 --     p <- 'getProps'
@@ -722,18 +782,19 @@
 --     …
 -- @
 --
--- === 'ROOT' — the top-level 'Component'
+-- === 'App' — the top-level 'Component'
 --
--- When a 'Component' is passed to 'startApp' (or 'miso') it has no parent.
--- The @parent@ type is specialized to 'ROOT' and @props@ is fixed to @()@:
+-- When a 'Component' is passed to 'startApp' (or 'miso') its global
+-- @context@ and @props@ are both fixed to @()@:
 --
 -- @
--- type 'App' model action = 'Component' 'ROOT' () model action
+-- type 'App' model action = 'Component' () () model action
 -- @
 --
 -- Because there is no parent to inherit from, @props@ will always be @()@ for a
--- root-level 'Component'. You can simply ignore the first argument in 'view' and
--- skip 'getProps' in 'Miso.Types.update'.
+-- root-level 'Component'. You can ignore the @context@ and @props@ arguments in
+-- 'view' and skip 'getProps' in 'Miso.Types.update'. Use 'startAppWithContext'
+-- to seed a non-trivial @context@.
 --
 -- === Passing props to a child 'Component'
 --
@@ -742,11 +803,11 @@
 --
 -- @
 -- 'mountWithProps_'
---   :: ('Eq' child, 'Eq' props)
+--   :: ('Eq' context, 'Eq' model, 'Eq' props)
 --   => 'MisoString'
 --   -> props
---   -> 'Component' parent props child action
---   -> 'View' parent a
+--   -> 'Component' context props model action
+--   -> 'View' context a
 -- @
 --
 -- === Example: child reading parent-supplied props
@@ -762,27 +823,27 @@
 -- -----------------------------------------------------------------------------
 -- -- Child component
 -- --
--- --                  parent      props    model  action
--- --                  |           |        |      |
--- child :: 'Component' ParentModel Greeting ()     ChildAction
+-- --                  context props    model  action
+-- --                  |       |        |      |
+-- child :: 'Component' ()      Greeting ()     ChildAction
 -- child = 'vcomp' () updateChild viewChild
 --   where
---     viewChild :: Greeting -> () -> 'View' () ChildAction
---     viewChild (Greeting g) _ =
+--     viewChild :: () -> Greeting -> () -> 'View' () ChildAction
+--     viewChild _ (Greeting g) _ =
 --       'Miso.Html.Element.div_' [] [ 'text' ("Hello, " <> g <> "!") ]
 --
---     updateChild :: ChildAction -> 'Effect' ParentModel Greeting () ChildAction
+--     updateChild :: ChildAction -> 'Effect' () Greeting () ChildAction
 --     updateChild = \\case
 --       ReadGreeting -> do
 --         Greeting g <- 'getProps'
 --         'io_' ('consoleLog' g)
 -- -----------------------------------------------------------------------------
 -- -- Parent component: owns the greeting, passes it to the child as props
--- parent :: 'App' ParentModel ParentAction
--- parent = 'vcomp' (ParentModel \"World\") 'noop' viewParent
+-- parentComp :: 'App' ParentModel ParentAction
+-- parentComp = 'vcomp' (ParentModel \"World\") 'noop' viewParent
 --   where
---     viewParent :: () -> ParentModel -> 'View' ParentModel ParentAction
---     viewParent _ (ParentModel g) = 'mountWithProps_' "child" (Greeting g) child
+--     viewParent :: () -> () -> ParentModel -> 'View' () ParentAction
+--     viewParent _ _ (ParentModel g) = 'mountWithProps_' "child" (Greeting g) child
 -- -----------------------------------------------------------------------------
 -- newtype ParentModel = ParentModel 'MisoString' deriving ('Eq')
 --
@@ -792,11 +853,12 @@
 --
 -- A few things to notice:
 --
--- * The child's @parent@ type parameter is @ParentModel@. This must match the
---   parent 'Component' @model@ type — 'mountWithProps_' enforces this at compile time.
--- * 'getProps' inside the child's 'Miso.Types.update' yields a @Greeting@, not
---   the full @ParentModel@. The child only sees what the parent explicitly chose to share.
--- * The root 'App' always has @props ~ ()@; no extra plumbing is needed when calling 'startApp'.
+-- * @props@ flow from parent to child explicitly via 'mountWithProps_'; the child's
+--   @context@ is the shared global context (@()@ here).
+-- * 'getProps' inside the child's 'Miso.Types.update' yields a @Greeting@. The child
+--   only sees what the parent explicitly chose to share.
+-- * The root 'App' always has @context ~ ()@ and @props ~ ()@; no extra plumbing is
+--   needed when calling 'startApp'.
 --
 --
 -- == Asynchronous communication
@@ -823,7 +885,7 @@
 --   = ReceivedMsg MyMsg
 --   | MailError   'MisoString'
 --
--- myComp :: 'Component' parent props model Action
+-- myComp :: 'Component' context props model Action
 -- myComp = ('vcomp' m u v) { 'mailbox' = 'checkMail' ReceivedMsg MailError }
 -- @
 --
@@ -842,18 +904,6 @@
 -- @
 --
 -- * "Miso.PubSub" — publish\/subscribe pattern for fan-out messaging across unrelated components.
---
--- == Synchronous communication
---
--- * "Miso.Binding"
---
--- Experimental support for data bindings (where 'Component' model can synchronize fields via a 'Miso.Lens.Lens' in response to model differences along the parent-child relationship). See the "Miso.Binding" module for more information, and the [miso-reactive](https://github.com/haskell-miso/miso-reactive) example. *Warning*: This is still considered experimental.
---
--- == Parent access
---
--- * 'parent'
---
--- While not direct communication, a 'Component' can asynchronously receive read-only access to its @parent@ state via the 'parent' function.
 --
 -- = Subscriptions
 --
@@ -1144,7 +1194,7 @@
 --
 -- import "Miso.FFI.QQ" ('Miso.FFI.QQ.js')
 --
--- update :: Action -> 'Miso.Effect.Effect' parent props model Action
+-- update :: Action -> 'Miso.Effect.Effect' context props model Action
 -- update = \\case
 --   Log msg -> 'io_' ['Miso.FFI.QQ.js'| console.log(${msg}) |]
 --
@@ -1583,6 +1633,30 @@ module Miso
     -- ** App
   , App
   , startApp
+  , startAppWithContext
+    -- | Seed the global React-style @context@ with a value, outside of the
+    -- normal 'startAppWithContext' flow.
+    --
+    -- 'startAppWithContext' already seeds the context before the first draw, so
+    -- client applications never call 'setContext' directly. It exists for
+    -- __server-side rendering__.
+    --
+    -- During SSR you typically serialize a t'Miso.Types.View' to HTML with
+    -- 'Miso.Html.Render.toHtml' without ever starting the runtime. In that path
+    -- the global context cell is still @undefined@. For the common
+    -- @context ~ ()@ case this is harmless — 'Miso.Types.view' ignores its
+    -- @context@ argument, so the thunk is never forced. But if any
+    -- t'Miso.Types.VComp' in the tree has a 'Miso.Types.view' that inspects a
+    -- non-trivial @context@, forcing it during rendering raises an exception.
+    -- Call 'setContext' first to seed the value SSR should render against:
+    --
+    -- @
+    -- main :: 'IO' ()
+    -- main = do
+    --   'setContext' Dark
+    --   Data.ByteString.Lazy.putStr ('Miso.Html.Render.toHtml' (view Dark () model))
+    -- @
+  , setContext
   , renderApp
     -- ** Component
   , Component (..)
@@ -1599,7 +1673,6 @@ module Miso
     -- ** Mail
   , mail
   , checkMail
-  , parent
   , mailParent
   , mailChildren
   , mailDescendants
@@ -1622,9 +1695,6 @@ module Miso
   , evalFile
 #endif
   , withJS
-    -- * Bindings
-    -- | Primitives for synchronizing parent and child models.
-  , module Miso.Binding
     -- * DSL
     -- | A JavaScript DSL for easy FFI interoperability
   , module Miso.DSL
@@ -1667,7 +1737,6 @@ module Miso
   , module Miso.State
   ) where
 -----------------------------------------------------------------------------
-import           Miso.Binding
 import           Miso.DSL
 import           Miso.Effect
 import           Miso.Event
@@ -1702,7 +1771,7 @@ miso
   -> IO ()
 miso events f = do
   comp <- f <$> getURI
-  initComponent events Hydrate False comp { mountPoint = Nothing }
+  initComponent events Hydrate False () comp { mountPoint = Nothing }
 ----------------------------------------------------------------------------
 -- | Like 'miso', except discards the 'Miso.Router.URI' argument.
 --
@@ -1719,7 +1788,7 @@ prerender
   -> App model action
   -- ^ 'Component' application
   -> IO ()
-prerender events comp = initComponent events Hydrate False comp { mountPoint = Nothing }
+prerender events comp = initComponent events Hydrate False () comp { mountPoint = Nothing }
 -----------------------------------------------------------------------------
 -- | Like 'miso', except it does not perform page hydration.
 --
@@ -1740,7 +1809,37 @@ startApp
   -> App model action
   -- ^ 'Component' application
   -> IO ()
-startApp events = initComponent events Draw False
+startApp events = initComponent events Draw False ()
+-----------------------------------------------------------------------------
+-- | Like 'startApp', but seeds the global React-style @context@ with an
+-- initial value.
+--
+-- The @context@ can be read in every t'Component''s 'Miso.Types.view' and
+-- mutated from any t'Component''s @update@ via 'Miso.Effect.modifyContext' \/
+-- 'Miso.Effect.putContext'. Any t'Component' with @useContext = True@ is
+-- re-rendered whenever the context changes.
+--
+-- @
+-- main :: 'IO' ()
+-- main = 'startAppWithContext' 'defaultEvents' Light app
+--
+-- data Theme = Light | Dark deriving (Show, Eq)
+-- @
+--
+-- For server-side rendering (where the runtime is never started) seed the
+-- context with 'setContext' before serializing the 'Miso.Types.View'.
+--
+-- @since 1.9.0.0
+startAppWithContext
+  :: (Eq context, Eq model)
+  => Events
+  -- ^ Globally delegated 'Events'
+  -> context
+  -- ^ Initial global @context@
+  -> Component context () model action
+  -- ^ 'Component' application
+  -> IO ()
+startAppWithContext events = initComponent events Draw False
 -----------------------------------------------------------------------------
 -- | Alias for 'Miso.miso'.
 (🍜)
@@ -1775,5 +1874,5 @@ renderApp
   -> IO ()
 renderApp events renderer comp = do
   FFI.setDrawingContext renderer
-  initComponent events Draw False comp
+  initComponent events Draw False () comp
 ----------------------------------------------------------------------------

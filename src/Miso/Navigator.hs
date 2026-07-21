@@ -109,7 +109,7 @@ getUserMedia
   -- ^ Successful callback
   -> (JSVal -> action)
   -- ^ Errorful callback
-  -> Effect parent props model action
+  -> Effect context props model action
 getUserMedia UserMedia {..} successful errorful =
   withSink $ \sink ->
     FFI.getUserMedia audio video
@@ -127,7 +127,7 @@ copyClipboard
   -- ^ Successful callback
   -> (JSVal -> action)
   -- ^ Errorful callback
-  -> Effect parent props model action
+  -> Effect context props model action
 copyClipboard txt successful errorful =
   withSink $ \sink ->
     FFI.copyClipboard txt
@@ -141,7 +141,7 @@ copyClipboard txt successful errorful =
 isOnLine
   :: (Bool -> action)
   -- ^ Successful callback
-  -> Effect parent props model action
+  -> Effect context props model action
 isOnLine action = io (action <$> FFI.isOnLine)
 -----------------------------------------------------------------------------
 -- | Type for dealing with 'navigator.mediaDevices.getUserMedia'
@@ -169,7 +169,7 @@ geolocation
   -- ^ Success callback; receives the device's current position
   -> (GeolocationError -> action)
   -- ^ Error callback; receives a 'GeolocationError' with code and message
-  -> Effect parent props model action
+  -> Effect context props model action
 geolocation successful errorful = do
   withSink $ \sink ->
     FFI.geolocation

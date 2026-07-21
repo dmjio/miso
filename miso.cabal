@@ -110,7 +110,6 @@ library
     Miso.Runtime
   exposed-modules:
     Miso
-    Miso.Binding
     Miso.Canvas
     Miso.Cookie
     Miso.Concurrent
