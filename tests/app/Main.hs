@@ -15,7 +15,7 @@
 -----------------------------------------------------------------------------
 module Main where
 -----------------------------------------------------------------------------
-import           Control.Concurrent (newEmptyMVar, putMVar, takeMVar, threadDelay)
+import           Control.Concurrent (newEmptyMVar, putMVar, takeMVar)
 import           Control.Monad.Reader
 import           Control.Exception (try, evaluate)
 import qualified Data.Map.Strict as M
