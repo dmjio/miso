@@ -1,13 +1,19 @@
 -----------------------------------------------------------------------------
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DeriveAnyClass     #-}
+-----------------------------------------------------------------------------
 module Miso.DSL.FFI where
 -----------------------------------------------------------------------------
+import           Control.Exception (Exception)
 import           Data.Text (Text, pack, unpack)
 import           Text.Read (readMaybe)
 -----------------------------------------------------------------------------
 -- | A type that represents any JS value
 data JSVal = JSVal
 -----------------------------------------------------------------------------
-data JSException
+data JSException = JSException
+  deriving stock Show
+  deriving anyclass Exception
 -----------------------------------------------------------------------------
 instance Eq JSVal where
   JSVal == JSVal = True
