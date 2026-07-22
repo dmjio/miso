@@ -220,8 +220,8 @@ initialize events _componentParentId hydrate isRoot initialProps maybeKey comp@C
         atomicWriteIORef _componentVTree newVTree
         FFI.flush
 
-  let _componentApplyActions = \(actions :: Seq action) model_ currentProps -> do
-        let info = ComponentInfo _componentId _componentParentId _componentDOMRef currentProps
+  let _componentApplyActions = \(actions :: Seq action) model_ currentProps ctx -> do
+        let info = ComponentInfo _componentId _componentParentId _componentDOMRef currentProps ctx
         foldl'
           (\(m, ss) a ->
               case runEffect (update a) info m of
@@ -314,7 +314,7 @@ scheduler Proxy =
       vcomps <- readIORef components
       let ComponentState {..} = vcomps IM.! vcompId
           (updatedModel, schedules) =
-            _componentApplyActions events _componentModel _componentProps
+            _componentApplyActions events _componentModel _componentProps currentContext
       forM_ schedules $ \case
         Schedule Async action ->
           evalScheduled Async (action _componentSink)
@@ -595,6 +595,7 @@ data ComponentState context props model action
       :: Seq action
       -> model
       -> props
+      -> context
       -> (model, [Schedule context action])
   -- ^ t'Miso.Types.Component' actions application. Given the pending actions,
   --   current @model@ and @props@, returns the updated @model@ and the
@@ -882,7 +883,7 @@ drain ComponentState {..} = do
     S.Empty -> pure ()
     actions -> do
        currentContext <- readIORef @context globalContext
-       case _componentApplyActions actions _componentModel _componentProps of
+       case _componentApplyActions actions _componentModel _componentProps currentContext of
          (_, schedules) -> do
            forM_ schedules $ \case
              -- dmj: process all actions synchronously during unmount

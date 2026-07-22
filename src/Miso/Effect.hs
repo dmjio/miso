@@ -138,6 +138,10 @@ module Miso.Effect
   , componentInfoProps
   , props
   , getProps
+  -- *** Context
+  , componentInfoContext
+  , context
+  , getContext
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad (void)
@@ -157,6 +161,9 @@ mkComponentInfo
   -> DOMRef
   -- ^ 'DOMRef'
   -> props
+  -- ^ props
+  -> context
+  -- ^ context
   -> ComponentInfo context props
 mkComponentInfo = ComponentInfo
 -----------------------------------------------------------------------------
@@ -175,6 +182,8 @@ data ComponentInfo context props
   -- ^ The DOM node this component is mounted on
   , _componentInfoProps :: props
   -- ^ The current @props@ value passed into this component
+  , _componentInfoContext :: context
+  -- ^ The current @context@ value passed into this component
   }
 -----------------------------------------------------------------------------
 -- | Lens for accessing the t'ComponentId' from t'ComponentInfo'.
@@ -230,6 +239,41 @@ componentInfoDOMRef = lens _componentInfoDOMRef $ \r x -> r { _componentInfoDOMR
 componentInfoProps :: Lens (ComponentInfo context props) props
 componentInfoProps = lens _componentInfoProps $ \r x -> r { _componentInfoProps = x }
 -----------------------------------------------------------------------------
+-- | Lens for accessing the underlying t'Miso.Types.Component' @context@.
+--
+-- @
+--   update = \case
+--     SomeAction -> do
+--       ctx <- view componentInfoContext
+--       someAction ctx
+-- @
+--
+-- @since 1.13.0.0
+componentInfoContext :: Lens (ComponentInfo context props) context
+componentInfoContext = lens _componentInfoContext $ \r x -> r { _componentInfoContext = x }
+-----------------------------------------------------------------------------
+-- | Lens for accessing the underlying t'Miso.Types.Component' @context@.
+--
+-- This is a shorter convenience lens that is a synonynm for 'componentInfoContext'.
+-- See 'getContext' for usage in the 'Effect' monad.
+--
+-- @
+--   update = \case
+--     SomeAction ->
+--       someAction =<< view context
+-- @
+--
+-- __Note:__ this lens is __read-only__ within 'Effect'. It targets the
+-- 'ComponentInfo' reader environment, so setting through it (e.g. with
+-- 'Miso.Lens.set' \/ 'Miso.Lens..=') has no observable effect. To change the
+-- global @context@ from 'Miso.Types.update', use 'Miso.Effect.modifyContext',
+-- 'Miso.Effect.putContext', or 'Miso.Effect.modifyContext_' (the 'State'-monad
+-- variant, which supports lens operators like @'Miso.Lens..='@) instead.
+--
+-- @since 1.13.0.0
+context :: Lens (ComponentInfo context props) context
+context = componentInfoContext
+-----------------------------------------------------------------------------
 -- | Lens for accessing the underlying t'Miso.Types.Component' @props@.
 --
 -- This is a shorter convenience lens that is a synonynm for 'componentInfoProps'.
@@ -255,6 +299,19 @@ props = componentInfoProps
 --
 getProps :: MonadReader (ComponentInfo context props) m => m props
 getProps = Miso.Lens.view props
+-----------------------------------------------------------------------------
+-- | Read-only @context@ retrieval from within the 'Effect' monad.
+--
+-- @
+--   update = \case
+--     SomeAction -> do
+--       ctx <- getContext
+--       someAction ctx
+-- @
+--
+-- @since 1.13.0.0
+getContext :: MonadReader (ComponentInfo context props) m => m context
+getContext = Miso.Lens.view context
 -----------------------------------------------------------------------------
 -- | 'ComponentId' of the current t'Miso.Types.Component'
 type ComponentId = Int
@@ -520,7 +577,7 @@ withSink f = tell [ async f ]
 -- 'update' Toggle = 'modifyContext' (\\theme -> if theme == Light then Dark else Light)
 -- @
 --
--- @since 1.9.0.0
+-- @since 1.13.0.0
 modifyContext
   :: (context -> context)
   -- ^ Transformation to apply to the global @context@
@@ -532,7 +589,7 @@ modifyContext f = tell [ ContextModify f ]
 -- A convenience wrapper around 'modifyContext'. See 'modifyContext' for details
 -- of when re-renders are triggered.
 --
--- @since 1.9.0.0
+-- @since 1.13.0.0
 putContext
   :: context
   -- ^ New global @context@ value
@@ -551,7 +608,7 @@ putContext = modifyContext . const
 -- 'update' Toggle = 'modifyContext_' $ theme '.=' Dark
 -- @
 --
--- @since 1.9.0.0
+-- @since 1.13.0.0
 modifyContext_
   :: State context ()
   -- ^ 'State' computation describing the @context@ mutation

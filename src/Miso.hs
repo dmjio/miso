@@ -123,11 +123,12 @@
 --       Add -> 'Miso.Lens.this' 'Miso.Lens.+=' 1
 --       Subtract -> 'Miso.Lens.this' 'Miso.Lens.-=' 1
 --
---           * - The type of the global @context@
---           |     * - The type of the @props@ inherited from the parent 'Component'
---           |     |     * - The type of the current 'Component' 'model'
---           |     |     |             * - The type of the action that updates 'Component' 'model'
---           |     |     |             |
+--          * - The type of the global @context@
+--          |     * - The type of the @props@ inherited from the parent 'Component'
+--          |     |      * - The type of the current 'Component' 'model'
+--          |     |      |              * - The global @context@ threaded into the 'View' (@'View' context action@)
+--          |     |      |              |  * - The type of the action that updates 'Component' 'model'
+--          |     |      |              |  |
 --     v :: () -> () -> 'Int' -> 'View' () Action
 --     v _context _props x = 'vfrag'
 --       [ H.'Miso.Html.Element.button_' [ HE.'Miso.Html.Event.onClick' Add, HP.'Miso.Html.Property.id_' "add" ] [ "+" ]
@@ -231,10 +232,22 @@
 -- view ctx _props _model = ...
 -- @
 --
+-- __Reading__ (in 'Miso.Types.update'):
+--
+-- The current @context@ is also readable inside the 'Effect' monad, just like
+-- @props@: use 'Miso.Effect.getContext' (or 'Miso.Lens.view' with the
+-- 'Miso.Effect.context' lens):
+--
+-- @
+-- update Toggle = do
+--   ctx <- 'Miso.Effect.getContext'
+--   …
+-- @
+--
 -- __Updating__ (from 'Miso.Types.update'):
 --
--- @context@ is __write-only__ inside 'update'; mutate it with
--- 'Miso.Effect.modifyContext' (or 'Miso.Effect.putContext' to replace it):
+-- Mutate the @context@ with 'Miso.Effect.modifyContext' (or
+-- 'Miso.Effect.putContext' to replace it):
 --
 -- @
 -- update Toggle = 'Miso.Effect.modifyContext' (\\theme -> if theme == Light then Dark else Light)
