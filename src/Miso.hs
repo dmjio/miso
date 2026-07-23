@@ -192,6 +192,37 @@
 -- 'startApp' and 'miso' will always infer @context@ as @()@; use
 -- 'startAppWithContext' to seed a non-trivial context.
 --
+-- = t'View' DSL
+--
+-- The 'View' type represents the virtual DOM — a [Rose tree](https://en.wikipedia.org/wiki/Rose_tree)
+-- of nodes mutually recursive with 'Component' via the 'view' function.
+--
+-- @
+-- data 'View' context action
+--   = 'VNode' 'Namespace' 'Tag' ['Attribute' action] ['View' context action]
+--   | 'VText' (Maybe 'Key') 'MisoString'
+--   | 'VComp' (Maybe 'Key') ('SomeComponent' context)
+--   | 'VFrag' (Maybe 'Key') ['View' context action]
+-- @
+--
+-- 'VNode' and 'VText' have a one-to-one mapping from the virtual DOM to the physical DOM. The 'VComp' and 'VFrag' constructors are abstract (live only on the virtual DOM) and do not contain a reference to the physical DOM. The existential 'SomeComponent' is what allows embedding polymorphic 'Component' within a 'View'.
+--
+-- @
+-- data 'SomeComponent' context
+--   = forall model action props . ('Eq' context, 'Eq' model, 'Eq' props)
+--   => 'SomeComponent' props ('Component' context props model action)
+-- @
+--
+-- The smart constructors:
+--
+-- * 'node', 'vnode' — build a 'VNode'
+-- * 'text', 'vtext' — build a 'VText'
+-- * 'component', 'vcomp' — build a 'VComp' ('vcomp' is a synonym for 'component')
+-- * 'fragment', 'vfrag', 'fragment_', 'vfrag_' — build a 'VFrag'
+-- * ('+>') — key and mount a child 'Component'
+--
+-- A full list of element smart constructors built on 'node' (e.g. 'Miso.Html.Element.Miso.Html.Element.div_') can be found in "Miso.Html.Element".
+--
 -- = The global @context@
 --
 -- @context@ is miso's analogue of [React Context](https://react.dev/learn/passing-data-deeply-with-context):
@@ -271,37 +302,6 @@
 -- changes it (or others) make. Set @useContext = True@ on precisely those
 -- (usually nested) components whose 'Miso.Types.view' depends on the @context@
 -- and must refresh when it changes.
---
--- = t'View' DSL
---
--- The 'View' type represents the virtual DOM — a [Rose tree](https://en.wikipedia.org/wiki/Rose_tree)
--- of nodes mutually recursive with 'Component' via the 'view' function.
---
--- @
--- data 'View' context action
---   = 'VNode' 'Namespace' 'Tag' ['Attribute' action] ['View' context action]
---   | 'VText' (Maybe 'Key') 'MisoString'
---   | 'VComp' (Maybe 'Key') ('SomeComponent' context)
---   | 'VFrag' (Maybe 'Key') ['View' context action]
--- @
---
--- 'VNode' and 'VText' have a one-to-one mapping from the virtual DOM to the physical DOM. The 'VComp' and 'VFrag' constructors are abstract (live only on the virtual DOM) and do not contain a reference to the physical DOM. The existential 'SomeComponent' is what allows embedding polymorphic 'Component' within a 'View'.
---
--- @
--- data 'SomeComponent' context
---   = forall model action props . ('Eq' context, 'Eq' model, 'Eq' props)
---   => 'SomeComponent' props ('Component' context props model action)
--- @
---
--- The smart constructors:
---
--- * 'node', 'vnode' — build a 'VNode'
--- * 'text', 'vtext' — build a 'VText'
--- * 'component', 'vcomp' — build a 'VComp' ('vcomp' is a synonym for 'component')
--- * 'fragment', 'vfrag', 'fragment_', 'vfrag_' — build a 'VFrag'
--- * ('+>') — key and mount a child 'Component'
---
--- A full list of element smart constructors built on 'node' (e.g. 'Miso.Html.Element.Miso.Html.Element.div_') can be found in "Miso.Html.Element".
 --
 -- = 'VComp'
 --
