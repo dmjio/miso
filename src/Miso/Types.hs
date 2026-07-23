@@ -166,6 +166,11 @@ module Miso.Types
   , fragment_
   , vfrag
   , vfrag_
+  -- ** Portal combinators
+  , portal
+  , portal_
+  , vport
+  , vport_
   -- ** Utils
   , getMountPoint
   , optionalAttrs
@@ -412,6 +417,7 @@ data View context action
   | VText (Maybe Key) MisoString
   | VComp (Maybe Key) (SomeComponent context)
   | VFrag (Maybe Key) [View context action]
+  | VPort (Maybe Key) (View context action) (IO DOMRef)
   deriving Functor
 -----------------------------------------------------------------------------
 -- | Existential wrapper allowing nesting of t'Miso.Types.Component' in t'Miso.Types.Component'.
@@ -444,8 +450,54 @@ keyed key = \case
       VComp (Just (Key key)) comp
     VFrag _ kids ->
       VFrag (Just (Key key)) kids
+    VPort _ kids domRef ->
+      VPort (Just (Key key)) kids domRef
     VNode ns tag attrs kids ->
       VNode ns tag (Property "key" (toJSON key) : attrs) kids
+-----------------------------------------------------------------------------
+-- | Create a portal (keyless).
+--
+-- A portal allows the rendering of 'View' to arbitrary 'DOMRef' unmanaged
+-- by the virtual DOM.
+--
+-- Note: for events raised inside the portal to be delegated, the target
+-- 'DOMRef' must live within the 'Component'\'s mount subtree (the default mount
+-- is @\"body\"@, so any node inside @\<body\>@ qualifies). A portal rendered
+-- /outside/ the mount subtree still draws its child, but its events will not
+-- fire. See the \"'VPort' (Portal nodes)\" section in "Miso" for details.
+--
+-- @since 1.13.0.0
+portal
+  :: View context action
+  -> IO DOMRef
+  -> View context action
+portal = VPort Nothing
+-----------------------------------------------------------------------------
+-- | Create a portal (keyless).
+--
+-- A portal allows the rendering of 'View' to arbitrary 'DOMRef' unmanaged
+-- by the virutal DOM.
+--
+-- Synonym for `portal'
+--
+-- @since 1.13.0.0
+vport
+  :: View context action
+  -> IO DOMRef
+  -> View context action
+vport = portal
+-----------------------------------------------------------------------------
+-- | Like 'vport', but keyed for efficient diffing.
+--
+-- @since 1.13.0.0
+vport_ :: MisoString -> View context action -> IO DOMRef -> View context action
+vport_ key = VPort (Just (Key key))
+-----------------------------------------------------------------------------
+-- | Like 'portal', but keyed for efficient diffing.
+--
+-- @since 1.13.0.0
+portal_ :: MisoString -> View context action -> IO DOMRef -> View context action
+portal_ key = VPort (Just (Key key))
 -----------------------------------------------------------------------------
 -- | Create a fragment (keyless).
 --
@@ -915,6 +967,7 @@ data VTreeType
   | VNodeType
   | VTextType
   | VFragType
+  | VPortType
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 instance ToJSVal VTreeType where
@@ -923,4 +976,5 @@ instance ToJSVal VTreeType where
     VNodeType -> toJSVal (1 :: Int)
     VTextType -> toJSVal (2 :: Int)
     VFragType -> toJSVal (3 :: Int)
+    VPortType -> toJSVal (4 :: Int)
 -----------------------------------------------------------------------------

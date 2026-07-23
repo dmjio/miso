@@ -151,6 +151,7 @@ booleanProperties = S.fromList
   ]
 ----------------------------------------------------------------------------
 renderBuilder :: forall m a . Miso.Types.View m a -> Builder
+renderBuilder (VPort _ _ _)   = mempty
 renderBuilder (VText _ "")    = fromMisoString " "
 renderBuilder (VText _ s)     = fromMisoString s
 renderBuilder (VNode _ "doctype" [] []) = "<!doctype html>"

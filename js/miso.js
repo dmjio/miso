@@ -236,6 +236,8 @@ function forEachDOMRef(tree, cb) {
       if (tree.child)
         forEachDOMRef(tree.child, cb);
       break;
+    case 4 /* VPort */:
+      break;
     default:
       cb(tree.domRef);
       break;
@@ -252,6 +254,8 @@ function getFirstDOMRef(tree) {
       if (!tree.child)
         return null;
       return getFirstDOMRef(tree.child);
+    case 4 /* VPort */:
+      return null;
     default:
       return tree.domRef;
   }
@@ -267,6 +271,8 @@ function getLastDOMRef(tree) {
       if (!tree.child)
         return null;
       return getLastDOMRef(tree.child);
+    case 4 /* VPort */:
+      return null;
     default:
       return tree.domRef;
   }
@@ -350,6 +356,13 @@ function diff(c, n, parent, context) {
     } else {
       replace(c, n, parent, context);
     }
+  } else if (c.type === 4 /* VPort */ && n.type === 4 /* VPort */) {
+    if (n.key === c.key && n.location === c.location && n.location != null) {
+      n.child.parent = n;
+      diff(c.child, n.child, n.location, context);
+    } else {
+      replace(c, n, parent, context);
+    }
   } else
     replace(c, n, parent, context);
 }
@@ -360,6 +373,16 @@ function diffVText(c, n, context) {
   return;
 }
 function replace(c, n, parent, context) {
+  if (c.type === 4 /* VPort */) {
+    const anchor = context.nextSibling(c);
+    if (anchor) {
+      createElement(parent, 2 /* INSERT_BEFORE */, anchor, n, context);
+    } else {
+      create(n, parent, context);
+    }
+    destroy(c, parent, context);
+    return;
+  }
   if (c.type === 3 /* VFrag */) {
     const lastRef2 = getLastDOMRef(c);
     const anchor = lastRef2 ? lastRef2.nextSibling : context.nextSibling(c);
@@ -402,7 +425,7 @@ function replace(c, n, parent, context) {
     case 2 /* VText */:
       break;
     default:
-      callDestroyedRecursive(c);
+      callDestroyedRecursive(c, context);
       break;
   }
 }
@@ -414,6 +437,13 @@ function destroy(c, parent, context) {
       for (const child of c.children)
         destroy(child, parent, context);
       return;
+    case 4 /* VPort */:
+      if (c.location == null) {
+        console.warn("[VPort] no location to destroy portal from, skipping", c);
+      } else {
+        destroy(c.child, c.location, context);
+      }
+      return;
     default:
       callBeforeDestroyedRecursive(c);
       break;
@@ -423,27 +453,32 @@ function destroy(c, parent, context) {
     case 2 /* VText */:
       break;
     default:
-      callDestroyedRecursive(c);
+      callDestroyedRecursive(c, context);
       break;
   }
 }
-function callDestroyedRecursive(c) {
+function callDestroyedRecursive(c, context) {
+  if (c.type === 2 /* VText */)
+    return;
   if (c.type === 3 /* VFrag */) {
     for (const child of c.children)
-      if (child.type !== 2 /* VText */)
-        callDestroyedRecursive(child);
+      callDestroyedRecursive(child, context);
+    return;
+  }
+  if (c.type === 4 /* VPort */) {
+    if (c.location != null)
+      destroy(c.child, c.location, context);
     return;
   }
   callDestroyed(c);
   switch (c.type) {
     case 1 /* VNode */:
       for (const child of c.children)
-        if (child.type !== 2 /* VText */)
-          callDestroyedRecursive(child);
+        callDestroyedRecursive(child, context);
       break;
     case 0 /* VComp */:
-      if (c.child && c.child.type !== 2 /* VText */)
-        callDestroyedRecursive(c.child);
+      if (c.child)
+        callDestroyedRecursive(c.child, context);
       break;
   }
 }
@@ -640,6 +675,17 @@ function createElement(parent, op, replacing, n, context) {
       break;
     case 0 /* VComp */:
       mountComponent(parent, op, replacing, n, context);
+      break;
+    case 4 /* VPort */:
+      if (n.location == null) {
+        console.warn("[VPort] no location to render portal into, skipping", n);
+      } else {
+        n.child.parent = n;
+        createElement(n.location, 0 /* APPEND */, null, n.child, context);
+      }
+      if (op === 1 /* REPLACE */ && replacing) {
+        context.removeChild(parent, replacing);
+      }
       break;
     case 1 /* VNode */:
       if (n.onBeforeCreated)
@@ -853,6 +899,14 @@ function buildTargetToElement(element, target, context) {
   }
   return stack;
 }
+function descendIntoPortal(event, obj, stack, debug, context) {
+  if (!obj.child)
+    return;
+  while (stack.length > 1 && !containsDOMRef(obj.child, stack[0], context)) {
+    stack.splice(0, 1);
+  }
+  delegateEvent(event, obj.child, stack, debug, context);
+}
 function delegateEvent(event, obj, stack, debug, context) {
   if (!stack.length) {
     if (debug) {
@@ -880,6 +934,9 @@ function delegateEvent(event, obj, stack, debug, context) {
         return;
       }
       return delegateEvent(event, obj.child, stack, debug, context);
+    } else if (obj.type === 4 /* VPort */) {
+      descendIntoPortal(event, obj, stack, debug, context);
+      return;
     } else if (obj.type === 1 /* VNode */) {
       if (context.isEqual(obj.domRef, stack[0])) {
         const eventObj = obj.events.captures[event.type];
@@ -916,6 +973,8 @@ function delegateEvent(event, obj, stack, debug, context) {
           return;
         }
       }
+    } else if (obj.type === 4 /* VPort */) {
+      descendIntoPortal(event, obj, stack, debug, context);
     } else if (obj.type === 1 /* VNode */) {
       const eventCaptureObj = obj.events.captures[event.type];
       if (eventCaptureObj && !event["captureStopped"]) {
@@ -953,6 +1012,9 @@ function propagateWhileAble(vtree, event) {
       case 2 /* VText */:
         break;
       case 3 /* VFrag */:
+        vtree = vtree.parent;
+        break;
+      case 4 /* VPort */:
         vtree = vtree.parent;
         break;
       case 1 /* VNode */:
@@ -1013,6 +1075,10 @@ function containsDOMRef(vtree, target, context) {
           return true;
       return false;
     case 0 /* VComp */:
+      return vtree.child ? containsDOMRef(vtree.child, target, context) : false;
+    case 4 /* VPort */:
+      if (vtree.location != null && context.isEqual(vtree.location, target))
+        return true;
       return vtree.child ? containsDOMRef(vtree.child, target, context) : false;
     default:
       return context.isEqual(vtree.domRef, target);
@@ -1095,7 +1161,8 @@ var drawingContext = {
     while (sibling) {
       switch (sibling.type) {
         case 0 /* VComp */:
-        case 3 /* VFrag */: {
+        case 3 /* VFrag */:
+        case 4 /* VPort */: {
           const ref = getFirstDOMRef(sibling);
           if (ref)
             return ref;
@@ -1218,7 +1285,8 @@ function hydrate(logLevel, mountPoint, vtree, context, drawingContext2) {
     return false;
   if (mountPoint.nodeType === 3)
     return false;
-  if (!walk(logLevel, vtree, context.firstChild(mountPoint), context, drawingContext2)) {
+  const portals = [];
+  if (!walk(logLevel, vtree, context.firstChild(mountPoint), context, drawingContext2, portals)) {
     if (logLevel) {
       console.warn("[DEBUG_HYDRATE] Could not copy DOM into virtual DOM, falling back to diff");
     }
@@ -1228,6 +1296,9 @@ function hydrate(logLevel, mountPoint, vtree, context, drawingContext2) {
   } else {
     if (logLevel) {
       console.info("[DEBUG_HYDRATE] Successfully prerendered page");
+    }
+    for (const port of portals) {
+      diff(null, port.child, port.location, drawingContext2);
     }
   }
   return true;
@@ -1240,14 +1311,14 @@ function nextAfter(tree, current) {
   const lastRef = getLastDOMRef(tree);
   return lastRef ? lastRef.nextSibling : current;
 }
-function walk(logLevel, vtree, node, context, drawingContext2) {
+function walk(logLevel, vtree, node, context, drawingContext2, portals) {
   switch (vtree.type) {
     case 0 /* VComp */:
       let mounted = vtree.mount(node.parentNode);
       vtree.componentId = mounted.componentId;
       vtree.child = mounted.componentTree;
       mounted.componentTree.parent = vtree;
-      if (!walk(logLevel, vtree.child, node, context, drawingContext2)) {
+      if (!walk(logLevel, vtree.child, node, context, drawingContext2, portals)) {
         return false;
       }
       break;
@@ -1258,10 +1329,19 @@ function walk(logLevel, vtree, node, context, drawingContext2) {
           diagnoseError(logLevel, child, null);
           return false;
         }
-        if (!walk(logLevel, child, node, context, drawingContext2))
+        if (!walk(logLevel, child, node, context, drawingContext2, portals))
           return false;
         node = nextAfter(child, node);
       }
+      break;
+    case 4 /* VPort */:
+      if (vtree.location == null) {
+        if (logLevel)
+          console.warn("[VPort] no location to render portal into", vtree);
+        return false;
+      }
+      vtree.child.parent = vtree;
+      portals.push(vtree);
       break;
     case 2 /* VText */:
       if (node.nodeType !== 3 || vtree.text.trim() !== node.textContent.trim()) {
@@ -1285,7 +1365,7 @@ function walk(logLevel, vtree, node, context, drawingContext2) {
           diagnoseError(logLevel, vdomChild, null);
           return false;
         }
-        if (!walk(logLevel, vdomChild, domCursor, context, drawingContext2)) {
+        if (!walk(logLevel, vdomChild, domCursor, context, drawingContext2, portals)) {
           return false;
         }
         domCursor = nextAfter(vdomChild, domCursor);

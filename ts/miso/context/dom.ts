@@ -85,7 +85,8 @@ export const drawingContext : DrawingContext<DOMRef> = {
     while (sibling) {
       switch (sibling.type) {
         case VTreeType.VComp:
-        case VTreeType.VFrag: {
+        case VTreeType.VFrag:
+        case VTreeType.VPort: {
           const ref = getFirstDOMRef(sibling);
           if (ref) return ref as DOMRef;
           sibling = sibling.nextSibling;

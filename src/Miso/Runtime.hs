@@ -1019,6 +1019,16 @@ buildVTree events_ parentId_ vcompId hydrate snk logLevel_ = \case
     FFI.set "ns" ("text" :: MisoString) vtree
     FFI.set "text" t vtree
     pure (VTree vtree)
+  VPort key kid getDOMRef -> do
+    vtree <- create
+    flip (FFI.set "type") vtree =<< toJSVal VPortType
+    forM_ key $ \k -> FFI.set "key" (ms k) vtree
+    ref <- getDOMRef
+    VTree child <- buildVTree events_ parentId_ vcompId hydrate snk logLevel_ kid
+    FFI.set "location" ref vtree
+    FFI.set "parent" vtree child
+    FFI.set "child" child vtree
+    pure (VTree vtree)
   VFrag maybeKey kids -> do
     frag <- create
     FFI.set "type" VFragType frag

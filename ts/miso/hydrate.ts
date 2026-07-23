@@ -1,6 +1,6 @@
-import { callCreated } from './dom';
+import { callCreated, diff } from './dom';
 import { getLastDOMRef } from './util';
-import { Mount, DrawingContext, HydrationContext, VTree, VText, DOMRef, VTreeType } from './types';
+import { Mount, DrawingContext, HydrationContext, VTree, VText, VPort, DOMRef, VTreeType } from './types';
 
 /* prerendering / hydration / isomorphic support */
 function collapseSiblingTextNodes(vs: Array<VTree<DOMRef>>): Array<VTree<DOMRef>> {
@@ -30,19 +30,29 @@ export function hydrate(logLevel: boolean, mountPoint: DOMRef | Text, vtree: VTr
   /* Don't hydrate on text mountPoint */
   if (mountPoint.nodeType === 3) return false;
 
+  // Portals encountered during the walk are drawn only after the whole tree
+  // hydrates successfully — see below.
+  const portals: Array<VPort<DOMRef>> = [];
+
   // begin walking the DOM, report the result
-  if (!walk(logLevel, vtree, context.firstChild(mountPoint as DOMRef), context, drawingContext)) {
+  if (!walk(logLevel, vtree, context.firstChild(mountPoint as DOMRef), context, drawingContext, portals)) {
     // If we failed to prerender because the structures were different, fallback to drawing
       if (logLevel) {
         console.warn('[DEBUG_HYDRATE] Could not copy DOM into virtual DOM, falling back to diff');
       }
       while (context.firstChild(mountPoint as DOMRef))
         drawingContext.removeChild(mountPoint as DOMRef, context.lastChild(mountPoint as DOMRef));
-
+      // Do NOT draw the collected portals: the caller re-draws the whole tree on
+      // fallback, which renders them. Drawing here too would double the content.
      return false;
   } else {
     if (logLevel) {
       console.info('[DEBUG_HYDRATE] Successfully prerendered page');
+    }
+    // Hydration succeeded: draw each portal's child into its (already-present)
+    // location. Deferred to here so a mid-walk failure never leaves stray DOM.
+    for (const port of portals) {
+      diff(null, port.child, port.location, drawingContext);
     }
   }
   return true;
@@ -60,7 +70,7 @@ function nextAfter(tree: VTree<DOMRef>, current: Node): Node {
     : current;
 }
 
-function walk(logLevel: boolean, vtree: VTree<DOMRef>, node: Node, context: HydrationContext<DOMRef>, drawingContext: DrawingContext<DOMRef>): boolean {
+function walk(logLevel: boolean, vtree: VTree<DOMRef>, node: Node, context: HydrationContext<DOMRef>, drawingContext: DrawingContext<DOMRef>, portals: Array<VPort<DOMRef>>): boolean {
   // This is slightly more complicated than one might expect since
   // browsers will collapse consecutive text nodes into a single text node.
   // There can thus be fewer DOM nodes than VDOM nodes.
@@ -71,7 +81,7 @@ function walk(logLevel: boolean, vtree: VTree<DOMRef>, node: Node, context: Hydr
        vtree.componentId = mounted.componentId;
        vtree.child = mounted.componentTree;
        mounted.componentTree.parent = vtree;
-       if (!walk(logLevel, vtree.child, node, context, drawingContext)) {
+       if (!walk(logLevel, vtree.child, node, context, drawingContext, portals)) {
           return false;
        }
        break;
@@ -87,9 +97,23 @@ function walk(logLevel: boolean, vtree: VTree<DOMRef>, node: Node, context: Hydr
           diagnoseError(logLevel, child, null);
           return false;
         }
-        if (!walk(logLevel, child, node, context, drawingContext)) return false;
+        if (!walk(logLevel, child, node, context, drawingContext, portals)) return false;
         node = nextAfter(child, node);
       }
+      break;
+    case VTreeType.VPort:
+      // Miso does not server-render portal content (renderBuilder = mempty), so
+      // 'location' exists but holds no portal markup to hydrate against. Defer
+      // drawing the child into 'location' until the whole tree has hydrated
+      // successfully (see hydrate()), so a later mid-walk failure never leaves
+      // stray DOM behind. The portal owns no host DOM, so 'node' (the host
+      // cursor) is left untouched for the caller.
+      if (vtree.location == null) {
+        if (logLevel) console.warn('[VPort] no location to render portal into', vtree);
+        return false;
+      }
+      vtree.child.parent = vtree;
+      portals.push(vtree);
       break;
     case VTreeType.VText:
        if (node.nodeType !== 3 || vtree.text.trim() !== node.textContent.trim()) {
@@ -117,7 +141,7 @@ function walk(logLevel: boolean, vtree: VTree<DOMRef>, node: Node, context: Hydr
           diagnoseError(logLevel, vdomChild, null);
           return false;
         }
-        if (!walk(logLevel, vdomChild, domCursor, context, drawingContext)) {
+        if (!walk(logLevel, vdomChild, domCursor, context, drawingContext, portals)) {
           return false;
         }
         domCursor = nextAfter(vdomChild, domCursor);
