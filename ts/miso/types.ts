@@ -14,7 +14,8 @@ export enum VTreeType {
   VComp = 0,
   VNode = 1,
   VText = 2,
-  VFrag = 3
+  VFrag = 3,
+  VPort = 4
 }
 
 export enum OP {
@@ -82,13 +83,22 @@ export type VFrag<T> = {
   nextSibling: VTree<T> | null;
 };
 
-export type Parent<T> = VNode<T> | VComp<T> | VFrag<T>;
+export type VPort<T> = {
+  type: VTreeType.VPort;
+  key: string;
+  child: VTree<T>;
+  location: T;
+  parent: Parent<T>;
+  nextSibling: VTree<T> | null;
+};
+
+export type Parent<T> = VNode<T> | VComp<T> | VFrag<T> | VPort<T>;
 
 export type NodeId = {
   nodeId: number;
 }
 
-export type VTree<T> = VComp<T> | VNode<T> | VText<T> | VFrag<T>;
+export type VTree<T> = VComp<T> | VNode<T> | VText<T> | VFrag<T> | VPort<T>;
 
 export type EventObject<T> = {
    options: Options;

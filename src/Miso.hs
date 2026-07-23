@@ -67,7 +67,7 @@
 -- = Architecture
 --
 -- * __React__: miso implements a subset of the [React](https://react.dev) architecture including 'Component', Lifecycle Hooks, Virtual DOM, Event delegation,
--- [Fragment](https://react.dev/reference/react/Fragment), [Props](https://react.dev/learn/passing-props-to-a-component) and [Context](https://react.dev/learn/passing-data-deeply-with-context)
+-- [Fragment](https://react.dev/reference/react/Fragment), [Portal](https://react.dev/reference/react-dom/createPortal), [Props](https://react.dev/learn/passing-props-to-a-component) and [Context](https://react.dev/learn/passing-data-deeply-with-context)
 --
 -- * __Elm__: miso also implements the [Elm](https://elm-lang.org) architecture (MVU) and the 'mailbox' communication pattern.
 --
@@ -404,7 +404,7 @@
 --   Highlight domRef -> 'io_' $ do
 --     ['Miso.FFI.QQ.js'| hljs.highlight(${domRef}) |]
 --
--- view :: props -> model -> 'View' model Action
+-- view :: props -> model -> 'View' context Action
 -- view _ x =
 --   'Miso.Html.Element.code_'
 --   [ 'onCreatedWith' Highlight
@@ -423,7 +423,7 @@
 -- Unlike 'VComp' and 'VFrag', 'VText' has a one-to-one correspondence with a physical DOM node:
 -- each 'VText' in the virtual DOM maps to exactly one @Text@ node in the browser.
 --
--- The simplest way to produce a 'VText' is via the 'IsString' instance on @'View' model action@.
+-- The simplest way to produce a 'VText' is via the 'IsString' instance on @'View' context action@.
 -- String literals inside a child list are automatically promoted to 'VText' nodes without
 -- any extra imports:
 --
@@ -478,7 +478,7 @@
 --
 -- data Item = Item { itemId, itemLabel :: 'MisoString' }
 --
--- renderItem :: Item -> 'View' model Action
+-- renderItem :: Item -> 'View' context Action
 -- renderItem item = 'Miso.Html.Element.li_' [] [ 'textKey' (itemId item) (itemLabel item) ]
 -- @
 --
@@ -530,6 +530,70 @@
 -- * 'vfrag'      — unkeyed fragment (alias)
 -- * 'fragment_'  — keyed fragment
 -- * 'vfrag_'     — keyed fragment (alias, infix-friendly: @\"key\" \`vfrag_\` [...]@)
+--
+-- = 'VPort' (Portal nodes)
+--
+-- 'VPort' renders its child into an arbitrary DOM node — the /location/ — that
+-- lives outside the component's managed DOM subtree, analogous to the
+-- [React Portal](https://react.dev/reference/react-dom/createPortal) API. The
+-- location is supplied as an @'IO' 'DOMRef'@ action (e.g. via
+-- 'Miso.FFI.getElementById') and is resolved when the portal is built.
+--
+-- @
+-- -- Renders the modal into the pre-existing \<div id=\"modal-root\"\>\<\/div\>,
+-- -- even though it is declared deep inside this component's view.
+-- 'portal'
+--   ('Miso.Html.Element.div_' [] [ 'text' "Hello from a portal" ])
+--   ('Miso.FFI.getElementById' "modal-root")
+-- @
+--
+-- A portal occupies /zero/ DOM in its host parent; only its 'location' receives
+-- the child nodes. Despite the physical DOM separation, the portal remains part
+-- of the virtual DOM tree: model state flows into the child, and events raised
+-- inside the portal are delegated and bubble through the /virtual/ parent chain
+-- exactly as though the child were rendered inline (mirroring React's portal
+-- event semantics).
+--
+-- __Event delegation caveat.__ Event delegation is rooted at the 'Component'\'s
+-- mount point (the default is @\"body\"@). For events raised inside a portal to
+-- be delegated, the portal's 'location' must therefore live /within/ that mount's
+-- DOM subtree. With the default @\"body\"@ mount this covers any element inside
+-- @\<body\>@ — e.g. a top-level @\<div id=\"portal-root\"\>@ sibling of the app.
+-- A portal whose 'location' is rendered /outside/ the mount's subtree will still
+-- render its child, but events raised inside it will __not__ fire, because the
+-- native event never reaches the delegated listener. (Miso delegates at the mount
+-- rather than at @document@ so that multiple independently-mounted 'Component's on
+-- one page do not receive each other's events.)
+--
+-- Two portals diff in place only when they share the same 'Key' /and/ the same
+-- 'location'. A change to either destroys the old portal (tearing its child down
+-- at the old location) and creates the new one. The 'location' is compared by
+-- identity and the @'IO' 'DOMRef'@ action is re-run on every render, so it must
+-- be __idempotent__ — return the /same/ node each time (e.g. 'Miso.FFI.getElementById').
+-- An action that creates or otherwise yields a fresh node per render will make
+-- the portal tear down and re-create its child on every update.
+--
+-- A 'VPort' may optionally carry a 'Key', participating in the same
+-- reconciliation algorithm as keyed 'VNode', 'VText' and 'VFrag' nodes.
+--
+-- @
+-- 'vport_' "my-key"
+--   ('Miso.Html.Element.div_' [] [ 'text' "keyed portal" ])
+--   ('Miso.FFI.getElementById' "modal-root")
+-- @
+--
+-- During server-side rendering a 'VPort' emits nothing (Miso does not render
+-- portal content into the server HTML). On hydration the 'location' element is
+-- expected to exist, and the portal's child is drawn into it on the client — the
+-- portal is a client-only concern, mirroring React's behavior for portals under
+-- server-side rendering.
+--
+-- The smart constructors for 'VPort' are:
+--
+-- * 'portal'   — unkeyed portal
+-- * 'vport'    — unkeyed portal (alias)
+-- * 'portal_'  — keyed portal
+-- * 'vport_'   — keyed portal (alias)
 --
 -- = 'Key'
 --
@@ -764,13 +828,13 @@
 -- The 'Miso.Types.view' field of a 'Component' always takes @props@ as its first argument:
 --
 -- @
--- view :: props -> model -> 'View' model action
+-- view :: props -> model -> 'View' context action
 -- @
 --
 -- Top-level applications have no parent, so @props@ is always @()@:
 --
 -- @
--- view :: () -> model -> 'View' model action
+-- view :: () -> model -> 'View' context action
 -- view _props model = …
 -- @
 --
@@ -1158,8 +1222,8 @@
 -- import Servant.Miso.Html (HTML)
 --
 -- type Home    = \"home\"    :\> Get '[HTML] ('Component' model action)
--- type About   = \"about\"   :\> Get '[HTML] ('View' model action)
--- type Contact = \"contact\" :\> Get '[HTML] ['View' model action]
+-- type About   = \"about\"   :\> Get '[HTML] ('View' context action)
+-- type Contact = \"contact\" :\> Get '[HTML] ['View' context action]
 -- type API = Home :\<|\> About :\<|\> Contact
 -- @
 --

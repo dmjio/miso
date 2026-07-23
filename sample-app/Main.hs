@@ -66,5 +66,18 @@ viewModel _ _ x =
     , H.button_ [ H.onClick SubtractOne ] [ text "-" ]
     , H.br_ []
     , H.button_ [ H.onClick SayHelloWorld ] [ text "Alert Hello World!" ]
+    -- A React-style portal. Although this subtree is declared here in the
+    -- component's view, it is rendered into the pre-existing '#portal-root'
+    -- element (see static/index.html), which lives outside the app's managed
+    -- DOM. Model state still flows in (the counter below stays in sync) and
+    -- event handlers still fire through the virtual DOM (the button dispatches
+    -- 'AddOne' just like the ones above).
+    , portal
+        (H.div_ []
+           [ text "Rendered via portal into #portal-root — count: "
+           , text $ ms (x ^. counter)
+           , H.button_ [ H.onClick AddOne ] [ text "+1 (from portal)" ]
+           ])
+        (getElementById "portal-root")
     ]
 ----------------------------------------------------------------------------

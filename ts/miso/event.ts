@@ -1,4 +1,4 @@
-import { EventContext, VTree, EventCapture, EventObject, Options, VTreeType } from './types';
+import { EventContext, VTree, VPort, EventCapture, EventObject, Options, VTreeType } from './types';
 
 /* event delegation algorithm */
 export function delegator<T> (
@@ -59,6 +59,18 @@ function buildTargetToElement<T>(element: T, target: T, context: EventContext<T>
   }
   return stack;
 }
+/* Descend event delegation into a portal's child.
+   The portal's child renders under obj.location — an unmanaged DOM node that
+   appears in the event's ancestor stack but has no corresponding vtree node.
+   Skip past that container (and any wrapper) so stack[0] is the child's own DOM
+   root before delegating into the child. */
+function descendIntoPortal<T>(event: Event, obj: VPort<T>, stack: Array<T>, debug: boolean, context: EventContext<T>): void {
+  if (!obj.child) return;
+  while (stack.length > 1 && !containsDOMRef(obj.child, stack[0], context)) {
+    stack.splice(0, 1);
+  }
+  delegateEvent(event, obj.child, stack, debug, context);
+}
 /* Finds event in virtual dom via pointer equality
    Accumulate parent stack as well for propagation up the vtree
 */
@@ -107,6 +119,10 @@ export function delegateEvent <T> (
         }
         return delegateEvent(event, obj.child, stack, debug, context);
       }
+      else if (obj.type === VTreeType.VPort) {
+        descendIntoPortal(event, obj, stack, debug, context);
+        return;
+      }
       else if (obj.type === VTreeType.VNode) {
         if (context.isEqual(obj.domRef, stack[0])) {
           const eventObj: EventObject<T> = obj.events.captures[event.type];
@@ -146,6 +162,9 @@ export function delegateEvent <T> (
           return;
         }
       }
+    } else if (obj.type === VTreeType.VPort) {
+      /* VPort doesn't have events directly, delegate into its portaled child */
+      descendIntoPortal(event, obj, stack, debug, context);
     } else if (obj.type === VTreeType.VNode) {
     /* captures run first */
       const eventCaptureObj: EventObject<T> = obj.events.captures[event.type];
@@ -188,6 +207,10 @@ function propagateWhileAble<T>(vtree: VTree<T>, event: Event): void {
         break;
       case VTreeType.VFrag:
         /* Propagate through fragment to its parent */
+        vtree = vtree.parent;
+        break;
+      case VTreeType.VPort:
+        /* Bubble out of the portal into its virtual (host) parent */
         vtree = vtree.parent;
         break;
       case VTreeType.VNode:
@@ -264,6 +287,10 @@ function containsDOMRef<T>(vtree: VTree<T>, target: T, context: EventContext<T>)
         if (containsDOMRef(child, target, context)) return true;
       return false;
     case VTreeType.VComp:
+      return vtree.child ? containsDOMRef(vtree.child, target, context) : false;
+    case VTreeType.VPort:
+      // The portal owns its 'location' container and everything rendered under it.
+      if (vtree.location != null && context.isEqual(vtree.location, target)) return true;
       return vtree.child ? containsDOMRef(vtree.child, target, context) : false;
     default:
       return context.isEqual(vtree.domRef, target);

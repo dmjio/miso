@@ -298,6 +298,11 @@ export function forEachDOMRef<T>(tree: VTree<T>, cb: (ref: T) => void): void {
     case VTreeType.VComp:
       if (tree.child) forEachDOMRef(tree.child, cb);
       break;
+    case VTreeType.VPort:
+      // A portal's child DOM lives under 'location', not in the host tree, so it
+      // contributes zero host DOM here (matching getFirst/getLastDOMRef). Portal
+      // teardown is handled explicitly via destroy()/callDestroyedRecursive.
+      break;
     default:
       cb(tree.domRef);
       break;
@@ -315,6 +320,10 @@ export function getFirstDOMRef<T>(tree: VTree<T>): T | null {
     case VTreeType.VComp:
       if (!tree.child) return null;
       return getFirstDOMRef(tree.child);
+    case VTreeType.VPort:
+      // A portal has no presence in its host parent (its child lives under
+      // 'location'), so it must anchor as though it occupies zero DOM nodes.
+      return null;
     default:
       return tree.domRef;
   }
@@ -331,6 +340,9 @@ export function getLastDOMRef<T>(tree: VTree<T>): T | null {
     case VTreeType.VComp:
       if (!tree.child) return null;
       return getLastDOMRef(tree.child);
+    case VTreeType.VPort:
+      // See getFirstDOMRef: a portal occupies zero DOM in its host parent.
+      return null;
     default:
       return tree.domRef;
   }

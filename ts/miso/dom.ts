@@ -40,6 +40,17 @@ export function diff<T>(c: VTree<T>, n: VTree<T>, parent: T, context: DrawingCon
           replace(c, n, parent, context);
         }
     }
+    else if (c.type === VTreeType.VPort && n.type === VTreeType.VPort) {
+        // Only a portal-vs-portal at the *same* (non-null) location diffs normally;
+        // a moved portal (different location) is a replace, like a changed key.
+        // A null location can't be diffed into, so it also falls through to replace.
+        if (n.key === c.key && n.location === c.location && n.location != null) {
+          n.child.parent = n;
+          diff(c.child, n.child, n.location, context);
+        } else {
+          replace(c, n, parent, context);
+        }
+    }
     else
       replace(c, n, parent, context);
 }
@@ -52,6 +63,18 @@ function diffVText<T>(c: VText<T>, n: VText<T>, context : DrawingContext<T>): vo
 
 // replace everything function
 function replace<T>(c: VTree<T>, n: VTree<T>, parent: T, context : DrawingContext<T>): void {
+  // VPort has no host DOM: create n at the portal's host position (its following
+  // sibling), then tear the old portal's child down at its own 'location'.
+  if (c.type === VTreeType.VPort) {
+    const anchor = context.nextSibling(c);
+    if (anchor) {
+      createElement(parent, OP.INSERT_BEFORE, anchor, n, context);
+    } else {
+      create(n, parent, context);
+    }
+    destroy(c, parent, context);
+    return;
+  }
   // VFrag spans multiple DOM nodes — destroy all, then create n at the same position
   if (c.type === VTreeType.VFrag) {
     const lastRef = getLastDOMRef(c);
@@ -104,7 +127,7 @@ function replace<T>(c: VTree<T>, n: VTree<T>, parent: T, context : DrawingContex
       case VTreeType.VText:
           break;
       default:
-          callDestroyedRecursive(c);
+          callDestroyedRecursive(c, context);
           break;
   }
 }
@@ -118,6 +141,14 @@ function destroy<T>(c: VTree<T>, parent: T, context: DrawingContext<T>): void {
       case VTreeType.VFrag:
           for (const child of c.children) destroy(child, parent, context);
           return;
+      case VTreeType.VPort:
+          // Tear the portal's child down under 'location', not the host parent.
+          if (c.location == null) {
+            console.warn('[VPort] no location to destroy portal from, skipping', c);
+          } else {
+            destroy(c.child, c.location, context);
+          }
+          return;
       default:
           callBeforeDestroyedRecursive(c);
           break;
@@ -129,27 +160,31 @@ function destroy<T>(c: VTree<T>, parent: T, context: DrawingContext<T>): void {
       case VTreeType.VText:
           break;
       default:
-          callDestroyedRecursive(c);
+          callDestroyedRecursive(c, context);
           break;
   }
 }
 
 // ** recursive calls to hooks
-function callDestroyedRecursive<T>(c: VNode<T> | VComp<T> | VFrag<T>): void {
+function callDestroyedRecursive<T>(c: VTree<T>, context: DrawingContext<T>): void {
+  if (c.type === VTreeType.VText) return;
   if (c.type === VTreeType.VFrag) {
-    for (const child of c.children)
-      if (child.type !== VTreeType.VText) callDestroyedRecursive(child as VNode<T> | VComp<T> | VFrag<T>);
+    for (const child of c.children) callDestroyedRecursive(child, context);
     return;
   }
-  callDestroyed(c as VNode<T> | VComp<T>);
+  if (c.type === VTreeType.VPort) {
+    // A portal's DOM lives under 'location', so removing the host subtree never
+    // touched it. Tear it down explicitly here (fires child hooks + removes DOM).
+    if (c.location != null) destroy(c.child, c.location, context);
+    return;
+  }
+  callDestroyed(c);
   switch (c.type) {
     case VTreeType.VNode:
-      for (const child of c.children)
-        if (child.type !== VTreeType.VText) callDestroyedRecursive(child as VNode<T> | VComp<T> | VFrag<T>);
+      for (const child of c.children) callDestroyedRecursive(child, context);
       break;
     case VTreeType.VComp:
-      if (c.child && c.child.type !== VTreeType.VText)
-        callDestroyedRecursive(c.child as VNode<T> | VComp<T> | VFrag<T>);
+      if (c.child) callDestroyedRecursive(c.child, context);
       break;
   }
 }
@@ -369,6 +404,19 @@ function createElement<T>(parent : T, op: OP, replacing : T | null, n: VTree<T>,
       break;
     case VTreeType.VComp:
       mountComponent(parent, op, replacing, n as VComp<T>, context);
+      break;
+    case VTreeType.VPort:
+      // A portal renders its child under 'location', contributing nothing to
+      // 'parent'. On REPLACE we must still remove the node we're standing in for.
+      if (n.location == null) {
+        console.warn('[VPort] no location to render portal into, skipping', n);
+      } else {
+        n.child.parent = n;
+        createElement(n.location, OP.APPEND, null, n.child, context);
+      }
+      if (op === OP.REPLACE && replacing) {
+        context.removeChild(parent, replacing);
+      }
       break;
     case VTreeType.VNode:
       if (n.onBeforeCreated) n.onBeforeCreated();

@@ -6,6 +6,9 @@
     <title> sample-app </title>
   </head>
   <body>
+    <!-- Portal target: lives outside the app's managed DOM. The 'portal'
+         combinator in Main.hs renders into this element. -->
+    <div id="portal-root"></div>
     <script src="index.js" type="module"></script>
   </body>
 </html>
