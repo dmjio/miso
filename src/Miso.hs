@@ -722,9 +722,10 @@
 --
 -- = 'Component' communication
 --
--- @miso@ provides three mechanisms for 'Component' to exchange data:
+-- @miso@ provides four mechanisms for 'Component' to exchange data:
 --
 -- * __Props__ — synchronous, parent-to-child read-only data passed at mount time (see below). Props are updated in the child in response to parent changes.
+-- * __Context__ — global data shared by the entire tree (see /The global @context@/ above); any 'Component' can mutate it via 'Miso.Effect.modifyContext' \/ 'Miso.Effect.putContext', and read it via 'Miso.Effect.getContext'. Set @'Miso.Types.useContext' = True@ (or use 'Miso.Types.mountUseContext') on a 'Component' to have it re-render whenever @context@ changes.
 -- * __Async mailbox__ — message-passing via 'mail', 'broadcast', 'checkMail'; any 'Component' can send a t'Miso.JSON.Value' to any other by 'ComponentId'.
 -- * __PubSub__ ("Miso.PubSub") — publish\/subscribe for fan-out messaging across unrelated 'Component'.
 --
