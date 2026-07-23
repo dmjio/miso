@@ -1,5 +1,7 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE CPP                       #-}
+{-# LANGUAGE CPP            #-}
+{-# LANGUAGE LambdaCase     #-}
+{-# LANGUAGE StaticPointers #-}
 -----------------------------------------------------------------------------
 {-# OPTIONS_GHC -Wno-duplicate-exports #-}
 -----------------------------------------------------------------------------
@@ -404,7 +406,7 @@
 --   Highlight domRef -> 'io_' $ do
 --     ['Miso.FFI.QQ.js'| hljs.highlight(${domRef}) |]
 --
--- view :: props -> model -> 'View' model Action
+-- view :: props -> model -> 'View' Action
 -- view _ x =
 --   'Miso.Html.Element.code_'
 --   [ 'onCreatedWith' Highlight
@@ -423,7 +425,7 @@
 -- Unlike 'VComp' and 'VFrag', 'VText' has a one-to-one correspondence with a physical DOM node:
 -- each 'VText' in the virtual DOM maps to exactly one @Text@ node in the browser.
 --
--- The simplest way to produce a 'VText' is via the 'IsString' instance on @'View' model action@.
+-- The simplest way to produce a 'VText' is via the 'IsString' instance on @'View' action@.
 -- String literals inside a child list are automatically promoted to 'VText' nodes without
 -- any extra imports:
 --
@@ -478,7 +480,7 @@
 --
 -- data Item = Item { itemId, itemLabel :: 'MisoString' }
 --
--- renderItem :: Item -> 'View' model Action
+-- renderItem :: Item -> 'View' Action
 -- renderItem item = 'Miso.Html.Element.li_' [] [ 'textKey' (itemId item) (itemLabel item) ]
 -- @
 --
@@ -1284,7 +1286,7 @@
 -- the parsed route (or a 'Miso.Router.RoutingError') to your 'update' function:
 --
 -- @
--- app = ('vcomp' m u v) { 'subs' = [ 'Miso.Router.routerSub' HandleRoute ] }
+-- app = ('component' m u v) { 'subs' = [ 'Miso.Router.routerSub' HandleRoute ] }
 --
 -- update = \\case
 --   HandleRoute (Right Index)       -> page 'Miso.Lens..=' HomePage
@@ -1592,7 +1594,7 @@
 --
 -- @
 -- main :: IO ()
--- main = 'prerender' 'defaultEvents' $ ('vcomp' () 'noop' $ \\_ () -> "hello world") { 'logLevel' = 'DebugPrerender' }
+-- main = 'prerender' 'defaultEvents' $ ('component' () 'noop' $ \\_ () -> "hello world") { 'logLevel' = 'DebugPrerender' }
 -- @
 --
 -- Assuming the JS / WASM payload and @index.html@ are delivered together from the web server, the console should output below
@@ -1614,7 +1616,7 @@
 --
 -- @
 -- myComp :: 'App' Model Action
--- myComp = ('vcomp' defaultModel updateModel viewModel)
+-- myComp = ('component' defaultModel updateModel viewModel)
 --   { 'hydrateModel' = Just $ do
 --       val <- 'Miso.DSL.jsg' "window" 'Miso.DSL.!' "__initialModel__"
 --       'Miso.DSL.fromJSValUnchecked' val
@@ -1625,7 +1627,7 @@
 -- in a @\<script\>@ tag alongside the rendered HTML:
 --
 -- @
--- serverView :: Model -> 'View' Model Action
+-- serverView :: Model -> 'View' Action
 -- serverView m =
 --   'Miso.Html.Element.div_' []
 --     [ 'Miso.Html.Element.script_' [] [ 'textRaw' ("window.__initialModel__ = " \<\> 'Miso.JSON.encode' m) ]
@@ -1748,6 +1750,11 @@ module Miso
     -- * State management
     -- | State management for Miso applications.
   , module Miso.State
+    -- * Native mobile
+    -- | Cross thread environment detection
+  , mts
+  , bts
+  , web
   ) where
 -----------------------------------------------------------------------------
 import           Miso.DSL
@@ -1766,42 +1773,53 @@ import           Miso.Subscription
 import           Miso.Types
 import           Miso.Util
 ----------------------------------------------------------------------------
+import           GHC.StaticPtr (StaticPtr, deRefStaticPtr, staticKey)
+----------------------------------------------------------------------------
 -- | Runs an @miso@ application.
 --
 -- Assumes the pre-rendered DOM is already present.
 -- Always mounts to \<body\>. Copies page into the virtual DOM.
 --
 -- @
+-- {-# LANGUAGE StaticPointers #-}
+--
 -- main :: 'IO' ()
--- main = 'miso' 'defaultEvents' app
+-- main = 'miso' 'defaultEvents' (static ('vcomp' (mount_ app)))
 -- @
 miso
-  :: Eq model
-  => Events
+  :: Events
   -- ^ Globally delegated Events
-  -> (URI -> App model action)
+  -> (URI -> StaticPtr (SomeComponent ()))
   -- ^ The Component application, with the current URI as an argument
   -> IO ()
 miso events f = do
-  comp <- f <$> getURI
-  initComponent events Hydrate False () comp { mountPoint = Nothing }
+  ptr <- f <$> getURI
+  case deRefStaticPtr ptr of
+    SomeComponent key props_ comp_ ->
+      initComponent events Hydrate False () comp_ { mountPoint = Nothing }
+        key props_ (staticKey ptr)
 ----------------------------------------------------------------------------
 -- | Like 'miso', except discards the 'Miso.Router.URI' argument.
 --
 -- Use this function if you'd like to prerender, but not use navigation.
 --
 -- @
+-- {-# LANGUAGE StaticPointers #-}
+--
 -- main :: 'IO' ()
--- main = 'prerender' 'defaultEvents' app
+-- main = 'prerender' 'defaultEvents' (static ('vcomp' (mount_ app)))
 -- @
 prerender
-  :: Eq model
-  => Events
+  :: Events
   -- ^ Globally delegated 'Events'
-  -> App model action
+  -> StaticPtr (SomeComponent ())
   -- ^ 'Component' application
   -> IO ()
-prerender events comp = initComponent events Hydrate False () comp { mountPoint = Nothing }
+prerender events ptr =
+  case deRefStaticPtr ptr of
+    SomeComponent key props_ comp_ ->
+      initComponent events Hydrate False () comp_ { mountPoint = Nothing }
+        key props_ (staticKey ptr)
 -----------------------------------------------------------------------------
 -- | Like 'miso', except it does not perform page hydration.
 --
@@ -1811,18 +1829,22 @@ prerender events comp = initComponent events Hydrate False () comp { mountPoint 
 -- unless you are using prerendering.
 --
 -- @
+-- {-# LANGUAGE StaticPointers #-}
+--
 -- main :: 'IO' ()
--- main = 'startApp' 'defaultEvents' app
+-- main = 'startApp' 'defaultEvents' (static ('vcomp' (mount_ app)))
 -- @
 --
 startApp
-  :: Eq model
-  => Events
+  :: Events
   -- ^ Globally delegated 'Events'
-  -> App model action
+  -> StaticPtr (SomeComponent ())
   -- ^ 'Component' application
   -> IO ()
-startApp events = initComponent events Draw False ()
+startApp events ptr =
+  case deRefStaticPtr ptr of
+    SomeComponent key props_ vcomp_ ->
+      initComponent events Draw False () vcomp_ key props_ (staticKey ptr)
 -----------------------------------------------------------------------------
 -- | Like 'startApp', but seeds the global React-style @context@ with an
 -- initial value.
@@ -1833,8 +1855,10 @@ startApp events = initComponent events Draw False ()
 -- re-rendered whenever the context changes.
 --
 -- @
+-- {-# LANGUAGE StaticPointers #-}
+--
 -- main :: 'IO' ()
--- main = 'startAppWithContext' 'defaultEvents' Light app
+-- main = 'startAppWithContext' 'defaultEvents' Light (static (mount_ app))
 --
 -- data Theme = Light | Dark deriving (Show, Eq)
 -- @
@@ -1844,22 +1868,23 @@ startApp events = initComponent events Draw False ()
 --
 -- @since 1.9.0.0
 startAppWithContext
-  :: (Eq context, Eq model)
-  => Events
+  :: Events
   -- ^ Globally delegated 'Events'
   -> context
   -- ^ Initial global @context@
-  -> Component context () model action
+  -> StaticPtr (SomeComponent context)
   -- ^ 'Component' application
   -> IO ()
-startAppWithContext events = initComponent events Draw False
+startAppWithContext events initialContext ptr =
+  case deRefStaticPtr ptr of
+    SomeComponent key props_ vcomp_ ->
+      initComponent events Draw False initialContext vcomp_ key props_ (staticKey ptr)
 -----------------------------------------------------------------------------
 -- | Alias for 'Miso.miso'.
 (🍜)
-  :: Eq model
-  => Events
+  :: Events
   -- ^ Globally delegated 'Events'
-  -> (URI -> App model action)
+  -> (URI -> StaticPtr (SomeComponent ()))
   -- ^ 'Component' application, with the current URI as an argument
   -> IO ()
 (🍜) = miso
@@ -1873,19 +1898,22 @@ startAppWithContext events = initComponent events Draw False
 -- It is expected to be run on an empty @\<body\>@
 --
 -- @
+-- {-# LANGUAGE StaticPointers #-}
+--
 -- main :: IO ()
--- main = 'renderApp' 'defaultEvents' "my-context" app
+-- main = 'renderApp' 'defaultEvents' "my-context" (static app)
 -- @
 renderApp
-  :: Eq model
-  => Events
+  :: Events
   -- ^ Globally delegated 'Events'
   -> MisoString
   -- ^ Name of the JS object that contains the drawing context
-  -> App model action
+  -> StaticPtr (SomeComponent ())
   -- ^ 'Component' application
   -> IO ()
-renderApp events renderer comp = do
+renderApp events renderer ptr = do
   FFI.setDrawingContext renderer
-  initComponent events Draw False () comp
+  case deRefStaticPtr ptr of
+    SomeComponent key props_ comp ->
+      initComponent events Draw False () comp key props_ (staticKey ptr)
 ----------------------------------------------------------------------------

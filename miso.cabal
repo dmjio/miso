@@ -26,6 +26,9 @@ common cpp
   if impl(ghcjs) || arch(javascript)
     cpp-options:
       -DGHCJS_BOTH
+  if flag(native)
+    cpp-options:
+      -DNATIVE
   if impl(ghcjs)
     cpp-options:
       -DGHCJS_OLD
@@ -53,12 +56,26 @@ common cpp
 
 common client
   if impl(ghcjs) || arch(javascript) || arch(wasm32)
-    if flag(production)
+    if flag(native) && flag(production)
+      js-sources:
+        js/miso-native.prod.js
+    elif flag(production)
       js-sources:
         js/miso.prod.js
+    elif flag(native)
+      js-sources:
+        js/miso-native.js
     else
       js-sources:
         js/miso.js
+
+flag native
+  manual:
+    True
+  default:
+    False
+  description:
+    When enabled this provides the dual-thread arch. LynxJS.org requires.
 
 flag benchmark
   manual:
@@ -173,6 +190,36 @@ library
     Miso.Util.Parser
     Miso.WebSocket
 
+  if flag(native)
+    exposed-modules:
+      Miso.Native
+      Miso.Native.Element
+      Miso.Native.Element.Frame
+      Miso.Native.Element.Frame.Property
+      Miso.Native.Element.Image
+      Miso.Native.Element.Image.Event
+      Miso.Native.Element.Image.Method
+      Miso.Native.Element.Image.Property
+      Miso.Native.Element.List
+      Miso.Native.Element.List.Event
+      Miso.Native.Element.List.Method
+      Miso.Native.Element.List.Property
+      Miso.Native.Element.ScrollView
+      Miso.Native.Element.ScrollView.Event
+      Miso.Native.Element.ScrollView.Method
+      Miso.Native.Element.ScrollView.Property
+      Miso.Native.Element.Text
+      Miso.Native.Element.Text.Event
+      Miso.Native.Element.Text.Method
+      Miso.Native.Element.Text.Property
+      Miso.Native.Element.View
+      Miso.Native.Element.View.Event
+      Miso.Native.Element.View.Method
+      Miso.Native.Element.View.Property
+      Miso.Native.Event
+      Miso.Native.FFI
+      Miso.Native.Module
+
   -- Live reload (meant for WASM or Vanilla)
   c-sources:
     cbits/foreign.c
@@ -203,7 +250,7 @@ library
     hs-source-dirs:
       ffi/ghc
 
-  if flag (template-haskell) && !impl(ghcjs)
+  if flag(template-haskell)
     exposed-modules:
       Miso.Lens.TH
       Miso.String.QQ

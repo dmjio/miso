@@ -86,6 +86,8 @@ import           Control.Exception (SomeException, catch)
 #endif
 ----------------------------------------------------------------------------
 import           Data.IORef (readIORef)
+import           GHC.StaticPtr
+----------------------------------------------------------------------------
 import           Miso.JSON
 import           Miso.Runtime (globalContext)
 import           Miso.String hiding (intercalate)
@@ -97,11 +99,11 @@ class ToHtml a where
   toHtml :: a -> L.ByteString
 ----------------------------------------------------------------------------
 -- | Render a @Miso.Types.View@ to a @L.ByteString@
-instance ToHtml (Miso.Types.View m a) where
+instance ToHtml (View m a) where
   toHtml = renderView
 ----------------------------------------------------------------------------
 -- | Render a @[Miso.Types.View]@ to a @L.ByteString@
-instance ToHtml [Miso.Types.View m a] where
+instance ToHtml [View m a] where
   toHtml = foldMap renderView
 ----------------------------------------------------------------------------
 renderView :: View m a -> L.ByteString
@@ -150,7 +152,7 @@ booleanProperties = S.fromList
   , "truespeed"
   ]
 ----------------------------------------------------------------------------
-renderBuilder :: forall m a . Miso.Types.View m a -> Builder
+renderBuilder :: View m a -> Builder
 renderBuilder (VText _ "")    = fromMisoString " "
 renderBuilder (VText _ s)     = fromMisoString s
 renderBuilder (VNode _ "doctype" [] []) = "<!doctype html>"
@@ -184,19 +186,19 @@ renderBuilder (VNode ns tag attrs children) = mconcat
               , x <- ["mglyph", "mprescripts", "none", "maligngroup", "malignmark" ]
               ]
 
-renderBuilder (VComp _ (SomeComponent props vcomp_)) =
-  foldMap renderBuilder vkids
-    where
+renderBuilder (VComp ptr) =
+  case deRefStaticPtr ptr of
+    SomeComponent _key props vcomp_ ->
       -- The app-global @context@ is read from 'globalContext'. For the common
       -- @context ~ ()@ case the 'view' ignores it, so the initial @undefined@ is
       -- never forced. But if a 'view' here inspects a non-trivial @context@,
       -- SSR must seed the cell with 'Miso.setContext' before serializing, or
       -- forcing @ctx@ raises an exception. See 'Miso.setContext' for details.
-      ctx = unsafePerformIO (readIORef globalContext)
+      let ctx = unsafePerformIO (readIORef globalContext) in
 #ifdef SSR
-      vkids = [ view vcomp_ ctx props (getInitialComponentModel vcomp_) ]
+      renderBuilder (view vcomp_ ctx props (getInitialComponentModel vcomp_))
 #else
-      vkids = [ view vcomp_ ctx props (model vcomp_) ]
+      renderBuilder (view vcomp_ ctx props (model vcomp_))
 #endif
 renderBuilder (VFrag _ kids) = foldMap renderBuilder kids
 ----------------------------------------------------------------------------

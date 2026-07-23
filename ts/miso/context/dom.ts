@@ -3,10 +3,8 @@ import
   , DrawingContext
   , EventContext
   , EventCapture
-  , ComponentId
   , HydrationContext
   , DOMRef
-  , ComponentContext
   , VTree
   , VTreeType
   } from '../types';
@@ -55,7 +53,7 @@ export const hydrationContext : HydrationContext<DOMRef> = {
     if (key === 'class') return node.className;
     if (key in node) return node[key];
     return node.getAttribute(key);
-  },
+   },
   getTag: (node: DOMRef) => {
     return node.nodeName;
   },
@@ -65,18 +63,6 @@ export const hydrationContext : HydrationContext<DOMRef> = {
   children: (node: DOMRef) => {
     return node.childNodes as any;
   },
-};
-
-export const componentContext : ComponentContext = {
-    mountComponent : function (componentId: ComponentId, model: Object) : void {
-        return;
-    },
-    unmountComponent : function (componentId: ComponentId) : void {
-        return;
-    },
-    modelHydration : function (componentId: ComponentId, model: Object) : void {
-        return;
-    }
 };
 
 export const drawingContext : DrawingContext<DOMRef> = {

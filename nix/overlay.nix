@@ -1,4 +1,10 @@
-self: super: {
+self: super:
+let
+  js = import ./js super;
+in
+{
+  # JS tooling
+  inherit (js) rspeedy;
 
   # haskell stuff
   haskell = super.haskell // {

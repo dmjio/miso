@@ -1,4 +1,18 @@
 {
   "extends": "./tsconfig.json",
-    "files": ["./ts/globals.d.ts", "./ts/miso.ts", "./ts/miso/context/dom.ts", "./ts/miso/context/patch.ts", "./ts/index.ts", "./ts/miso/patch.ts", "./ts/miso/hydrate.ts" ]
+  "files": [
+    "./ts/globals.d.ts",
+    "./ts/native.d.ts",
+    "./ts/miso.ts",
+    "./ts/miso/context/dom.ts",
+    "./ts/miso/context/patch.ts",
+    "./ts/index.ts",
+    "./ts/miso-native.ts",
+    "./ts/miso/patch.ts",
+    "./ts/miso/hydrate.ts",
+    "./ts/miso/native/mts.ts",
+    "./ts/miso/native/bts.ts",
+    "./ts/miso/native/mts/context.ts",
+    "./ts/miso/native/bts/context.ts"
+  ]
 }

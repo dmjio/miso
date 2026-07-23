@@ -1,6 +1,7 @@
 packages:
   .
   sample-app/
+  sample-app-native/
   tests/
 
 allow-newer:
@@ -9,4 +10,5 @@ allow-newer:
 if arch(wasm32)
   shared: True
 
-flags: +template-haskell
+package miso
+  flags: +template-haskell

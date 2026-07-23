@@ -47,14 +47,15 @@ import {
     Options,
     EventContext,
     DrawingContext,
-    HydrationContext,
     ComponentContext,
+    HydrationContext,
     NodeId,
     VTreeType,
     ComponentId,
     Component,
     Runtime,
     PATCH,
+    EVENT,
     InsertBefore,
     SwapDOMRefs,
     CreateElement,
@@ -68,14 +69,13 @@ import {
     RemoveAttribute,
     SetTextContent,
     SetInlineStyle,
-    MountComponent,
-    UnmountComponent,
-    ModelHydration,
     AddClass,
     RemoveClass,
     ProcessEvent,
-    AddEventListeners,
-    Flush
+    Flush,
+    MountComponent,
+    UnmountComponent,
+    ModelHydration
 } from './miso/types';
 
 import { patch } from './miso/patch';
@@ -89,8 +89,8 @@ export {
   /* Context */
   EventContext,
   DrawingContext,
-  HydrationContext,
   ComponentContext,
+  HydrationContext,
   patchDrawingContext,
 
   /* Functions */
@@ -146,6 +146,7 @@ export {
   DOMRef,
   NodeId,
   PATCH,
+  EVENT,
   InsertBefore,
   SwapDOMRefs,
   CreateElement,
@@ -159,14 +160,13 @@ export {
   RemoveAttribute,
   SetTextContent,
   SetInlineStyle,
-  MountComponent,
-  UnmountComponent,
-  ModelHydration,
   AddClass,
   RemoveClass,
   ProcessEvent,
-  AddEventListeners,
   Flush,
+  MountComponent,
+  UnmountComponent,
+  ModelHydration,
   Runtime,
   Component,
 

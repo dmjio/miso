@@ -1,21 +1,27 @@
 ----------------------------------------------------------------------------
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE LambdaCase        #-}
-{-# LANGUAGE CPP               #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE OverloadedStrings  #-}
+{-# LANGUAGE StaticPointers     #-}
+{-# LANGUAGE DeriveAnyClass     #-}
+{-# LANGUAGE DeriveGeneric      #-}
+{-# LANGUAGE LambdaCase         #-}
+{-# LANGUAGE CPP                #-}
 ----------------------------------------------------------------------------
 module Main where
 ----------------------------------------------------------------------------
 import           Miso
 import qualified Miso.Html as H
-import qualified Miso.Html.Property as P
 import           Miso.Lens
-import           Miso.Reload
+import           Miso.JSON
+----------------------------------------------------------------------------
+import GHC.Generics
 ----------------------------------------------------------------------------
 -- | Component model state
 data Model
   = Model
   { _counter :: Int
-  } deriving (Show, Eq)
+  } deriving stock (Show, Eq, Generic)
+    deriving anyclass (FromJSON, ToJSON)
 ----------------------------------------------------------------------------
 counter :: Lens Model Int
 counter = lens _counter $ \record field -> record { _counter = field }
@@ -25,14 +31,15 @@ data Action
   = AddOne
   | SubtractOne
   | SayHelloWorld
-  deriving (Show, Eq)
+  deriving stock (Generic, Show, Eq)
+  deriving anyclass (ToJSON, FromJSON)
 ----------------------------------------------------------------------------
 -- | Entry point for a miso application
 main :: IO ()
 #ifdef INTERACTIVE
-main = live defaultEvents app
+main = live defaultEvents (static (mount_ app))
 #else
-main = startApp defaultEvents app
+main = startApp defaultEvents (static (mount_ app))
 #endif
 ----------------------------------------------------------------------------
 -- | WASM export, required when compiling w/ the WASM backend.

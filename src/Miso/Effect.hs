@@ -104,6 +104,7 @@ module Miso.Effect
   , DOMRef
   , ComponentInfo (..)
   , ComponentId
+  , Thread (..)
   , mkComponentInfo
   -- ** 'IO'
   , Schedule (..)
@@ -142,6 +143,9 @@ module Miso.Effect
   , componentInfoContext
   , context
   , getContext
+  -- *** Dual-thread
+  , runOnBG
+  , runOnMain
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad (void)
@@ -332,7 +336,13 @@ infixl 0 <#
 (<#) m action = put m >> tell [ async $ \f -> f =<< action ]
 -----------------------------------------------------------------------------
 async :: (Sink action -> IO ()) -> Schedule context action
-async = Schedule Async
+async = Schedule Nothing Async
+-----------------------------------------------------------------------------
+runOnBG :: (Sink action -> IO ()) -> Effect context props model action
+runOnBG f = tell [ Schedule (Just BTS) Async f ]
+-----------------------------------------------------------------------------
+runOnMain :: (Sink action -> IO ()) -> Effect context props model action
+runOnMain f = tell [ Schedule (Just MTS) Async f ]
 -----------------------------------------------------------------------------
 -- | `Effect` smart constructor, flipped
 infixr 0 #>
@@ -411,7 +421,7 @@ type Effect context props model action = RWS (ComponentInfo context props) [Sche
 --
 -- @since 1.9.0.0
 data Schedule context action
-  = Schedule Synchronicity (Sink action -> IO ())
+  = Schedule (Maybe Thread) Synchronicity (Sink action -> IO ())
   | ContextModify (context -> context)
 -----------------------------------------------------------------------------
 -- | Type to represent a DOM reference
@@ -445,7 +455,7 @@ sync
   :: IO action
   -- ^ 'IO' action to execute synchronously
   -> Effect context props model action
-sync action = tell [ Schedule Sync $ \f -> f =<< action ]
+sync action = tell [ Schedule Nothing Sync $ \f -> f =<< action ]
 -----------------------------------------------------------------------------
 -- | Like 'sync', except discards the result.
 --
@@ -454,7 +464,7 @@ sync_
   :: IO ()
   -- ^ 'IO' action to execute synchronously
   -> Effect context props model action
-sync_ action = tell [ Schedule Sync $ \_ -> action ]
+sync_ action = tell [ Schedule Nothing Sync $ \_ -> action ]
 -----------------------------------------------------------------------------
 -- | Schedule a single 'IO' action for later execution.
 --
@@ -541,8 +551,8 @@ modifyAllIO
   -- ^ Effect whose IO actions are modified
   -> Effect context props model action
 modifyAllIO f = censor $ \actions ->
-  [ Schedule x (f <$> action)
-  | Schedule x action <- actions
+  [ Schedule mb x (f <$> action)
+  | Schedule mb x action <- actions
   ]
 -----------------------------------------------------------------------------
 -- | @withSink@ allows users to write to the global event queue. This is useful for introducing 'IO' into the system.
@@ -646,5 +656,12 @@ noop = const (pure ())
 data Synchronicity
   = Async
   | Sync
+  deriving (Show, Eq)
+-----------------------------------------------------------------------------
+-- | Type to indicate where the 'Effect' should execute.
+--
+data Thread
+  = MTS
+  | BTS
   deriving (Show, Eq)
 -----------------------------------------------------------------------------

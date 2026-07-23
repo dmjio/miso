@@ -76,7 +76,6 @@ describe ('Patch tests', () => {
         expect(getPatches()).toEqual([expected, appendOperation]);
         let runtime : Runtime<DOMRef> = {
           nodes : { 0: document.body },
-          components : {}
         };
         patch (domContext, expected, runtime);
         // patch (domContext, appendOperation, runtimes);
@@ -112,7 +111,6 @@ describe ('Patch tests', () => {
         expect(getPatches()).toEqual([expected, appendOperation]);
         let runtime : Runtime<DOMRef> = {
           nodes : { 0: document.body },
-          components : {}
         };
         patch (domContext, expected, runtime);
         // dmj: check the DOM and runtime env. to see if the patch applied, and env updated
@@ -147,7 +145,6 @@ describe ('Patch tests', () => {
         expect(getPatches()).toEqual([expected, appendOperation]);
         let runtime : Runtime<DOMRef> = {
           nodes : { 0: document.body },
-          components : {}
         };
         patch (domContext, expected, runtime);
         // dmj: check the DOM and runtime env. to see if the patch applied, and env updated
@@ -187,7 +184,6 @@ describe ('Patch tests', () => {
         expect(getPatches()).toEqual([expectedCreateElement, expectedSetAttribute, appendOperation]);
         let runtime : Runtime<DOMRef> = {
           nodes : { 0: document.body },
-          components : {}
         };
         patch (domContext, expectedCreateElement, runtime);
         patch (domContext, appendOperation, runtime);
@@ -228,7 +224,6 @@ describe ('Patch tests', () => {
         expect(getPatches()).toEqual([expectedCreateElement, expectedSetAttribute, appendOperation ]);
         let runtime : Runtime<DOMRef> = {
           nodes : { 0: document.body },
-          components : {}
         };
         patch (domContext, expectedCreateElement, runtime);
         patch (domContext, appendOperation, runtime);
@@ -268,7 +263,6 @@ describe ('Patch tests', () => {
         expect(getPatches()).toEqual([expectedCreateElement, expectedSetAttribute, appendOperation ]);
         let runtime : Runtime<DOMRef> = {
           nodes : { 0: document.body },
-          components : {}
         };
         patch (domContext, expectedCreateElement, runtime);
         patch (domContext, appendOperation, runtime);
@@ -317,7 +311,6 @@ describe ('Patch tests', () => {
         expect(getPatches()).toEqual([expected, appendOperation, expectedSetTextContent ]);
         let runtime : Runtime<DOMRef> = {
           nodes : { 0: document.body },
-          components : {}
         };
         patch (domContext, expected, runtime);
         // dmj: check the DOM and runtime env. to see if the patch applied, and env updated
@@ -366,7 +359,6 @@ describe ('Patch tests', () => {
         expect(getPatches()).toEqual([expected, expectedChild, appendOperation2, appendOperation1 ]);
         let runtime : Runtime<DOMRef> = {
           nodes : { 0: document.body },
-          components : {}
         };
         patch (domContext, expected, runtime);
         patch (domContext, appendOperation1, runtime);
@@ -408,7 +400,6 @@ describe ('Patch tests', () => {
         expect(getPatches()).toEqual([expected, expectedStyle, appendOperation ]);
         let runtime : Runtime<DOMRef> = {
           nodes : { 0: document.body },
-          components : {}
         };
         patch (domContext, expected, runtime);
         patch (domContext, appendOperation, runtime);
@@ -493,7 +484,6 @@ describe ('Patch tests', () => {
         expect(getPatches()).toEqual([expected, expectedChild, appendOperation2, appendOperation1, newNode, replaceOp ]);
         let runtime : Runtime<DOMRef> = {
           nodes : { 0: document.body },
-          components : {}
         };
         patch (domContext, expected, runtime);
         patch (domContext, appendOperation1, runtime);
@@ -557,7 +547,6 @@ describe ('Patch tests', () => {
         expect(getPatches()).toEqual([expected, expectedChild, appendOperation2, appendOperation1, removeOp ]);
         let runtime : Runtime<DOMRef> = {
           nodes : { 0: document.body },
-          components : {}
         };
         patch (domContext, expected, runtime);
         patch (domContext, appendOperation1, runtime);
@@ -631,7 +620,6 @@ describe ('Patch tests', () => {
       expect(getPatches()).toEqual([expected, expectedChild1, appendOperation2, appendOperation1, expectedChild2, insertBeforeOp, removeChildOp ]);
         let runtime : Runtime<DOMRef> = {
           nodes : { 0: document.body },
-          components : {}
         };
         patch (domContext, expected, runtime);
         patch (domContext, appendOperation1, runtime);
@@ -689,7 +677,6 @@ describe ('Patch tests', () => {
         expect(getPatches()).toEqual([child, patch1, patch2, appendPatch]);
         let runtime : Runtime<DOMRef> = {
           nodes : { 0: document.body },
-          components : {}
         };
         patch (domContext, child, runtime);
         patch (domContext, patch1, runtime);
@@ -741,7 +728,6 @@ describe ('Patch tests', () => {
         expect(getPatches()).toEqual([child, patch1, patch2, appendPatch, patch3]);
         let runtime : Runtime<DOMRef> = {
           nodes : { 0: document.body },
-          components : {}
         };
         patch (domContext, child, runtime);
         patch (domContext, patch1, runtime);

@@ -1,9 +1,7 @@
 import {
-  ComponentId,
   DrawingContext,
   NodeId,
   CSS,
-  ComponentContext,
   VTree,
   PATCH,
   CreateTextNode,
@@ -19,9 +17,6 @@ import {
   SetTextContent,
   SetInlineStyle,
   RemoveAttribute,
-  MountComponent,
-  UnmountComponent,
-  ModelHydration,
   AddClass,
   RemoveClass,
 } from '../types';
@@ -54,36 +49,6 @@ function areEqual(a: Object, b: Object) : boolean {
   if (keysA.length !== keysB.length) return false;
   return keysA.every(key => a[key] === b[key]);
 }
-
-export const componentContext : ComponentContext = {
-    mountComponent : function (componentId: ComponentId, model: Object) {
-        let patch : MountComponent = {
-            type: "mount",
-            componentId: componentId,
-            mountPoint : 0,
-            model
-        };
-        addPatch(patch);
-        return;
-    },
-    unmountComponent : function (componentId: ComponentId) {
-        let patch : UnmountComponent = {
-            type: "unmount",
-            componentId,
-        };
-        addPatch(patch);
-        return;
-    },
-    modelHydration : function (componentId: ComponentId, model: Object) {
-        let patch : ModelHydration = {
-            type: "modelHydration",
-            model,
-            componentId
-        };
-        addPatch(patch);
-        return;
-    }
-};
 
 export const patchDrawingContext : DrawingContext<NodeId> = {
   nextSibling : (node: VTree<NodeId>) => {

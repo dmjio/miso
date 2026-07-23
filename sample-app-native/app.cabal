@@ -1,0 +1,20 @@
+cabal-version: 2.2
+name: app-native
+version: 0.1.0.0
+synopsis: Sample miso native app (LynxJS)
+category: Web
+
+common options
+  if arch(javascript)
+    ld-options:
+      -sENVIRONMENT=shell -sWASM=0 -sEXPORTED_RUNTIME_METHODS=HEAP8
+
+executable app-native
+  import:
+    options
+  main-is:
+    Main.hs
+  build-depends:
+    base, miso
+  default-language:
+    Haskell2010

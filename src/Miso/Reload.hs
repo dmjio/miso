@@ -73,7 +73,7 @@ import           Control.Monad
 -----------------------------------------------------------------------------
 import           Miso.DSL ((!), jsg, setField)
 import qualified Miso.FFI.Internal as FFI
-import           Miso.Types (Component(..), Events, App)
+import           Miso.Types (Component(..), Events, SomeComponent(..))
 import           Miso.String (MisoString)
 import           Miso.Runtime (componentModel, initComponent, topLevelComponentId, globalContext, Hydrate(..))
 import           Miso.Runtime.Internal (components, schedulerThread)
@@ -82,6 +82,7 @@ import           Miso.Lens
 -----------------------------------------------------------------------------
 import qualified Data.IntMap.Strict as IM
 import           Data.IORef
+import           GHC.StaticPtr
 import           Foreign hiding (void)
 import           Foreign.C.Types
 -----------------------------------------------------------------------------
@@ -116,13 +117,12 @@ foreign import ccall unsafe "miso_x_clear"
 --
 -- @since 1.9.0.0
 reload
-  :: Eq model
-  => Events
+  :: Events
   -- ^ Event delegation map (typically 'Miso.Event.Types.defaultEvents')
-  -> App model action
+  -> StaticPtr (SomeComponent ())
   -- ^ Top-level application component to (re-)mount
   -> IO ()
-reload events = reloadWithContext events ()
+reload events ptr = reloadWithContext events () ptr
 -----------------------------------------------------------------------------
 -- | Like 'reload', but seeds the app-global React-style @context@ with an
 -- initial value (see 'Miso.startAppWithContext').
@@ -132,30 +132,31 @@ reload events = reloadWithContext events ()
 --
 -- @
 -- main :: IO ()
--- main = 'reloadWithContext' 'defaultEvents' Light app
+-- main = 'reloadWithContext' 'defaultEvents' Light (static (mount_ app))
 -- @
 --
 -- @since 1.12.0.0
 reloadWithContext
-  :: forall context model action . (Eq context, Eq model)
-  => Events
+  :: forall context . Events
   -- ^ Event delegation map (typically 'Miso.Event.Types.defaultEvents')
   -> context
   -- ^ Initial app-global @context@
-  -> Component context () model action
+  -> StaticPtr (SomeComponent context)
   -- ^ Top-level application component to (re-)mount
   -> IO ()
-reloadWithContext events initialContext vcomp = do
-  exists <- x_exists
-  when (exists == 1) $ do
-    (_, oldSchedulerRef, _) <- deRefStablePtr =<< x_get
-    killThread =<< readIORef oldSchedulerRef
-    x_clear
-  clearPage
-  -- 'reload' is a full reset: seed the freshly-supplied context.
-  -- ('initComponent' writes 'globalContext' with the value we pass it.)
-  void (initComponent events Draw False initialContext vcomp)
-  x_store =<< newStablePtr (components, schedulerThread, globalContext :: IORef context)
+reloadWithContext events initialContext ptr =
+  case deRefStaticPtr ptr of
+    SomeComponent key props comp -> do
+      exists <- x_exists
+      when (exists == 1) $ do
+        (_, oldSchedulerRef, _) <- deRefStablePtr =<< x_get
+        killThread =<< readIORef oldSchedulerRef
+        x_clear
+      clearPage
+      -- 'reload' is a full reset: seed the freshly-supplied context.
+      -- ('initComponent' writes 'globalContext' with the value we pass it.)
+      void (initComponent events Draw False initialContext comp key props (staticKey ptr))
+      x_store =<< newStablePtr (components, schedulerThread, globalContext :: IORef context)
 -----------------------------------------------------------------------------
 -- | Live reloading. Persists all t'Component' `model` between successive GHCi reloads.
 --
@@ -176,13 +177,12 @@ reloadWithContext events initialContext vcomp = do
 --
 -- @since 1.9.0.0
 live
-  :: Eq model
-  => Events
+  :: Events
   -- ^ Event delegation map (typically 'Miso.Event.Types.defaultEvents')
-  -> App model action
+  -> StaticPtr (SomeComponent ())
   -- ^ Top-level application component to (re-)mount with preserved model state
   -> IO ()
-live events = liveWithContext events ()
+live events ptr = liveWithContext events () ptr
 -----------------------------------------------------------------------------
 -- | Like 'live', but seeds the app-global React-style @context@ with an
 -- initial value (see 'Miso.startAppWithContext').
@@ -195,52 +195,53 @@ live events = liveWithContext events ()
 --
 -- @
 -- main :: IO ()
--- main = 'liveWithContext' 'defaultEvents' Light app
+-- main = 'liveWithContext' 'defaultEvents' Light (static (mount_ app))
 -- @
 --
 -- @since 1.12.0.0
 liveWithContext
-  :: forall context model action . (Eq context, Eq model)
-  => Events
+  :: forall context . Events
   -- ^ Event delegation map (typically 'Miso.Event.Types.defaultEvents')
   -> context
   -- ^ Initial app-global @context@
-  -> Component context () model action
+  -> StaticPtr (SomeComponent context)
   -- ^ Top-level application component to (re-)mount with preserved model state
   -> IO ()
-liveWithContext events initialContext vcomp = do
-  exists <- x_exists
-  if exists == 1
-    then do
-      -- clearBody (only clear the body)
-      clearBody
+liveWithContext events initialContext ptr =
+  case deRefStaticPtr ptr of
+    SomeComponent key props vcomp -> do
+      exists <- x_exists
+      if exists == 1
+        then do
+          -- clearBody (only clear the body)
+          clearBody
 
-      -- Deref old state, update new state, set pointer in C heap.
-      (oldComponentsRef, oldSchedulerRef, oldContextRef) <- deRefStablePtr =<< x_get
-      oldContext <- readIORef oldContextRef
-      killThread =<< readIORef oldSchedulerRef
+          -- Deref old state, update new state, set pointer in C heap.
+          (oldComponentsRef, oldSchedulerRef, oldContextRef) <- deRefStablePtr =<< x_get
+          oldContext <- readIORef oldContextRef
+          killThread =<< readIORef oldSchedulerRef
 
-      _oldState <- readIORef oldComponentsRef
-      let oldModel = (_oldState IM.! topLevelComponentId) ^. componentModel
-          initialVComp = vcomp { model = oldModel }
+          _oldState <- readIORef oldComponentsRef
+          let oldModel = (_oldState IM.! topLevelComponentId) ^. componentModel
+              initialVComp = vcomp { model = oldModel }
 
-      -- Overwrite new components state with old components state.
-      atomicWriteIORef components _oldState
+          -- Overwrite new components state with old components state.
+          atomicWriteIORef components _oldState
 
-      -- Perform initial draw, recovering the old model and the old context.
-      -- ('initComponent' seeds 'globalContext' with the context we pass it.)
-      initComponent events Draw True oldContext initialVComp
+          -- Perform initial draw, recovering the old model and the old context.
+          -- ('initComponent' seeds 'globalContext' with the context we pass it.)
+          initComponent events Draw True oldContext initialVComp key props (staticKey ptr)
 
-      -- Don't forget to flush (native mobile needs this too)
-      FFI.flush
+          -- Don't forget to flush (native mobile needs this too)
+          FFI.flush
 
-      -- Clear and set static ptr to use new state (new CAF state)
-      x_clear
-      x_store =<< newStablePtr (components, schedulerThread, globalContext :: IORef context)
-    else do
-      -- This means it is initial load, just store the pointer.
-      void (initComponent events Draw False initialContext vcomp)
-      x_store =<< newStablePtr (components, schedulerThread, globalContext :: IORef context)
+          -- Clear and set static ptr to use new state (new CAF state)
+          x_clear
+          x_store =<< newStablePtr (components, schedulerThread, globalContext :: IORef context)
+        else do
+          -- This means it is initial load, just store the pointer.
+          void (initComponent events Draw False initialContext vcomp key props (staticKey ptr))
+          x_store =<< newStablePtr (components, schedulerThread, globalContext :: IORef context)
 -----------------------------------------------------------------------------
 clearPage, clearBody, clearHead :: IO ()
 clearPage = clearBody >> clearHead
