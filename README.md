@@ -204,7 +204,7 @@ app :: App Int Action
 app = vcomp 0 updateModel viewModel
 ----------------------------------------------------------------------------
 -- | Updates model, optionally introduces side effects
-updateModel :: Action -> Effect parent props Int Action
+updateModel :: Action -> Effect context props Int Action
 updateModel = \case
   AddOne -> this += 1
   SubtractOne -> this -= 1
@@ -213,8 +213,8 @@ updateModel = \case
     consoleLog "Hello World"
 ----------------------------------------------------------------------------
 -- | Constructs a virtual DOM from a model
-viewModel :: () -> Int -> View Int Action
-viewModel _props x = vfrag
+viewModel :: context -> props -> Int -> View context Action
+viewModel _context _props x = vfrag
     [ H.button_ [ H.onClick AddOne ] [ text "+" ]
     , text (ms x)
     , H.button_ [ H.onClick SubtractOne ] [ text "-" ]

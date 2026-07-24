@@ -128,9 +128,9 @@
 --          * - The type of the global @context@
 --          |     * - The type of the @props@ inherited from the parent 'Component'
 --          |     |      * - The type of the current 'Component' 'model'
---          |     |      |              * - The global @context@ threaded into the 'View' (@'View' context action@)
---          |     |      |              |  * - The type of the action that updates 'Component' 'model'
---          |     |      |              |  |
+--          |     |      |           * - The global @context@ threaded into the 'View' (@'View' context action@)
+--          |     |      |           |  * - The type of the action that updates 'Component' 'model'
+--          |     |      |           |  |
 --     v :: () -> () -> 'Int' -> 'View' () Action
 --     v _context _props x = 'vfrag'
 --       [ H.'Miso.Html.Element.button_' [ HE.'Miso.Html.Event.onClick' Add, HP.'Miso.Html.Property.id_' "add" ] [ "+" ]
@@ -406,8 +406,8 @@
 --   Highlight domRef -> 'io_' $ do
 --     ['Miso.FFI.QQ.js'| hljs.highlight(${domRef}) |]
 --
--- view :: props -> model -> 'View' Action
--- view _ x =
+-- view :: context -> props -> model -> 'View' context Action
+-- view _ _ x =
 --   'Miso.Html.Element.code_'
 --   [ 'onCreatedWith' Highlight
 --   ]
@@ -480,7 +480,7 @@
 --
 -- data Item = Item { itemId, itemLabel :: 'MisoString' }
 --
--- renderItem :: Item -> 'View' Action
+-- renderItem :: Item -> 'View' context Action
 -- renderItem item = 'Miso.Html.Element.li_' [] [ 'textKey' (itemId item) (itemLabel item) ]
 -- @
 --
@@ -724,9 +724,10 @@
 --
 -- = 'Component' communication
 --
--- @miso@ provides three mechanisms for 'Component' to exchange data:
+-- @miso@ provides four mechanisms for 'Component' to exchange data:
 --
 -- * __Props__ — synchronous, parent-to-child read-only data passed at mount time (see below). Props are updated in the child in response to parent changes.
+-- * __Context__ — global data shared by the entire tree (see /The global @context@/ above); any 'Component' can mutate it via 'Miso.Effect.modifyContext' \/ 'Miso.Effect.putContext', and read it via 'Miso.Effect.getContext'. Set @'Miso.Types.useContext' = True@ (or use 'Miso.Types.mountUseContext') on a 'Component' to have it re-render whenever @context@ changes.
 -- * __Async mailbox__ — message-passing via 'mail', 'broadcast', 'checkMail'; any 'Component' can send a t'Miso.JSON.Value' to any other by 'ComponentId'.
 -- * __PubSub__ ("Miso.PubSub") — publish\/subscribe for fan-out messaging across unrelated 'Component'.
 --
@@ -772,8 +773,8 @@
 -- Top-level applications have no parent, so @props@ is always @()@:
 --
 -- @
--- view :: () -> model -> 'View' model action
--- view _props model = …
+-- view :: () -> () -> model -> 'View' () action
+-- view _context _props model = …
 -- @
 --
 -- === Props in 'Effect' \/ 'Miso.Types.update'
@@ -1159,9 +1160,9 @@
 -- @
 -- import Servant.Miso.Html (HTML)
 --
--- type Home    = \"home\"    :\> Get '[HTML] ('Component' model action)
--- type About   = \"about\"   :\> Get '[HTML] ('View' model action)
--- type Contact = \"contact\" :\> Get '[HTML] ['View' model action]
+-- type Home    = \"home\"    :\> Get '[HTML] ('Component' context props model action)
+-- type About   = \"about\"   :\> Get '[HTML] ('View' context action)
+-- type Contact = \"contact\" :\> Get '[HTML] ['View' context action]
 -- type API = Home :\<|\> About :\<|\> Contact
 -- @
 --
@@ -1627,8 +1628,8 @@
 -- in a @\<script\>@ tag alongside the rendered HTML:
 --
 -- @
--- serverView :: Model -> 'View' Action
--- serverView m =
+-- serverView :: context -> props -> Model -> 'View' context Action
+-- serverView _ _ m =
 --   'Miso.Html.Element.div_' []
 --     [ 'Miso.Html.Element.script_' [] [ 'textRaw' ("window.__initialModel__ = " \<\> 'Miso.JSON.encode' m) ]
 --     , appView m
