@@ -10,8 +10,10 @@
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
 module Miso.Native.Element.Frame
-  ( module Miso.Native.Element.Frame.Property
+  ( module Miso.Native.Element.Frame.Event
+  , module Miso.Native.Element.Frame.Property
   ) where
 -----------------------------------------------------------------------------
+import Miso.Native.Element.Frame.Event
 import Miso.Native.Element.Frame.Property
 -----------------------------------------------------------------------------

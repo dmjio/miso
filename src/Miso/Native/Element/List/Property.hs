@@ -44,6 +44,10 @@ module Miso.Native.Element.List.Property
   , reuseIdentifier_
   , fullSpan_
   , estimatedMainAxisSizePx_
+  , recyclable_
+  , updateAnimation_
+  , harmonyScrollEdgeEffect_
+  , experimentalRecycleStickyItem_
   ) where
 -----------------------------------------------------------------------------
 import Miso.JSON
@@ -195,7 +199,7 @@ initialScrollIndex_ = intProp "initial-scroll-index"
 -- Default value: 'False'
 --
 needVisibleItemInfo_ :: Bool -> Attribute action
-needVisibleItemInfo_ = boolProp "sticky-bottom"
+needVisibleItemInfo_ = boolProp "need-visible-item-info"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/list.html#upper-threshold-item-count
 -- 
@@ -313,4 +317,50 @@ fullSpan_ = boolProp "full-span"
 --
 estimatedMainAxisSizePx_ :: Int -> Attribute action
 estimatedMainAxisSizePx_ = intProp "estimated-main-axis-size-px"
+-----------------------------------------------------------------------------
+-- | https://lynxjs.org/api/elements/built-in/list.html#recyclable
+--
+-- Declared on the \<list-item\> node to control whether the node can be recycled.
+--
+-- > recyclable_ False
+--
+-- Default Value: 'True'
+--
+recyclable_ :: Bool -> Attribute action
+recyclable_ = boolProp "recyclable"
+-----------------------------------------------------------------------------
+-- | https://lynxjs.org/api/elements/built-in/list.html#update-animation
+--
+-- Controls the animation behavior during data source updates.
+-- One of @\"default\"@ | @\"none\"@.
+--
+-- > updateAnimation_ "none"
+--
+updateAnimation_ :: MisoString -> Attribute action
+updateAnimation_ = textProp "update-animation"
+-----------------------------------------------------------------------------
+-- | https://lynxjs.org/api/elements/built-in/list.html#harmony-scroll-edge-effect
+--
+-- *Harmony* only
+--
+-- When the contentSize is smaller than its own container size, sets whether
+-- to enable the scroll (edge) effect.
+--
+-- > harmonyScrollEdgeEffect_ False
+--
+-- Default Value: 'True'
+--
+harmonyScrollEdgeEffect_ :: Bool -> Attribute action
+harmonyScrollEdgeEffect_ = boolProp "harmony-scroll-edge-effect"
+-----------------------------------------------------------------------------
+-- | https://lynxjs.org/api/elements/built-in/list.html#experimental-recycle-sticky-item
+--
+-- Enables recycling of sticky nodes when they are pushed out of the view area.
+--
+-- > experimentalRecycleStickyItem_ False
+--
+-- Default Value: 'True'
+--
+experimentalRecycleStickyItem_ :: Bool -> Attribute action
+experimentalRecycleStickyItem_ = boolProp "experimental-recycle-sticky-item"
 -----------------------------------------------------------------------------

@@ -34,7 +34,7 @@ import           Miso.Property
 --
 -- Specifies the image cropping/scaling mode
 --
--- > mode_ "https://<your-domain-here>/image.png"
+-- > mode_ "aspectFit"
 --
 -- Default Value: "scaleToFill"
 --
@@ -77,9 +77,9 @@ prefetchWidth_ = textProp "prefetch-width"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/image.html#prefetch-widthprefetch-height
 --
--- Allows initiating a request when the image has a `height` / `height` of 0. This is
+-- Allows initiating a request when the image has a `width` / `height` of 0. This is
 -- typically used when preloading images. It's recommended to set the sizes
--- to match the actual layout `height` / `height`.
+-- to match the actual layout `width` / `height`.
 --
 -- > prefetchHeight_ "10px"
 --
@@ -162,16 +162,17 @@ autoSize_ = boolProp "auto-size"
 deferSrcInvalidation_ :: Bool -> Attribute action
 deferSrcInvalidation_ = boolProp "defer-src-invalidation"
 -----------------------------------------------------------------------------
--- | https://lynxjs.org/api/elements/built-in/image.html#auto-play
+-- | https://lynxjs.org/api/elements/built-in/image.html#autoplay
 --
--- Specifies the number of times to play an animated image. The default is to loop indefinitely.
+-- Specifies whether the animated image should start playing automatically once
+-- it is loaded.
 --
 -- > autoPlay_ False
 --
 -- Default Value: 'True'
 --
 autoPlay_ :: Bool -> Attribute action
-autoPlay_ = boolProp "auto-play"
+autoPlay_ = boolProp "autoplay"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/image.html#tint-color
 --

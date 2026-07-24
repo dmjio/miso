@@ -27,6 +27,7 @@ module Miso.Native.Element.View.Property
   , exposeScreenMarginRight_
   , exposureArea_
   , enableExposureUIMargin_
+  , enableExposureUIClip_
   , accessibilityElement_
   , accessibilityLabel_
   , accessibilityTrait_
@@ -38,9 +39,12 @@ module Miso.Native.Element.View.Property
   , iosPlatformAccessibilityId_
   , userInteractionEnabled_
   , nativeInteractionEnabled_
+  , panInterceptDirection_
+  , panInterceptScope_
   , blockNativeEvent_
   , blockNativeEventAreas_
   , consumeSlideEvent_
+  , eventThroughActiveRegions_
   , enableTouchPseudoPropagation_
   , hitSlop_
   , ignoreFocus_
@@ -77,7 +81,7 @@ name_ = textProp "name"
 -- > className_ "foo"
 --
 className_ :: MisoString -> Attribute action
-className_ = textProp "className_"
+className_ = textProp "className"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#flatten
 --
@@ -161,7 +165,7 @@ exposeUIMarginLeft_ = textProp "exposure-ui-margin-left"
 --
 -----------------------------------------------------------------------------
 exposeUIMarginRight_ :: MisoString -> Attribute action
-exposeUIMarginRight_ = textProp "exposure-screen-margin-right"
+exposeUIMarginRight_ = textProp "exposure-ui-margin-right"
 -- | https://lynxjs.org/api/elements/built-in/view.html#exposure-screen-margin-
 --
 -- Specify the boundary scaling value of the target node itself in the exposure
@@ -242,6 +246,18 @@ exposureArea_ = textProp "exposure-area"
 enableExposureUIMargin_ :: Bool -> Attribute action
 enableExposureUIMargin_ = boolProp "enable-exposure-ui-margin"
 -----------------------------------------------------------------------------
+-- | https://lynxjs.org/api/elements/built-in/view.html#enable-exposure-ui-clip
+--
+-- Specify whether the exposure detection task takes into account the viewport
+-- clipping of the parent node.
+--
+-- > enableExposureUIClip_ True
+--
+-- Default Value: 'False'
+--
+enableExposureUIClip_ :: Bool -> Attribute action
+enableExposureUIClip_ = boolProp "enable-exposure-ui-clip"
+-----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#accessibility-element
 --
 -- Set whether the node supports accessibility.
@@ -303,7 +319,7 @@ accessibilityElementsA11y_ = textProp "accessibility-elements-a11y"
 -- Default Value: 'True'
 --
 accessibilityElementsHidden_ :: Bool -> Attribute action
-accessibilityElementsHidden_ = boolProp "accessibilityElementsHidden_"
+accessibilityElementsHidden_ = boolProp "accessibility-elements-hidden"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#accessibility-exclusive-focus
 --
@@ -362,6 +378,29 @@ userInteractionEnabled_ = boolProp "user-interaction-enabled"
 nativeInteractionEnabled_ :: Bool -> Attribute action
 nativeInteractionEnabled_ = boolProp "native-interaction-enabled"
 -----------------------------------------------------------------------------
+-- | https://lynxjs.org/api/elements/built-in/view.html#pan-intercept-direction
+--
+-- Specify which direction to block platform-layer swipe gestures.
+--
+-- > panInterceptDirection_ "horizontal"
+--
+-- Default Value: "none"
+--
+panInterceptDirection_ :: MisoString -> Attribute action
+panInterceptDirection_ = textProp "pan-intercept-direction"
+-----------------------------------------------------------------------------
+-- | https://lynxjs.org/api/elements/built-in/view.html#pan-intercept-scope
+--
+-- Specify the scope within which platform-layer swipe gestures in a particular
+-- direction will be blocked.
+--
+-- > panInterceptScope_ "none"
+--
+-- Default Value: "none"
+--
+panInterceptScope_ :: MisoString -> Attribute action
+panInterceptScope_ = textProp "pan-intercept-scope"
+-----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#block-native-event
 --
 -- Specify whether to block platform layer gestures outside Lynx when the
@@ -413,6 +452,18 @@ consumeSlideEvent_ = prop "consume-slide-event"
 --
 eventThrough_ :: Bool -> Attribute action
 eventThrough_ = boolProp "event-through"
+-----------------------------------------------------------------------------
+-- | https://lynxjs.org/api/elements/built-in/view.html#event-through-active-regions
+--
+-- Specify the effective area for 'eventThrough_' functionality, given as a list
+-- of @[x, y, width, height]@ rectangles (values in px or %).
+--
+-- > eventThroughActiveRegions_ [[0,0,100,100]]
+--
+-- Default Value: []
+--
+eventThroughActiveRegions_ :: [[Double]] -> Attribute action
+eventThroughActiveRegions_ = prop "event-through-active-regions"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#enable-touch-pseudo-propagation
 --

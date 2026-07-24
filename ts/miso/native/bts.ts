@@ -11,29 +11,4 @@
 
 export function bts () {
   'background only'
-
-  /* invoke exec */
-  globalThis['invokeExec'] = function
-    ( selector: string,
-      method: string,
-      params: Object,
-      success: (result: any) => void,
-      fail: (result: string) => void
-    ) {
-
-   /* Set arguments Object */
-   const args = {
-     params,
-     method,
-     success,
-     fail
-   };
-
-   /* Invoke Exec */
-   return lynx.createSelectorQuery()
-       .select(selector)
-       .invoke(args as any)
-       .exec();
-    }
-
 }

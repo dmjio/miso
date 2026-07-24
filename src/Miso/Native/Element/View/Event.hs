@@ -236,10 +236,10 @@ onTouchStart action = on "touchstart" touchDecoder (\x _ -> action x)
 -- @
 -- data Action = HandleTouch TouchEvent
 --
--- view :: Model -> View Model Action
--- view model = view_ [ onTouchMove HandleTouch ]
+-- view :: context -> props -> Model -> View context Action
+-- view _ _ model = view_ [ onTouchMove HandleTouch ]
 --
--- update :: Action -> Effect props Model Action
+-- update :: Action -> Effect context props Model Action
 -- update (HandleTouch TouchEvent {..}) = do
 --   io_ (consoleLog "touch event received")
 --
@@ -256,10 +256,10 @@ onTouchMove action = on "touchmove" touchDecoder (\x _ -> action x)
 -- @
 -- data Action = HandleTouch TouchEvent
 --
--- view :: Model -> View Model Action
--- view model = view_ [ onTouchEnd HandleTouch ]
+-- view :: context -> props -> Model -> View context Action
+-- view _ _ model = view_ [ onTouchEnd HandleTouch ]
 --
--- update :: Action -> Effect props Model Action
+-- update :: Action -> Effect context props Model Action
 -- update (HandleTouch TouchEvent {..}) = do
 --   io_ (consoleLog "touch event received")
 --
@@ -277,11 +277,11 @@ onTouchEnd action = on "touchend" touchDecoder (\x _ -> action x)
 -- @
 -- data Action = HandleTouch TouchEvent
 --
--- view :: Model -> View Model Action
--- view model = view_ [ onTouchCancel HandleTouch ]
+-- view :: context -> props -> Model -> View context Action
+-- view _ _ model = view_ [ onTouchCancel HandleTouch ]
 --
--- update :: Action -> Effect props Model Action
--- update (HandleTouch TouchEvent {..}) = do
+-- update :: Action -> Effect context props Model Action
+-- update (HandleTouch TouchEvent {..}) =
 --   io_ (consoleLog "touch event received")
 --
 -- @
@@ -297,12 +297,11 @@ onTouchCancel action = on "touchcancel" touchDecoder (\x _ -> action x)
 -- @
 -- data Action = HandleTap
 --
--- view :: Model -> View Model Action
+-- view :: context -> props -> Model -> View context Action
 -- view model = view_ [ onTap HandleTap ]
 --
--- update :: Action -> Effect props Model Action
--- update HandleTap = do
---   io_ (consoleLog "touch event received")
+-- update :: Action -> Effect context props Model Action
+-- update HandleTap = io_ (consoleLog "touch event received")
 --
 -- @
 --
@@ -317,12 +316,11 @@ onTap action = on "tap" emptyDecoder (\() _ -> action)
 -- @
 -- data Action = HandleTouch TouchEvent
 --
--- view :: Model -> View Model Action
+-- view :: context -> props -> Model -> View context Action
 -- view model = view_ [ onLongPress HandleTouch ]
 --
--- update :: Action -> Effect props Model Action
--- update (HandleTouch TouchEvent {..}) = do
---   io_ (consoleLog "touch event received")
+-- update :: Action -> Effect context props Model Action
+-- update (HandleTouch TouchEvent {..}) = io_ (consoleLog "touch event received")
 --
 -- @
 --
@@ -338,11 +336,11 @@ onLongPress action = on "longpress" touchDecoder (\x _ -> action x)
 -- @
 -- data Action = HandleLayout LayoutChangeDetailEvent
 --
--- view :: Model -> View Model Action
--- view model = view_ [ onLayoutChange HandleLayout ]
+-- view :: context -> props -> Model -> View context Action
+-- view _ _ model = view_ [ onLayoutChange HandleLayout ]
 --
--- update :: Action -> Effect props Model Action
--- update (HandleLayout LayoutChangeDetailEvent {..}) = do
+-- update :: Action -> Effect context props Model Action
+-- update (HandleLayout LayoutChangeDetailEvent {..}) =
 --   io_ (consoleLog "layout changed")
 -- @
 --
@@ -356,10 +354,10 @@ onLayoutChange action = on "layoutchange" layoutChangeDetailDecoder (\x _ -> act
 -- @
 -- data Action = HandleUI UIAppearanceDetailEvent
 --
--- view :: Model -> View Model Action
--- view model = view_ [ onAppear HandleUI ]
+-- view :: context -> props -> Model -> View context Action
+-- view _ _ model = view_ [ onAppear HandleUI ]
 --
--- update :: Action -> Effect props Model Action
+-- update :: Action -> Effect context props Model Action
 -- update (HandleUI UIAppearanceDetailEvent {..}) = do
 --   io_ (consoleLog "appearance detail event received")
 -- @
@@ -374,8 +372,8 @@ onAppear action = on "uiappear" uiAppearanceDetailDecoder (\x _ -> action x)
 -- @
 -- data Action = HandleUI UIAppearanceDetailEvent
 --
--- view :: Model -> View Model Action
--- view model = view_ [ onDisappear HandleUI ]
+-- view :: context -> props -> Model -> View context Action
+-- view _ _ model = view_ [ onDisappear HandleUI ]
 --
 -- update :: Action -> Effect props Model Action
 -- update (HandleUI UIAppearanceDetailEvent {..}) = do
@@ -392,11 +390,11 @@ onDisappear action = on "uidisappear" uiAppearanceDetailDecoder (\x _ -> action 
 -- @
 -- data Action = HandleAnimation AnimationEvent
 --
--- view :: Model -> View Model Action
--- view model = view_ [ onAnimationStart HandleAnimation ]
+-- view :: context -> props -> Model -> View context Action
+-- view _ _ model = view_ [ onAnimationStart HandleAnimation ]
 --
--- update :: Action -> Effect props Model Action
--- update (HandleAnimation AnimationEvent {..}) = do
+-- update :: Action -> Effect context props Model Action
+-- update (HandleAnimation AnimationEvent {..}) =
 --   io_ (consoleLog "animation event received")
 -- @
 --
@@ -410,11 +408,11 @@ onAnimationStart action = on "animationstart" animationDecoder $ (\x _ -> action
 -- @
 -- data Action = HandleAnimation AnimationEvent
 --
--- view :: Model -> View Model Action
+-- view :: context -> props -> Model -> View context Action
 -- view model = view_ [ onAnimationEnd HandleAnimation ]
 --
--- update :: Action -> Effect props Model Action
--- update (HandleAnimation AnimationEvent {..}) = do
+-- update :: Action -> Effect context props Model Action
+-- update (HandleAnimation AnimationEvent {..}) =
 --   io_ (consoleLog "animation event received")
 -- @
 --
@@ -428,11 +426,11 @@ onAnimationEnd action = on "animationend" animationDecoder (\x _ -> action x)
 -- @
 -- data Action = HandleAnimation AnimationEvent
 --
--- view :: Model -> View Model Action
--- view model = view_ [ onAnimationCancel HandleAnimation ]
+-- view :: context -> props -> Model -> View context Action
+-- view _ _ model = view_ [ onAnimationCancel HandleAnimation ]
 --
--- update :: Action -> Effect props Model Action
--- update (HandleAnimation AnimationEvent {..}) = do
+-- update :: Action -> Effect context props Model Action
+-- update (HandleAnimation AnimationEvent {..}) =
 --   io_ (consoleLog "animation event received")
 -- @
 --
@@ -446,11 +444,11 @@ onAnimationCancel action = on "animationcancel" animationDecoder (\x _ -> action
 -- @
 -- data Action = HandleAnimation AnimationEvent
 --
--- view :: Model -> View Model Action
--- view model = view_ [ onAnimationIteration HandleAnimation ]
+-- view :: context -> props -> Model -> View context Action
+-- view _ _ model = view_ [ onAnimationIteration HandleAnimation ]
 --
--- update :: Action -> Effect props Model Action
--- update (HandleAnimation AnimationEvent {..}) = do
+-- update :: Action -> Effect context props Model Action
+-- update (HandleAnimation AnimationEvent {..}) =
 --   io_ (consoleLog "animation event received")
 -- @
 --
@@ -464,11 +462,11 @@ onAnimationIteration action = on "animationiteration" animationDecoder (\x _ -> 
 -- @
 -- data Action = HandleTransition AnimationEvent
 --
--- view :: Model -> View Model Action
--- view model = view_ [ onTransitionStart HandleTransition ]
+-- view :: context -> props -> Model -> View context Action
+-- view _ _ model = view_ [ onTransitionStart HandleTransition ]
 --
--- update :: Action -> Effect props Model Action
--- update (HandleTransition TransitionEvent {..}) = do
+-- update :: Action -> Effect context props Model Action
+-- update (HandleTransition TransitionEvent {..}) =
 --   io_ (consoleLog "transition event received")
 -- @
 --
@@ -482,11 +480,11 @@ onTransitionStart action = on "transitionstart" animationDecoder (\x _ -> action
 -- @
 -- data Action = HandleTransition AnimationEvent
 --
--- view :: Model -> View Model Action
--- view model = view_ [ onTransitionEnd HandleTransition ]
+-- view :: context -> props -> Model -> View context Action
+-- view _ _ model = view_ [ onTransitionEnd HandleTransition ]
 --
--- update :: Action -> Effect props Model Action
--- update (HandleTransition TransitionEvent {..}) = do
+-- update :: Action -> Effect context props Model Action
+-- update (HandleTransition TransitionEvent {..}) =
 --   io_ (consoleLog "transition event received")
 -- @
 --
@@ -500,11 +498,11 @@ onTransitionEnd action = on "transitionend" animationDecoder (\x _ -> action x)
 -- @
 -- data Action = HandleTransition AnimationEvent
 --
--- view :: Model -> View Model Action
--- view model = view_ [ onTransitionCancel HandleTransition ]
+-- view :: context -> props -> Model -> View context Action
+-- view _ _ model = view_ [ onTransitionCancel HandleTransition ]
 --
--- update :: Action -> Effect props Model Action
--- update (HandleTransition TransitionEvent {..}) = do
+-- update :: Action -> Effect context props Model Action
+-- update (HandleTransition TransitionEvent {..}) =
 --   io_ (consoleLog "transition event received")
 -- @
 --

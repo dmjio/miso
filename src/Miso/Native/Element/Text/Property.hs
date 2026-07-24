@@ -34,7 +34,7 @@ import           Miso.Property
 -- Default Value: -1
 --
 textMaxLine_ :: Int -> Attribute action
-textMaxLine_ = intProp "text-max-line"
+textMaxLine_ = intProp "text-maxline"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/text.html#include-font-padding
 --

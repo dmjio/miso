@@ -47,8 +47,9 @@ listEvents
   [ ("scroll", BUBBLE)
   , ("scrolltoupper", BUBBLE)
   , ("scrolltolower", BUBBLE)
-  , ("scrollend", BUBBLE)
-  , ("contentsizechanged", BUBBLE)
+  , ("scrollstatechange", BUBBLE)
+  , ("layoutcomplete", BUBBLE)
+  , ("snap", BUBBLE)
   ]
 -----------------------------------------------------------------------------
 scrollDecoder :: Decoder ScrollEvent
@@ -244,8 +245,8 @@ layoutCompleteDecoder = ["detail"] `at` do
 --
 -- data Action = HandleScroll ScrollEvent
 --
--- view :: Model -> View Model Action
--- view model = list_ defaultListOptions [ onScroll HandleScroll ] [ ]
+-- view :: context -> props -> Model -> View context Action
+-- view _ _ model = list_ defaultListOptions [ onScroll HandleScroll ] [ ]
 --
 -- update :: Action -> Effect props Model Action
 -- update (HandleScroll ScrollEvent {..}) =
@@ -265,8 +266,8 @@ onScroll action = on "scroll" scrollDecoder (\x _ -> action x)
 --
 -- data Action = HandleScroll ScrollEvent
 --
--- view :: Model -> View Model Action
--- view model = list_ defaultListOptions [ onScrollToUpper HandleScroll ] [ ]
+-- view :: context -> props -> Model -> View context Action
+-- view _ _ model = list_ defaultListOptions [ onScrollToUpper HandleScroll ] [ ]
 --
 -- update :: Action -> Effect props Model Action
 -- update (HandleScroll ScrollEvent {..}) =
@@ -286,8 +287,8 @@ onScrollToUpper action = on "scrolltoupper" scrollDecoder (\x _ -> action x)
 --
 -- data Action = HandleScroll ScrollEvent
 --
--- view :: Model -> View Model Action
--- view model = list_ defaultListOptions [ onScrollToLower HandleScroll ] [ ]
+-- view :: context -> props -> Model -> View context Action
+-- view _ _ model = list_ defaultListOptions [ onScrollToLower HandleScroll ] [ ]
 --
 -- update :: Action -> Effect props Model Action
 -- update (HandleScroll ScrollEvent {..}) =
@@ -311,8 +312,8 @@ onScrollToLower action = on "scrolltolower" scrollDecoder (\x _ -> action x)
 --
 -- data Action = HandleScrollState ScrollStateChange
 --
--- view :: Model -> View Model Action
--- view model = list_ defaultListOptions [ onScrollStateChange HandleScrollState ] [ ]
+-- view :: context -> props -> Model -> View context Action
+-- view _ _ model = list_ defaultListOptions [ onScrollStateChange HandleScrollState ] [ ]
 --
 -- update :: Action -> Effect props Model Action
 -- update (HandleScroll Stationary) =
@@ -332,8 +333,8 @@ onScrollStateChange action = on "scrollstatechange" scrollStateDecoder (\x _ -> 
 --
 -- data Action = HandleLayout LayoutCompleteEvent
 --
--- view :: Model -> View Model Action
--- view model = list_ defaultListOptions [ onLayoutComplete HandleLayout ] [ ]
+-- view :: context -> props -> Model -> View context Action
+-- view _ _ model = list_ defaultListOptions [ onLayoutComplete HandleLayout ] [ ]
 --
 -- update :: Action -> Effect props Model Action
 -- update (HandleLayout LayoutCompleteEvent {..}) =
@@ -352,8 +353,8 @@ onLayoutComplete action = on "layoutcomplete" layoutCompleteDecoder (\x _ -> act
 --
 -- data Action = HandleSnap SnapEvent
 --
--- view :: Model -> View Model Action
--- view model = list_ defaultListOptions [ onSnap HandleSnap ] [ ]
+-- view :: context -> props -> Model -> View context Action
+-- view _ _ model = list_ defaultListOptions [ onSnap HandleSnap ] [ ]
 --
 -- update :: Action -> Effect props Model Action
 -- update (HandleSnap SnapEvent {..}) =

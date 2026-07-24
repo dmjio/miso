@@ -89,12 +89,13 @@ defaultBoundingClientRect
 --   | GetRect
 --
 -- update :: Action -> Effect props model Action
--- update GetRect =
---   boundingClientRect defaultBoundingClientRect "#box" Success Failure
--- update (Succes Rect {..}) =
---   consoleLog "Successfuly got Rect"
--- update (Failure errorMsg) =
---   consoleLog ("Failed to call getClientBoundingRect: " <> errorMsg)
+-- update = \\case
+--   GetRect ->
+--     boundingClientRect defaultBoundingClientRect "#box" Success Failure
+--   Succes Rect {..} ->
+--     consoleLog "Successfuly got Rect"
+--   Failure errorMsg ->
+--     consoleLog ("Failed to call getClientBoundingRect: " <> errorMsg)
 --
 -- @
 --
@@ -134,13 +135,14 @@ instance ToJSVal TakeScreenshot where
 --   | GetScreenshot
 --
 -- update :: Action -> Effect props model Action
--- update GetScreenshot = takeScreenshot
---   defaultTakeScreenshot "#my-view" Success Failure
--- update (Succes image) =
---   consoleLog "Successfuly got image"
---   consoleLog' image
--- update (Failure errorMsg) =
---   consoleLog ("Failed to call takeScreenshot: " <> errorMsg)
+-- update = \\case
+--   GetScreenshot ->
+--     takeScreenshot defaultTakeScreenshot "#my-view" Success Failure
+--   Succes image -> do
+--     consoleLog "Successfuly got image"
+--     consoleLog' image
+--   Failure errorMsg ->
+--     consoleLog ("Failed to call takeScreenshot: " <> errorMsg)
 --
 -- @
 --
@@ -172,10 +174,11 @@ defaultTakeScreenshot
 --   | GetFocus
 --
 -- update :: Action -> Effect props model Action
--- update GetFocus = requestAccessibilityFocus "#my-view" Success Failure
--- update Success = consoleLog "Successfuly got focus"
--- update (Failure errorMsg) =
---   consoleLog ("Failed to call requestAccessibilityFocus: " <> errorMsg)
+-- update = \\case
+--   GetFocus -> requestAccessibilityFocus "#my-view" Success Failure
+--   Success -> consoleLog "Successfuly got focus"
+--   Failure errorMsg ->
+--     consoleLog ("Failed to call requestAccessibilityFocus: " <> errorMsg)
 --
 -- @
 --

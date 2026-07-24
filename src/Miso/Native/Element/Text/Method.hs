@@ -54,9 +54,10 @@ instance ToJSVal SetTextSelection where
 -- data Action = SetText | TextSet | SetTextError MisoString
 --
 -- update :: Action -> Effect props model Action
--- update SetText = setTextSelection "someImageId" SetText SetTextError
--- update TextSet = io_ (consoleLog "text was set")
--- update (SetTextError e) = io_ (consoleLog e)
+-- update = \\case
+--   SetText -> setTextSelection "someImageId" SetText SetTextError
+--   TextSet -> io_ (consoleLog "text was set")
+--   SetTextError e -> io_ (consoleLog e)
 --
 -- @
 --
@@ -94,9 +95,10 @@ defaultGetTextBoundingRect = GetTextBoundingRect 0 0
 -- data Action = RectReceived Rect | GetRect | GotError MisoString
 --
 -- update :: Action -> Effect props model Action
--- update GetRect = getTextBoundingRect "#box" defaultGetTextBoundingRect RectReceived GotError
--- update (RectReceived rect) = io_ $ consoleLog ("got rect")
--- update (GotError errMsg) = io_ (consoleLog errMsg)
+-- update = \\case
+--   GetRect -> getTextBoundingRect "#box" defaultGetTextBoundingRect RectReceived GotError
+--   RectReceived rect -> io_ $ consoleLog ("got rect")
+--   GotError errMsg -> io_ (consoleLog errMsg)
 --
 -- @
 --
@@ -117,9 +119,10 @@ getTextBoundingRect = invokeExec "getTextBoundingRect"
 -- data Action = TextReceived MisoString | GetText | GotError MisoString
 --
 -- update :: Action -> Effect props model Action
--- update GetText = getSelectedText "#box" TextReceived GotError
--- update (TextReceived txt) = io_ (consoleLog ("got text: " <> txt))
--- update (GotError errMsg) = io_ (consoleLog errMsg)
+-- update = \\case
+--   GetText -> getSelectedText "#box" TextReceived GotError
+--   TextReceived txt -> io_ (consoleLog ("got text: " <> txt))
+--   GotError errMsg -> io_ (consoleLog errMsg)
 --
 -- @
 --

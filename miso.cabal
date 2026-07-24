@@ -195,6 +195,7 @@ library
       Miso.Native
       Miso.Native.Element
       Miso.Native.Element.Frame
+      Miso.Native.Element.Frame.Event
       Miso.Native.Element.Frame.Property
       Miso.Native.Element.Image
       Miso.Native.Element.Image.Event
@@ -219,6 +220,41 @@ library
       Miso.Native.Event
       Miso.Native.FFI
       Miso.Native.Module
+      Miso.Native.X.Element
+      Miso.Native.X.Element.BlurView
+      Miso.Native.X.Element.BlurView.Property
+      Miso.Native.X.Element.Input
+      Miso.Native.X.Element.Input.Event
+      Miso.Native.X.Element.Input.Method
+      Miso.Native.X.Element.Input.Property
+      Miso.Native.X.Element.Overlay
+      Miso.Native.X.Element.Overlay.Event
+      Miso.Native.X.Element.Overlay.Property
+      Miso.Native.X.Element.Refresh
+      Miso.Native.X.Element.Refresh.Event
+      Miso.Native.X.Element.Refresh.Method
+      Miso.Native.X.Element.Refresh.Property
+      Miso.Native.X.Element.ScrollCoordinator
+      Miso.Native.X.Element.ScrollCoordinator.Event
+      Miso.Native.X.Element.ScrollCoordinator.Method
+      Miso.Native.X.Element.ScrollCoordinator.Property
+      Miso.Native.X.Element.Svg
+      Miso.Native.X.Element.Svg.Event
+      Miso.Native.X.Element.Svg.Property
+      Miso.Native.X.Element.Textarea
+      Miso.Native.X.Element.Textarea.Event
+      Miso.Native.X.Element.Textarea.Method
+      Miso.Native.X.Element.Textarea.Property
+      Miso.Native.X.Element.TitleBarView
+      Miso.Native.X.Element.TitleBarView.Property
+      Miso.Native.X.Element.Viewpager
+      Miso.Native.X.Element.Viewpager.Event
+      Miso.Native.X.Element.Viewpager.Method
+      Miso.Native.X.Element.Viewpager.Property
+      Miso.Native.X.Element.Webview
+      Miso.Native.X.Element.Webview.Event
+      Miso.Native.X.Element.Webview.Method
+      Miso.Native.X.Element.Webview.Property
 
   -- Live reload (meant for WASM or Vanilla)
   c-sources:

@@ -106,6 +106,26 @@ globalThis['miso'] = {
   }
 };
 
+/* Shared Lynx interop: bound on globalThis for both threads (MTS + BTS).
+   `invokeExec` calls a UI method on a selected element via SelectorQuery and
+   returns the result (or error) through callbacks. The element `Method`
+   bindings (Miso.Native.Element.*.Method) use it regardless of which thread
+   the triggering `update` runs on; callers pick the thread via Haskell's
+   `runOnBG` / `runOnMain`. */
+globalThis['invokeExec'] = function
+  ( selector: string,
+    method: string,
+    params: Object,
+    success: (result: any) => void,
+    fail: (result: string) => void
+  ) {
+   const args = { params, method, success, fail };
+   return lynx.createSelectorQuery()
+       .select(selector)
+       .invoke(args as any)
+       .exec();
+};
+
 if (__BACKGROUND__) {
   globalThis['lynx'] = lynx;
   globalThis['patches'] = [];

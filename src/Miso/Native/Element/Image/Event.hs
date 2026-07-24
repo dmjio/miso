@@ -13,6 +13,9 @@ module Miso.Native.Element.Image.Event
   ( -- *** Events
     onLoad
   , onError
+  , onStartPlay
+  , onCurrentLoopComplete
+  , onFinalLoopComplete
   -- *** Decoder
   , imageLoadDecoder
   , imageErrorDecoder
@@ -35,6 +38,9 @@ imageEvents
   = M.fromList
   [ ("load", BUBBLE)
   , ("error", BUBBLE)
+  , ("startplay", BUBBLE)
+  , ("currentloopcomplete", BUBBLE)
+  , ("finalloopcomplete", BUBBLE)
   ]
 ----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/image.html#bindload
@@ -45,17 +51,17 @@ imageEvents
 --
 -- data Action = HandleImageLoad ImageLoadEvent
 --
--- view :: Model -> View Model Action
+-- view :: context -> props -> Model -> View context Action
 -- view model = image_ "url" [ onLoad HandleImageLoad ]
 --
--- update :: Action -> Effect props Model Action
+-- update :: Action -> Effect context props Model Action
 -- update (HandleImageLoad ImageLoadEvent {..}) = do
 --   io_ (consoleLog "image load event received")
 --
 -- @
 --
 onLoad :: (ImageLoadEvent -> action) -> Attribute action
-onLoad action = on "bindload" imageLoadDecoder (\e _ -> action e)
+onLoad action = on "load" imageLoadDecoder (\e _ -> action e)
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/image.html#binderror
 --
@@ -65,17 +71,65 @@ onLoad action = on "bindload" imageLoadDecoder (\e _ -> action e)
 --
 -- data Action = HandleImageError ImageErrorEvent
 --
--- view :: Model -> View Model Action
--- view model = image_ "url" [ onError HandleImageError ]
+-- view :: context -> props -> Model -> View context Action
+-- view _ _ model = image_ "url" [ onError HandleImageError ]
 --
--- update :: Action -> Effect props Model Action
+-- update :: Action -> Effect context props Model Action
 -- update (HandleImageError ImageErrorEvent {..}) = do
 --   io_ (consoleLog "image error event received")
 --
 -- @
 --
 onError :: (ImageErrorEvent -> action) -> Attribute action
-onError action = on "binderror" imageErrorDecoder (\e _ -> action e)
+onError action = on "error" imageErrorDecoder (\e _ -> action e)
+-----------------------------------------------------------------------------
+-- | https://lynxjs.org/api/elements/built-in/image.html#bindstartplay
+--
+-- Triggered when the animated image starts playing.
+--
+-- @
+--
+-- data Action = HandleStartPlay
+--
+-- view :: context -> props -> Model -> View context Action
+-- view _ _ model = image_ "url" [ onStartPlay HandleStartPlay ]
+--
+-- @
+--
+onStartPlay :: action -> Attribute action
+onStartPlay action = on "startplay" emptyDecoder (\() _ -> action)
+-----------------------------------------------------------------------------
+-- | https://lynxjs.org/api/elements/built-in/image.html#bindcurrentloopcomplete
+--
+-- Triggered when one loop of the animated image finishes playing.
+--
+-- @
+--
+-- data Action = HandleCurrentLoopComplete
+--
+-- view :: context -> props -> Model -> View context Action
+-- view _ _ model = image_ "url" [ onCurrentLoopComplete HandleCurrentLoopComplete ]
+--
+-- @
+--
+onCurrentLoopComplete :: action -> Attribute action
+onCurrentLoopComplete action = on "currentloopcomplete" emptyDecoder (\() _ -> action)
+-----------------------------------------------------------------------------
+-- | https://lynxjs.org/api/elements/built-in/image.html#bindfinalloopcomplete
+--
+-- Triggered when the animated image finishes playing all 'loopCount_' loops.
+--
+-- @
+--
+-- data Action = HandleFinalLoopComplete
+--
+-- view :: context -> props -> Model -> View context Action
+-- view _ _ model = image_ "url" [ onFinalLoopComplete HandleFinalLoopComplete ]
+--
+-- @
+--
+onFinalLoopComplete :: action -> Attribute action
+onFinalLoopComplete action = on "finalloopcomplete" emptyDecoder (\() _ -> action)
 -----------------------------------------------------------------------------
 -- | Callback when an 'image_' fails to load
 data ImageErrorEvent

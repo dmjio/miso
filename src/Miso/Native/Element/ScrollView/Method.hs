@@ -16,11 +16,13 @@ module Miso.Native.Element.ScrollView.Method
   , autoScroll
   , scrollIntoView
   , scrollBy
+  , getScrollInfo
   -- *** Types
   , ScrollTo (..)
   , AutoScroll (..)
   , ScrollIntoView (..)
   , ScrollBy (..)
+  , ScrollInfo (..)
   -- *** Smart constructors
   , defaultScrollTo
   , defaultAutoScroll
@@ -140,4 +142,47 @@ scrollBy
   -> (MisoString -> action)
   -> Effect context props model action
 scrollBy = invokeExec "scrollBy"
+-----------------------------------------------------------------------------
+-- | Result of calling 'getScrollInfo'
+data ScrollInfo
+  = ScrollInfo
+  { scrollRange :: Double
+    -- ^ Total scrollable range along the orientation, in PX
+  , scrollX :: Double
+    -- ^ Content offset on the X-axis, in PX
+  , scrollY :: Double
+    -- ^ Content offset on the Y-axis, in PX
+  } deriving (Show, Eq)
+-----------------------------------------------------------------------------
+instance FromJSVal ScrollInfo where
+  fromJSVal = \o -> do
+    let readProp = \name ->
+          fromJSValUnchecked =<< o ! (name :: MisoString)
+    scrollRange <- readProp "scrollRange"
+    scrollX     <- readProp "scrollX"
+    scrollY     <- readProp "scrollY"
+    pure $ Just ScrollInfo {..}
+-----------------------------------------------------------------------------
+-- | https://lynxjs.org/api/elements/built-in/scroll-view.html#getscrollinfo
+--
+-- Retrieves the current scroll information of the \<scroll-view\>.
+--
+-- @
+--
+-- data Action = GetInfo | InfoReceived ScrollInfo | GotError MisoString
+--
+-- update :: Action -> Effect props model Action
+-- update = \\case
+--   GetInfo -> getScrollInfo "#box" InfoReceived GotError
+--   InfoReceived ScrollInfo {..} -> io_ (consoleLog "got scroll info")
+--   GotError errMsg -> io_ (consoleLog errMsg)
+--
+-- @
+--
+getScrollInfo
+  :: MisoString
+  -> (ScrollInfo -> action)
+  -> (MisoString -> action)
+  -> Effect context props model action
+getScrollInfo selector = invokeExec "getScrollInfo" selector ()
 -----------------------------------------------------------------------------

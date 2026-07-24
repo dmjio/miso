@@ -1978,7 +1978,6 @@ initComponent events hydrate live initialContext vcomp_@Component {..} key props
 #ifdef NATIVE
         when bts $ do
           effectListener proxy =<< getMTSContext
-          FFI.consoleLog "posting READY message"
           postComponent READY sk topLevelComponentId rootComponentId Nothing
         when mts $ do
           effectListener proxy =<< getBTSContext
@@ -1996,22 +1995,15 @@ initComponent events hydrate live initialContext vcomp_@Component {..} key props
 #ifdef NATIVE
 effectListener :: forall context jsval . ToJSVal jsval => Proxy context -> jsval -> IO ()
 effectListener Proxy jsval = void $ do
-  FFI.consoleLog "is context null?"
-  FFI.consoleLog $ ms $ show ("mts" :: String, mts, "bts" :: String, bts)
   ctx <- toJSVal jsval
-  FFI.consoleLog' ctx
   FFI.addEventListener ctx "Miso.effects" $ \msgEvent ->
     flip catch (\(e :: SomeException) ->
         FFI.consoleError ("effectListener: exception in callback: " <> ms (show e))) $ do
-      FFI.consoleLog $ ms $ show
-        ("effectListener FIRED" :: String, "mts" :: String, mts, "bts" :: String, bts)
       msg <- Object msgEvent ! "data"
       EFFECT {..} <- fromJSValUnchecked msg :: IO EFFECT
-      FFI.consoleLog $ ms $ show
-        ("  effectListener: decoded EFFECT, componentId=" :: String, effectComponentId)
       unsafeLookupStaticPtr effectStaticKey >>= \case
         Nothing ->
-          FFI.consoleError "  effectListener: staticPtr NOT found for effectStaticKey"
+          FFI.consoleError "[effectListener]: staticPtr NOT found for effectStaticKey"
         Just ptr ->
           case deRefStaticPtr ptr of
             SomeComponent _key _props (_ :: Component context props model action) ->
@@ -2020,13 +2012,13 @@ effectListener Proxy jsval = void $ do
                   comps <- readIORef components
                   case IM.lookup effectComponentId comps of
                     Nothing ->
-                      FFI.consoleError $ ms $ show
-                        ("  effectListener: component id NOT registered:" :: String, effectComponentId)
+                      FFI.consoleError $ ms $
+                        "[effectListener]: ComponentId NOT registered:" <> ms effectComponentId
                     Just ComponentState {..} -> do
-                      FFI.consoleLog "  effectListener: sinking action into component"
+                      FFI.consoleLog "[effectListener]: Sinking action into Component"
                       _componentSink action
                 Error e ->
-                  FFI.consoleError ("  effectListener: action decode error: " <> ms e)
+                  FFI.consoleError ("[effectListener]: action decode error: " <> ms e)
 #endif
 ----------------------------------------------------------------------------
 -- | Used for unidirectional BTS -> MTS communication
@@ -2042,7 +2034,7 @@ componentListener Proxy (BTS ctx) = void $ do
         case componentComponentType of
           READY -> do -- dmj: unblocks main thread scheduler
 #ifdef NATIVE
-            when mts (notify btsReady)
+            notify btsReady
 #endif
             pure ()
           MOUNT -> do
@@ -2097,13 +2089,9 @@ postComponent componentType_ sk componentId_ parentId_ model_ = do
 postEffect :: StaticKey -> ComponentId -> Value -> IO ()
 postEffect sk componentId_ action_ = do
   when mts $ do
-    FFI.consoleLog $ ms $ show
-      ("postEffect: MTS dispatching Miso.effects -> BTS, componentId=" :: String, componentId_)
     ctx <- getBTSContext
     dispatchEvent ctx "Miso.effects" (EFFECT componentId_ action_ sk)
   when bts $ do
-    FFI.consoleLog $ ms $ show
-      ("postEffect: BTS dispatching Miso.effects -> MTS, componentId=" :: String, componentId_)
     ctx <- getMTSContext
     dispatchEvent ctx "Miso.effects" (EFFECT componentId_ action_ sk)
 #endif

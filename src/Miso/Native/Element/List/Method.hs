@@ -107,7 +107,11 @@ instance ToJSVal AutoScroll where
     toJSVal o
 --------------------------------------------------------------------
 defaultAutoScroll :: AutoScroll
-defaultAutoScroll = undefined
+defaultAutoScroll = AutoScroll
+  { rate = "60"
+  , start = True
+  , autoStop = True
+  }
 --------------------------------------------------------------------
 autoScroll
   :: MisoString
@@ -115,7 +119,7 @@ autoScroll
   -> (MisoString -> action)
   -> (MisoString -> action)
   -> Effect context props model action
-autoScroll = invokeExec "scrollToPosition"
+autoScroll = invokeExec "autoScroll"
 --------------------------------------------------------------------
 getVisibleCells
   :: MisoString

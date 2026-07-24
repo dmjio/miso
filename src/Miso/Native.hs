@@ -16,8 +16,8 @@
 -- import Miso
 -- import Miso.Native
 --
--- view :: Model -> View Action
--- view m =
+-- view :: context -> props -> Model -> View context Action
+-- view _ _ m =
 --   view_
 --   []
 --   [ view_ [ onTap Increment ] [ text_ [] [ "+" ] ]
