@@ -182,7 +182,7 @@ import           Miso.Util
 -- | Helper function to abstract out initialization of t'Miso.Types.Component' between top-level API functions.
 initialize
 #ifdef NATIVE
-  :: (Eq context, Eq model, Eq props, ToJSON model, ToJSON action, FromJSON action)
+  :: (Eq context, Eq model, Eq props, ToJSON model, ToJSON props, ToJSON action, FromJSON action)
 #else
   :: (Eq context, Eq model, Eq props)
 #endif
@@ -258,13 +258,18 @@ initialize events _componentParentId hydrate isRoot initialProps maybeKey _compo
 
 #ifdef NATIVE
   let _componentHydrate = \newModel -> do
-        when bts $ postComponent HYDRATE _componentStaticKey _componentId _componentParentId
-          (Just (toJSON newModel))
+        when bts $ postComponent MODEL_HYDRATE _componentStaticKey _componentId _componentParentId
+          (Just (toJSON newModel)) Nothing
+
+  let _componentPropsHydrate = \newProps -> do
+        when bts $ postComponent PROPS_HYDRATE _componentStaticKey _componentId _componentParentId
+          (Just (toJSON newProps)) Nothing
 
   let _componentPostEffect = \action ->
         postEffect _componentStaticKey _componentId (toJSON action)
 #else
   let _componentHydrate = \_ -> pure ()
+  let _componentPropsHydrate = \_ -> pure ()
   let _componentPostEffect = \_ -> pure ()
 #endif
 
@@ -299,7 +304,7 @@ initialize events _componentParentId hydrate isRoot initialProps maybeKey _compo
   forM_ mount _componentSink
 #ifdef NATIVE
   when (bts && not isRoot) $
-    postComponent MOUNT _componentStaticKey _componentId _componentParentId Nothing
+    postComponent MOUNT _componentStaticKey _componentId _componentParentId Nothing (Just _componentDOMRef)
 #endif
   pure vcomponent
 -----------------------------------------------------------------------------
@@ -326,7 +331,12 @@ isMounted vcompId = isJust . IM.lookup vcompId <$> readIORef components
 -- for propagating changes across model states both asynchronously
 -- and synchronously. It also is responsible for
 -- top-down rendering of the UI Component tree.
-scheduler :: forall context . Eq context => Proxy context -> IO ()
+scheduler
+#ifdef NATIVE
+  :: forall context . (Eq context, ToJSON context) => Proxy context -> IO ()
+#else
+  :: forall context . Eq context => Proxy context -> IO ()
+#endif
 scheduler Proxy =
   forever $ do
 #ifdef NATIVE
@@ -342,13 +352,27 @@ scheduler Proxy =
             -- 'ComponentId' nor a negated one, so it never collides.
             vcomps <- readIORef components
             forM_ (IM.elems vcomps) $ \ComponentState {..} ->
-              when _componentUseContext (_componentDraw _componentModel)
+              -- On the MTS, context-driven redraws are suppressed: the BTS ships
+              -- DOM patches via the JS patch protocol, so drawing here would be a
+              -- redundant second paint. (CONTEXT_HYDRATE only lands on the MTS.)
+              when (_componentUseContext && not mts) (_componentDraw _componentModel)
+#ifdef NATIVE
+            -- Ship the updated global context to the MTS (BTS -> MTS). The MTS
+            -- recovers the @context@ type from its 'Proxy', so no 'StaticKey' is
+            -- needed here; the sentinel key is never dereferenced on the far side.
+            when bts $ do
+              currentContext <- readIORef @context globalContext
+              postComponent CONTEXT_HYDRATE contextHydrateStaticKey minBound minBound
+                (Just (toJSON currentContext)) Nothing
+#endif
         | vcompId < 0 -> do
             -- props propagation, negated 'ComponentId' indicates render-phase only.
             vcomps <- readIORef components
             forM_ (IM.lookup (negate vcompId) vcomps) $ \ComponentState {..} -> do
               _componentDraw _componentModel
               _componentPropsPhase _prevComponentProps _componentProps
+              -- Ship the updated @props@ to the MTS (BTS -> MTS); a no-op off 'bts'.
+              _componentPropsHydrate _componentProps
 
       Just (vcompId, actions) -> do
         mounted <- isMounted vcompId
@@ -514,6 +538,14 @@ enqueueContextPropagation =
   atomicModifyIORef' globalQueue $ \q ->
      (q & queueSchedule %~ (S.|> minBound), ())
 -----------------------------------------------------------------------------
+#ifdef NATIVE
+-- | Sentinel 'StaticKey' used for 'CONTEXT_HYDRATE' messages. Context is global
+-- and not tied to any component, and the MTS recovers the @context@ type from
+-- its 'Proxy' rather than dereferencing this key, so the value is arbitrary.
+contextHydrateStaticKey :: StaticKey
+contextHydrateStaticKey = Fingerprint 0 0
+#endif
+-----------------------------------------------------------------------------
 -- | Case on queue schedule, get first item, span on the rest of queueSchedule, get length.
 -- set schedule with whatever remains.
 --
@@ -666,9 +698,13 @@ data ComponentState context props model action
   , _componentDraw :: model -> IO ()
   -- ^ Helper function for t'Miso.Types.Component' rendering
   , _componentHydrate :: model -> IO ()
-  -- ^ Posts the model to the MTS for cross-thread (Lynx) hydration.
-  -- Captures the t'Miso.Types.Component''s 'ToJSON' instance at 'initialize'
-  -- time; a no-op unless running on the background thread ('bts').
+  -- ^ Posts the model to the MTS for cross-thread (Lynx) hydration via
+  -- 'MODEL_HYDRATE'. Captures the t'Miso.Types.Component''s 'ToJSON' instance at
+  -- 'initialize' time; a no-op unless running on the background thread ('bts').
+  , _componentPropsHydrate :: props -> IO ()
+  -- ^ Posts the @props@ to the MTS for cross-thread (Lynx) hydration via
+  -- 'PROPS_HYDRATE'. Captures the t'Miso.Types.Component''s 'ToJSON' instance at
+  -- 'initialize' time; a no-op unless running on the background thread ('bts').
   , _componentPropsPhase :: props -> props -> IO ()
   -- ^ Helper function for t'Miso.Types.Component' props changed phase.
   , _componentModelDirty :: model -> model -> Bool
@@ -1019,7 +1055,7 @@ unmountComponent cs@ComponentState {..} = do
   atomicModifyIORef' components $ \m -> (IM.delete _componentId m, ())
 #ifdef NATIVE
   when bts $ do
-    postComponent UNMOUNT _componentStaticKey _componentId _componentParentId Nothing
+    postComponent UNMOUNT _componentStaticKey _componentId _componentParentId Nothing Nothing
 #endif
 -----------------------------------------------------------------------------
 -- | Internal function for construction of a Virtual DOM.
@@ -1954,7 +1990,7 @@ loadedJS = unsafePerformIO (newIORef False)
 -----------------------------------------------------------------------------
 initComponent
 #ifdef NATIVE
-  :: forall context props model action . (Eq context, Eq model, Eq props, ToJSON model, ToJSON action, FromJSON action)
+  :: forall context props model action . (Eq context, Eq model, Eq props, ToJSON model, ToJSON props, ToJSON context, FromJSON context, ToJSON action, FromJSON action)
 #else
   :: forall context props model action . (Eq context, Eq model, Eq props)
 #endif
@@ -1978,7 +2014,7 @@ initComponent events hydrate live initialContext vcomp_@Component {..} key props
 #ifdef NATIVE
         when bts $ do
           effectListener proxy =<< getMTSContext
-          postComponent READY sk topLevelComponentId rootComponentId Nothing
+          postComponent READY sk topLevelComponentId rootComponentId Nothing Nothing
         when mts $ do
           effectListener proxy =<< getBTSContext
           componentListener proxy =<< getBTSContext
@@ -2022,8 +2058,19 @@ effectListener Proxy jsval = void $ do
 #endif
 ----------------------------------------------------------------------------
 -- | Used for unidirectional BTS -> MTS communication
+--
+-- dmj: This only runs on the MTS.
+--
 #ifdef NATIVE
-componentListener :: forall context . Eq context => Proxy context -> BTS -> IO ()
+-- | Resolves a BTS-supplied @{ nodeId }@ 'DOMRef' to the live MTS element
+-- registered at @globalThis.runtime.nodes[nodeId]@ (see @ts/miso/native/mts.ts@).
+resolveNodeRef :: DOMRef -> IO DOMRef
+resolveNodeRef domRef = do
+  nodeId <- fromJSValUnchecked =<< domRef ! "nodeId" :: IO Int
+  nodes  <- jsg "runtime" >>= (! "nodes")
+  nodes ! ms nodeId
+-----------------------------------------------------------------------------
+componentListener :: forall context . (Eq context, FromJSON context) => Proxy context -> BTS -> IO ()
 componentListener Proxy (BTS ctx) = void $ do
   FFI.addEventListener ctx "Miso.components" $ \msgEvent -> do
     msg <- Object msgEvent ! "data"
@@ -2032,14 +2079,31 @@ componentListener Proxy (BTS ctx) = void $ do
     case deRefStaticPtr ptr of
       SomeComponent _key _props (vcomp_ :: Component context props model action) ->
         case componentComponentType of
-          READY -> do -- dmj: unblocks main thread scheduler
-#ifdef NATIVE
+          READY -> -- dmj: unblocks main thread scheduler
             notify btsReady
-#endif
-            pure ()
+            -- Context is global and not tied to any component: recover the @context@
+            -- type from 'Proxy' (no 'StaticPtr' deref), seed the global cell, then let
+            -- the MTS scheduler redraw every 'useContext' component via the
+            -- propagation sentinel.
+          CONTEXT_HYDRATE ->
+            case componentComponentPayload of
+              Nothing ->
+                FFI.consoleError "[COMPONENT]: No context to hydrate"
+              Just c ->
+                case fromJSON c :: Result context of
+                  -- State-only sync: the MTS never paints from context (the BTS ships
+                  -- DOM patches via the JS patch protocol), so no redraw is enqueued.
+                  Success newContext ->
+                    atomicWriteIORef globalContext newContext
+                  Error e ->
+                    FFI.consoleError ("[COMPONENT]: Could not decode context: " <> e)
           MOUNT -> do
-            o@(Object parent_) <- create
-            FFI.set "nodeId" componentComponentParentId o
+            -- The BTS ships its @{ nodeId }@ 'DOMRef'; resolve it to the real
+            -- native element via @globalThis.runtime.nodes[nodeId]@ so the MTS
+            -- 'ComponentInfo' Reader ('componentInfoDOMRef') holds a live ref.
+            -- The MTS never paints here (the BTS drives drawing over the patch
+            -- protocol); this only seeds the mirror component's state.
+            parent_ <- maybe (unObject <$> create) resolveNodeRef componentComponentDOMRef
             void $ initialize mempty componentComponentId Draw False _props
               Nothing (staticKey ptr) vcomp_ (pure parent_)
           UNMOUNT ->
@@ -2048,8 +2112,8 @@ componentListener Proxy (BTS ctx) = void $ do
                 FFI.consoleError $ "[COMPONENT]: Couldn't find Component to unmount " <>
                   ms (show componentComponentId)
               Just c -> unmountComponent @context c
-          HYDRATE -> do
-            case componentComponentModel of
+          MODEL_HYDRATE -> do
+            case componentComponentPayload of
               Nothing ->
                 FFI.consoleError "[COMPONENT]: No model to hydrate"
               Just m ->
@@ -2059,6 +2123,21 @@ componentListener Proxy (BTS ctx) = void $ do
                       componentModel .= newModel
                   Error e ->
                     FFI.consoleError ("[COMPONENT]: Could not decode model: " <> e)
+          -- State-only: drawing on the MTS is driven by the JS patch
+          -- protocol, so props hydration syncs state without redrawing.
+          PROPS_HYDRATE -> do
+            case componentComponentPayload of
+              Nothing ->
+                FFI.consoleError "[COMPONENT]: No props to hydrate"
+              Just props ->
+                case fromJSON props :: Result props of
+                  Success newProps -> do
+                    modifyComponent componentComponentId $ do
+                      currentProps <- use componentProps
+                      prevComponentProps .= currentProps
+                      componentProps .= newProps
+                  Error e ->
+                    FFI.consoleError ("[COMPONENT]: Could not decode props: " <> e)
 #endif
 ----------------------------------------------------------------------------
 -- | Dispatches a 'COMPONENT' lifecycle message (BTS → MTS) on the
@@ -2071,11 +2150,12 @@ postComponent
   -> ComponentId
   -> ComponentId
   -> Maybe Value
+  -> Maybe DOMRef
   -> IO ()
-postComponent componentType_ sk componentId_ parentId_ model_ = do
+postComponent componentType_ sk componentId_ parentId_ model_ domRef_ = do
   ctx <- getMTSContext
   dispatchEvent ctx "Miso.components"
-    (COMPONENT componentType_ sk componentId_ parentId_ model_)
+    (COMPONENT componentType_ sk componentId_ parentId_ model_ domRef_)
 #endif
 ----------------------------------------------------------------------------
 -- | Dispatches an 'EFFECT' message carrying a serialized @action@ across the
@@ -2146,14 +2226,17 @@ instance ToJSVal Fingerprint where
   {-# INLINE toJSVal #-}
 -----------------------------------------------------------------------------
 -- | The operation carried by a 'COMPONENT' message.
-data ComponentType = MOUNT | UNMOUNT | HYDRATE | READY
+data ComponentType
+  = MOUNT | UNMOUNT | MODEL_HYDRATE | CONTEXT_HYDRATE | PROPS_HYDRATE | READY
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 instance ToJSVal ComponentType where
   toJSVal = \case
     MOUNT -> toJSVal ("mount"   :: MisoString)
     UNMOUNT -> toJSVal ("unmount" :: MisoString)
-    HYDRATE -> toJSVal ("hydrate" :: MisoString)
+    MODEL_HYDRATE -> toJSVal ("model_hydrate" :: MisoString)
+    CONTEXT_HYDRATE -> toJSVal ("context_hydrate" :: MisoString)
+    PROPS_HYDRATE -> toJSVal ("props_hydrate" :: MisoString)
     READY -> toJSVal ("ready" :: MisoString)
   {-# INLINE toJSVal #-}
 -----------------------------------------------------------------------------
@@ -2162,7 +2245,9 @@ instance FromJSVal ComponentType where
     fromJSVal x >>= \case
       Just ("mount" :: MisoString) -> pure (Just MOUNT)
       Just "unmount" -> pure (Just UNMOUNT)
-      Just "hydrate" -> pure (Just HYDRATE)
+      Just "model_hydrate" -> pure (Just MODEL_HYDRATE)
+      Just "context_hydrate" -> pure (Just CONTEXT_HYDRATE)
+      Just "props_hydrate" -> pure (Just PROPS_HYDRATE)
       Just "ready" -> pure (Just READY)
       _ -> pure Nothing
   {-# INLINE fromJSVal #-}
@@ -2173,8 +2258,15 @@ data COMPONENT = COMPONENT
   , componentComponentStaticKey :: StaticKey
   , componentComponentId :: ComponentId
   , componentComponentParentId :: ComponentId
-  , componentComponentModel :: Maybe Value
-  } deriving (Show, Eq)
+  , componentComponentPayload :: Maybe Value
+  -- ^ Serialized payload carried by hydrate messages: the @model@ for
+  -- 'MODEL_HYDRATE', the @context@ for 'CONTEXT_HYDRATE', and the @props@ for
+  -- 'PROPS_HYDRATE'. 'Nothing' for 'MOUNT' \/ 'UNMOUNT' \/ 'READY'.
+  , componentComponentDOMRef :: Maybe DOMRef
+  -- ^ Mount point for the mirrored MTS component, carried by 'MOUNT'. In Lynx
+  -- a 'DOMRef' is a JS object holding a single @nodeId@ field, so it serializes
+  -- across the thread boundary. 'Nothing' for every other message.
+  } deriving Eq
 -----------------------------------------------------------------------------
 instance ToJSVal COMPONENT where
   toJSVal COMPONENT {..} = do
@@ -2183,7 +2275,8 @@ instance ToJSVal COMPONENT where
     setField o "staticKey" componentComponentStaticKey
     setField o "compId" componentComponentId
     setField o "compParentId" componentComponentParentId
-    setField o "model" componentComponentModel
+    setField o "payload" componentComponentPayload
+    setField o "domRef" componentComponentDOMRef
     toJSVal o
   {-# INLINE toJSVal #-}
 -----------------------------------------------------------------------------
@@ -2195,8 +2288,9 @@ instance FromJSVal COMPONENT where
     let key = fromMisoString <$> msk
     mcid <- fromJSVal =<< getProp "compId" o
     mcpid <- fromJSVal =<< getProp "compParentId" o
-    mm   <- fromJSVal =<< getProp "model" o
-    pure (COMPONENT <$> mct <*> key <*> mcid <*> mcpid <*> mm)
+    mp   <- fromJSVal =<< getProp "payload" o
+    mdr  <- fromJSVal =<< getProp "domRef" o
+    pure (COMPONENT <$> mct <*> key <*> mcid <*> mcpid <*> mp <*> mdr)
   {-# INLINE fromJSVal #-}
 -----------------------------------------------------------------------------
 -- | Cross-thread effect message (MTS → BTS or BTS → MTS).

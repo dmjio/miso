@@ -409,7 +409,7 @@ data View context action
 -- nested t'Miso.Types.Component' participates in the same app-global context.
 data SomeComponent context
 #ifdef NATIVE
-   = forall model action props . (FromJSON model, ToJSON model, FromJSON action, ToJSON action, Eq context, Eq model, Eq props)
+   = forall model action props . (FromJSON model, ToJSON model, FromJSON action, ToJSON action, FromJSON props, ToJSON props, FromJSON context, ToJSON context, Eq context, Eq model, Eq props)
 #else
    = forall model action props . (Eq context, Eq model, Eq props)
 #endif
@@ -485,7 +485,7 @@ fragment_ key = VFrag (Just (Key key))
 -- @since 1.9.0.0
 (+>)
 #ifdef NATIVE
-  :: (FromJSON model, ToJSON model, FromJSON action, ToJSON action, Eq context, Eq model)
+  :: (FromJSON model, ToJSON model, FromJSON action, ToJSON action, FromJSON context, ToJSON context, Eq context, Eq model)
 #else
   :: (Eq context, Eq model)
 #endif
@@ -511,7 +511,7 @@ key +> child = SomeComponent (Just (toKey key)) () child
 -- @since 1.11.0.0
 mountWithProps
 #ifdef NATIVE
-  :: (Eq context, Eq props, Eq model, FromJSON model, ToJSON model, FromJSON action, ToJSON action)
+  :: (Eq context, Eq props, Eq model, FromJSON model, ToJSON model, FromJSON action, ToJSON action, FromJSON props, ToJSON props, FromJSON context, ToJSON context)
 #else
   :: (Eq context, Eq props, Eq model)
 #endif
@@ -532,7 +532,7 @@ mountWithProps props child = SomeComponent Nothing props child
 -- @since 1.11.0.0
 mountWithProps_
 #ifdef NATIVE
-  :: (Eq context, Eq props, Eq model, FromJSON action, FromJSON model, ToJSON model, ToJSON action)
+  :: (Eq context, Eq props, Eq model, FromJSON action, FromJSON model, ToJSON model, ToJSON action, FromJSON props, ToJSON props, FromJSON context, ToJSON context)
 #else
   :: (Eq context, Eq model, Eq props)
 #endif
@@ -558,7 +558,7 @@ mountWithProps_ key = SomeComponent (Just (Key key))
 -- @since 1.9.0.0
 mount_
 #ifdef NATIVE
-  :: (Eq context, Eq model, FromJSON model, ToJSON model, FromJSON action, ToJSON action)
+  :: (Eq context, Eq model, FromJSON model, ToJSON model, FromJSON action, ToJSON action, FromJSON context, ToJSON context)
 #else
   :: (Eq context, Eq model)
 #endif
@@ -598,7 +598,7 @@ vcomp = VComp
 -- @since 1.9.0.0
 mountUseContext
 #ifdef NATIVE
-  :: (Eq context, Eq model, FromJSON model, ToJSON model, FromJSON action, ToJSON action)
+  :: (Eq context, Eq model, FromJSON model, ToJSON model, FromJSON action, ToJSON action, FromJSON context, ToJSON context)
 #else
   :: (Eq context, Eq model)
 #endif
