@@ -68,8 +68,8 @@
 --
 -- = Architecture
 --
--- * __React__: miso implements a subset of the [React](https://react.dev) architecture including 'Component', Lifecycle Hooks, Virtual DOM, Event delegation,
--- [Fragment](https://react.dev/reference/react/Fragment), [Props](https://react.dev/learn/passing-props-to-a-component) and [Context](https://react.dev/learn/passing-data-deeply-with-context)
+-- * __React__: miso implements a subset of the [React](https://react.dev) architecture internals including 'Component', Lifecycle hooks, Virtual DOM, Event delegation. Along with
+-- [Fragment](https://react.dev/reference/react/Fragment), [Props](https://react.dev/learn/passing-props-to-a-component) and [Context](https://react.dev/learn/passing-data-deeply-with-context) API features.
 --
 -- * __Elm__: miso also implements the [Elm](https://elm-lang.org) architecture (MVU) and the 'mailbox' communication pattern.
 --
