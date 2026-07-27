@@ -42,7 +42,6 @@ Inspired by <a href="http://elm-lang.org/">Elm</a> and <a href="http://react.dev
 - Type-safe client-side routing
 - An extensible subscription system for long-running effects and third-party library integration
 - Lifecycle hooks (`onCreated`, `onDestroyed`, `mount`, `unmount`)
-- [Reactive](https://github.com/haskell-miso/miso-reactive) extensions for fine-grained reactivity
 - [Component](https://react.dev/reference/react/Component), [Context](https://react.dev/learn/passing-data-deeply-with-context), [Fragment](https://react.dev/reference/react/Fragment) and [Props](https://react.dev/learn/passing-props-to-a-component) features.
 
 It makes heavy use of the [GHC JavaScript FFI](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/wasm.html#javascript-ffi-in-the-wasm-backend) and maintains minimal dependencies. It can be considered a shallow [embedded domain-specific language](https://wiki.haskell.org/Embedded_domain_specific_language) for modern web programming. Compilation targets include [JavaScript](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/javascript.html) and [WebAssembly](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/wasm.html) via [GHC](https://www.haskell.org/ghc/). Hot reload is provided through [WASM browser mode](https://www.tweag.io/blog/2025-04-17-wasm-ghci-browser/) integrated with [ghciwatch](https://github.com/MercuryTechnologies/ghciwatch).
