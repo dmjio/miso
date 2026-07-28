@@ -326,13 +326,31 @@ function diffChildren<T>(cs: Array<VTree<T>>, ns: Array<VTree<T>>, parent: T, co
   }
 }
 
+/* Collect event-name -> "componentId:staticKeyHex" for a node, so the native
+   runtime can dispatch main-thread events by key (recovering the handler) and
+   locate the owning component's sink. Undefined when no handler carries a
+   staticKey (e.g. the browser/WASM runtime, which never populates it). */
+function eventStaticKeys<T>(c: VNode<T>): Record<string,string> | undefined {
+  const out: Record<string,string> = {};
+  let any = false;
+  for (const phase of [c.events.captures, c.events.bubbles]) {
+    for (const name in phase) {
+      const sk = phase[name].staticKey;
+      const cid = phase[name].componentId;
+      if (sk !== undefined && cid !== undefined) { out[name] = cid + ':' + sk; any = true; }
+    }
+  }
+  return any ? out : undefined;
+}
+
 function populateDomRef<T>(c: VNode<T>, context: DrawingContext<T>): void {
+  const events = eventStaticKeys(c);
   if (c.ns === 'svg') {
-    c.domRef = context.createElementNS('http://www.w3.org/2000/svg', c.tag);
+    c.domRef = context.createElementNS('http://www.w3.org/2000/svg', c.tag, events);
   } else if (c.ns === 'mathml') {
-    c.domRef = context.createElementNS('http://www.w3.org/1998/Math/MathML', c.tag);
+    c.domRef = context.createElementNS('http://www.w3.org/1998/Math/MathML', c.tag, events);
   } else {
-    c.domRef = context.createElement(c.tag);
+    c.domRef = context.createElement(c.tag, events);
   }
 }
 

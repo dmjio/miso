@@ -87,6 +87,7 @@ module Miso.Event.Types
   , mediaEvents
   , clipboardEvents
   , touchEvents
+  , backgroundEvents
   ) where
 -----------------------------------------------------------------------------
 import           Miso.JSON (FromJSON(..), withText)
@@ -208,11 +209,20 @@ defaultOptions
   }
 -----------------------------------------------------------------------------
 -- | Convenience type for Events
+--
+-- The map declares which DOM events are delegated and at which 'Phase'. Whether
+-- an individual handler runs on the Lynx main thread ('MTS') or background
+-- thread ('BTS') is decided __per handler__ (see @Miso.Event.mainThread@), not
+-- per event name — mirroring Lynx's @main-thread:bind@ vs @bind@ prefix.
 type Events = M.Map MisoString Phase
+-----------------------------------------------------------------------------
+-- | Build an 'Events' map from @(name, phase)@ pairs.
+backgroundEvents :: [(MisoString, Phase)] -> Events
+backgroundEvents = M.fromList
 -----------------------------------------------------------------------------
 -- | Default delegated events
 defaultEvents :: Events
-defaultEvents = M.fromList
+defaultEvents = backgroundEvents
   [ ("blur", CAPTURE)
   , ("change", BUBBLE)
   , ("click", BUBBLE)
@@ -226,7 +236,7 @@ defaultEvents = M.fromList
 -----------------------------------------------------------------------------
 -- | Keyboard events
 keyboardEvents :: Events
-keyboardEvents = M.fromList
+keyboardEvents = backgroundEvents
   [ ("keydown", BUBBLE)
   , ("keypress", BUBBLE)
   , ("keyup", BUBBLE)
@@ -234,7 +244,7 @@ keyboardEvents = M.fromList
 -----------------------------------------------------------------------------
 -- | Mouse events
 mouseEvents :: Events
-mouseEvents = M.fromList
+mouseEvents = backgroundEvents
   [ ("mouseup", BUBBLE)
   , ("mousedown", BUBBLE)
   , ("mouseenter", CAPTURE)
@@ -246,7 +256,7 @@ mouseEvents = M.fromList
 -----------------------------------------------------------------------------
 -- | Drag events
 dragEvents :: Events
-dragEvents = M.fromList
+dragEvents = backgroundEvents
   [ ("dragstart", BUBBLE)
   , ("dragover", BUBBLE)
   , ("dragend", BUBBLE)
@@ -258,7 +268,7 @@ dragEvents = M.fromList
 -----------------------------------------------------------------------------
 -- | Pointer events
 pointerEvents :: Events
-pointerEvents = M.fromList
+pointerEvents = backgroundEvents
   [ ("pointerup", BUBBLE)
   , ("pointerdown", BUBBLE)
   , ("pointerenter", CAPTURE)
@@ -277,7 +287,7 @@ pointerEvents = M.fromList
 -- myApp = ('Miso.Types.component' model update view){ events = 'defaultEvents' <> 'mediaEvents' }
 -- @
 mediaEvents :: Events
-mediaEvents = M.fromList
+mediaEvents = backgroundEvents
   [ ("abort", CAPTURE)
   , ("canplay", CAPTURE)
   , ("canplaythrough", CAPTURE)
@@ -304,7 +314,7 @@ mediaEvents = M.fromList
 -----------------------------------------------------------------------------
 -- | Clipboard events
 clipboardEvents :: Events
-clipboardEvents = M.fromList
+clipboardEvents = backgroundEvents
   [ ("cut", BUBBLE)
   , ("copy", BUBBLE)
   , ("paste", BUBBLE)
@@ -312,7 +322,7 @@ clipboardEvents = M.fromList
 -----------------------------------------------------------------------------
 -- | Touch events
 touchEvents :: Events
-touchEvents = M.fromList
+touchEvents = backgroundEvents
   [ ("touchstart", BUBBLE)
   , ("touchcancel", BUBBLE)
   , ("touchmove", BUBBLE)

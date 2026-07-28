@@ -65,6 +65,13 @@ bundle-lynx:
 # One full rebuild: runtime -> haskell -> lynx bundle.
 rebuild-native: bundle-runtime build-native-js bundle-lynx
 
+# Copy the built Lynx bundle into the iOS host app (sample-app-native/ios).
+# See sample-app-native/ios/README.md for the full on-device build steps.
+bundle-ios:
+    mkdir -p sample-app-native/ios/Resource
+    cp {{serve_dir}}/main.lynx.bundle sample-app-native/ios/Resource/main.lynx.bundle
+    @echo "Copied main.lynx.bundle -> sample-app-native/ios/Resource/"
+
 # Serve the bundle once (explorer re-fetches on reload).
 serve-native:
     http-server {{serve_dir}} -p {{port}}

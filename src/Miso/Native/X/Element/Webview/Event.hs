@@ -12,10 +12,15 @@
 module Miso.Native.X.Element.Webview.Event
   ( -- *** Events
     onError
+  , onErrorWith
   , onLoad
+  , onLoadWith
   , onLocationChange
+  , onLocationChangeWith
   , onMessage
+  , onMessageWith
   , onOpenWindow
+  , onOpenWindowWith
     -- *** Types
   , WebviewErrorEvent (..)
     -- *** Decoders
@@ -31,11 +36,11 @@ import qualified Data.Map as M
 import           Miso.Event
 import           Miso.JSON
 import           Miso.String (MisoString)
-import           Miso.Types (Attribute)
+import           Miso.Types (EventHandler, DOMRef)
 -----------------------------------------------------------------------------
 webviewEvents :: Events
 webviewEvents
-  = M.fromList
+  = backgroundEvents
   [ ("error", BUBBLE)
   , ("load", BUBBLE)
   , ("locationchange", BUBBLE)
@@ -76,34 +81,61 @@ messageDecoder = ["detail"] `at` details
 --
 -- Triggered on a webview error.
 --
-onError :: (WebviewErrorEvent -> action) -> Attribute action
+onError :: (WebviewErrorEvent -> action) -> EventHandler action
 onError action = on "error" webviewErrorDecoder (\e _ -> action e)
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/webview.html#bindload
 --
 -- Triggered when the webview loads successfully.
 --
-onLoad :: action -> Attribute action
+onLoad :: action -> EventHandler action
 onLoad action = on "load" emptyDecoder (\() _ -> action)
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/webview.html#bindlocationchange
 --
 -- *Desktop, Lynx 3.5+*. Triggered when the location changes.
 --
-onLocationChange :: (MisoString -> action) -> Attribute action
+onLocationChange :: (MisoString -> action) -> EventHandler action
 onLocationChange action = on "locationchange" urlDecoder (\e _ -> action e)
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/webview.html#bindmessage
 --
 -- Triggered when a message is posted from JavaScript.
 --
-onMessage :: (MisoString -> action) -> Attribute action
+onMessage :: (MisoString -> action) -> EventHandler action
 onMessage action = on "message" messageDecoder (\e _ -> action e)
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/webview.html#bindopenwindow
 --
 -- *Desktop, Lynx 3.5+*. Triggered on an open-window event.
 --
-onOpenWindow :: (MisoString -> action) -> Attribute action
+onOpenWindow :: (MisoString -> action) -> EventHandler action
 onOpenWindow action = on "openwindow" urlDecoder (\e _ -> action e)
+-----------------------------------------------------------------------------
+
+-----------------------------------------------------------------------------
+-- | Like 'onError', but the handler also receives the target element's 'DOMRef'.
+-- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+onErrorWith :: (WebviewErrorEvent -> DOMRef -> action) -> EventHandler action
+onErrorWith action = on "error" webviewErrorDecoder action
+-----------------------------------------------------------------------------
+-- | Like 'onLoad', but the handler also receives the target element's 'DOMRef'.
+-- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+onLoadWith :: (DOMRef -> action) -> EventHandler action
+onLoadWith action = on "load" emptyDecoder (\() ref -> action ref)
+-----------------------------------------------------------------------------
+-- | Like 'onLocationChange', but the handler also receives the target element's 'DOMRef'.
+-- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+onLocationChangeWith :: (MisoString -> DOMRef -> action) -> EventHandler action
+onLocationChangeWith action = on "locationchange" urlDecoder action
+-----------------------------------------------------------------------------
+-- | Like 'onMessage', but the handler also receives the target element's 'DOMRef'.
+-- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+onMessageWith :: (MisoString -> DOMRef -> action) -> EventHandler action
+onMessageWith action = on "message" messageDecoder action
+-----------------------------------------------------------------------------
+-- | Like 'onOpenWindow', but the handler also receives the target element's 'DOMRef'.
+-- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+onOpenWindowWith :: (MisoString -> DOMRef -> action) -> EventHandler action
+onOpenWindowWith action = on "openwindow" urlDecoder action
 -----------------------------------------------------------------------------

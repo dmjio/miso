@@ -12,10 +12,15 @@
 module Miso.Native.Element.Image.Event
   ( -- *** Events
     onLoad
+  , onLoadWith
   , onError
+  , onErrorWith
   , onStartPlay
+  , onStartPlayWith
   , onCurrentLoopComplete
+  , onCurrentLoopCompleteWith
   , onFinalLoopComplete
+  , onFinalLoopCompleteWith
   -- *** Decoder
   , imageLoadDecoder
   , imageErrorDecoder
@@ -31,11 +36,11 @@ import qualified Data.Map as M
 import           Miso.Event
 import           Miso.JSON
 import           Miso.String (MisoString)
-import           Miso.Types (Attribute)
+import           Miso.Types (EventHandler, DOMRef)
 -----------------------------------------------------------------------------
 imageEvents :: Events
 imageEvents
-  = M.fromList
+  = backgroundEvents
   [ ("load", BUBBLE)
   , ("error", BUBBLE)
   , ("startplay", BUBBLE)
@@ -60,7 +65,7 @@ imageEvents
 --
 -- @
 --
-onLoad :: (ImageLoadEvent -> action) -> Attribute action
+onLoad :: (ImageLoadEvent -> action) -> EventHandler action
 onLoad action = on "load" imageLoadDecoder (\e _ -> action e)
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/image.html#binderror
@@ -80,7 +85,7 @@ onLoad action = on "load" imageLoadDecoder (\e _ -> action e)
 --
 -- @
 --
-onError :: (ImageErrorEvent -> action) -> Attribute action
+onError :: (ImageErrorEvent -> action) -> EventHandler action
 onError action = on "error" imageErrorDecoder (\e _ -> action e)
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/image.html#bindstartplay
@@ -96,7 +101,7 @@ onError action = on "error" imageErrorDecoder (\e _ -> action e)
 --
 -- @
 --
-onStartPlay :: action -> Attribute action
+onStartPlay :: action -> EventHandler action
 onStartPlay action = on "startplay" emptyDecoder (\() _ -> action)
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/image.html#bindcurrentloopcomplete
@@ -112,7 +117,7 @@ onStartPlay action = on "startplay" emptyDecoder (\() _ -> action)
 --
 -- @
 --
-onCurrentLoopComplete :: action -> Attribute action
+onCurrentLoopComplete :: action -> EventHandler action
 onCurrentLoopComplete action = on "currentloopcomplete" emptyDecoder (\() _ -> action)
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/image.html#bindfinalloopcomplete
@@ -128,7 +133,7 @@ onCurrentLoopComplete action = on "currentloopcomplete" emptyDecoder (\() _ -> a
 --
 -- @
 --
-onFinalLoopComplete :: action -> Attribute action
+onFinalLoopComplete :: action -> EventHandler action
 onFinalLoopComplete action = on "finalloopcomplete" emptyDecoder (\() _ -> action)
 -----------------------------------------------------------------------------
 -- | Callback when an 'image_' fails to load
@@ -167,4 +172,31 @@ imageErrorDecoder = ["detail"] `at` details
         <$> o .: "errMsg"
         <*> o .: "error_code"
         <*> o .: "lynx_categorized_code"
+-----------------------------------------------------------------------------
+
+-----------------------------------------------------------------------------
+-- | Like 'onLoad', but the handler also receives the target element's 'DOMRef'.
+-- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+onLoadWith :: (ImageLoadEvent -> DOMRef -> action) -> EventHandler action
+onLoadWith action = on "load" imageLoadDecoder action
+-----------------------------------------------------------------------------
+-- | Like 'onError', but the handler also receives the target element's 'DOMRef'.
+-- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+onErrorWith :: (ImageErrorEvent -> DOMRef -> action) -> EventHandler action
+onErrorWith action = on "error" imageErrorDecoder action
+-----------------------------------------------------------------------------
+-- | Like 'onStartPlay', but the handler also receives the target element's 'DOMRef'.
+-- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+onStartPlayWith :: (DOMRef -> action) -> EventHandler action
+onStartPlayWith action = on "startplay" emptyDecoder (\() ref -> action ref)
+-----------------------------------------------------------------------------
+-- | Like 'onCurrentLoopComplete', but the handler also receives the target element's 'DOMRef'.
+-- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+onCurrentLoopCompleteWith :: (DOMRef -> action) -> EventHandler action
+onCurrentLoopCompleteWith action = on "currentloopcomplete" emptyDecoder (\() ref -> action ref)
+-----------------------------------------------------------------------------
+-- | Like 'onFinalLoopComplete', but the handler also receives the target element's 'DOMRef'.
+-- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+onFinalLoopCompleteWith :: (DOMRef -> action) -> EventHandler action
+onFinalLoopCompleteWith action = on "finalloopcomplete" emptyDecoder (\() ref -> action ref)
 -----------------------------------------------------------------------------

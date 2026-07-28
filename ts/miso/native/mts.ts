@@ -67,7 +67,7 @@ function processMessage (m : PATCH, runtime) {
   switch (m.type) {
     case "createElement":
       node = drawingContext.createElement (m.tag);
-      __SetConfig (node, { nodeId : m.nodeId });
+      __SetConfig (node, m.events ? { nodeId : m.nodeId, eventKeys : m.events } : { nodeId : m.nodeId });
       runtime.nodes[m.nodeId] = node;
       break;
     case "createTextNode":
@@ -75,7 +75,7 @@ function processMessage (m : PATCH, runtime) {
       break;
     case "createElementNS":
       node = drawingContext.createElementNS (m.namespace, m.tag);
-      __SetConfig (node, { nodeId : m.nodeId });
+      __SetConfig (node, m.events ? { nodeId : m.nodeId, eventKeys : m.events } : { nodeId : m.nodeId });
       runtime.nodes[m.nodeId] = node;
       break;
     case "swapDOMRefs":

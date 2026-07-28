@@ -12,6 +12,7 @@
 module Miso.Native.X.Element.Svg.Event
   ( -- *** Events
     onLoad
+  , onLoadWith
     -- *** Event Map
   , svgEvents
   ) where
@@ -19,15 +20,22 @@ module Miso.Native.X.Element.Svg.Event
 import qualified Data.Map as M
 -----------------------------------------------------------------------------
 import           Miso.Event
-import           Miso.Types (Attribute)
+import           Miso.Types (EventHandler, DOMRef)
 -----------------------------------------------------------------------------
 svgEvents :: Events
-svgEvents = M.fromList [ ("load", BUBBLE) ]
+svgEvents = backgroundEvents [ ("load", BUBBLE) ]
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/svg.html#bindload
 --
 -- Triggered when the SVG finishes loading.
 --
-onLoad :: action -> Attribute action
+onLoad :: action -> EventHandler action
 onLoad action = on "load" emptyDecoder (\() _ -> action)
+-----------------------------------------------------------------------------
+
+-----------------------------------------------------------------------------
+-- | Like 'onLoad', but the handler also receives the target element's 'DOMRef'.
+-- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+onLoadWith :: (DOMRef -> action) -> EventHandler action
+onLoadWith action = on "load" emptyDecoder (\() ref -> action ref)
 -----------------------------------------------------------------------------

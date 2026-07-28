@@ -13,11 +13,17 @@
 module Miso.Native.Element.List.Event
   ( -- *** Event
     onScroll
+  , onScrollWith
   , onScrollToUpper
+  , onScrollToUpperWith
   , onScrollToLower
+  , onScrollToLowerWith
   , onScrollStateChange
+  , onScrollStateChangeWith
   , onLayoutComplete
+  , onLayoutCompleteWith
   , onSnap
+  , onSnapWith
   -- *** Types
   , ScrollEvent (..)
   , SnapEvent (..)
@@ -38,12 +44,12 @@ import qualified Data.Map as M
 -----------------------------------------------------------------------------
 import           Miso.Event
 import           Miso.JSON
-import           Miso.Types (Attribute)
+import           Miso.Types (EventHandler, DOMRef)
 import           Miso.String (MisoString)
 -----------------------------------------------------------------------------
 listEvents :: Events
 listEvents
-  = M.fromList
+  = backgroundEvents
   [ ("scroll", BUBBLE)
   , ("scrolltoupper", BUBBLE)
   , ("scrolltolower", BUBBLE)
@@ -254,7 +260,7 @@ layoutCompleteDecoder = ["detail"] `at` do
 --
 -- @
 --
-onScroll :: (ScrollEvent -> action) -> Attribute action
+onScroll :: (ScrollEvent -> action) -> EventHandler action
 onScroll action = on "scroll" scrollDecoder (\x _ -> action x)
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/list.html#scrolltoupper
@@ -275,7 +281,7 @@ onScroll action = on "scroll" scrollDecoder (\x _ -> action x)
 --
 -- @
 --
-onScrollToUpper :: (ScrollEvent -> action) -> Attribute action
+onScrollToUpper :: (ScrollEvent -> action) -> EventHandler action
 onScrollToUpper action = on "scrolltoupper" scrollDecoder (\x _ -> action x)
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/list.html#scrolltolower
@@ -296,7 +302,7 @@ onScrollToUpper action = on "scrolltoupper" scrollDecoder (\x _ -> action x)
 --
 -- @
 --
-onScrollToLower :: (ScrollEvent -> action) -> Attribute action
+onScrollToLower :: (ScrollEvent -> action) -> EventHandler action
 onScrollToLower action = on "scrolltolower" scrollDecoder (\x _ -> action x)
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/list.html#scrollstatechange
@@ -322,7 +328,7 @@ onScrollToLower action = on "scrolltolower" scrollDecoder (\x _ -> action x)
 --
 -- @
 --
-onScrollStateChange :: (ScrollStateChange -> action) -> Attribute action
+onScrollStateChange :: (ScrollStateChange -> action) -> EventHandler action
 onScrollStateChange action = on "scrollstatechange" scrollStateDecoder (\x _ -> action x)
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/list.html#layoutcomplete
@@ -342,7 +348,7 @@ onScrollStateChange action = on "scrollstatechange" scrollStateDecoder (\x _ -> 
 --
 -- @
 --
-onLayoutComplete :: (LayoutCompleteEvent -> action) -> Attribute action
+onLayoutComplete :: (LayoutCompleteEvent -> action) -> EventHandler action
 onLayoutComplete action = on "layoutcomplete" layoutCompleteDecoder (\x _ -> action x)
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/list.html#snap
@@ -362,6 +368,38 @@ onLayoutComplete action = on "layoutcomplete" layoutCompleteDecoder (\x _ -> act
 --
 -- @
 --
-onSnap :: (SnapEvent -> action) -> Attribute action
+onSnap :: (SnapEvent -> action) -> EventHandler action
 onSnap action = on "snap" snapDecoder (\x _ -> action x)
+-----------------------------------------------------------------------------
+
+-----------------------------------------------------------------------------
+-- | Like 'onScroll', but the handler also receives the target element's 'DOMRef'.
+-- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+onScrollWith :: (ScrollEvent -> DOMRef -> action) -> EventHandler action
+onScrollWith action = on "scroll" scrollDecoder action
+-----------------------------------------------------------------------------
+-- | Like 'onScrollToUpper', but the handler also receives the target element's 'DOMRef'.
+-- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+onScrollToUpperWith :: (ScrollEvent -> DOMRef -> action) -> EventHandler action
+onScrollToUpperWith action = on "scrolltoupper" scrollDecoder action
+-----------------------------------------------------------------------------
+-- | Like 'onScrollToLower', but the handler also receives the target element's 'DOMRef'.
+-- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+onScrollToLowerWith :: (ScrollEvent -> DOMRef -> action) -> EventHandler action
+onScrollToLowerWith action = on "scrolltolower" scrollDecoder action
+-----------------------------------------------------------------------------
+-- | Like 'onScrollStateChange', but the handler also receives the target element's 'DOMRef'.
+-- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+onScrollStateChangeWith :: (ScrollStateChange -> DOMRef -> action) -> EventHandler action
+onScrollStateChangeWith action = on "scrollstatechange" scrollStateDecoder action
+-----------------------------------------------------------------------------
+-- | Like 'onLayoutComplete', but the handler also receives the target element's 'DOMRef'.
+-- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+onLayoutCompleteWith :: (LayoutCompleteEvent -> DOMRef -> action) -> EventHandler action
+onLayoutCompleteWith action = on "layoutcomplete" layoutCompleteDecoder action
+-----------------------------------------------------------------------------
+-- | Like 'onSnap', but the handler also receives the target element's 'DOMRef'.
+-- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+onSnapWith :: (SnapEvent -> DOMRef -> action) -> EventHandler action
+onSnapWith action = on "snap" snapDecoder action
 -----------------------------------------------------------------------------

@@ -1,0 +1,10 @@
+# Generated / build artifacts — regenerate with xcodegen + pod install.
+Pods/
+Podfile.lock
+*.xcodeproj
+*.xcworkspace
+build/
+DerivedData/
+
+# Built Lynx bundle (produced by `just bundle-ios`).
+Resource/main.lynx.bundle

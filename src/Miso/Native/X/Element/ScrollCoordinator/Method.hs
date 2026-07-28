@@ -21,15 +21,15 @@ import           Miso.Native.FFI (invokeExec)
 data SetFoldExpanded = SetFoldExpanded MisoString Bool
 -----------------------------------------------------------------------------
 instance ToJSVal SetFoldExpanded where
-  toJSVal (SetFoldExpanded offset smooth) = do
+  toJSVal (SetFoldExpanded offset_ smooth) = do
     o <- create
-    set "offset" offset o
+    set "offset_" offset_ o
     set "smooth" smooth o
     toJSVal o
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/scroll-coordinator.html#setfoldexpanded
 --
--- Adjusts the fold expansion state, optionally with animation. The @offset@ is
+-- Adjusts the fold expansion state, optionally with animation. The @offset_@ is
 -- a @px@ / @rpx@ value, e.g. @\"100px\"@.
 --
 -- > setFoldExpanded "#coordinator" "100px" True Expanded ExpandFailed
@@ -37,12 +37,12 @@ instance ToJSVal SetFoldExpanded where
 setFoldExpanded
   :: MisoString
   -> MisoString
-  -- ^ Offset (px \/ rpx)
+  -- ^ Offset_ (px \/ rpx)
   -> Bool
   -- ^ Whether to animate
   -> action
   -> (MisoString -> action)
   -> Effect context props model action
-setFoldExpanded selector offset smooth action =
-  invokeExec "setFoldExpanded" selector (SetFoldExpanded offset smooth) (\() -> action)
+setFoldExpanded selector offset_ smooth action =
+  invokeExec "setFoldExpanded" selector (SetFoldExpanded offset_ smooth) (\() -> action)
 -----------------------------------------------------------------------------

@@ -202,17 +202,17 @@ canvas_
 canvas_ attributes initialize_ draw_ = node HTML "canvas" attrs []
   where
     attrs :: [ Attribute action ]
-    attrs = initCallback : drawCallack : attributes
+    attrs = OnLocal initCallback : OnLocal drawCallack : attributes
 
-    initCallback :: Attribute action
-    initCallback = On $ \_ (VTree vtree) _ _ -> do
+    initCallback :: EventHandler action
+    initCallback = EventHandler $ \_ (VTree vtree) _ _ -> do
       flip (FFI.set "onCreated") vtree =<< do
         FFI.syncCallback1 $ \domRef -> do
           initialState <- initialize_ domRef
           FFI.set "state" initialState (Object domRef)
 
-    drawCallack :: Attribute action
-    drawCallack = On $ \_ (VTree vtree) _ _ -> do
+    drawCallack :: EventHandler action
+    drawCallack = EventHandler $ \_ (VTree vtree) _ _ -> do
       flip (FFI.set "draw") vtree =<< do
         FFI.syncCallback1 $ \domRef -> do
           state <- fromJSValUnchecked =<< domRef ! ("state" :: MisoString)
@@ -233,18 +233,18 @@ canvas
 canvas attributes initialize draw = node HTML "canvas" attrs []
   where
     attrs :: [ Attribute action ]
-    attrs = initCallback : drawCallack : attributes
+    attrs = OnLocal initCallback : OnLocal drawCallack : attributes
 
-    initCallback :: Attribute action
-    initCallback = On $ \_ (VTree vtree) _ _ -> do
+    initCallback :: EventHandler action
+    initCallback = EventHandler $ \_ (VTree vtree) _ _ -> do
       flip (FFI.set "onCreated") vtree =<< do
         FFI.syncCallback1 $ \domRef -> do
           ctx <- domRef # ("getContext" :: MisoString) $ ["2d" :: MisoString]
           initialState <- runReaderT (initialize domRef) ctx
           FFI.set "state" initialState (Object domRef)
 
-    drawCallack :: Attribute action
-    drawCallack = On $ \_ (VTree vtree) _ _ -> do
+    drawCallack :: EventHandler action
+    drawCallack = EventHandler $ \_ (VTree vtree) _ _ -> do
       flip (FFI.set "draw") vtree =<< do
         FFI.syncCallback1 $ \domRef -> do
           jval <- domRef ! ("state" :: MisoString)

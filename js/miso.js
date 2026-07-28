@@ -601,13 +601,29 @@ function diffChildren(cs, ns, parent, context, endAnchor = null) {
     }
   }
 }
+function eventStaticKeys(c) {
+  const out = {};
+  let any = false;
+  for (const phase of [c.events.captures, c.events.bubbles]) {
+    for (const name in phase) {
+      const sk = phase[name].staticKey;
+      const cid = phase[name].componentId;
+      if (sk !== undefined && cid !== undefined) {
+        out[name] = cid + ":" + sk;
+        any = true;
+      }
+    }
+  }
+  return any ? out : undefined;
+}
 function populateDomRef(c, context) {
+  const events = eventStaticKeys(c);
   if (c.ns === "svg") {
-    c.domRef = context.createElementNS("http://www.w3.org/2000/svg", c.tag);
+    c.domRef = context.createElementNS("http://www.w3.org/2000/svg", c.tag, events);
   } else if (c.ns === "mathml") {
-    c.domRef = context.createElementNS("http://www.w3.org/1998/Math/MathML", c.tag);
+    c.domRef = context.createElementNS("http://www.w3.org/1998/Math/MathML", c.tag, events);
   } else {
-    c.domRef = context.createElement(c.tag);
+    c.domRef = context.createElement(c.tag, events);
   }
 }
 function callCreated(parent, n, context) {

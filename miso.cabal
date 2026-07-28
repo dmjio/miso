@@ -193,6 +193,7 @@ library
   if flag(native)
     exposed-modules:
       Miso.Native
+      Miso.Native.MainThread
       Miso.Native.Element
       Miso.Native.Element.Frame
       Miso.Native.Element.Frame.Event

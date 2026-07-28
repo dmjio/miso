@@ -93,6 +93,11 @@ export type VTree<T> = VComp<T> | VNode<T> | VText<T> | VFrag<T>;
 export type EventObject<T> = {
    options: Options;
    runEvent: (e: Event, node: T) => void;
+   /** Hex 'StaticKey' of the Haskell event handler. Populated on the native
+    * (Lynx) runtime so main-thread events can be dispatched by key. */
+   staticKey?: string;
+   /** Owning component id. Paired with staticKey to locate the sink on the MTS. */
+   componentId?: number;
 };
 
 export type Options = {
@@ -143,11 +148,11 @@ export type ComponentContext = {
 export type DrawingContext<T> = {
   nextSibling : (node: VTree<T>) => T | null;
   createTextNode : (s: string) => T;
-  createElementNS : (ns: string, tag : string) => T;
+  createElementNS : (ns: string, tag : string, events?: Record<string,string>) => T;
   appendChild : (parent: T, child: T) => void;
   replaceChild : (parent: T, n: T, o: T) => void;
   removeChild : (parent: T, child: T) => void;
-  createElement : (name: string) => T;
+  createElement : (name: string, events?: Record<string,string>) => T;
   insertBefore : (parent: T, child: T, node: T) => void;
   swapDOMRefs: (a: T, b: T, p: T) => void;
   setAttribute : (node: T, key: string, value : any) => void;
@@ -254,14 +259,18 @@ export type SwapDOMRefs = {
 export type CreateElement = {
   nodeId: number,
   tag: string,
-  type: "createElement"
+  type: "createElement",
+  /** event name -> handler 'StaticKey' hex, for main-thread event dispatch */
+  events?: Record<string,string>
 };
 
 export type CreateElementNS = {
   nodeId: number,
   tag: string,
   namespace: string,
-  type: "createElementNS"
+  type: "createElementNS",
+  /** event name -> handler 'StaticKey' hex, for main-thread event dispatch */
+  events?: Record<string,string>
 };
 
 export type CreateTextNode = {

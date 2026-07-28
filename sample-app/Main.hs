@@ -68,10 +68,20 @@ updateModel = \case
 viewModel :: context -> props -> Model -> View context Action
 viewModel _ _ x =
   vfrag
-    [ H.button_ [ H.onClick AddOne ] [ text "+" ]
+    [ H.button_
+      [ event (static (H.onClick AddOne))
+      ]
+      [ text "+" ]
     , text $ ms (x ^. counter)
-    , H.button_ [ H.onClick SubtractOne ] [ text "-" ]
+    , H.button_
+      [ event (static (H.onClick SubtractOne))
+      ]
+      [ text "-" ]
     , H.br_ []
-    , H.button_ [ H.onClick SayHelloWorld ] [ text "Alert Hello World!" ]
+    , H.button_
+      [ event (static (H.onClick SayHelloWorld))
+      ]
+      [ text "Alert Hello World!"
+      ]
     ]
 ----------------------------------------------------------------------------

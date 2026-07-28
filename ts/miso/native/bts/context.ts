@@ -101,7 +101,7 @@ const drawingContext : DrawingContext<NodeId> = {
     } as CreateTextNode);
     return { nodeId };
   },
-  createElementNS : (ns: string, tag: string) => {
+  createElementNS : (ns: string, tag: string, events?: Record<string,string>) => {
     const nodeId: number = nextNodeId ();
     let patch : CreateElementNS = {
         type : "createElementNS",
@@ -109,16 +109,18 @@ const drawingContext : DrawingContext<NodeId> = {
         nodeId,
         tag
     };
+    if (events) patch.events = events;
     addPatch(patch);
     return { nodeId };
   },
-  createElement : (tag) => {
+  createElement : (tag, events?: Record<string,string>) => {
     const nodeId: number = nextNodeId ();
     let patch : CreateElement = {
         type : "createElement",
         nodeId,
         tag
     };
+    if (events) patch.events = events;
     addPatch(patch);
     return { nodeId };
   },

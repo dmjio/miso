@@ -23,13 +23,36 @@ export const eventContext : EventContext<ElementRef> = {
   delegator : (mount: ElementRef, events: Array<EventCapture>, _getVTree, _debug, ctx: EventContext<ElementRef>) => {
     for (const { name, capture } of events) {
       ctx.addEventListener(mount, name, (event: Event | Array<Event>) => {
-        const jsContext = lynx.getJSContext();
         const evts = Array.isArray(event) ? event : [event];
         for (const e of evts) {
           const target = ctx.getTarget(e);
-          const stack = buildStack(mount, target, ctx);
-          const msg : ProcessEvent = { event: e, stack, type: 'processEvent' };
-          jsContext.dispatchEvent({ type: 'Miso.events', data: msg });
+          // Delegate: walk target -> mount looking for a handler whose config
+          // carries an eventKey ("componentId:staticKey") for this event. Only
+          // 'mainThread'-marked handlers carry one (see onWithOptions), so its
+          // presence means "dispatch on the main thread here". If none is found,
+          // it's a background handler — forward the delegation stack to the BTS.
+          let node : ElementRef | null = target;
+          let combined : string | undefined = undefined;
+          while (node) {
+            const eventKeys = (__GetConfig(node) as any)?.eventKeys;
+            if (eventKeys && eventKeys[name]) { combined = eventKeys[name]; break; }
+            if (ctx.isEqual(node, mount)) break;
+            node = ctx.parentNode(node);
+          }
+          if (combined) {
+            // Main-thread dispatch on the Haskell layer, no BTS round-trip.
+            const idx = combined.indexOf(':');
+            const componentId = Number(combined.slice(0, idx));
+            const staticKey = combined.slice(idx + 1);
+            (globalThis['runtime'] as any)['dispatchMainThreadEvent']
+              ({ componentId, staticKey, event: e, target: node });
+          } else {
+            // Background-thread event: build the delegation stack and forward.
+            const jsContext = lynx.getJSContext();
+            const stack = buildStack(mount, target, ctx);
+            const msg : ProcessEvent = { event: e, stack, type: 'processEvent' };
+            jsContext.dispatchEvent({ type: 'Miso.events', data: msg });
+          }
         }
       }, capture, null);
     }
@@ -75,16 +98,16 @@ export const drawingContext : DrawingContext<ElementRef> = {
     }
     return node;
   },
-  createElementNS : (ns : string, tag : string) => {
+  createElementNS : (ns : string, tag : string, events?: Record<string,string>) => {
     const node = globalThis['miso']['context']['createElement'](tag);
     if (globalThis['initialDraw']) {
         const nodeId: number = nextNodeId ();
         globalThis['runtime']['nodes'][nodeId] = node;
-        __SetConfig (node, { nodeId });
+        __SetConfig (node, events ? { nodeId, eventKeys: events } : { nodeId });
     }
     return node;
   },
-  createElement : (tag : string) => {
+  createElement : (tag : string, events?: Record<string,string>) => {
       var pageId = globalThis['native']['currentPageId'];
       var node = undefined;
       switch (tag) {
@@ -113,7 +136,7 @@ export const drawingContext : DrawingContext<ElementRef> = {
       if (globalThis['initialDraw']) {
           const nodeId: number = nextNodeId ();
           globalThis['runtime']['nodes'][nodeId] = node;
-          __SetConfig (node, { nodeId });
+          __SetConfig (node, events ? { nodeId, eventKeys: events } : { nodeId });
       }
       return node;
   },

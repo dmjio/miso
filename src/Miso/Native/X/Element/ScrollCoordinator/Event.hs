@@ -12,6 +12,7 @@
 module Miso.Native.X.Element.ScrollCoordinator.Event
   ( -- *** Events
     onOffset
+  , onOffsetWith
     -- *** Types
   , ScrollCoordinatorOffsetEvent (..)
     -- *** Decoders
@@ -24,10 +25,10 @@ import qualified Data.Map as M
 -----------------------------------------------------------------------------
 import           Miso.Event
 import           Miso.JSON
-import           Miso.Types (Attribute)
+import           Miso.Types (EventHandler, DOMRef)
 -----------------------------------------------------------------------------
 scrollCoordinatorEvents :: Events
-scrollCoordinatorEvents = M.fromList [ ("offset", BUBBLE) ]
+scrollCoordinatorEvents = backgroundEvents [ ("offset", BUBBLE) ]
 -----------------------------------------------------------------------------
 -- | Payload of the @bindoffset@ event.
 data ScrollCoordinatorOffsetEvent
@@ -50,6 +51,13 @@ offsetDecoder = ["detail"] `at` details
 --
 -- Callback reporting folding progress.
 --
-onOffset :: (ScrollCoordinatorOffsetEvent -> action) -> Attribute action
+onOffset :: (ScrollCoordinatorOffsetEvent -> action) -> EventHandler action
 onOffset action = on "offset" offsetDecoder (\e _ -> action e)
+-----------------------------------------------------------------------------
+
+-----------------------------------------------------------------------------
+-- | Like 'onOffset', but the handler also receives the target element's 'DOMRef'.
+-- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+onOffsetWith :: (ScrollCoordinatorOffsetEvent -> DOMRef -> action) -> EventHandler action
+onOffsetWith action = on "offset" offsetDecoder action
 -----------------------------------------------------------------------------

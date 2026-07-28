@@ -12,7 +12,10 @@ module Main where
 -----------------------------------------------------------------------------
 import           Miso hiding (text_)
 import           Miso.Native
-import           Miso.Native.Element.View.Event (onTap)
+import           Miso.Native.Element.View.Event (onTapWith)
+import           Miso.Native.MainThread (setStyleProperty)
+import           Miso.Event (mainThread)
+import           Miso.Effect (DOMRef)
 -----------------------------------------------------------------------------
 import           Miso.JSON
 import           Miso.Lens
@@ -22,114 +25,64 @@ import qualified Miso.CSS as CSS
 import           Control.Concurrent
 import           GHC.Generics
 -----------------------------------------------------------------------------
--- | Application model
+-- | Application actions
 data Action
-  = AddOne
-  | SubtractOne
-  | Ping
-  | Pong
+  = Toggle DOMRef
+  -- ^ main-thread tap: scale the touched element up/down. The CSS `transition`
+  -- on the element animates the change. Runs on the MTS with no diff/repaint.
   | NoOp
-  deriving stock (Generic, Show, Eq)
+  deriving stock (Generic)
   deriving anyclass (ToJSON, FromJSON)
 -----------------------------------------------------------------------------
--- | Entry point for a miso application
+-- | Entry point. The balloon's handler is marked 'mainThread' (per handler, not
+-- per event), so its @tap@ is dispatched on the MTS with no background round-trip.
 main :: IO ()
-main = native nativeEvents (static (mount_ counterComponent))
+main = startApp nativeEvents (static (mount_ counterComponent))
 -----------------------------------------------------------------------------
 counterComponent :: App Int Action
-counterComponent = (component 0 updateInt viewInt)
-  { mount = if mts then Just Ping else if bts then Just Pong else Nothing
-  }
+counterComponent = component 0 updateInt viewInt
 -----------------------------------------------------------------------------
-updateInt
-  :: Action
-  -> Effect context props Int Action
+updateInt :: Action -> Effect context props Int Action
 updateInt = \case
-  AddOne ->
+  Toggle ref -> do
+    -- Bump the (main-thread-local) model for toggle state, then imperatively
+    -- write `transform`. The scheduler runs this IO on the MTS and skips the
+    -- repaint; the CSS transition animates the element.
     this += 1
-  SubtractOne ->
-    this -= 1
-  Ping ->
-    runOnBG $ \sink -> do
-      threadDelay (secs 1)
-      consoleLog "ping"
-      sink Pong
-  Pong ->
-    runOnMain $ \sink -> do
-      threadDelay (secs 1)
-      consoleLog "pong"
-      sink Ping
+    n <- get
+    io_ $ setStyleProperty ref "transform"
+      (if odd n then "scale(1.6)" else "scale(1.0)")
+  NoOp ->
+    pure ()
 -----------------------------------------------------------------------------
 secs :: Int -> Int
 secs = (*1000000)
 -----------------------------------------------------------------------------
--- | Constructs a virtual DOM from a model
+-- | A single balloon; tap it to grow/shrink on the main thread.
 viewInt :: context -> props -> Int -> View context Action
-viewInt _ _ m = view_
+viewInt _ _ _ = view_
   [ CSS.style_
-    [ CSS.height "200px"
+    [ CSS.height "100%"
     , CSS.display "flex"
     , CSS.alignItems "center"
     , CSS.justifyContent "center"
     ]
   ]
   [ view_
-    [ onTap AddOne
+    [ event (static (mainThread (onTapWith Toggle)))
     , CSS.style_
-        [ CSS.backgroundColor CSS.yellow
-        , CSS.width "100px"
-        , CSS.height "100px"
-        , CSS.margin "2px"
+        [ CSS.backgroundColor CSS.blue
+        , CSS.width "120px"
+        , CSS.height "120px"
         , CSS.display "flex"
         , CSS.alignItems "center"
         , CSS.justifyContent "center"
+        , CSS.transition "transform 0.25s ease-out"
         ]
     ]
     [ text_
-      [ CSS.style_
-        [ CSS.fontSize "48px"
-        ]
-      ]
-      [ "🐈"
-      ]
+      [ CSS.style_ [ CSS.fontSize "56px" ] ]
+      [ "🎈" ]
     ]
-  , view_
-    [ CSS.style_
-        [ CSS.backgroundColor CSS.orange
-        , CSS.width "100px"
-        , CSS.height "100px"
-        , CSS.display "flex"
-        , CSS.alignItems "center"
-        , CSS.justifyContent "center"
-        ]
-    ]
-    [ text_
-      [ CSS.style_
-        [ CSS.fontSize "48px"
-        ]
-      ]
-      [ text (ms m)
-      ]
-    ]
-  , view_
-    [ onTap SubtractOne
-    , CSS.style_
-        [ CSS.backgroundColor CSS.pink
-        , CSS.width "100px"
-        , CSS.height "100px"
-        , CSS.margin "2px"
-        , CSS.display "flex"
-        , CSS.alignItems "center"
-        , CSS.justifyContent "center"
-        ]
-    ]
-    [ text_
-      [ CSS.style_
-        [ CSS.fontSize "48px"
-        ]
-      ]
-      [ "🍜"
-      ]
-    ]
- ]
+  ]
 -----------------------------------------------------------------------------

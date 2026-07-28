@@ -369,7 +369,10 @@ scheduler Proxy =
             -- props propagation, negated 'ComponentId' indicates render-phase only.
             vcomps <- readIORef components
             forM_ (IM.lookup (negate vcompId) vcomps) $ \ComponentState {..} -> do
-              _componentDraw _componentModel
+              -- The MTS never paints from the scheduler: props (and context) are
+              -- read-only there, hydrated over the COMPONENT protocol, and the
+              -- BTS drives all drawing via DOM patches. Suppress the redraw.
+              when (not mts) $ _componentDraw _componentModel
               _componentPropsPhase _prevComponentProps _componentProps
               -- Ship the updated @props@ to the MTS (BTS -> MTS); a no-op off 'bts'.
               _componentPropsHydrate _componentProps
@@ -381,8 +384,15 @@ scheduler Proxy =
     -----------------------------------------------------------------------------
     -- | Execute the commit phase against the model, perform top-down render
     -- of the entire Component tree.
+    --
+    -- On the MTS the commit phase still runs (its 'IO' effects — e.g. main-thread
+    -- event handlers imperatively mutating a 'DOMRef' — must fire), but the
+    -- subsequent draw is suppressed: the BTS is the sole paint authority and the
+    -- MTS never diffs\/patches from the scheduler.
     run :: ComponentId -> Seq action -> IO ()
-    run vcompId = mapM_ renderComponent <=< commit vcompId
+    run vcompId actions = do
+      rendered <- commit vcompId actions
+      when (not mts) (mapM_ renderComponent rendered)
     -----------------------------------------------------------------------------
     -- | Apply the actions across the model, evaluate async and sync IO.
     commit :: ComponentId -> Seq action -> IO (Maybe ComponentId)
@@ -1123,7 +1133,7 @@ buildVTree events_ parentId_ vcompId hydrate snk logLevel_ = \case
       pure (VTree vcomp_)
   VNode ns tag attrs kids -> do
     vnode_ <- createNode "vnode" ns tag
-    setAttrs vnode_ attrs snk logLevel_ events_
+    setAttrs vnode_ attrs snk vcompId logLevel_ events_
     vchildren <- toJSVal =<< procreate vnode_
     FFI.set "children" vchildren vnode_
     flip (FFI.set "type") vnode_ =<< toJSVal VNodeType
@@ -1197,10 +1207,11 @@ setAttrs
   :: Object
   -> [Attribute action]
   -> Sink action
+  -> ComponentId
   -> LogLevel
   -> Events
   -> IO ()
-setAttrs vnode_@(Object jval) attrs snk logLevel events =
+setAttrs vnode_@(Object jval) attrs snk vcompId logLevel events =
   forM_ attrs $ \case
     Property "key" v -> do
       value <- toJSVal v
@@ -1211,7 +1222,21 @@ setAttrs vnode_@(Object jval) attrs snk logLevel events =
       value <- toJSVal v
       o <- getProp "props" vnode_
       FFI.set k value (Object o)
-    On callback ->
+    On ptr ->
+      case deRefStaticPtr ptr of
+        EventHandler callback -> do
+          -- Stash the handler's 'StaticKey' and owning 'ComponentId' on the node
+          -- so 'onWithOptions' can attach them to the per-event object it creates;
+          -- the native PATCH protocol ships them to the MTS for main-thread ('MTS')
+          -- dispatch. Browser\/WASM never dereferences them, so skip the work there.
+          -- 'pendingMainThread' starts 'False'; the 'Miso.Event.mainThread' wrapper
+          -- (part of @callback@) flips it 'True' so only marked handlers opt in.
+          when (not web) $ do
+            FFI.set "pendingStaticKey" (staticKey ptr) vnode_
+            FFI.set "pendingComponentId" vcompId vnode_
+            FFI.set "pendingMainThread" False vnode_
+          callback snk (VTree vnode_) logLevel events
+    OnLocal (EventHandler callback) ->
       callback snk (VTree vnode_) logLevel events
     Styles styles -> do
       cssObj <- getProp "css" vnode_
@@ -2018,6 +2043,7 @@ initComponent events hydrate live initialContext vcomp_@Component {..} key props
         when mts $ do
           effectListener proxy =<< getBTSContext
           componentListener proxy =<< getBTSContext
+          registerMainThreadDispatch
 #endif
         root <- Diff.mountElement (getMountPoint mountPoint)
         when web (cleanup proxy live root)
@@ -2138,6 +2164,76 @@ componentListener Proxy (BTS ctx) = void $ do
                       componentProps .= newProps
                   Error e ->
                     FFI.consoleError ("[COMPONENT]: Could not decode props: " <> e)
+#endif
+----------------------------------------------------------------------------
+-- | Dispatch a main-thread ('MTS') event on the Haskell layer.
+--
+-- Invoked synchronously by the MTS delegator (see @ts\/miso\/native\/mts\/context.ts@)
+-- with a @{ componentId, staticKey, event, target }@ object. Recovers the event
+-- handler by its 'StaticKey', runs it against the owning component's 'Sink' to
+-- install its decode+dispatch closure on a scratch node, then invokes that
+-- closure with the live event and target 'DOMRef'. No BTS round-trip — the
+-- handler runs entirely on the main thread, and its 'update'\/effects run there
+-- (the scheduler suppresses the redraw; see 'scheduler').
+--
+-- N.B. 'unsafeLookupStaticPtr' recovers the handler at the component's @action@
+-- type. This is sound because the @(componentId, staticKey)@ pair is emitted
+-- together from the same component's 'setAttrs'; the handler's @action@ unifies
+-- with the sink's via the quantified 'components' CAF (no @unsafeCoerce@).
+#ifdef NATIVE
+dispatchMainThreadEvent :: JSVal -> IO ()
+dispatchMainThreadEvent arg =
+  flip catch (\(e :: SomeException) ->
+      FFI.consoleError ("[MTS dispatch] exception: " <> ms (show e))) $ do
+    let o = Object arg
+    compId    <- fromJSValUnchecked =<< o ! "componentId" :: IO ComponentId
+    skHex     <- fromJSValUnchecked =<< o ! "staticKey"   :: IO MisoString
+    eventVal  <- o ! "event"
+    targetVal <- o ! "target"
+    eventName <- fromJSValUnchecked =<< Object eventVal ! "type" :: IO MisoString
+    unsafeLookupStaticPtr (fromMisoString skHex) >>= \case
+      Nothing ->
+        FFI.consoleError ("[MTS dispatch] no handler for staticKey " <> skHex)
+      Just ehPtr -> case deRefStaticPtr ehPtr of
+        EventHandler cb -> do
+          comps <- readIORef components
+          case IM.lookup compId comps of
+            Nothing ->
+              FFI.consoleError ("[MTS dispatch] no component " <> ms (show compId))
+            Just ComponentState {..} -> do
+              -- Run the handler with this component's sink to install its
+              -- 'runEvent' (decoder + sink) on a throwaway node, then fire it.
+              scratch <- createNode "vnode" HTML "div"
+              cb _componentSink (VTree scratch) Off mempty
+              runner <- lookupEventRunner scratch eventName
+              forM_ runner $ \fn ->
+                void (call (Object fn) global [eventVal, targetVal])
+  where
+    -- Pull the installed 'runEvent' for @name@ out of the scratch node,
+    -- checking the capture phase then the bubble phase.
+    lookupEventRunner :: Object -> MisoString -> IO (Maybe JSVal)
+    lookupEventRunner scratch name = do
+      evs  <- getProp "events" scratch
+      caps <- getProp "captures" (Object evs)
+      capE <- Object caps ! name
+      capU <- isUndefined capE
+      entry <-
+        if not capU
+          then pure (Just capE)
+          else do
+            bubs <- getProp "bubbles" (Object evs)
+            bubE <- Object bubs ! name
+            bubU <- isUndefined bubE
+            pure (if bubU then Nothing else Just bubE)
+      traverse (\e -> Object e ! "runEvent") entry
+-----------------------------------------------------------------------------
+-- | Register 'dispatchMainThreadEvent' on @globalThis.runtime@ so the MTS
+-- delegator can invoke it synchronously. MTS only.
+registerMainThreadDispatch :: IO ()
+registerMainThreadDispatch = do
+  cb <- FFI.syncCallback1 dispatchMainThreadEvent
+  runtimeObj <- jsg "runtime"
+  FFI.set "dispatchMainThreadEvent" cb (Object runtimeObj)
 #endif
 ----------------------------------------------------------------------------
 -- | Dispatches a 'COMPONENT' lifecycle message (BTS → MTS) on the

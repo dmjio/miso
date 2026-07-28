@@ -131,6 +131,7 @@ module Miso.Types
   , Component     (..)
   , ComponentId
   , SomeComponent (..)
+  , EventHandler  (..)
   , View          (..)
   , Key           (..)
   , Attribute     (..)
@@ -152,6 +153,8 @@ module Miso.Types
   -- ** Smart Constructors
   , emptyURI
   , component
+  -- ** Event handler smart constructor
+  , event
   -- ** Component mounting
   , vcomp
   , (+>)
@@ -190,6 +193,7 @@ module Miso.Types
   , ms
   ) where
 -----------------------------------------------------------------------------
+import           Data.Function
 import qualified Data.Map.Strict as M
 import           Data.Maybe (fromMaybe, isJust)
 import           Data.String (IsString, fromString)
@@ -401,7 +405,6 @@ data View context action
   | VText (Maybe Key) MisoString
   | VComp (StaticPtr (SomeComponent context))
   | VFrag (Maybe Key) [View context action]
-  deriving Functor
 -----------------------------------------------------------------------------
 -- | Existential wrapper allowing nesting of t'Miso.Types.Component' in t'Miso.Types.Component'.
 --
@@ -671,23 +674,42 @@ instance ToKey Float where toKey = Key . toMisoString
 -- | Convert 'Word' to t'Key'
 instance ToKey Word where toKey = Key . toMisoString
 -----------------------------------------------------------------------------
+-- | Wrapper for event handler callbacks, used for cross-thread communication
+newtype EventHandler action = EventHandler (Sink action -> VTree -> LogLevel -> Events -> IO ())
+-----------------------------------------------------------------------------
+-- | Used to embed a static event handler
+--
+-- @
+-- button_ [ event $ static (onClick AddOne) ]
+-- @
+--
+event :: StaticPtr (EventHandler action) -> Attribute action
+event = On
+-----------------------------------------------------------------------------
 -- | Attribute of a vnode in a t'View'.
 --
 data Attribute action
   = Property MisoString Value
   | ClassList [MisoString]
-  | On (Sink action -> VTree -> LogLevel -> Events -> IO ())
+  | On (StaticPtr (EventHandler action))
   -- ^ The @Sink@ callback can be used to dispatch actions which are fed back to
   -- the @update@ function. This is especially useful for event handlers
   -- like the @onclick@ attribute. The second argument represents the
-  -- vnode the attribute is attached to.
+  -- vnode the attribute is attached to.j
+  | OnLocal (EventHandler action)
+  -- ^ A browser-local event handler that closes over runtime values and so
+  -- cannot be represented as a 'StaticPtr'. Unlike 'On', it is not
+  -- serializable across the dual-thread (Lynx) boundary; it runs in-place
+  -- during rendering. Used internally by "Miso.Canvas" for the @onCreated@
+  -- and @draw@ lifecycle callbacks.
   | Styles (M.Map MisoString MisoString)
-  deriving Functor
 -----------------------------------------------------------------------------
 instance Eq (Attribute action) where
   Property k1 v1 == Property k2 v2 = k1 == k2 && v1 == v2
   ClassList x == ClassList y = x == y
   Styles x == Styles y = x == y
+  On ptr1 == On ptr2 = on (==) staticKey ptr1 ptr2
+  OnLocal _ == OnLocal _ = False
   _ == _ = False
 -----------------------------------------------------------------------------
 instance Show (Attribute action) where
@@ -696,8 +718,10 @@ instance Show (Attribute action) where
       MS.unpack key <> "=" <> MS.unpack (ms (encode value))
     ClassList classes ->
       MS.unpack (MS.intercalate " " classes)
-    On _ ->
-      "<event-handler>"
+    On ptr ->
+      "<event-handler: " <> show (staticKey ptr) <> ">"
+    OnLocal _ ->
+      "<event-handler: local>"
     Styles styles ->
       MS.unpack $ MS.concat
         [ k <> "=" <> v <> ";"

@@ -31,6 +31,7 @@ module Miso.Event
      on
    , onCapture
    , onWithOptions
+   , mainThread
    , Phase (..)
    -- *** Lifecycle events
    , onCreated
@@ -52,7 +53,7 @@ import           Miso.DSL
 import           Miso.Event.Decoder
 import           Miso.Event.Types
 import qualified Miso.FFI.Internal as FFI
-import           Miso.Types (Attribute (On), LogLevel(..), DOMRef, VTree(..))
+import           Miso.Types (LogLevel(..), DOMRef, VTree(..), EventHandler(..))
 import           Miso.String (MisoString, ms)
 -----------------------------------------------------------------------------
 -- | Attach a bubble-phase event handler to a VDOM node.
@@ -72,7 +73,7 @@ on :: MisoString
    -- ^ How to extract a Haskell value from the browser event object
    -> (r -> DOMRef -> action)
    -- ^ Converts the decoded payload and the element's DOM reference to an @action@
-   -> Attribute action
+   -> EventHandler action
 on = onWithOptions BUBBLE defaultOptions
 -----------------------------------------------------------------------------
 -- | Attach a capture-phase event handler to a VDOM node.
@@ -93,7 +94,7 @@ onCapture
    -- ^ How to extract a Haskell value from the browser event object
    -> (r -> DOMRef -> action)
    -- ^ Converts the decoded payload and the element's DOM reference to an @action@
-   -> Attribute action
+   -> EventHandler action
 onCapture = onWithOptions CAPTURE defaultOptions
 -----------------------------------------------------------------------------
 -- | Attach an event handler with explicit phase and propagation options.
@@ -122,9 +123,29 @@ onWithOptions
   -- ^ How to extract a Haskell value from the browser event object
   -> (r -> DOMRef -> action)
   -- ^ Converts the decoded payload and the element's DOM reference to an @action@
-  -> Attribute action
+  -> EventHandler action
+-- | Mark an event handler to be dispatched on the Lynx __main thread__ ('MTS')
+-- rather than the background thread. This is the analog of Lynx's
+-- @main-thread:bind@ prefix, and is decided __per handler__ — so @tap@ can be a
+-- main-thread handler on one element and a background handler on another.
+--
+-- A main-thread handler runs imperatively on the MTS (no VDOM diff, no repaint);
+-- pair it with a @*With@ combinator to receive the target 'DOMRef' and mutate it
+-- via "Miso.Native.MainThread". No-op on the browser\/WASM runtime.
+--
+-- @
+-- view_ [ event (static (mainThread (onTapWith Grow))) ] children
+-- @
+--
+-- @since 1.9.0.0
+mainThread :: EventHandler action -> EventHandler action
+mainThread (EventHandler cb) =
+  EventHandler $ \sink vtree@(VTree node) logLevel events -> do
+    FFI.set "pendingMainThread" True node
+    cb sink vtree logLevel events
+-----------------------------------------------------------------------------
 onWithOptions phase options eventName Decoder{..} toAction =
-  On $ \sink (VTree n) logLevel events -> do
+  EventHandler $ \sink (VTree n) logLevel events -> do
     when (logLevel == DebugAll || logLevel == DebugEvents) $
       case M.lookup eventName events of
         Nothing ->
@@ -151,6 +172,20 @@ onWithOptions phase options eventName Decoder{..} toAction =
           Right event -> sink (toAction event domRef)
     FFI.set "runEvent" cb eventHandlerObject
     FFI.set "options" jsOptions eventHandlerObject
+    -- Only 'mainThread'-marked handlers carry their 'StaticKey' \/ 'ComponentId'
+    -- (stashed on the node by 'setAttrs') onto the per-event object. That is what
+    -- puts them in the node's @eventKeys@, telling the native delegator to
+    -- dispatch this handler on the main thread. Unmarked handlers (and the
+    -- browser\/WASM runtime) leave these off and delegate to the background.
+    pendingMT <- getProp "pendingMainThread" n
+    isMainThread <- fromJSVal pendingMT :: IO (Maybe Bool)
+    when (isMainThread == Just True) $ do
+      pendingKey <- getProp "pendingStaticKey" n
+      mKey <- fromJSVal pendingKey :: IO (Maybe MisoString)
+      maybe (pure ()) (\k -> FFI.set "staticKey" (k :: MisoString) eventHandlerObject) mKey
+      pendingCid <- getProp "pendingComponentId" n
+      mCid <- fromJSVal pendingCid :: IO (Maybe Int)
+      maybe (pure ()) (\c -> FFI.set "componentId" (c :: Int) eventHandlerObject) mCid
     FFI.set eventName eo (Object eventObj)
 -----------------------------------------------------------------------------
 -- | Fire an action immediately after the DOM element is inserted into the document.
@@ -163,9 +198,9 @@ onWithOptions phase options eventName Decoder{..} toAction =
 onCreated
   :: action
   -- ^ Action to dispatch after the element is inserted into the DOM
-  -> Attribute action
+  -> EventHandler action
 onCreated action =
-  On $ \sink (VTree object) _ _ -> do
+  EventHandler $ \sink (VTree object) _ _ -> do
     callback <- FFI.syncCallback (sink action)
     FFI.set "onCreated" callback object
 -----------------------------------------------------------------------------
@@ -178,9 +213,9 @@ onCreated action =
 onCreatedWith
   :: (DOMRef -> action)
   -- ^ Callback receiving the element's 'DOMRef' after it is inserted into the DOM
-  -> Attribute action
+  -> EventHandler action
 onCreatedWith action =
-  On $ \sink (VTree object) _ _ -> do
+  EventHandler $ \sink (VTree object) _ _ -> do
     callback <- FFI.syncCallback1 (sink . action)
     FFI.set "onCreated" callback object
 -----------------------------------------------------------------------------
@@ -193,9 +228,9 @@ onCreatedWith action =
 onDestroyed
   :: action
   -- ^ Action to dispatch after the element is removed from the DOM
-  -> Attribute action
+  -> EventHandler action
 onDestroyed action =
-  On $ \sink (VTree object) _ _ -> do
+  EventHandler $ \sink (VTree object) _ _ -> do
     callback <- FFI.syncCallback (sink action)
     FFI.set "onDestroyed" callback object
 -----------------------------------------------------------------------------
@@ -209,9 +244,9 @@ onDestroyed action =
 onBeforeDestroyed
   :: action
   -- ^ Action to dispatch just before the element is removed from the DOM
-  -> Attribute action
+  -> EventHandler action
 onBeforeDestroyed action =
-  On $ \sink (VTree object) _ _ -> do
+  EventHandler $ \sink (VTree object) _ _ -> do
     callback <- FFI.syncCallback (sink action)
     FFI.set "onBeforeDestroyed" callback object
 -----------------------------------------------------------------------------
@@ -222,9 +257,9 @@ onBeforeDestroyed action =
 onBeforeDestroyedWith
   :: (DOMRef -> action)
   -- ^ Callback receiving the element's 'DOMRef' just before it is removed from the DOM
-  -> Attribute action
+  -> EventHandler action
 onBeforeDestroyedWith action =
-  On $ \sink (VTree object) _ _ -> do
+  EventHandler $ \sink (VTree object) _ _ -> do
     callback <- FFI.syncCallback1 (sink . action)
     FFI.set "onBeforeDestroyed" callback object
 -----------------------------------------------------------------------------
@@ -238,9 +273,9 @@ onBeforeDestroyedWith action =
 onBeforeCreated
   :: action
   -- ^ Action to dispatch just before the element is inserted into the DOM
-  -> Attribute action
+  -> EventHandler action
 onBeforeCreated action =
-  On $ \sink (VTree object) _ _ -> do
+  EventHandler $ \sink (VTree object) _ _ -> do
     callback <- FFI.syncCallback (sink action)
     FFI.set "onBeforeCreated" callback object
 -----------------------------------------------------------------------------
