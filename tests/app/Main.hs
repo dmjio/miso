@@ -122,7 +122,7 @@ mountedComponents :: Test Int
 mountedComponents = IM.size <$> liftIO (readIORef components)
 -----------------------------------------------------------------------------
 testComponent :: Component () () Int Action
-testComponent = component (0 :: Int) update_ $ \_ _ _ -> button_ [ id_ "foo", onClick AddOne ] [ "click me " ]
+testComponent = component (0 :: Int) update_ $ \_ _ _ -> button_ [ id_ "foo", event (static (onClick AddOne)) ] [ "click me " ]
   where
     update_ = \case
       AddOne -> this += 1
