@@ -40,7 +40,7 @@ import           Miso.Types (EventHandler, DOMRef)
 -----------------------------------------------------------------------------
 imageEvents :: Events
 imageEvents
-  = backgroundEvents
+  = M.fromList
   [ ("load", BUBBLE)
   , ("error", BUBBLE)
   , ("startplay", BUBBLE)

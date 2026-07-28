@@ -41,7 +41,7 @@ import           Miso.Types (EventHandler, DOMRef)
 -----------------------------------------------------------------------------
 textareaEvents :: Events
 textareaEvents
-  = backgroundEvents
+  = M.fromList
   [ ("blur", BUBBLE)
   , ("confirm", BUBBLE)
   , ("focus", BUBBLE)

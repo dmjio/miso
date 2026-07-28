@@ -40,7 +40,7 @@ import           Miso.Types (EventHandler, DOMRef)
 -----------------------------------------------------------------------------
 overlayEvents :: Events
 overlayEvents
-  = backgroundEvents
+  = M.fromList
   [ ("dismissoverlay", BUBBLE)
   , ("error", BUBBLE)
   , ("overlaytouch", BUBBLE)

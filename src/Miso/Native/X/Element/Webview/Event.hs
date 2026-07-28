@@ -40,7 +40,7 @@ import           Miso.Types (EventHandler, DOMRef)
 -----------------------------------------------------------------------------
 webviewEvents :: Events
 webviewEvents
-  = backgroundEvents
+  = M.fromList
   [ ("error", BUBBLE)
   , ("load", BUBBLE)
   , ("locationchange", BUBBLE)

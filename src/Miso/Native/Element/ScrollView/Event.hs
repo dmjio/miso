@@ -38,7 +38,7 @@ import           Miso.String (MisoString)
 -----------------------------------------------------------------------------
 scrollViewEvents :: Events
 scrollViewEvents
-  = backgroundEvents
+  = M.fromList
   [ ("scroll", BUBBLE)
   , ("scrolltoupper", BUBBLE)
   , ("scrolltolower", BUBBLE)

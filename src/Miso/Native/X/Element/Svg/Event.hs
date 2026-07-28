@@ -23,7 +23,7 @@ import           Miso.Event
 import           Miso.Types (EventHandler, DOMRef)
 -----------------------------------------------------------------------------
 svgEvents :: Events
-svgEvents = backgroundEvents [ ("load", BUBBLE) ]
+svgEvents = M.fromList [ ("load", BUBBLE) ]
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/svg.html#bindload
 --

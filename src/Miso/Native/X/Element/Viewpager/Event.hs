@@ -34,7 +34,7 @@ import           Miso.Types (EventHandler, DOMRef)
 -----------------------------------------------------------------------------
 viewpagerEvents :: Events
 viewpagerEvents
-  = backgroundEvents
+  = M.fromList
   [ ("change", BUBBLE)
   , ("offsetchange", BUBBLE)
   , ("willchange", BUBBLE)

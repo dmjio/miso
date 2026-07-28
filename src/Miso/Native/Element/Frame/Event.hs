@@ -34,7 +34,7 @@ import           Miso.Types (EventHandler, DOMRef)
 -----------------------------------------------------------------------------
 frameEvents :: Events
 frameEvents
-  = backgroundEvents
+  = M.fromList
   [ ("load", BUBBLE)
   , ("loadmetrics", BUBBLE)
   ]

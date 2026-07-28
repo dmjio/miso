@@ -29,6 +29,7 @@ module Miso.Native.Element.Text.Event
   , textEvents
   ) where
 -----------------------------------------------------------------------------
+import qualified Data.Map as M
 import           Miso.Event
 import           Miso.JSON
 ----------------------------------------------------------------------------
@@ -36,7 +37,7 @@ import           Miso.Types (EventHandler, DOMRef)
 ----------------------------------------------------------------------------
 textEvents :: Events
 textEvents
-  = backgroundEvents
+  = M.fromList
   [ ("layout", BUBBLE)
   , ("selectionchange", BUBBLE)
   ]

@@ -87,7 +87,6 @@ module Miso.Event.Types
   , mediaEvents
   , clipboardEvents
   , touchEvents
-  , backgroundEvents
   ) where
 -----------------------------------------------------------------------------
 import           Miso.JSON (FromJSON(..), withText)
@@ -216,13 +215,9 @@ defaultOptions
 -- per event name — mirroring Lynx's @main-thread:bind@ vs @bind@ prefix.
 type Events = M.Map MisoString Phase
 -----------------------------------------------------------------------------
--- | Build an 'Events' map from @(name, phase)@ pairs.
-backgroundEvents :: [(MisoString, Phase)] -> Events
-backgroundEvents = M.fromList
------------------------------------------------------------------------------
 -- | Default delegated events
 defaultEvents :: Events
-defaultEvents = backgroundEvents
+defaultEvents = M.fromList
   [ ("blur", CAPTURE)
   , ("change", BUBBLE)
   , ("click", BUBBLE)
@@ -236,7 +231,7 @@ defaultEvents = backgroundEvents
 -----------------------------------------------------------------------------
 -- | Keyboard events
 keyboardEvents :: Events
-keyboardEvents = backgroundEvents
+keyboardEvents = M.fromList
   [ ("keydown", BUBBLE)
   , ("keypress", BUBBLE)
   , ("keyup", BUBBLE)
@@ -244,7 +239,7 @@ keyboardEvents = backgroundEvents
 -----------------------------------------------------------------------------
 -- | Mouse events
 mouseEvents :: Events
-mouseEvents = backgroundEvents
+mouseEvents = M.fromList
   [ ("mouseup", BUBBLE)
   , ("mousedown", BUBBLE)
   , ("mouseenter", CAPTURE)
@@ -256,7 +251,7 @@ mouseEvents = backgroundEvents
 -----------------------------------------------------------------------------
 -- | Drag events
 dragEvents :: Events
-dragEvents = backgroundEvents
+dragEvents = M.fromList
   [ ("dragstart", BUBBLE)
   , ("dragover", BUBBLE)
   , ("dragend", BUBBLE)
@@ -268,7 +263,7 @@ dragEvents = backgroundEvents
 -----------------------------------------------------------------------------
 -- | Pointer events
 pointerEvents :: Events
-pointerEvents = backgroundEvents
+pointerEvents = M.fromList
   [ ("pointerup", BUBBLE)
   , ("pointerdown", BUBBLE)
   , ("pointerenter", CAPTURE)
@@ -287,7 +282,7 @@ pointerEvents = backgroundEvents
 -- myApp = ('Miso.Types.component' model update view){ events = 'defaultEvents' <> 'mediaEvents' }
 -- @
 mediaEvents :: Events
-mediaEvents = backgroundEvents
+mediaEvents = M.fromList
   [ ("abort", CAPTURE)
   , ("canplay", CAPTURE)
   , ("canplaythrough", CAPTURE)
@@ -314,7 +309,7 @@ mediaEvents = backgroundEvents
 -----------------------------------------------------------------------------
 -- | Clipboard events
 clipboardEvents :: Events
-clipboardEvents = backgroundEvents
+clipboardEvents = M.fromList
   [ ("cut", BUBBLE)
   , ("copy", BUBBLE)
   , ("paste", BUBBLE)
@@ -322,7 +317,7 @@ clipboardEvents = backgroundEvents
 -----------------------------------------------------------------------------
 -- | Touch events
 touchEvents :: Events
-touchEvents = backgroundEvents
+touchEvents = M.fromList
   [ ("touchstart", BUBBLE)
   , ("touchcancel", BUBBLE)
   , ("touchmove", BUBBLE)

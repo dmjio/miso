@@ -38,7 +38,7 @@ import           Miso.Types (EventHandler, DOMRef)
 -----------------------------------------------------------------------------
 refreshEvents :: Events
 refreshEvents
-  = backgroundEvents
+  = M.fromList
   [ ("headeroffset", BUBBLE)
   , ("refreshstatechange", BUBBLE)
   , ("startrefresh", BUBBLE)

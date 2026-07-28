@@ -49,7 +49,7 @@ import           Miso.String (MisoString)
 -----------------------------------------------------------------------------
 listEvents :: Events
 listEvents
-  = backgroundEvents
+  = M.fromList
   [ ("scroll", BUBBLE)
   , ("scrolltoupper", BUBBLE)
   , ("scrolltolower", BUBBLE)

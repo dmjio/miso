@@ -64,14 +64,15 @@ module Miso.Native.Element.View.Event
 import Control.Applicative (liftA2)
 #endif
 -----------------------------------------------------------------------------
-import           Miso.Event (on, Decoder(..), DecodeTarget(..), Events, emptyDecoder, Phase(BUBBLE), backgroundEvents)
+import qualified Data.Map as M
+import           Miso.Event (on, Decoder(..), DecodeTarget(..), Events, emptyDecoder, Phase(BUBBLE))
 import           Miso.JSON
 import           Miso.String (MisoString)
 import           Miso.Types (EventHandler, DOMRef)
 ----------------------------------------------------------------------------
 viewEvents :: Events
 viewEvents
-  = backgroundEvents
+  = M.fromList
   [ ("touchstart", BUBBLE)
   , ("touchmove", BUBBLE)
   , ("touchend", BUBBLE)

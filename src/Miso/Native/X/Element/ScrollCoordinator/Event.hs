@@ -28,7 +28,7 @@ import           Miso.JSON
 import           Miso.Types (EventHandler, DOMRef)
 -----------------------------------------------------------------------------
 scrollCoordinatorEvents :: Events
-scrollCoordinatorEvents = backgroundEvents [ ("offset", BUBBLE) ]
+scrollCoordinatorEvents = M.fromList [ ("offset", BUBBLE) ]
 -----------------------------------------------------------------------------
 -- | Payload of the @bindoffset@ event.
 data ScrollCoordinatorOffsetEvent

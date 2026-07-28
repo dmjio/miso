@@ -41,7 +41,7 @@ import           Miso.Types (EventHandler, DOMRef)
 -----------------------------------------------------------------------------
 inputEvents :: Events
 inputEvents
-  = backgroundEvents
+  = M.fromList
   [ ("blur", BUBBLE)
   , ("confirm", BUBBLE)
   , ("focus", BUBBLE)
