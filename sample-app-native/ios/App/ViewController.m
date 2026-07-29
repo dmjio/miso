@@ -30,21 +30,25 @@ static NSString* const kTemplateURL = @"main.lynx.bundle";
     [builder setThreadStrategyForRender:LynxThreadStrategyForRenderAllOnUI];
   }];
 
-  lynxView.frame = self.view.bounds;
-  lynxView.preferredLayoutWidth = screenSize.width;
-  lynxView.preferredLayoutHeight = screenSize.height;
   lynxView.layoutWidthMode = LynxViewSizeModeExact;
   lynxView.layoutHeightMode = LynxViewSizeModeExact;
   [self.view addSubview:lynxView];
   self.lynxView = lynxView;
 
   [lynxView loadTemplateFromURL:kTemplateURL initData:nil];
-  [lynxView triggerLayout];
 }
 
+// Inset the LynxView to the safe area so the app's 100vh viewport sits below the
+// status bar / notch and above the home indicator, rather than under them.
+// safeAreaInsets is only valid once the view has laid out, so we size here (not
+// in viewDidLoad) and keep the Lynx layout viewport in sync on rotation, etc.
 - (void)viewDidLayoutSubviews {
   [super viewDidLayoutSubviews];
-  self.lynxView.frame = self.view.bounds;
+  CGRect safeFrame = UIEdgeInsetsInsetRect(self.view.bounds, self.view.safeAreaInsets);
+  self.lynxView.frame = safeFrame;
+  self.lynxView.preferredLayoutWidth = safeFrame.size.width;
+  self.lynxView.preferredLayoutHeight = safeFrame.size.height;
+  [self.lynxView triggerLayout];
 }
 
 @end
