@@ -491,8 +491,26 @@ function diffAttrs(c, n, context) {
   diffProps(c ? c.props : {}, n.props, n.domRef, n.ns === "svg", context);
   diffClass(c ? c.classList : null, n.classList, n.domRef, context);
   diffCss(c ? c.css : {}, n.css, n.domRef, context);
+  diffEvents(c, n, context);
   diffChildren(c ? c.children : [], n.children, n.domRef, context);
   drawCanvas(n);
+}
+function diffEvents(c, n, context) {
+  if (!onBTS() && !onMTS())
+    return;
+  for (const capture of [true, false]) {
+    const cKeys = eventEntries(c, capture);
+    const nKeys = eventEntries(n, capture);
+    for (const name in cKeys) {
+      if (!(name in nKeys))
+        context.removeEvent(n.domRef, name, capture);
+    }
+    for (const name in nKeys) {
+      const nk = nKeys[name], ck = cKeys[name];
+      if (!ck || !sameEventKey(nk, ck))
+        context.addEvent(n.domRef, name, nk);
+    }
+  }
 }
 function diffClass(c, n, domRef, context) {
   if (!c && !n) {
@@ -524,10 +542,11 @@ function diffClass(c, n, domRef, context) {
 }
 function diffProps(cProps, nProps, node, isSvg, context) {
   var newProp;
+  const native = onBTS() || onMTS();
   for (const c in cProps) {
     newProp = nProps[c];
     if (newProp === undefined) {
-      if (isSvg || !(c in node) || c === "disabled") {
+      if (isSvg || native || !(c in node) || c === "disabled") {
         context.removeAttribute(node, c);
       } else {
         context.setAttribute(node, c, "");
@@ -541,7 +560,7 @@ function diffProps(cProps, nProps, node, isSvg, context) {
         } else {
           context.setAttribute(node, c, newProp);
         }
-      } else if (c in node && !(c === "list" || c === "form")) {
+      } else if (!native && c in node && !(c === "list" || c === "form")) {
         node[c] = newProp;
       } else {
         context.setAttribute(node, c, newProp);
@@ -558,7 +577,7 @@ function diffProps(cProps, nProps, node, isSvg, context) {
       } else {
         context.setAttribute(node, n, newProp);
       }
-    } else if (n in node && !(n === "list" || n === "form")) {
+    } else if (!native && n in node && !(n === "list" || n === "form")) {
       node[n] = nProps[n];
     } else {
       context.setAttribute(node, n, newProp);
@@ -601,29 +620,29 @@ function diffChildren(cs, ns, parent, context, endAnchor = null) {
     }
   }
 }
-function eventStaticKeys(c) {
+function eventEntries(c, capture) {
   const out = {};
-  let any = false;
-  for (const phase of [c.events.captures, c.events.bubbles]) {
-    for (const name in phase) {
-      const sk = phase[name].staticKey;
-      const cid = phase[name].componentId;
-      if (sk !== undefined && cid !== undefined) {
-        out[name] = cid + ":" + sk;
-        any = true;
-      }
+  if (!c)
+    return out;
+  const phase = capture ? c.events.captures : c.events.bubbles;
+  for (const name in phase) {
+    const { staticKey, componentId, options } = phase[name];
+    if (staticKey !== undefined && componentId !== undefined) {
+      out[name] = { capture, staticKey, componentId, options };
     }
   }
-  return any ? out : undefined;
+  return out;
+}
+function sameEventKey(a, b) {
+  return a.staticKey === b.staticKey && a.componentId === b.componentId && a.options.preventDefault === b.options.preventDefault && a.options.stopPropagation === b.options.stopPropagation;
 }
 function populateDomRef(c, context) {
-  const events = eventStaticKeys(c);
   if (c.ns === "svg") {
-    c.domRef = context.createElementNS("http://www.w3.org/2000/svg", c.tag, events);
+    c.domRef = context.createElementNS("http://www.w3.org/2000/svg", c.tag);
   } else if (c.ns === "mathml") {
-    c.domRef = context.createElementNS("http://www.w3.org/1998/Math/MathML", c.tag, events);
+    c.domRef = context.createElementNS("http://www.w3.org/1998/Math/MathML", c.tag);
   } else {
-    c.domRef = context.createElement(c.tag, events);
+    c.domRef = context.createElement(c.tag);
   }
 }
 function callCreated(parent, n, context) {
@@ -1139,6 +1158,8 @@ var drawingContext = {
     if (className)
       domRef.classList.remove(className);
   },
+  addEvent: (_node, _name, _key) => {},
+  removeEvent: (_node, _name, _capture) => {},
   insertBefore: (parent, child, node) => {
     return parent.insertBefore(child, node);
   },

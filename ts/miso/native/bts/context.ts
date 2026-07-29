@@ -8,6 +8,8 @@ import {
   delegateEvent,
   VTree,
   AddClass,
+  AddEvent,
+  RemoveEvent,
   PATCH,
   CreateTextNode,
   CreateElement,
@@ -89,6 +91,29 @@ const drawingContext : DrawingContext<NodeId> = {
     addPatch(patch);
     return;
   },
+  addEvent : (n, name, key) => {
+    const patch : AddEvent = {
+        type : "addEvent",
+        nodeId : n.nodeId,
+        name,
+        capture : key.capture,
+        staticKey : key.staticKey,
+        componentId : key.componentId,
+        options : key.options,
+    };
+    addPatch(patch);
+    return;
+  },
+  removeEvent : (n, name, capture) => {
+    const patch : RemoveEvent = {
+        type : "removeEvent",
+        nodeId : n.nodeId,
+        name,
+        capture,
+    };
+    addPatch(patch);
+    return;
+  },
   nextSibling : (x : VComp<NodeId>) => {
     return getDOMRef(x.nextSibling);
   },
@@ -101,7 +126,7 @@ const drawingContext : DrawingContext<NodeId> = {
     } as CreateTextNode);
     return { nodeId };
   },
-  createElementNS : (ns: string, tag: string, events?: Record<string,string>) => {
+  createElementNS : (ns: string, tag: string) => {
     const nodeId: number = nextNodeId ();
     let patch : CreateElementNS = {
         type : "createElementNS",
@@ -109,18 +134,16 @@ const drawingContext : DrawingContext<NodeId> = {
         nodeId,
         tag
     };
-    if (events) patch.events = events;
     addPatch(patch);
     return { nodeId };
   },
-  createElement : (tag, events?: Record<string,string>) => {
+  createElement : (tag) => {
     const nodeId: number = nextNodeId ();
     let patch : CreateElement = {
         type : "createElement",
         nodeId,
         tag
     };
-    if (events) patch.events = events;
     addPatch(patch);
     return { nodeId };
   },

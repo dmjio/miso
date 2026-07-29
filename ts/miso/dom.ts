@@ -1,5 +1,5 @@
-import { Class, Mount, DrawingContext, CSS, VNode, VFrag, VText, VComp, VTree, Props, VTreeType, OP } from './types';
-import { forEachDOMRef, getFirstDOMRef, getLastDOMRef } from './util';
+import { Class, Mount, DrawingContext, CSS, EventKey, VNode, VFrag, VText, VComp, VTree, Props, VTreeType, OP } from './types';
+import { forEachDOMRef, getFirstDOMRef, getLastDOMRef, onBTS, onMTS } from './util';
 
 /* virtual-dom diffing algorithm, applies patches as detected */
 export function diff<T>(c: VTree<T>, n: VTree<T>, parent: T, context: DrawingContext<T>): void {
@@ -196,8 +196,31 @@ export function diffAttrs<T>(c: VNode<T> | null, n: VNode<T>, context: DrawingCo
     diffProps(c ? c.props : {}, n.props, n.domRef, n.ns === 'svg', context);
     diffClass(c ? c.classList : null, n.classList, n.domRef, context);
     diffCss(c ? c.css : {}, n.css, n.domRef, context);
+    diffEvents(c, n, context);
     diffChildren(c ? c.children : [], n.children, n.domRef, context);
     drawCanvas(n);
+}
+
+/* Diff main-thread event keys (name -> "componentId:staticKey") between the old
+   and new VNode, emitting addEvent/removeEvent so the native runtime can build
+   and update its per-node event registry. This is the single path for event
+   keys: on creation (c === null) every key is emitted as an addEvent; on update
+   only the keys that changed. Only the Lynx dual-thread runtime dispatches by
+   key, so this is skipped entirely in web builds — there __BACKGROUND__ and
+   __MAIN_THREAD__ are both undefined and events are handled via closures. */
+function diffEvents<T>(c: VNode<T> | null, n: VNode<T>, context: DrawingContext<T>): void {
+    if (!onBTS() && !onMTS()) return;
+    for (const capture of [true, false]) {
+        const cKeys = eventEntries(c, capture);
+        const nKeys = eventEntries(n, capture);
+        for (const name in cKeys) {
+            if (!(name in nKeys)) context.removeEvent(n.domRef, name, capture);
+        }
+        for (const name in nKeys) {
+            const nk = nKeys[name], ck = cKeys[name];
+            if (!ck || !sameEventKey(nk, ck)) context.addEvent(n.domRef, name, nk);
+        }
+    }
 }
 
 export function diffClass<T> (c: Class, n: Class, domRef: T, context: DrawingContext<T>): void {
@@ -239,13 +262,19 @@ export function diffClass<T> (c: Class, n: Class, domRef: T, context: DrawingCon
 
 function diffProps<T extends Object>(cProps: Props, nProps: Props, node: T, isSvg: boolean, context: DrawingContext<T>): void {
   var newProp;
+  // On the native (Lynx) runtime a "node" is an opaque element handle, not a DOM
+  // node — assigning `node[key] = value` does nothing; properties must go through
+  // setAttribute (__SetAttribute), which drives the element's native prop setters
+  // (e.g. scroll-view's scroll-orientation / enable-scroll). The `key in node`
+  // reflection branch is a browser-DOM optimization only.
+  const native = onBTS() || onMTS();
   /* Is current prop in new prop list? */
   for (const c in cProps) {
     newProp = nProps[c];
     /* If current property no longer exists, remove it */
     if (newProp === undefined) {
       /* current key is not in node, remove it from DOM, if SVG, remove attribute */
-      if (isSvg || !(c in node) || c === 'disabled') {
+      if (isSvg || native || !(c in node) || c === 'disabled') {
         context.removeAttribute(node, c);
       } else {
         context.setAttribute(node, c, '');
@@ -260,7 +289,7 @@ function diffProps<T extends Object>(cProps: Props, nProps: Props, node: T, isSv
         } else {
           context.setAttribute(node, c, newProp);
         }
-      } else if (c in node && !(c === 'list' || c === 'form')) {
+      } else if (!native && c in node && !(c === 'list' || c === 'form')) {
           node[c] = newProp;
       } else {
           context.setAttribute(node, c, newProp);
@@ -278,7 +307,7 @@ function diffProps<T extends Object>(cProps: Props, nProps: Props, node: T, isSv
       } else {
         context.setAttribute(node, n, newProp);
       }
-    } else if (n in node && !(n === 'list' || n === 'form')) {
+    } else if (!native && n in node && !(n === 'list' || n === 'form')) {
       node[n] = nProps[n];
     } else {
       context.setAttribute(node, n, newProp);
@@ -326,31 +355,38 @@ function diffChildren<T>(cs: Array<VTree<T>>, ns: Array<VTree<T>>, parent: T, co
   }
 }
 
-/* Collect event-name -> "componentId:staticKeyHex" for a node, so the native
-   runtime can dispatch main-thread events by key (recovering the handler) and
-   locate the owning component's sink. Undefined when no handler carries a
-   staticKey (e.g. the browser/WASM runtime, which never populates it). */
-function eventStaticKeys<T>(c: VNode<T>): Record<string,string> | undefined {
-  const out: Record<string,string> = {};
-  let any = false;
-  for (const phase of [c.events.captures, c.events.bubbles]) {
-    for (const name in phase) {
-      const sk = phase[name].staticKey;
-      const cid = phase[name].componentId;
-      if (sk !== undefined && cid !== undefined) { out[name] = cid + ':' + sk; any = true; }
+/* Collect event-name -> EventKey for one phase of a node, keeping capture and
+   bubble separate so the native delegator can route by phase in JS (and so a
+   node carrying the same event in both phases doesn't collide). Empty for
+   handlers with no staticKey (e.g. the browser/WASM runtime, which never
+   populates it). */
+function eventEntries<T>(c: VNode<T> | null, capture: boolean): Record<string,EventKey> {
+  const out: Record<string,EventKey> = {};
+  if (!c) return out;
+  const phase = capture ? c.events.captures : c.events.bubbles;
+  for (const name in phase) {
+    const { staticKey, componentId, options } = phase[name];
+    if (staticKey !== undefined && componentId !== undefined) {
+      out[name] = { capture, staticKey, componentId, options };
     }
   }
-  return any ? out : undefined;
+  return out;
+}
+
+function sameEventKey(a: EventKey, b: EventKey): boolean {
+  return a.staticKey === b.staticKey
+      && a.componentId === b.componentId
+      && a.options.preventDefault === b.options.preventDefault
+      && a.options.stopPropagation === b.options.stopPropagation;
 }
 
 function populateDomRef<T>(c: VNode<T>, context: DrawingContext<T>): void {
-  const events = eventStaticKeys(c);
   if (c.ns === 'svg') {
-    c.domRef = context.createElementNS('http://www.w3.org/2000/svg', c.tag, events);
+    c.domRef = context.createElementNS('http://www.w3.org/2000/svg', c.tag);
   } else if (c.ns === 'mathml') {
-    c.domRef = context.createElementNS('http://www.w3.org/1998/Math/MathML', c.tag, events);
+    c.domRef = context.createElementNS('http://www.w3.org/1998/Math/MathML', c.tag);
   } else {
-    c.domRef = context.createElement(c.tag, events);
+    c.domRef = context.createElement(c.tag);
   }
 }
 

@@ -148,11 +148,11 @@ export type ComponentContext = {
 export type DrawingContext<T> = {
   nextSibling : (node: VTree<T>) => T | null;
   createTextNode : (s: string) => T;
-  createElementNS : (ns: string, tag : string, events?: Record<string,string>) => T;
+  createElementNS : (ns: string, tag : string) => T;
   appendChild : (parent: T, child: T) => void;
   replaceChild : (parent: T, n: T, o: T) => void;
   removeChild : (parent: T, child: T) => void;
-  createElement : (name: string, events?: Record<string,string>) => T;
+  createElement : (name: string) => T;
   insertBefore : (parent: T, child: T, node: T) => void;
   swapDOMRefs: (a: T, b: T, p: T) => void;
   setAttribute : (node: T, key: string, value : any) => void;
@@ -162,6 +162,11 @@ export type DrawingContext<T> = {
   setInlineStyle : (cCss: CSS, nCss: CSS, node : T) => void;
   addClass : (c: string, domRef: T) => void;
   removeClass : (c: string, domRef: T) => void;
+  /** Register/replace the main-thread handler for event `name` on `node`,
+   * keyed by phase, so the delegator can route it in JS. No-op on runtimes that
+   * dispatch by closure. */
+  addEvent : (node: T, name: string, key: EventKey) => void;
+  removeEvent : (node: T, name: string, capture: boolean) => void;
   flush : () => void;
   /** @since 1.9.0.0 */
   getHead : () => T;
@@ -213,6 +218,8 @@ export type PATCH
   | ModelHydration
   | AddClass
   | RemoveClass
+  | AddEvent
+  | RemoveEvent
   | Flush;
 
 /* Event protocol: MTS → BTS */
@@ -259,18 +266,14 @@ export type SwapDOMRefs = {
 export type CreateElement = {
   nodeId: number,
   tag: string,
-  type: "createElement",
-  /** event name -> handler 'StaticKey' hex, for main-thread event dispatch */
-  events?: Record<string,string>
+  type: "createElement"
 };
 
 export type CreateElementNS = {
   nodeId: number,
   tag: string,
   namespace: string,
-  type: "createElementNS",
-  /** event name -> handler 'StaticKey' hex, for main-thread event dispatch */
-  events?: Record<string,string>
+  type: "createElementNS"
 };
 
 export type CreateTextNode = {
@@ -329,6 +332,38 @@ export type AddClass = {
   type: "addClass",
   nodeId: number,
   key: string,
+};
+
+/* Serializable subset of an EventObject, carried across the BTS -> MTS boundary
+   so the MTS delegator can route a main-thread event in JS: pick the handler by
+   phase (capture/bubble) and apply preventDefault/stopPropagation itself. The
+   runEvent closure cannot cross the boundary; the staticKey stands in for it. */
+export type EventKey = {
+  /** capture phase (true) vs bubble phase (false) */
+  capture: boolean,
+  /** hex 'StaticKey' of the handler, for main-thread dispatch */
+  staticKey: string,
+  /** owning component id, to locate the sink / unify the action */
+  componentId: number,
+  options: Options,
+};
+
+export type AddEvent = {
+  type: "addEvent",
+  nodeId: number,
+  /** event name, e.g. "click" */
+  name: string,
+  capture: boolean,
+  staticKey: string,
+  componentId: number,
+  options: Options,
+};
+
+export type RemoveEvent = {
+  type: "removeEvent",
+  nodeId: number,
+  name: string,
+  capture: boolean,
 };
 
 export type SetTextContent = {

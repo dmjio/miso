@@ -24,6 +24,13 @@ export function patch<T> (context: DrawingContext<T>, patch: PATCH, runtime: Run
     case "removeClass":
         context.removeClass (patch.key, runtime.nodes[patch.nodeId]);
         break;
+    case "addEvent":
+        context.addEvent (runtime.nodes[patch.nodeId], patch.name,
+          { capture: patch.capture, staticKey: patch.staticKey, componentId: patch.componentId, options: patch.options });
+        break;
+    case "removeEvent":
+        context.removeEvent (runtime.nodes[patch.nodeId], patch.name, patch.capture);
+        break;
     case "setAttributeNS":
         context.setAttributeNS (runtime.nodes[patch.nodeId], patch.namespace, patch.key, patch.value)
         break;

@@ -1,4 +1,4 @@
-import { NodeId, getDOMRef, VComp, DrawingContext, EventContext, EventCapture, ProcessEvent } from '../../../miso';
+import { NodeId, getDOMRef, VComp, DrawingContext, EventContext, EventCapture, EventKey, ProcessEvent } from '../../../miso';
 import type { ElementRef } from '@lynx-js/type-element-api';
 
 function buildStack(root: ElementRef, target: ElementRef, ctx: EventContext<ElementRef>): Array<number> {
@@ -26,28 +26,35 @@ export const eventContext : EventContext<ElementRef> = {
         const evts = Array.isArray(event) ? event : [event];
         for (const e of evts) {
           const target = ctx.getTarget(e);
-          // Delegate: walk target -> mount looking for a handler whose config
-          // carries an eventKey ("componentId:staticKey") for this event. Only
-          // 'mainThread'-marked handlers carry one (see onWithOptions), so its
-          // presence means "dispatch on the main thread here". If none is found,
-          // it's a background handler — forward the delegation stack to the BTS.
-          let node : ElementRef | null = target;
-          let combined : string | undefined = undefined;
-          while (node) {
-            const eventKeys = (__GetConfig(node) as any)?.eventKeys;
-            if (eventKeys && eventKeys[name]) { combined = eventKeys[name]; break; }
+          // Build the ancestor chain target -> mount, then delegate among
+          // main-thread handlers along it. A handler is "main-thread" iff the
+          // node's config carries an eventKey for this event *in this phase*
+          // (capture/bubble); the phase is this listener's own `capture` flag.
+          const phase = capture ? 'captures' : 'bubbles';
+          const chain : Array<ElementRef> = [];
+          for (let node : ElementRef | null = target; node; node = ctx.parentNode(node)) {
+            chain.push(node);
             if (ctx.isEqual(node, mount)) break;
-            node = ctx.parentNode(node);
           }
-          if (combined) {
-            // Main-thread dispatch on the Haskell layer, no BTS round-trip.
-            const idx = combined.indexOf(':');
-            const componentId = Number(combined.slice(0, idx));
-            const staticKey = combined.slice(idx + 1);
+          // Capture runs mount -> target (top-down); bubble runs target -> mount
+          // (bottom-up). chain is target-first, so reverse for capture.
+          const order = capture ? chain.slice().reverse() : chain;
+          let fired = false;
+          for (const node of order) {
+            const entry = (__GetConfig(node) as any)?.eventKeys?.[phase]?.[name];
+            if (!entry) continue;
+            fired = true;
+            // Route in JS: apply the handler's options, then dispatch on the
+            // Haskell layer (no BTS round-trip). stopPropagation halts the climb.
+            if (entry.options.preventDefault && (e as any).preventDefault) (e as any).preventDefault();
             (globalThis['runtime'] as any)['dispatchMainThreadEvent']
-              ({ componentId, staticKey, event: e, target: node });
-          } else {
-            // Background-thread event: build the delegation stack and forward.
+              ({ componentId: entry.componentId, staticKey: entry.staticKey, event: e, target: node });
+            if (entry.options.stopPropagation) break;
+          }
+          if (!fired) {
+            // No main-thread handler on this chain — it's a background event.
+            // Forward the delegation stack to the BTS, which runs its own
+            // delegateEvent (options and all) over the real VTree.
             const jsContext = lynx.getJSContext();
             const stack = buildStack(mount, target, ctx);
             const msg : ProcessEvent = { event: e, stack, type: 'processEvent' };
@@ -86,6 +93,25 @@ export const drawingContext : DrawingContext<ElementRef> = {
           __SetClasses(domRef, updated.join(' '));
       }
   },
+  /* Update the node's eventKeys registry in place, keyed by phase; the delegator
+     (above) reads it back via __GetConfig at dispatch time. Read-modify-write so
+     we don't clobber nodeId or sibling event keys. */
+  addEvent : (node : ElementRef, name : string, key : EventKey) => {
+      const config = (__GetConfig(node) as any) ?? {};
+      const eventKeys = { captures : {}, bubbles : {}, ...config.eventKeys };
+      const phase = key.capture ? 'captures' : 'bubbles';
+      eventKeys[phase] = { ...eventKeys[phase], [name] : { staticKey : key.staticKey, componentId : key.componentId, options : key.options } };
+      __SetConfig(node, { ...config, eventKeys });
+  },
+  removeEvent : (node : ElementRef, name : string, capture : boolean) => {
+      const config = (__GetConfig(node) as any) ?? {};
+      const phase = capture ? 'captures' : 'bubbles';
+      if (config.eventKeys && config.eventKeys[phase] && name in config.eventKeys[phase]) {
+          const eventKeys = { ...config.eventKeys, [phase] : { ...config.eventKeys[phase] } };
+          delete eventKeys[phase][name];
+          __SetConfig(node, { ...config, eventKeys });
+      }
+  },
   nextSibling : (x : VComp<NodeId>) => {
       return getDOMRef(x.nextSibling);
   },
@@ -98,16 +124,16 @@ export const drawingContext : DrawingContext<ElementRef> = {
     }
     return node;
   },
-  createElementNS : (ns : string, tag : string, events?: Record<string,string>) => {
+  createElementNS : (ns : string, tag : string) => {
     const node = globalThis['miso']['context']['createElement'](tag);
     if (globalThis['initialDraw']) {
         const nodeId: number = nextNodeId ();
         globalThis['runtime']['nodes'][nodeId] = node;
-        __SetConfig (node, events ? { nodeId, eventKeys: events } : { nodeId });
+        __SetConfig (node, { nodeId });
     }
     return node;
   },
-  createElement : (tag : string, events?: Record<string,string>) => {
+  createElement : (tag : string) => {
       var pageId = globalThis['native']['currentPageId'];
       var node = undefined;
       switch (tag) {
@@ -136,7 +162,7 @@ export const drawingContext : DrawingContext<ElementRef> = {
       if (globalThis['initialDraw']) {
           const nodeId: number = nextNodeId ();
           globalThis['runtime']['nodes'][nodeId] = node;
-          __SetConfig (node, events ? { nodeId, eventKeys: events } : { nodeId });
+          __SetConfig (node, { nodeId });
       }
       return node;
   },

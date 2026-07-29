@@ -3,6 +3,7 @@ import
   , DrawingContext
   , EventContext
   , EventCapture
+  , EventKey
   , HydrationContext
   , DOMRef
   , VTree
@@ -107,6 +108,10 @@ export const drawingContext : DrawingContext<DOMRef> = {
   removeClass : (className: string, domRef: DOMRef) => {
     if (className) domRef.classList.remove(className);
   },
+  /* The browser DOM runtime dispatches events through closures captured in the
+     VDOM, not by key, so there is no per-node event registry to update. */
+  addEvent : (_node: DOMRef, _name: string, _key: EventKey) => {},
+  removeEvent : (_node: DOMRef, _name: string, _capture: boolean) => {},
   insertBefore : (parent: DOMRef, child: DOMRef, node: DOMRef) => {
     return parent.insertBefore(child, node);
   },

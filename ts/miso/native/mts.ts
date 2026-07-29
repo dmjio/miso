@@ -67,7 +67,7 @@ function processMessage (m : PATCH, runtime) {
   switch (m.type) {
     case "createElement":
       node = drawingContext.createElement (m.tag);
-      __SetConfig (node, m.events ? { nodeId : m.nodeId, eventKeys : m.events } : { nodeId : m.nodeId });
+      __SetConfig (node, { nodeId : m.nodeId });
       runtime.nodes[m.nodeId] = node;
       break;
     case "createTextNode":
@@ -75,7 +75,7 @@ function processMessage (m : PATCH, runtime) {
       break;
     case "createElementNS":
       node = drawingContext.createElementNS (m.namespace, m.tag);
-      __SetConfig (node, m.events ? { nodeId : m.nodeId, eventKeys : m.events } : { nodeId : m.nodeId });
+      __SetConfig (node, { nodeId : m.nodeId });
       runtime.nodes[m.nodeId] = node;
       break;
     case "swapDOMRefs":
@@ -117,6 +117,13 @@ function processMessage (m : PATCH, runtime) {
       break;
     case "removeClass":
       drawingContext.removeClass (m.key, runtime.nodes[m.nodeId]);
+      break;
+    case "addEvent":
+      drawingContext.addEvent (runtime.nodes[m.nodeId], m.name,
+        { capture: m.capture, staticKey: m.staticKey, componentId: m.componentId, options: m.options });
+      break;
+    case "removeEvent":
+      drawingContext.removeEvent (runtime.nodes[m.nodeId], m.name, m.capture);
       break;
     case "flush":
       drawingContext.flush ();

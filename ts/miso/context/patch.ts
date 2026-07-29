@@ -19,6 +19,8 @@ import {
   RemoveAttribute,
   AddClass,
   RemoveClass,
+  AddEvent,
+  RemoveEvent,
 } from '../types';
 
 import { getFirstDOMRef } from '../util';
@@ -194,6 +196,29 @@ export const patchDrawingContext : DrawingContext<NodeId> = {
         type : "removeClass",
         nodeId : n.nodeId,
         key
+    };
+    addPatch(patch);
+    return;
+  },
+  addEvent : (n, name, key) => {
+    let patch : AddEvent = {
+        type : "addEvent",
+        nodeId : n.nodeId,
+        name,
+        capture : key.capture,
+        staticKey : key.staticKey,
+        componentId : key.componentId,
+        options : key.options,
+    };
+    addPatch(patch);
+    return;
+  },
+  removeEvent : (n, name, capture) => {
+    let patch : RemoveEvent = {
+        type : "removeEvent",
+        nodeId : n.nodeId,
+        name,
+        capture,
     };
     addPatch(patch);
     return;
