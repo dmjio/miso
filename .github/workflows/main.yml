@@ -153,3 +153,6 @@ jobs:
 
      - name: (x86) Miso GHC (GHC 9.12.2) test suite
        run: nix develop --command bash -c 'cabal build exe:component-tests'
+
+     - name: (JS) Miso GHC Native (GHC 9.12.2)
+       run: nix-build -A pkgsCross.ghcjs.haskell.packages.ghcNative.ghc
