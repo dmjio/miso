@@ -45,7 +45,7 @@
 -- 'satisfy'     :: (a -> Bool) -> 'ParserT' r [a] [] a  -- consume if predicate holds
 -- 'token_'      :: Eq t => t -> 'Parser' t t    -- match a specific token
 -- 'peek'        :: 'Parser' a a                 -- look ahead without consuming
--- 'endOfInput'  :: 'Parser' a ()                -- succeed only at end of stream
+-- 'endOfInput'  :: 'ParserT' r a [] ()          -- succeed only at end of stream
 -- 'allTokens'   :: 'ParserT' r a [] a           -- return the entire remaining stream
 -- 'modifyTokens' :: (t -> t) -> 'ParserT' r t [] ()  -- transform the token stream
 -- 'askParser'   :: 'ParserT' r token [] r       -- read the environment
@@ -229,6 +229,6 @@ errorOut
 errorOut x = Parser $ \_ _ -> [((),x)]
 ----------------------------------------------------------------------------
 -- | Parser combinator that only succeeds if there are no more tokens.
-endOfInput :: Parser a ()
+endOfInput :: ParserT r [a] [] ()
 endOfInput = guard . isNothing =<< optional anyToken
 ----------------------------------------------------------------------------
