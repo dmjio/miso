@@ -13,6 +13,7 @@
 module Miso.Native.Element
   ( -- ** Smart constructor for lynx elements
     lynx_
+  , lynxDirect_
     -- ** Page
   , page_
     -- ** View
@@ -34,12 +35,27 @@ import           Miso.JSON (toJSON)
 import           Miso.Native.Element.List (ListOptions(..))
 import           Miso.Property (textProp, prop)
 import           Miso.String (MisoString)
-import           Miso.Types (View, Attribute, node, Namespace(HTML))
+import           Miso.Types (View, Attribute, node, nodeDirectEvents, Namespace(HTML))
 -----------------------------------------------------------------------------
 -- | Smart constructor for constructing a built-in lynx element.
 --
 lynx_ :: MisoString -> [Attribute action] -> [View context action] -> View context action
 lynx_ = node HTML
+-----------------------------------------------------------------------------
+-- | Like 'lynx_', but declares the events this element dispatches /directly/ on
+-- itself (Lynx component events like @input@\/@scroll@ that don't bubble to the
+-- delegated mount listener). The runtime binds an element-level listener for
+-- any of these events the element actually handles.
+--
+lynxDirect_
+  :: [MisoString]
+  -- ^ Events dispatched directly on this element
+  -> MisoString
+  -- ^ Tag name
+  -> [Attribute action]
+  -> [View context action]
+  -> View context action
+lynxDirect_ direct tag attrs kids = nodeDirectEvents HTML tag attrs direct kids
 -----------------------------------------------------------------------------
 -- | <https://lynxjs.org/api/elements/built-in/page.html>
 --
@@ -62,7 +78,9 @@ page_ = lynx_ "page"
 -- used in other elements.
 --
 scrollView_ :: [Attribute action] -> [View context action] -> View context action
-scrollView_ = lynx_ "scroll-view"
+scrollView_ = lynxDirect_
+  [ "scroll", "scrolltoupper", "scrolltolower", "scrollend", "contentsizechanged" ]
+  "scroll-view"
 -----------------------------------------------------------------------------
 -- | <https://lynxjs.org/api/elements/built-in/view.html>
 --
@@ -93,7 +111,9 @@ view_ = lynx_ "view"
 -- > image_ "https://url.com/image.png" []
 --
 image_ :: MisoString -> [Attribute action] -> View context action
-image_ url attrs = lynx_ "image" (textProp "src" url : attrs) []
+image_ url attrs = lynxDirect_
+  [ "load", "error", "startplay", "currentloopcomplete", "finalloopcomplete" ]
+  "image" (textProp "src" url : attrs) []
 -----------------------------------------------------------------------------
 -- | <https://lynxjs.org/api/elements/built-in/list.html>
 --
@@ -103,7 +123,9 @@ listItem_ = lynx_ "list-item"
 -- | <https://lynxjs.org/api/elements/built-in/list.html>
 --
 list_ :: ListOptions -> [Attribute action] -> [View context action] -> View context action
-list_ ListOptions {..} attrs = lynx_ "list" (defaults <> attrs)
+list_ ListOptions {..} attrs = lynxDirect_
+  [ "scroll", "scrolltoupper", "scrolltolower", "scrollstatechange", "layoutcomplete", "snap" ]
+  "list" (defaults <> attrs)
   where
     defaults =
       [ prop "list-type" (toJSON listType_)
@@ -119,7 +141,7 @@ list_ ListOptions {..} attrs = lynx_ "list" (defaults <> attrs)
 -- text and image content presentation.
 --
 text_ :: [Attribute action] -> [View context action] -> View context action
-text_ = lynx_ "text"
+text_ = lynxDirect_ [ "layout", "selectionchange" ] "text"
 -----------------------------------------------------------------------------
 -- | <https://lynxjs.org/api/elements/built-in/frame.html>
 --
@@ -127,5 +149,5 @@ text_ = lynx_ "text"
 -- into the current page.
 --
 frame_ :: [Attribute action] -> View context action
-frame_ attrs = lynx_ "frame" attrs []
+frame_ attrs = lynxDirect_ [ "load", "loadmetrics" ] "frame" attrs []
 -----------------------------------------------------------------------------

@@ -209,6 +209,7 @@ export const patchDrawingContext : DrawingContext<NodeId> = {
         staticKey : key.staticKey,
         componentId : key.componentId,
         options : key.options,
+        direct : key.direct,
     };
     addPatch(patch);
     return;

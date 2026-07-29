@@ -9,6 +9,18 @@ globalThis['TextEncoder'] = TextEncoder as any;
 globalThis['BigInt'] = JSBI.BigInt as any;
 globalThis['JSBI'] = JSBI;
 
+/* Native-only entry. Lynx's *native* background thread exposes a web-compatible
+   Fetch API as `lynx.fetch`, not as a bare global, so Miso.Fetch (fetchCore,
+   which calls the global `fetch`) needs it aliased. Resolved lazily so it
+   survives load ordering. Guarded by `typeof fetch` so that under lynx-web —
+   where the BTS runs in a web worker that already has a real `fetch` — we leave
+   it alone. (The plain browser/WASM build uses ts/index.ts and never loads this
+   file.) */
+if (typeof (globalThis as any)['fetch'] === 'undefined') {
+  (globalThis as any)['fetch'] = (input: any, init?: any) =>
+    (globalThis as any)['lynx'].fetch(input, init);
+}
+
 import {
   diff,
   hydrate,

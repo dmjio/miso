@@ -65,23 +65,9 @@ updateModel = \case
   SayHelloWorld -> io_ (consoleLog "Hello world")
 ----------------------------------------------------------------------------
 -- | Constructs a virtual DOM from a model
-viewModel :: context -> props -> Model -> View context Action
-viewModel _ _ x =
-  vfrag
-    [ H.button_
-      [ event (static (H.onClick AddOne))
-      ]
-      [ text "+" ]
-    , text $ ms (x ^. counter)
-    , H.button_
-      [ event (static (H.onClick SubtractOne))
-      ]
-      [ text "-" ]
-    , H.br_ []
-    , H.button_
-      [ event (static (H.onClick SayHelloWorld))
-      ]
-      [ text "Alert Hello World!"
-      ]
-    ]
+viewModel :: () -> () -> Model -> View () Action
+viewModel _ k x = vcomp (static (mountWithProps k testComp))
+----------------------------------------------------------------------------
+testComp :: Component () props () Action
+testComp = component () (\_ -> pure ()) (\_ _ _ -> "foo")
 ----------------------------------------------------------------------------

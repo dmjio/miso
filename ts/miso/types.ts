@@ -54,6 +54,9 @@ export type VNode<T> = {
   css: CSS;
   classList: Class;
   events: Events<T>;
+  /** Names of events this element dispatches directly on itself (Lynx native
+   *  component events that don't bubble). Absent on browser/WASM. */
+  directEvents?: Array<string>;
   children: Array<VTree<T>>;
   onDestroyed: () => void;
   onBeforeDestroyed: () => void;
@@ -341,11 +344,14 @@ export type AddClass = {
 export type EventKey = {
   /** capture phase (true) vs bubble phase (false) */
   capture: boolean,
-  /** hex 'StaticKey' of the handler, for main-thread dispatch */
-  staticKey: string,
+  /** hex 'StaticKey' of the handler, for main-thread dispatch. Absent for a
+   *  direct-bind-only entry (a background handler on a native element). */
+  staticKey?: string,
   /** owning component id, to locate the sink / unify the action */
-  componentId: number,
-  options: Options,
+  componentId?: number,
+  options?: Options,
+  /** bind an element-level listener (Lynx native events that don't bubble) */
+  direct?: boolean,
 };
 
 export type AddEvent = {
@@ -354,9 +360,11 @@ export type AddEvent = {
   /** event name, e.g. "click" */
   name: string,
   capture: boolean,
-  staticKey: string,
-  componentId: number,
-  options: Options,
+  staticKey?: string,
+  componentId?: number,
+  options?: Options,
+  /** bind an element-level listener (Lynx native events that don't bubble) */
+  direct?: boolean,
 };
 
 export type RemoveEvent = {

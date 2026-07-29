@@ -142,6 +142,7 @@ module Miso.Types
   , VTree         (..)
   , VTreeType     (..)
   , Tag
+  , DirectEvents
   , CacheBust
   , MountPoint
   , DOMRef
@@ -178,6 +179,7 @@ module Miso.Types
   , prettyQueryString
   -- *** Combinators
   , node
+  , nodeDirectEvents
   , vnode
   , text
   , vtext
@@ -195,6 +197,8 @@ module Miso.Types
 -----------------------------------------------------------------------------
 import           Data.Function
 import qualified Data.Map.Strict as M
+import           Data.Set (Set)
+import qualified Data.Set as S
 import           Data.Maybe (fromMaybe, isJust)
 import           Data.String (IsString, fromString)
 import qualified Data.Text as T
@@ -399,9 +403,18 @@ data LogLevel
 --
 type Tag = MisoString
 -----------------------------------------------------------------------------
+-- | The set of events an element dispatches /directly/ on itself rather than
+-- by bubbling to the delegated mount listener. Empty for HTML\/SVG\/MathML;
+-- populated for Lynx native elements (see 'nodeDirectEvents').
+type DirectEvents = Set MisoString
+-----------------------------------------------------------------------------
 -- | Core type for constructing a virtual DOM in Haskell
 data View context action
-  = VNode Namespace Tag [Attribute action] [View context action]
+  = VNode Namespace Tag [Attribute action] [View context action] DirectEvents
+    -- ^ The final 'Set' names the events this element dispatches /directly/ on
+    -- itself rather than by bubbling to the delegated mount listener (Lynx
+    -- native @input@\/@scroll@\/… events). Empty for all HTML\/SVG\/MathML
+    -- elements. See 'nodeDirectEvents'.
   | VText (Maybe Key) MisoString
   | VComp (StaticPtr (SomeComponent context))
   | VFrag (Maybe Key) [View context action]
@@ -441,8 +454,8 @@ keyed key = \case
       VComp ptr
     VFrag _ kids ->
       VFrag (Just (Key key)) kids
-    VNode ns tag attrs kids ->
-      VNode ns tag (Property "key" (toJSON key) : attrs) kids
+    VNode ns tag attrs kids de ->
+      VNode ns tag (Property "key" (toJSON key) : attrs) kids de
 -----------------------------------------------------------------------------
 -- | Create a fragment (keyless).
 --
@@ -755,7 +768,30 @@ node
   -> [View context action]
   -- ^ Child nodes
   -> View context action
-node = VNode
+node ns tag attrs kids = VNode ns tag attrs kids mempty
+-----------------------------------------------------------------------------
+-- | Like 'node', but declares the set of events this element dispatches
+-- /directly/ on itself instead of by bubbling to the delegated mount listener.
+--
+-- Only relevant to the Lynx native runtime, where component-emitted events
+-- (@input@, @scroll@, @load@, …) do not bubble and must be bound on the
+-- element. The set is a /capability/: a listener is bound only for events the
+-- element actually handles. Empty on the browser\/WASM runtime.
+--
+-- @since 1.10.0.0
+nodeDirectEvents
+  :: Namespace
+  -- ^ Element namespace (@HTML@, @SVG@, or @MATHML@)
+  -> MisoString
+  -- ^ Tag name (e.g. @\"input\"@, @\"scroll-view\"@)
+  -> [Attribute action]
+  -- ^ Attributes, properties, and event handlers
+  -> [MisoString]
+  -- ^ Events dispatched directly on this element
+  -> [View context action]
+  -- ^ Child nodes
+  -> View context action
+nodeDirectEvents ns tag attrs direct kids = VNode ns tag attrs kids (S.fromList direct)
 -----------------------------------------------------------------------------
 -- | Create a new 'Miso.Types.VNode'.
 --
@@ -868,9 +904,9 @@ optionalAttrs
   -> View context action
 optionalAttrs element attrs condition opts kids =
   case element attrs kids of
-    VNode ns name _ _ -> do
+    VNode ns name _ _ de -> do
       let newAttrs = concat [ opts | condition ] ++ attrs
-      VNode ns name newAttrs kids
+      VNode ns name newAttrs kids de
     x -> x
 -----------------------------------------------------------------------------
 -- | Utility function to make it easy to specify conditional attributes for void elements.
@@ -889,9 +925,9 @@ optionalVoidAttrs
   -> View context action
 optionalVoidAttrs element attrs condition opts =
   case element attrs of
-    VNode ns name _ kids -> do
+    VNode ns name _ kids de -> do
       let newAttrs = concat [ opts | condition ] ++ attrs
-      VNode ns name newAttrs kids
+      VNode ns name newAttrs kids de
     x -> x
 ----------------------------------------------------------------------------
 -- | Conditionally adds children.
@@ -911,9 +947,9 @@ optionalChildren
   -> View context action
 optionalChildren element attrs kids condition opts =
   case element attrs kids of
-    VNode ns name _ _ -> do
+    VNode ns name _ _ de -> do
       let newKids = kids ++ concat [ opts | condition ]
-      VNode ns name attrs newKids
+      VNode ns name attrs newKids de
     x -> x
 ----------------------------------------------------------------------------
 -- | URI type. See the official [specification](https://www.rfc-editor.org/rfc/rfc3986)

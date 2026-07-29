@@ -120,7 +120,7 @@ function processMessage (m : PATCH, runtime) {
       break;
     case "addEvent":
       drawingContext.addEvent (runtime.nodes[m.nodeId], m.name,
-        { capture: m.capture, staticKey: m.staticKey, componentId: m.componentId, options: m.options });
+        { capture: m.capture, staticKey: m.staticKey, componentId: m.componentId, options: m.options, direct: m.direct });
       break;
     case "removeEvent":
       drawingContext.removeEvent (runtime.nodes[m.nodeId], m.name, m.capture);

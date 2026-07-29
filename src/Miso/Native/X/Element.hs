@@ -45,7 +45,8 @@ module Miso.Native.X.Element
   , titleBarView_
   ) where
 -----------------------------------------------------------------------------
-import           Miso.Native.Element (lynx_)
+import           Miso.Native.Element (lynx_, lynxDirect_)
+import           Miso.String (MisoString)
 import           Miso.Types (View, Attribute)
 -----------------------------------------------------------------------------
 -- | <https://lynxjs.org/api/elements/built-in/input.html>
@@ -53,21 +54,28 @@ import           Miso.Types (View, Attribute)
 -- Single-line text input element. Does not support children.
 --
 input_ :: [Attribute action] -> View context action
-input_ attrs = lynx_ "input" attrs []
+input_ attrs = lynxDirect_ inputDirectEvents "input" attrs []
 -----------------------------------------------------------------------------
 -- | <https://lynxjs.org/api/elements/built-in/textarea.html>
 --
 -- Multi-line text input element. Does not support children.
 --
 textarea_ :: [Attribute action] -> View context action
-textarea_ attrs = lynx_ "textarea" attrs []
+textarea_ attrs = lynxDirect_ inputDirectEvents "textarea" attrs []
+-----------------------------------------------------------------------------
+-- | Events that @input@ and @textarea@ dispatch directly on the element (Lynx
+-- component events that do not bubble to the delegated mount listener).
+inputDirectEvents :: [MisoString]
+inputDirectEvents = [ "blur", "confirm", "focus", "input", "selection" ]
 -----------------------------------------------------------------------------
 -- | <https://lynxjs.org/api/elements/built-in/overlay.html>
 --
 -- Renders its children on an independent layer above the page.
 --
 overlay_ :: [Attribute action] -> [View context action] -> View context action
-overlay_ = lynx_ "overlay"
+overlay_ = lynxDirect_
+  [ "dismissoverlay", "error", "overlaytouch", "requestclose", "showoverlay" ]
+  "overlay"
 -----------------------------------------------------------------------------
 -- | <https://lynxjs.org/api/elements/built-in/svg.html>
 --
@@ -75,7 +83,7 @@ overlay_ = lynx_ "overlay"
 -- @src_@.
 --
 svg_ :: [Attribute action] -> [View context action] -> View context action
-svg_ = lynx_ "svg"
+svg_ = lynxDirect_ [ "load" ] "svg"
 -----------------------------------------------------------------------------
 -- | <https://lynxjs.org/api/elements/built-in/refresh.html>
 --
@@ -83,7 +91,9 @@ svg_ = lynx_ "svg"
 -- scrollable child.
 --
 refresh_ :: [Attribute action] -> [View context action] -> View context action
-refresh_ = lynx_ "refresh"
+refresh_ = lynxDirect_
+  [ "headeroffset", "refreshstatechange", "startrefresh" ]
+  "refresh"
 -----------------------------------------------------------------------------
 -- | <https://lynxjs.org/api/elements/built-in/refresh.html>
 --
@@ -97,7 +107,7 @@ refreshHeader_ = lynx_ "refresh-header"
 -- Horizontally paged container. Each page is a @viewpagerItem_@.
 --
 viewpager_ :: [Attribute action] -> [View context action] -> View context action
-viewpager_ = lynx_ "viewpager"
+viewpager_ = lynxDirect_ [ "change", "offsetchange", "willchange" ] "viewpager"
 -----------------------------------------------------------------------------
 -- | <https://lynxjs.org/api/elements/built-in/viewpager.html>
 --
@@ -112,7 +122,7 @@ viewpagerItem_ = lynx_ "viewpager-item"
 -- tabbed layouts.
 --
 scrollCoordinator_ :: [Attribute action] -> [View context action] -> View context action
-scrollCoordinator_ = lynx_ "scroll-coordinator"
+scrollCoordinator_ = lynxDirect_ [ "offset" ] "scroll-coordinator"
 -----------------------------------------------------------------------------
 -- | <https://lynxjs.org/api/elements/built-in/blur-view.html>
 --
@@ -126,7 +136,9 @@ blurView_ = lynx_ "blur-view"
 -- Embeds a web page. Does not support children.
 --
 webview_ :: [Attribute action] -> View context action
-webview_ attrs = lynx_ "webview" attrs []
+webview_ attrs = lynxDirect_
+  [ "error", "load", "locationchange", "message", "openwindow" ]
+  "webview" attrs []
 -----------------------------------------------------------------------------
 -- | <https://lynxjs.org/api/elements/built-in/title-bar-view.html>
 --

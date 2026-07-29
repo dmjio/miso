@@ -119,6 +119,9 @@ module Miso.Runtime
 -----------------------------------------------------------------------------
 import qualified Data.IntSet as IS
 import           Data.IntSet (IntSet)
+#ifdef NATIVE
+import qualified Data.Set as Set
+#endif
 import           Data.Proxy (Proxy(Proxy))
 import           Control.Category ((.))
 import           Control.Concurrent
@@ -1131,9 +1134,14 @@ buildVTree events_ parentId_ vcompId hydrate snk logLevel_ = \case
       FFI.set "eventPropagation" (eventPropagation app) vcomp_
       FFI.set "type" VCompType vcomp_
       pure (VTree vcomp_)
-  VNode ns tag attrs kids -> do
+  VNode ns tag attrs kids directEvents -> do
     vnode_ <- createNode "vnode" ns tag
     setAttrs vnode_ attrs snk vcompId logLevel_ events_
+#ifdef NATIVE
+    -- Only the Lynx native runtime consumes directEvents; the web/WASM diff
+    -- never reads it (all HTML/SVG/MathML nodes carry an empty set anyway).
+    FFI.set "directEvents" (Set.toList directEvents) vnode_
+#endif
     vchildren <- toJSVal =<< procreate vnode_
     FFI.set "children" vchildren vnode_
     flip (FFI.set "type") vnode_ =<< toJSVal VNodeType

@@ -83,8 +83,8 @@ inputDecoder = ["detail"] `at` details
     details = withObject "detail" $ \o ->
       InputEvent
         <$> o .: "value"
-        <*> o .: "selectionStart"
-        <*> o .: "selectionEnd"
+        <*> o .:? "selectionStart" .!= 0
+        <*> o .:? "selectionEnd" .!= 0
         <*> o .:? "isComposing" .!= False
 -----------------------------------------------------------------------------
 -- Note: the JS keys stay @selectionStart@/@selectionEnd@; the record fields are

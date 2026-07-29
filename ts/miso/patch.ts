@@ -26,7 +26,7 @@ export function patch<T> (context: DrawingContext<T>, patch: PATCH, runtime: Run
         break;
     case "addEvent":
         context.addEvent (runtime.nodes[patch.nodeId], patch.name,
-          { capture: patch.capture, staticKey: patch.staticKey, componentId: patch.componentId, options: patch.options });
+          { capture: patch.capture, staticKey: patch.staticKey, componentId: patch.componentId, options: patch.options, direct: patch.direct });
         break;
     case "removeEvent":
         context.removeEvent (runtime.nodes[patch.nodeId], patch.name, patch.capture);

@@ -155,8 +155,8 @@ booleanProperties = S.fromList
 renderBuilder :: View m a -> Builder
 renderBuilder (VText _ "")    = fromMisoString " "
 renderBuilder (VText _ s)     = fromMisoString s
-renderBuilder (VNode _ "doctype" [] []) = "<!doctype html>"
-renderBuilder (VNode ns tag attrs children) = mconcat
+renderBuilder (VNode _ "doctype" [] [] _) = "<!doctype html>"
+renderBuilder (VNode ns tag attrs children _) = mconcat
   [ "<"
   , fromMisoString tag
   , mconcat [ " " <> intercalate " " (renderAttrs <$> attrs)

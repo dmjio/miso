@@ -51,8 +51,8 @@ function fetchCore(url, method, body, requestHeaders, successful, errorful, resp
       for (const [key, value] of response.headers) {
         headers[key] = value;
       }
-      if (!response.ok) {
-        throw new Error(response.statusText);
+      if (response.status < 200 || response.status >= 300) {
+        throw new Error(response.statusText || "HTTP " + response.status);
       }
       if (responseType == "json") {
         return response.json();
@@ -498,6 +498,11 @@ function diffAttrs(c, n, context) {
 function diffEvents(c, n, context) {
   if (!onBTS() && !onMTS())
     return;
+  if (c === null && n.directEvents) {
+    for (const name of n.directEvents) {
+      context.addEvent(n.domRef, name, { capture: false, direct: true });
+    }
+  }
   for (const capture of [true, false]) {
     const cKeys = eventEntries(c, capture);
     const nKeys = eventEntries(n, capture);

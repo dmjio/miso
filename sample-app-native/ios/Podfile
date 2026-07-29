@@ -9,3 +9,23 @@ target 'MisoLynx' do
   pod 'SDWebImage', '5.15.5'
   pod 'SDWebImageWebPCoder', '0.11.0'
 end
+
+# Lynx's XElements (e.g. <input>, <textarea>) self-register via ObjC +load in the
+# static Lynx libs. On device builds the linker dead-strips those unreferenced
+# classes (they render in the simulator, not on device). `-ObjC` forces every
+# ObjC class/category from the static libraries to be loaded, keeping the
+# registrations alive. Applied to the app target(s), which link the pods.
+post_install do |installer|
+  installer.aggregate_targets.each do |aggregate|
+    next unless aggregate.user_project
+    aggregate.user_project.native_targets.each do |native_target|
+      native_target.build_configurations.each do |config|
+        flags = config.build_settings['OTHER_LDFLAGS'] || ['$(inherited)']
+        flags = [flags] unless flags.is_a?(Array)
+        flags << '-ObjC' unless flags.include?('-ObjC')
+        config.build_settings['OTHER_LDFLAGS'] = flags
+      end
+    end
+    aggregate.user_project.save
+  end
+end

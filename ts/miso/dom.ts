@@ -210,6 +210,17 @@ export function diffAttrs<T>(c: VNode<T> | null, n: VNode<T>, context: DrawingCo
    __MAIN_THREAD__ are both undefined and events are handled via closures. */
 function diffEvents<T>(c: VNode<T> | null, n: VNode<T>, context: DrawingContext<T>): void {
     if (!onBTS() && !onMTS()) return;
+    // Direct-bind capability events: bind an element-level listener once, at
+    // create. These are Lynx native component events that don't bubble to the
+    // delegated mount listener, so they must be bound on the element itself.
+    // The set is immutable for the element's lifetime, so there's no removal
+    // path — a listener that outlives its handler is inert (the Config/VTree
+    // no longer routes it anywhere).
+    if (c === null && n.directEvents) {
+        for (const name of n.directEvents) {
+            context.addEvent(n.domRef, name, { capture: false, direct: true });
+        }
+    }
     for (const capture of [true, false]) {
         const cKeys = eventEntries(c, capture);
         const nKeys = eventEntries(n, capture);

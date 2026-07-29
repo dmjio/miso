@@ -70,8 +70,11 @@ export function fetchCore (
           for (const [key, value] of response.headers) {
              headers[key] = value;
           }
-          if (!response.ok) {
-            throw new Error(response.statusText);
+          // Check the status code rather than `response.ok`: Lynx's native Fetch
+          // API Response doesn't implement `.ok`, so `!response.ok` would treat
+          // every response (even a 2xx) as a failure.
+          if (response.status < 200 || response.status >= 300) {
+            throw new Error(response.statusText || ('HTTP ' + response.status));
           }
           if (responseType == 'json') {
             return response.json();

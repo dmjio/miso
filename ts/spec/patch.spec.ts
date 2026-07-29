@@ -872,3 +872,75 @@ describe ('Event key patch tests', () => {
     });
 
 });
+
+/* Direct-bind events are Lynx native component events (input/scroll/…) that
+   don't bubble to the delegated mount listener, so they're bound on the element
+   itself. A node declares its capability set in `directEvents`, and diffEvents
+   emits one `direct` addEvent per name at create (never removed — the set is
+   immutable for the element's lifetime). Same __BACKGROUND__ gating as above. */
+describe ('Direct-bind event patch tests', () => {
+    beforeEach(() => { (globalThis as any).__BACKGROUND__ = true; });
+    afterEach(() => { delete (globalThis as any).__BACKGROUND__; });
+
+    const noOpts = { preventDefault : false, stopPropagation : false };
+    const mkEvt = (staticKey : string, componentId : number, options = noOpts) => ({
+        options, runEvent : () => {}, staticKey, componentId,
+    });
+    const directEvt = (nodeId : number, name : string) : AddEvent =>
+        ({ type : "addEvent", nodeId, name, capture : false,
+           staticKey : undefined, componentId : undefined, options : undefined, direct : true });
+    const mainEvt = (nodeId : number, name : string, staticKey : string, componentId : number) : AddEvent =>
+        ({ type : "addEvent", nodeId, name, capture : false, staticKey, componentId, options : noOpts });
+
+    test('Should emit a direct addEvent per name in directEvents on create', () => {
+        const parentNodeId : number = 0;
+        const nodeId : number = 1;
+        let vtree = vnode<NodeId>({ tag : 'input', directEvents : ['input', 'blur'] });
+        let parent : NodeId = { nodeId : parentNodeId };
+        diff (null, vtree, parent, patchDrawingContext);
+        let create : CreateElement = { type : "createElement", tag : 'input', nodeId };
+        let append : AppendChild = { type : "appendChild", parent : parentNodeId, child : nodeId };
+        expect(getPatches()).toEqual([create, directEvt(nodeId, 'input'), directEvt(nodeId, 'blur'), append]);
+    });
+
+    test('Should emit direct addEvents even with no handlers attached', () => {
+        const nodeId : number = 1;
+        let vtree = vnode<NodeId>({ tag : 'input', directEvents : ['input'] });
+        diff (null, vtree, { nodeId : 0 }, patchDrawingContext);
+        const events = getPatches().filter(p => p.type === 'addEvent');
+        expect(events).toEqual([directEvt(nodeId, 'input')]);
+    });
+
+    test('Should emit both a direct and a main-thread addEvent for the same name', () => {
+        const nodeId : number = 1;
+        let vtree = vnode<NodeId>({
+            tag : 'input',
+            directEvents : ['input'],
+            events : { captures : {}, bubbles : { input : mkEvt('ab', 3) } },
+        });
+        diff (null, vtree, { nodeId : 0 }, patchDrawingContext);
+        const events = getPatches().filter(p => p.type === 'addEvent');
+        expect(events).toEqual([directEvt(nodeId, 'input'), mainEvt(nodeId, 'input', 'ab', 3)]);
+    });
+
+    test('Should not re-emit direct addEvents on update (bind once at create)', () => {
+        let vtree1 = vnode<NodeId>({ tag : 'input', directEvents : ['input'] });
+        let vtree2 = vnode<NodeId>({ tag : 'input', directEvents : ['input'] });
+        let parent : NodeId = { nodeId : 0 };
+        diff (null, vtree1, parent, patchDrawingContext);
+        globalThis['patches'] = []; /* isolate the update from creation */
+        diff (vtree1, vtree2, parent, patchDrawingContext);
+        expect(getPatches()).toEqual([]);
+    });
+
+    test('Should emit no direct addEvents in a web build (no thread globals)', () => {
+        delete (globalThis as any).__BACKGROUND__; /* undo the beforeEach */
+        const nodeId : number = 1;
+        let vtree = vnode<NodeId>({ tag : 'input', directEvents : ['input'] });
+        diff (null, vtree, { nodeId : 0 }, patchDrawingContext);
+        let create : CreateElement = { type : "createElement", tag : 'input', nodeId };
+        let append : AppendChild = { type : "appendChild", parent : 0, child : nodeId };
+        expect(getPatches()).toEqual([create, append]);
+    });
+
+});

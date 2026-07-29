@@ -19,48 +19,49 @@ function nextNodeId () : number {
   return globalThis['nodeId']++;
 }
 
+// Route one native event through main-thread delegation: fire any main-thread
+// handlers along the target -> mount chain (phase-ordered), otherwise forward
+// the delegation stack to the BTS which runs its own delegateEvent over the
+// real VTree. Shared by the mount delegator (bubbling events) and the direct
+// per-element bindings used for non-bubbling input events.
+function routeEvent(e: Event, name: string, capture: boolean, mount: ElementRef, ctx: EventContext<ElementRef>): void {
+  const target = ctx.getTarget(e);
+  const phase = capture ? 'captures' : 'bubbles';
+  const chain : Array<ElementRef> = [];
+  for (let node : ElementRef | null = target; node; node = ctx.parentNode(node)) {
+    chain.push(node);
+    if (ctx.isEqual(node, mount)) break;
+  }
+  // Capture runs mount -> target (top-down); bubble runs target -> mount
+  // (bottom-up). chain is target-first, so reverse for capture.
+  const order = capture ? chain.slice().reverse() : chain;
+  let fired = false;
+  for (const node of order) {
+    const entry = (__GetConfig(node) as any)?.eventKeys?.[phase]?.[name];
+    if (!entry) continue;
+    fired = true;
+    // Route in JS: apply the handler's options, then dispatch on the Haskell
+    // layer (no BTS round-trip). stopPropagation halts the climb.
+    if (entry.options.preventDefault && (e as any).preventDefault) (e as any).preventDefault();
+    (globalThis['runtime'] as any)['dispatchMainThreadEvent']
+      ({ componentId: entry.componentId, staticKey: entry.staticKey, event: e, target: node });
+    if (entry.options.stopPropagation) break;
+  }
+  if (!fired) {
+    // No main-thread handler on this chain — it's a background event.
+    const jsContext = lynx.getJSContext();
+    const stack = buildStack(mount, target, ctx);
+    const msg : ProcessEvent = { event: e, stack, type: 'processEvent' };
+    jsContext.dispatchEvent({ type: 'Miso.events', data: msg });
+  }
+}
+
 export const eventContext : EventContext<ElementRef> = {
   delegator : (mount: ElementRef, events: Array<EventCapture>, _getVTree, _debug, ctx: EventContext<ElementRef>) => {
     for (const { name, capture } of events) {
       ctx.addEventListener(mount, name, (event: Event | Array<Event>) => {
         const evts = Array.isArray(event) ? event : [event];
-        for (const e of evts) {
-          const target = ctx.getTarget(e);
-          // Build the ancestor chain target -> mount, then delegate among
-          // main-thread handlers along it. A handler is "main-thread" iff the
-          // node's config carries an eventKey for this event *in this phase*
-          // (capture/bubble); the phase is this listener's own `capture` flag.
-          const phase = capture ? 'captures' : 'bubbles';
-          const chain : Array<ElementRef> = [];
-          for (let node : ElementRef | null = target; node; node = ctx.parentNode(node)) {
-            chain.push(node);
-            if (ctx.isEqual(node, mount)) break;
-          }
-          // Capture runs mount -> target (top-down); bubble runs target -> mount
-          // (bottom-up). chain is target-first, so reverse for capture.
-          const order = capture ? chain.slice().reverse() : chain;
-          let fired = false;
-          for (const node of order) {
-            const entry = (__GetConfig(node) as any)?.eventKeys?.[phase]?.[name];
-            if (!entry) continue;
-            fired = true;
-            // Route in JS: apply the handler's options, then dispatch on the
-            // Haskell layer (no BTS round-trip). stopPropagation halts the climb.
-            if (entry.options.preventDefault && (e as any).preventDefault) (e as any).preventDefault();
-            (globalThis['runtime'] as any)['dispatchMainThreadEvent']
-              ({ componentId: entry.componentId, staticKey: entry.staticKey, event: e, target: node });
-            if (entry.options.stopPropagation) break;
-          }
-          if (!fired) {
-            // No main-thread handler on this chain — it's a background event.
-            // Forward the delegation stack to the BTS, which runs its own
-            // delegateEvent (options and all) over the real VTree.
-            const jsContext = lynx.getJSContext();
-            const stack = buildStack(mount, target, ctx);
-            const msg : ProcessEvent = { event: e, stack, type: 'processEvent' };
-            jsContext.dispatchEvent({ type: 'Miso.events', data: msg });
-          }
-        }
+        for (const e of evts) routeEvent(e, name, capture, mount, ctx);
       }, capture, null);
     }
   },
@@ -97,6 +98,16 @@ export const drawingContext : DrawingContext<ElementRef> = {
      (above) reads it back via __GetConfig at dispatch time. Read-modify-write so
      we don't clobber nodeId or sibling event keys. */
   addEvent : (node : ElementRef, name : string, key : EventKey) => {
+      // Direct-bind: attach a real element-level listener (Lynx native events
+      // that don't bubble to the mount delegator). Feeds the same routeEvent.
+      if (key.direct) {
+          __AddEvent(node, 'catchEvent', name, { type : 'worklet', value : (event: Event | Array<Event>) => {
+              const evts = Array.isArray(event) ? event : [event];
+              for (const e of evts) routeEvent(e, name, false, globalThis['page'], eventContext);
+          }});
+      }
+      // Main-thread routing registry: only for handlers carrying a staticKey.
+      if (key.staticKey === undefined) return;
       const config = (__GetConfig(node) as any) ?? {};
       const eventKeys = { captures : {}, bubbles : {}, ...config.eventKeys };
       const phase = key.capture ? 'captures' : 'bubbles';
