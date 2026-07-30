@@ -66,7 +66,7 @@ updateModel = \case
 ----------------------------------------------------------------------------
 -- | Constructs a virtual DOM from a model
 viewModel :: () -> () -> Model -> View () Action
-viewModel _ k x = vcomp (static (mountWithProps k testComp))
+viewModel _ _ _ = vcomp (static (mount_ testComp))
 ----------------------------------------------------------------------------
 testComp :: Component () props () Action
 testComp = component () (\_ -> pure ()) (\_ _ _ -> "foo")
