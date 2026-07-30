@@ -101,7 +101,11 @@ jobs:
        run: nix-build -A playwright-ghcjs && ./result/bin/playwright
 
   build-macos:
-    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, macos-15-intel]
+    runs-on: ${{ matrix.os }}
     steps:
      - uses: actions/checkout@v3.5.3
      - name: Cancel Previous Runs
