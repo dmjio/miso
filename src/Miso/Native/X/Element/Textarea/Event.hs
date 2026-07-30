@@ -83,9 +83,11 @@ textareaDecoder = ["detail"] `at` details
     details = withObject "detail" $ \o ->
       TextareaEvent
         <$> o .: "value"
-        <*> o .: "selectionStart"
-        <*> o .: "selectionEnd"
-        <*> o .:? "isComposing" .!= False
+        <*> o .:? "selectionStart" .!= 0
+        <*> o .:? "selectionEnd" .!= 0
+        -- See 'Miso.Native.X.Element.Input.Event': Lynx sends @isComposing@ as
+        -- a number (0/1), not a JSON boolean, so decode as 'Int' and coerce.
+        <*> (maybe False (/= (0 :: Int)) <$> o .:? "isComposing")
 -----------------------------------------------------------------------------
 -- Note: the JS keys stay @selectionStart@/@selectionEnd@; the record fields are
 -- 'selStart'/'selEnd' to avoid clashing with 'TextareaValue' when the hub module

@@ -85,7 +85,11 @@ inputDecoder = ["detail"] `at` details
         <$> o .: "value"
         <*> o .:? "selectionStart" .!= 0
         <*> o .:? "selectionEnd" .!= 0
-        <*> o .:? "isComposing" .!= False
+        -- Lynx's native input sends @isComposing@ as a number (0/1), bridged
+        -- from an ObjC @BOOL@ — not a JSON boolean — so decode it as an 'Int'
+        -- and coerce. Absent (e.g. on the simulator's non-composing path) is
+        -- 'False'. Decoding it as 'Bool' fails the whole decoder on device.
+        <*> (maybe False (/= (0 :: Int)) <$> o .:? "isComposing")
 -----------------------------------------------------------------------------
 -- Note: the JS keys stay @selectionStart@/@selectionEnd@; the record fields are
 -- 'selStart'/'selEnd' to avoid clashing with 'InputValue' when the hub module
