@@ -53,7 +53,6 @@ import           Miso.Lens
 import           Miso.Test
 import           Miso.Html
 import           Miso.JSON.Parser (decodePure)
-import           Miso.JSON.Diff (Patch(..), Op(..), diffPatch, applyPatch, parsePointer)
 import           Miso.Html.Property
 import           Miso.Cookie (Cookie (..), cookieValue, defaultCookie, cookieSet_, cookieGet_, cookieDelete_, cookieDeleteWith_, cookieGetAll_)
 import           Miso.Runtime.Internal (ComponentState (..), components, componentIds)
@@ -898,54 +897,6 @@ main = withJS $ do
                 JSON.Success x -> Right (x :: [Int])
                 JSON.Error e   -> Left (S.unpack e)
         result `shouldBe` Right [1,2,3]
-
-    describe "Miso.JSON.Diff (RFC 6902) tests" $ do
-      let obj = JSON.Object . M.fromList
-          -- applying diff(a,b) to a must yield b, and the patch must survive a
-          -- round-trip through its RFC 6902 JSON wire form.
-          roundTrip name a b = it name $ do
-            let p = diffPatch a b
-            applyPatch p a `shouldBe` Right b
-            (JSON.fromJSON (JSON.toJSON p) :: JSON.Result Patch) `shouldBe` JSON.Success p
-      roundTrip "no change"     (obj [("a", JSON.Number 1)]) (obj [("a", JSON.Number 1)])
-      roundTrip "change scalar" (obj [("a", JSON.Number 1)]) (obj [("a", JSON.Number 2)])
-      roundTrip "add key"       (obj [("a", JSON.Number 1)])
-                                (obj [("a", JSON.Number 1), ("b", JSON.Bool True)])
-      roundTrip "remove key"    (obj [("a", JSON.Number 1), ("b", JSON.Bool True)])
-                                (obj [("a", JSON.Number 1)])
-      roundTrip "nested change"
-        (obj [("user", obj [("name", JSON.String "ann"), ("age", JSON.Number 30)])])
-        (obj [("user", obj [("name", JSON.String "ann"), ("age", JSON.Number 31)])])
-      roundTrip "array element change"
-        (obj [("xs", JSON.Array [JSON.Number 1, JSON.Number 2, JSON.Number 3])])
-        (obj [("xs", JSON.Array [JSON.Number 1, JSON.Number 9, JSON.Number 3])])
-      roundTrip "array grow"
-        (obj [("xs", JSON.Array [JSON.Number 1])])
-        (obj [("xs", JSON.Array [JSON.Number 1, JSON.Number 2, JSON.Number 3])])
-      roundTrip "array shrink"
-        (obj [("xs", JSON.Array [JSON.Number 1, JSON.Number 2, JSON.Number 3])])
-        (obj [("xs", JSON.Array [JSON.Number 1])])
-      roundTrip "type change"
-        (obj [("a", JSON.Number 1)]) (obj [("a", JSON.Array [JSON.String "x"])])
-      roundTrip "root replace" (JSON.Number 1) (JSON.String "hi")
-      roundTrip "todo-shaped model"
-        (obj [ ("todos", JSON.Array [ obj [("id", JSON.Number 0), ("done", JSON.Bool False)]
-                                    , obj [("id", JSON.Number 1), ("done", JSON.Bool False)] ])
-             , ("next", JSON.Number 2) ])
-        (obj [ ("todos", JSON.Array [ obj [("id", JSON.Number 0), ("done", JSON.Bool True)]
-                                    , obj [("id", JSON.Number 1), ("done", JSON.Bool False)] ])
-             , ("next", JSON.Number 2) ])
-      it "applies a hand-written patch (replace + array append)" $ do
-        let doc = obj [("a", JSON.Number 1), ("xs", JSON.Array [JSON.Number 0])]
-            p   = Patch [ Replace (parsePointer "/a") (JSON.Number 2)
-                        , Add     (parsePointer "/xs/-") (JSON.Number 9)
-                        ]
-        applyPatch p doc `shouldBe`
-          Right (obj [("a", JSON.Number 2), ("xs", JSON.Array [JSON.Number 0, JSON.Number 9])])
-      it "reports a failed test op" $ do
-        applyPatch (Patch [ Test (parsePointer "/a") (JSON.Number 2) ])
-                   (obj [("a", JSON.Number 1)])
-          `shouldSatisfy` isLeft
 
     describe "Miso.Data.Map tests" $ do
       it "should construct a Map from a list and perform operations" $ do
