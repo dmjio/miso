@@ -13,8 +13,12 @@ module Miso.Native.Element.Frame.Event
   ( -- *** Events
     onLoad
   , onLoadWith
+  , onLoadMain
+  , onLoadMainWith
   , onLoadMetrics
   , onLoadMetricsWith
+  , onLoadMetricsMain
+  , onLoadMetricsMainWith
     -- *** Types
   , FrameLoadEvent (..)
   , FrameLoadMetricsEvent (..)
@@ -30,7 +34,7 @@ import qualified Data.Map as M
 import           Miso.Event
 import           Miso.JSON
 import           Miso.String (MisoString)
-import           Miso.Types (Attribute, DOMRef)
+import           Miso.Types (Attribute, EventHandler, DOMRef)
 -----------------------------------------------------------------------------
 frameEvents :: Events
 frameEvents
@@ -101,6 +105,32 @@ frameLoadMetricsDecoder = ["detail"] `at` details
 onLoad :: (FrameLoadEvent -> action) -> Attribute model action
 onLoad action = on "load" frameLoadDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
+-- | Like 'onLoad', but dispatched on the Lynx __main thread__ ('MTS').
+--
+-- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
+-- @-XStaticPointers@.
+--
+-- @
+-- data Action = HandleLoad FrameLoadEvent
+--
+-- view_ [ event (static (onLoadMain HandleLoad)) ] [ "some view" ]
+-- @
+--
+onLoadMain :: (FrameLoadEvent -> action) -> EventHandler model action
+onLoadMain action = onMain "load" frameLoadDecoder (\e _ _ -> action e)
+-----------------------------------------------------------------------------
+-- | Like 'onLoadMain', but the handler also receives read-only access to the
+-- @model@ and the target element's 'DOMRef' (for imperative MTS mutation).
+--
+-- @
+-- data Action = HandleLoad FrameLoadEvent Model DOMRef
+--
+-- view_ [ event (static (onLoadMainWith HandleLoad)) ] [ "some view" ]
+-- @
+--
+onLoadMainWith :: (FrameLoadEvent -> model -> DOMRef -> action) -> EventHandler model action
+onLoadMainWith action = onMain "load" frameLoadDecoder action
+-----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/frame.html#bindloadmetrics
 --
 -- @
@@ -118,6 +148,32 @@ onLoad action = on "load" frameLoadDecoder (\e _ _ -> action e)
 --
 onLoadMetrics :: (FrameLoadMetricsEvent -> action) -> Attribute model action
 onLoadMetrics action = on "loadmetrics" frameLoadMetricsDecoder (\e _ _ -> action e)
+-----------------------------------------------------------------------------
+-- | Like 'onLoadMetrics', but dispatched on the Lynx __main thread__ ('MTS').
+--
+-- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
+-- @-XStaticPointers@.
+--
+-- @
+-- data Action = HandleMetrics FrameLoadMetricsEvent
+--
+-- view_ [ event (static (onLoadMetricsMain HandleMetrics)) ] [ "some view" ]
+-- @
+--
+onLoadMetricsMain :: (FrameLoadMetricsEvent -> action) -> EventHandler model action
+onLoadMetricsMain action = onMain "loadmetrics" frameLoadMetricsDecoder (\e _ _ -> action e)
+-----------------------------------------------------------------------------
+-- | Like 'onLoadMetricsMain', but the handler also receives read-only access to
+-- the @model@ and the target element's 'DOMRef' (for imperative MTS mutation).
+--
+-- @
+-- data Action = HandleMetrics FrameLoadMetricsEvent Model DOMRef
+--
+-- view_ [ event (static (onLoadMetricsMainWith HandleMetrics)) ] [ "some view" ]
+-- @
+--
+onLoadMetricsMainWith :: (FrameLoadMetricsEvent -> model -> DOMRef -> action) -> EventHandler model action
+onLoadMetricsMainWith action = onMain "loadmetrics" frameLoadMetricsDecoder action
 -----------------------------------------------------------------------------
 -- | Like 'onLoad', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.

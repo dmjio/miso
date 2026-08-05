@@ -14,16 +14,28 @@ module Miso.Native.Element.List.Event
   ( -- *** Event
     onScroll
   , onScrollWith
+  , onScrollMain
+  , onScrollMainWith
   , onScrollToUpper
   , onScrollToUpperWith
+  , onScrollToUpperMain
+  , onScrollToUpperMainWith
   , onScrollToLower
   , onScrollToLowerWith
+  , onScrollToLowerMain
+  , onScrollToLowerMainWith
   , onScrollStateChange
   , onScrollStateChangeWith
+  , onScrollStateChangeMain
+  , onScrollStateChangeMainWith
   , onLayoutComplete
   , onLayoutCompleteWith
+  , onLayoutCompleteMain
+  , onLayoutCompleteMainWith
   , onSnap
   , onSnapWith
+  , onSnapMain
+  , onSnapMainWith
   -- *** Types
   , ScrollEvent (..)
   , SnapEvent (..)
@@ -44,7 +56,7 @@ import qualified Data.Map as M
 -----------------------------------------------------------------------------
 import           Miso.Event
 import           Miso.JSON
-import           Miso.Types (Attribute, DOMRef)
+import           Miso.Types (Attribute, EventHandler, DOMRef)
 import           Miso.String (MisoString)
 -----------------------------------------------------------------------------
 listEvents :: Events
@@ -263,6 +275,32 @@ layoutCompleteDecoder = ["detail"] `at` do
 onScroll :: (ScrollEvent -> action) -> Attribute model action
 onScroll action = on "scroll" scrollDecoder (\x _ _ -> action x)
 -----------------------------------------------------------------------------
+-- | Like 'onScroll', but dispatched on the Lynx __main thread__ ('MTS').
+--
+-- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
+-- @-XStaticPointers@.
+--
+-- @
+-- data Action = HandleScroll ScrollEvent
+--
+-- view_ [ event (static (onScrollMain HandleScroll)) ] [ "some view" ]
+-- @
+--
+onScrollMain :: (ScrollEvent -> action) -> EventHandler model action
+onScrollMain action = onMain "scroll" scrollDecoder (\x _ _ -> action x)
+-----------------------------------------------------------------------------
+-- | Like 'onScrollMain', but the handler also receives read-only access to the
+-- @model@ and the target element's 'DOMRef' (for imperative MTS mutation).
+--
+-- @
+-- data Action = HandleScroll ScrollEvent Model DOMRef
+--
+-- view_ [ event (static (onScrollMainWith HandleScroll)) ] [ "some view" ]
+-- @
+--
+onScrollMainWith :: (ScrollEvent -> model -> DOMRef -> action) -> EventHandler model action
+onScrollMainWith action = onMain "scroll" scrollDecoder action
+-----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/list.html#scrolltoupper
 --
 -- Callback triggered when scrolling to the top of \<list\>. The trigger
@@ -284,6 +322,32 @@ onScroll action = on "scroll" scrollDecoder (\x _ _ -> action x)
 onScrollToUpper :: (ScrollEvent -> action) -> Attribute model action
 onScrollToUpper action = on "scrolltoupper" scrollDecoder (\x _ _ -> action x)
 -----------------------------------------------------------------------------
+-- | Like 'onScrollToUpper', but dispatched on the Lynx __main thread__ ('MTS').
+--
+-- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
+-- @-XStaticPointers@.
+--
+-- @
+-- data Action = HandleScroll ScrollEvent
+--
+-- view_ [ event (static (onScrollToUpperMain HandleScroll)) ] [ "some view" ]
+-- @
+--
+onScrollToUpperMain :: (ScrollEvent -> action) -> EventHandler model action
+onScrollToUpperMain action = onMain "scrolltoupper" scrollDecoder (\x _ _ -> action x)
+-----------------------------------------------------------------------------
+-- | Like 'onScrollToUpperMain', but the handler also receives read-only access
+-- to the @model@ and the target element's 'DOMRef' (for imperative MTS mutation).
+--
+-- @
+-- data Action = HandleScroll ScrollEvent Model DOMRef
+--
+-- view_ [ event (static (onScrollToUpperMainWith HandleScroll)) ] [ "some view" ]
+-- @
+--
+onScrollToUpperMainWith :: (ScrollEvent -> model -> DOMRef -> action) -> EventHandler model action
+onScrollToUpperMainWith action = onMain "scrolltoupper" scrollDecoder action
+-----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/list.html#scrolltolower
 --
 -- Callback triggered when scrolling to the bottom of \<list\>. The trigger
@@ -304,6 +368,32 @@ onScrollToUpper action = on "scrolltoupper" scrollDecoder (\x _ _ -> action x)
 --
 onScrollToLower :: (ScrollEvent -> action) -> Attribute model action
 onScrollToLower action = on "scrolltolower" scrollDecoder (\x _ _ -> action x)
+-----------------------------------------------------------------------------
+-- | Like 'onScrollToLower', but dispatched on the Lynx __main thread__ ('MTS').
+--
+-- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
+-- @-XStaticPointers@.
+--
+-- @
+-- data Action = HandleScroll ScrollEvent
+--
+-- view_ [ event (static (onScrollToLowerMain HandleScroll)) ] [ "some view" ]
+-- @
+--
+onScrollToLowerMain :: (ScrollEvent -> action) -> EventHandler model action
+onScrollToLowerMain action = onMain "scrolltolower" scrollDecoder (\x _ _ -> action x)
+-----------------------------------------------------------------------------
+-- | Like 'onScrollToLowerMain', but the handler also receives read-only access
+-- to the @model@ and the target element's 'DOMRef' (for imperative MTS mutation).
+--
+-- @
+-- data Action = HandleScroll ScrollEvent Model DOMRef
+--
+-- view_ [ event (static (onScrollToLowerMainWith HandleScroll)) ] [ "some view" ]
+-- @
+--
+onScrollToLowerMainWith :: (ScrollEvent -> model -> DOMRef -> action) -> EventHandler model action
+onScrollToLowerMainWith action = onMain "scrolltolower" scrollDecoder action
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/list.html#scrollstatechange
 --
@@ -331,6 +421,33 @@ onScrollToLower action = on "scrolltolower" scrollDecoder (\x _ _ -> action x)
 onScrollStateChange :: (ScrollStateChange -> action) -> Attribute model action
 onScrollStateChange action = on "scrollstatechange" scrollStateDecoder (\x _ _ -> action x)
 -----------------------------------------------------------------------------
+-- | Like 'onScrollStateChange', but dispatched on the Lynx __main thread__ ('MTS').
+--
+-- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
+-- @-XStaticPointers@.
+--
+-- @
+-- data Action = HandleScrollState ScrollStateChange
+--
+-- view_ [ event (static (onScrollStateChangeMain HandleScrollState)) ] [ "some view" ]
+-- @
+--
+onScrollStateChangeMain :: (ScrollStateChange -> action) -> EventHandler model action
+onScrollStateChangeMain action = onMain "scrollstatechange" scrollStateDecoder (\x _ _ -> action x)
+-----------------------------------------------------------------------------
+-- | Like 'onScrollStateChangeMain', but the handler also receives read-only
+-- access to the @model@ and the target element's 'DOMRef' (for imperative MTS
+-- mutation).
+--
+-- @
+-- data Action = HandleScrollState ScrollStateChange Model DOMRef
+--
+-- view_ [ event (static (onScrollStateChangeMainWith HandleScrollState)) ] [ "some view" ]
+-- @
+--
+onScrollStateChangeMainWith :: (ScrollStateChange -> model -> DOMRef -> action) -> EventHandler model action
+onScrollStateChangeMainWith action = onMain "scrollstatechange" scrollStateDecoder action
+-----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/list.html#layoutcomplete
 --
 -- Callback triggered after \<list\> layout is complete.
@@ -351,6 +468,32 @@ onScrollStateChange action = on "scrollstatechange" scrollStateDecoder (\x _ _ -
 onLayoutComplete :: (LayoutCompleteEvent -> action) -> Attribute model action
 onLayoutComplete action = on "layoutcomplete" layoutCompleteDecoder (\x _ _ -> action x)
 -----------------------------------------------------------------------------
+-- | Like 'onLayoutComplete', but dispatched on the Lynx __main thread__ ('MTS').
+--
+-- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
+-- @-XStaticPointers@.
+--
+-- @
+-- data Action = HandleLayout LayoutCompleteEvent
+--
+-- view_ [ event (static (onLayoutCompleteMain HandleLayout)) ] [ "some view" ]
+-- @
+--
+onLayoutCompleteMain :: (LayoutCompleteEvent -> action) -> EventHandler model action
+onLayoutCompleteMain action = onMain "layoutcomplete" layoutCompleteDecoder (\x _ _ -> action x)
+-----------------------------------------------------------------------------
+-- | Like 'onLayoutCompleteMain', but the handler also receives read-only access
+-- to the @model@ and the target element's 'DOMRef' (for imperative MTS mutation).
+--
+-- @
+-- data Action = HandleLayout LayoutCompleteEvent Model DOMRef
+--
+-- view_ [ event (static (onLayoutCompleteMainWith HandleLayout)) ] [ "some view" ]
+-- @
+--
+onLayoutCompleteMainWith :: (LayoutCompleteEvent -> model -> DOMRef -> action) -> EventHandler model action
+onLayoutCompleteMainWith action = onMain "layoutcomplete" layoutCompleteDecoder action
+-----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/list.html#snap
 --
 -- Callback when pagination scrolling is about to occur.
@@ -370,6 +513,32 @@ onLayoutComplete action = on "layoutcomplete" layoutCompleteDecoder (\x _ _ -> a
 --
 onSnap :: (SnapEvent -> action) -> Attribute model action
 onSnap action = on "snap" snapDecoder (\x _ _ -> action x)
+-----------------------------------------------------------------------------
+-- | Like 'onSnap', but dispatched on the Lynx __main thread__ ('MTS').
+--
+-- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
+-- @-XStaticPointers@.
+--
+-- @
+-- data Action = HandleSnap SnapEvent
+--
+-- view_ [ event (static (onSnapMain HandleSnap)) ] [ "some view" ]
+-- @
+--
+onSnapMain :: (SnapEvent -> action) -> EventHandler model action
+onSnapMain action = onMain "snap" snapDecoder (\x _ _ -> action x)
+-----------------------------------------------------------------------------
+-- | Like 'onSnapMain', but the handler also receives read-only access to the
+-- @model@ and the target element's 'DOMRef' (for imperative MTS mutation).
+--
+-- @
+-- data Action = HandleSnap SnapEvent Model DOMRef
+--
+-- view_ [ event (static (onSnapMainWith HandleSnap)) ] [ "some view" ]
+-- @
+--
+onSnapMainWith :: (SnapEvent -> model -> DOMRef -> action) -> EventHandler model action
+onSnapMainWith action = onMain "snap" snapDecoder action
 -----------------------------------------------------------------------------
 
 -----------------------------------------------------------------------------

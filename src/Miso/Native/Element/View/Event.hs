@@ -16,12 +16,20 @@ module Miso.Native.Element.View.Event
   ( -- *** Events
     onTouchStart
   , onTouchStartWith
+  , onTouchStartMain
+  , onTouchStartMainWith
   , onTouchMove
   , onTouchMoveWith
+  , onTouchMoveMain
+  , onTouchMoveMainWith
   , onTouchEnd
   , onTouchEndWith
+  , onTouchEndMain
+  , onTouchEndMainWith
   , onTouchCancel
   , onTouchCancelWith
+  , onTouchCancelMain
+  , onTouchCancelMainWith
   , onTap
   , onTapMain
   , onTapWith
@@ -29,26 +37,48 @@ module Miso.Native.Element.View.Event
   , onTapMainModel
   , onLongPress
   , onLongPressWith
+  , onLongPressMain
+  , onLongPressMainWith
   , onLayoutChange
   , onLayoutChangeWith
+  , onLayoutChangeMain
+  , onLayoutChangeMainWith
   , onAppear
   , onAppearWith
+  , onAppearMain
+  , onAppearMainWith
   , onDisappear
   , onDisappearWith
+  , onDisappearMain
+  , onDisappearMainWith
   , onAnimationStart
   , onAnimationStartWith
+  , onAnimationStartMain
+  , onAnimationStartMainWith
   , onAnimationEnd
   , onAnimationEndWith
+  , onAnimationEndMain
+  , onAnimationEndMainWith
   , onAnimationCancel
   , onAnimationCancelWith
+  , onAnimationCancelMain
+  , onAnimationCancelMainWith
   , onAnimationIteration
   , onAnimationIterationWith
+  , onAnimationIterationMain
+  , onAnimationIterationMainWith
   , onTransitionStart
   , onTransitionStartWith
+  , onTransitionStartMain
+  , onTransitionStartMainWith
   , onTransitionEnd
   , onTransitionEndWith
+  , onTransitionEndMain
+  , onTransitionEndMainWith
   , onTransitionCancel
   , onTransitionCancelWith
+  , onTransitionCancelMain
+  , onTransitionCancelMainWith
     -- *** Types
   , TouchEvent (..)
   , AnimationEvent (..)
@@ -672,4 +702,357 @@ onTransitionEndWith action = on "transitionend" animationDecoder $ \ui _ domRef 
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
 onTransitionCancelWith :: (AnimationEvent -> DOMRef -> action) -> Attribute model action
 onTransitionCancelWith action = on "transitioncancel" animationDecoder $ \ui _ domRef -> action ui domRef
+-----------------------------------------------------------------------------
+-- Main-thread ('MTS') variants of the events above.
+--
+-- Each @on*Main@ is like its background counterpart but dispatched on the Lynx
+-- __main thread__: it runs imperatively (no VDOM diff) and is meant to be used
+-- with @-XStaticPointers@ via @event (static (…))@. Each @on*MainWith@
+-- additionally hands the handler read-only access to the @model@ and the target
+-- element's 'DOMRef' for imperative MTS mutation.
+-----------------------------------------------------------------------------
+-- | Like 'onTouchStart', but dispatched on the Lynx __main thread__ ('MTS').
+--
+-- @
+-- data Action = HandleTouch TouchEvent
+--
+-- view_ [ event (static (onTouchStartMain HandleTouch)) ] [ "some view" ]
+-- @
+--
+onTouchStartMain :: (TouchEvent -> action) -> EventHandler model action
+onTouchStartMain action = onMain "touchstart" touchDecoder (\x _ _ -> action x)
+-----------------------------------------------------------------------------
+-- | Like 'onTouchStartMain', but also receives read-only access to the @model@
+-- and the target element's 'DOMRef' (for imperative MTS mutation).
+--
+-- @
+-- data Action = HandleTouch TouchEvent Model DOMRef
+--
+-- view_ [ event (static (onTouchStartMainWith HandleTouch)) ] [ "some view" ]
+-- @
+--
+onTouchStartMainWith :: (TouchEvent -> model -> DOMRef -> action) -> EventHandler model action
+onTouchStartMainWith action = onMain "touchstart" touchDecoder action
+-----------------------------------------------------------------------------
+-- | Like 'onTouchMove', but dispatched on the Lynx __main thread__ ('MTS').
+--
+-- @
+-- data Action = HandleTouch TouchEvent
+--
+-- view_ [ event (static (onTouchMoveMain HandleTouch)) ] [ "some view" ]
+-- @
+--
+onTouchMoveMain :: (TouchEvent -> action) -> EventHandler model action
+onTouchMoveMain action = onMain "touchmove" touchDecoder (\x _ _ -> action x)
+-----------------------------------------------------------------------------
+-- | Like 'onTouchMoveMain', but also receives read-only access to the @model@
+-- and the target element's 'DOMRef' (for imperative MTS mutation).
+--
+-- @
+-- data Action = HandleTouch TouchEvent Model DOMRef
+--
+-- view_ [ event (static (onTouchMoveMainWith HandleTouch)) ] [ "some view" ]
+-- @
+--
+onTouchMoveMainWith :: (TouchEvent -> model -> DOMRef -> action) -> EventHandler model action
+onTouchMoveMainWith action = onMain "touchmove" touchDecoder action
+-----------------------------------------------------------------------------
+-- | Like 'onTouchEnd', but dispatched on the Lynx __main thread__ ('MTS').
+--
+-- @
+-- data Action = HandleTouch TouchEvent
+--
+-- view_ [ event (static (onTouchEndMain HandleTouch)) ] [ "some view" ]
+-- @
+--
+onTouchEndMain :: (TouchEvent -> action) -> EventHandler model action
+onTouchEndMain action = onMain "touchend" touchDecoder (\x _ _ -> action x)
+-----------------------------------------------------------------------------
+-- | Like 'onTouchEndMain', but also receives read-only access to the @model@
+-- and the target element's 'DOMRef' (for imperative MTS mutation).
+--
+-- @
+-- data Action = HandleTouch TouchEvent Model DOMRef
+--
+-- view_ [ event (static (onTouchEndMainWith HandleTouch)) ] [ "some view" ]
+-- @
+--
+onTouchEndMainWith :: (TouchEvent -> model -> DOMRef -> action) -> EventHandler model action
+onTouchEndMainWith action = onMain "touchend" touchDecoder action
+-----------------------------------------------------------------------------
+-- | Like 'onTouchCancel', but dispatched on the Lynx __main thread__ ('MTS').
+--
+-- @
+-- data Action = HandleTouch TouchEvent
+--
+-- view_ [ event (static (onTouchCancelMain HandleTouch)) ] [ "some view" ]
+-- @
+--
+onTouchCancelMain :: (TouchEvent -> action) -> EventHandler model action
+onTouchCancelMain action = onMain "touchcancel" touchDecoder (\x _ _ -> action x)
+-----------------------------------------------------------------------------
+-- | Like 'onTouchCancelMain', but also receives read-only access to the @model@
+-- and the target element's 'DOMRef' (for imperative MTS mutation).
+--
+-- @
+-- data Action = HandleTouch TouchEvent Model DOMRef
+--
+-- view_ [ event (static (onTouchCancelMainWith HandleTouch)) ] [ "some view" ]
+-- @
+--
+onTouchCancelMainWith :: (TouchEvent -> model -> DOMRef -> action) -> EventHandler model action
+onTouchCancelMainWith action = onMain "touchcancel" touchDecoder action
+-----------------------------------------------------------------------------
+-- | Like 'onLongPress', but dispatched on the Lynx __main thread__ ('MTS').
+--
+-- @
+-- data Action = HandleTouch TouchEvent
+--
+-- view_ [ event (static (onLongPressMain HandleTouch)) ] [ "some view" ]
+-- @
+--
+onLongPressMain :: (TouchEvent -> action) -> EventHandler model action
+onLongPressMain action = onMain "longpress" touchDecoder (\x _ _ -> action x)
+-----------------------------------------------------------------------------
+-- | Like 'onLongPressMain', but also receives read-only access to the @model@
+-- and the target element's 'DOMRef' (for imperative MTS mutation).
+--
+-- @
+-- data Action = HandleTouch TouchEvent Model DOMRef
+--
+-- view_ [ event (static (onLongPressMainWith HandleTouch)) ] [ "some view" ]
+-- @
+--
+onLongPressMainWith :: (TouchEvent -> model -> DOMRef -> action) -> EventHandler model action
+onLongPressMainWith action = onMain "longpress" touchDecoder action
+-----------------------------------------------------------------------------
+-- | Like 'onLayoutChange', but dispatched on the Lynx __main thread__ ('MTS').
+--
+-- @
+-- data Action = HandleLayout LayoutChangeDetailEvent
+--
+-- view_ [ event (static (onLayoutChangeMain HandleLayout)) ] [ "some view" ]
+-- @
+--
+onLayoutChangeMain :: (LayoutChangeDetailEvent -> action) -> EventHandler model action
+onLayoutChangeMain action = onMain "layoutchange" layoutChangeDetailDecoder (\x _ _ -> action x)
+-----------------------------------------------------------------------------
+-- | Like 'onLayoutChangeMain', but also receives read-only access to the @model@
+-- and the target element's 'DOMRef' (for imperative MTS mutation).
+--
+-- @
+-- data Action = HandleLayout LayoutChangeDetailEvent Model DOMRef
+--
+-- view_ [ event (static (onLayoutChangeMainWith HandleLayout)) ] [ "some view" ]
+-- @
+--
+onLayoutChangeMainWith :: (LayoutChangeDetailEvent -> model -> DOMRef -> action) -> EventHandler model action
+onLayoutChangeMainWith action = onMain "layoutchange" layoutChangeDetailDecoder action
+-----------------------------------------------------------------------------
+-- | Like 'onAppear', but dispatched on the Lynx __main thread__ ('MTS').
+--
+-- @
+-- data Action = HandleAppear UIAppearanceDetailEvent
+--
+-- view_ [ event (static (onAppearMain HandleAppear)) ] [ "some view" ]
+-- @
+--
+onAppearMain :: (UIAppearanceDetailEvent -> action) -> EventHandler model action
+onAppearMain action = onMain "uiappear" uiAppearanceDetailDecoder (\x _ _ -> action x)
+-----------------------------------------------------------------------------
+-- | Like 'onAppearMain', but also receives read-only access to the @model@
+-- and the target element's 'DOMRef' (for imperative MTS mutation).
+--
+-- @
+-- data Action = HandleAppear UIAppearanceDetailEvent Model DOMRef
+--
+-- view_ [ event (static (onAppearMainWith HandleAppear)) ] [ "some view" ]
+-- @
+--
+onAppearMainWith :: (UIAppearanceDetailEvent -> model -> DOMRef -> action) -> EventHandler model action
+onAppearMainWith action = onMain "uiappear" uiAppearanceDetailDecoder action
+-----------------------------------------------------------------------------
+-- | Like 'onDisappear', but dispatched on the Lynx __main thread__ ('MTS').
+--
+-- @
+-- data Action = HandleDisappear UIAppearanceDetailEvent
+--
+-- view_ [ event (static (onDisappearMain HandleDisappear)) ] [ "some view" ]
+-- @
+--
+onDisappearMain :: (UIAppearanceDetailEvent -> action) -> EventHandler model action
+onDisappearMain action = onMain "uidisappear" uiAppearanceDetailDecoder (\x _ _ -> action x)
+-----------------------------------------------------------------------------
+-- | Like 'onDisappearMain', but also receives read-only access to the @model@
+-- and the target element's 'DOMRef' (for imperative MTS mutation).
+--
+-- @
+-- data Action = HandleDisappear UIAppearanceDetailEvent Model DOMRef
+--
+-- view_ [ event (static (onDisappearMainWith HandleDisappear)) ] [ "some view" ]
+-- @
+--
+onDisappearMainWith :: (UIAppearanceDetailEvent -> model -> DOMRef -> action) -> EventHandler model action
+onDisappearMainWith action = onMain "uidisappear" uiAppearanceDetailDecoder action
+-----------------------------------------------------------------------------
+-- | Like 'onAnimationStart', but dispatched on the Lynx __main thread__ ('MTS').
+--
+-- @
+-- data Action = HandleAnimation AnimationEvent
+--
+-- view_ [ event (static (onAnimationStartMain HandleAnimation)) ] [ "some view" ]
+-- @
+--
+onAnimationStartMain :: (AnimationEvent -> action) -> EventHandler model action
+onAnimationStartMain action = onMain "animationstart" animationDecoder (\x _ _ -> action x)
+-----------------------------------------------------------------------------
+-- | Like 'onAnimationStartMain', but also receives read-only access to the @model@
+-- and the target element's 'DOMRef' (for imperative MTS mutation).
+--
+-- @
+-- data Action = HandleAnimation AnimationEvent Model DOMRef
+--
+-- view_ [ event (static (onAnimationStartMainWith HandleAnimation)) ] [ "some view" ]
+-- @
+--
+onAnimationStartMainWith :: (AnimationEvent -> model -> DOMRef -> action) -> EventHandler model action
+onAnimationStartMainWith action = onMain "animationstart" animationDecoder action
+-----------------------------------------------------------------------------
+-- | Like 'onAnimationEnd', but dispatched on the Lynx __main thread__ ('MTS').
+--
+-- @
+-- data Action = HandleAnimation AnimationEvent
+--
+-- view_ [ event (static (onAnimationEndMain HandleAnimation)) ] [ "some view" ]
+-- @
+--
+onAnimationEndMain :: (AnimationEvent -> action) -> EventHandler model action
+onAnimationEndMain action = onMain "animationend" animationDecoder (\x _ _ -> action x)
+-----------------------------------------------------------------------------
+-- | Like 'onAnimationEndMain', but also receives read-only access to the @model@
+-- and the target element's 'DOMRef' (for imperative MTS mutation).
+--
+-- @
+-- data Action = HandleAnimation AnimationEvent Model DOMRef
+--
+-- view_ [ event (static (onAnimationEndMainWith HandleAnimation)) ] [ "some view" ]
+-- @
+--
+onAnimationEndMainWith :: (AnimationEvent -> model -> DOMRef -> action) -> EventHandler model action
+onAnimationEndMainWith action = onMain "animationend" animationDecoder action
+-----------------------------------------------------------------------------
+-- | Like 'onAnimationCancel', but dispatched on the Lynx __main thread__ ('MTS').
+--
+-- @
+-- data Action = HandleAnimation AnimationEvent
+--
+-- view_ [ event (static (onAnimationCancelMain HandleAnimation)) ] [ "some view" ]
+-- @
+--
+onAnimationCancelMain :: (AnimationEvent -> action) -> EventHandler model action
+onAnimationCancelMain action = onMain "animationcancel" animationDecoder (\x _ _ -> action x)
+-----------------------------------------------------------------------------
+-- | Like 'onAnimationCancelMain', but also receives read-only access to the @model@
+-- and the target element's 'DOMRef' (for imperative MTS mutation).
+--
+-- @
+-- data Action = HandleAnimation AnimationEvent Model DOMRef
+--
+-- view_ [ event (static (onAnimationCancelMainWith HandleAnimation)) ] [ "some view" ]
+-- @
+--
+onAnimationCancelMainWith :: (AnimationEvent -> model -> DOMRef -> action) -> EventHandler model action
+onAnimationCancelMainWith action = onMain "animationcancel" animationDecoder action
+-----------------------------------------------------------------------------
+-- | Like 'onAnimationIteration', but dispatched on the Lynx __main thread__ ('MTS').
+--
+-- @
+-- data Action = HandleAnimation AnimationEvent
+--
+-- view_ [ event (static (onAnimationIterationMain HandleAnimation)) ] [ "some view" ]
+-- @
+--
+onAnimationIterationMain :: (AnimationEvent -> action) -> EventHandler model action
+onAnimationIterationMain action = onMain "animationiteration" animationDecoder (\x _ _ -> action x)
+-----------------------------------------------------------------------------
+-- | Like 'onAnimationIterationMain', but also receives read-only access to the
+-- @model@ and the target element's 'DOMRef' (for imperative MTS mutation).
+--
+-- @
+-- data Action = HandleAnimation AnimationEvent Model DOMRef
+--
+-- view_ [ event (static (onAnimationIterationMainWith HandleAnimation)) ] [ "some view" ]
+-- @
+--
+onAnimationIterationMainWith :: (AnimationEvent -> model -> DOMRef -> action) -> EventHandler model action
+onAnimationIterationMainWith action = onMain "animationiteration" animationDecoder action
+-----------------------------------------------------------------------------
+-- | Like 'onTransitionStart', but dispatched on the Lynx __main thread__ ('MTS').
+--
+-- @
+-- data Action = HandleTransition AnimationEvent
+--
+-- view_ [ event (static (onTransitionStartMain HandleTransition)) ] [ "some view" ]
+-- @
+--
+onTransitionStartMain :: (AnimationEvent -> action) -> EventHandler model action
+onTransitionStartMain action = onMain "transitionstart" animationDecoder (\x _ _ -> action x)
+-----------------------------------------------------------------------------
+-- | Like 'onTransitionStartMain', but also receives read-only access to the @model@
+-- and the target element's 'DOMRef' (for imperative MTS mutation).
+--
+-- @
+-- data Action = HandleTransition AnimationEvent Model DOMRef
+--
+-- view_ [ event (static (onTransitionStartMainWith HandleTransition)) ] [ "some view" ]
+-- @
+--
+onTransitionStartMainWith :: (AnimationEvent -> model -> DOMRef -> action) -> EventHandler model action
+onTransitionStartMainWith action = onMain "transitionstart" animationDecoder action
+-----------------------------------------------------------------------------
+-- | Like 'onTransitionEnd', but dispatched on the Lynx __main thread__ ('MTS').
+--
+-- @
+-- data Action = HandleTransition AnimationEvent
+--
+-- view_ [ event (static (onTransitionEndMain HandleTransition)) ] [ "some view" ]
+-- @
+--
+onTransitionEndMain :: (AnimationEvent -> action) -> EventHandler model action
+onTransitionEndMain action = onMain "transitionend" animationDecoder (\x _ _ -> action x)
+-----------------------------------------------------------------------------
+-- | Like 'onTransitionEndMain', but also receives read-only access to the @model@
+-- and the target element's 'DOMRef' (for imperative MTS mutation).
+--
+-- @
+-- data Action = HandleTransition AnimationEvent Model DOMRef
+--
+-- view_ [ event (static (onTransitionEndMainWith HandleTransition)) ] [ "some view" ]
+-- @
+--
+onTransitionEndMainWith :: (AnimationEvent -> model -> DOMRef -> action) -> EventHandler model action
+onTransitionEndMainWith action = onMain "transitionend" animationDecoder action
+-----------------------------------------------------------------------------
+-- | Like 'onTransitionCancel', but dispatched on the Lynx __main thread__ ('MTS').
+--
+-- @
+-- data Action = HandleTransition AnimationEvent
+--
+-- view_ [ event (static (onTransitionCancelMain HandleTransition)) ] [ "some view" ]
+-- @
+--
+onTransitionCancelMain :: (AnimationEvent -> action) -> EventHandler model action
+onTransitionCancelMain action = onMain "transitioncancel" animationDecoder (\x _ _ -> action x)
+-----------------------------------------------------------------------------
+-- | Like 'onTransitionCancelMain', but also receives read-only access to the @model@
+-- and the target element's 'DOMRef' (for imperative MTS mutation).
+--
+-- @
+-- data Action = HandleTransition AnimationEvent Model DOMRef
+--
+-- view_ [ event (static (onTransitionCancelMainWith HandleTransition)) ] [ "some view" ]
+-- @
+--
+onTransitionCancelMainWith :: (AnimationEvent -> model -> DOMRef -> action) -> EventHandler model action
+onTransitionCancelMainWith action = onMain "transitioncancel" animationDecoder action
 -----------------------------------------------------------------------------

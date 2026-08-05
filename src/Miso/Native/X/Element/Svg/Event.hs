@@ -13,6 +13,8 @@ module Miso.Native.X.Element.Svg.Event
   ( -- *** Events
     onLoad
   , onLoadWith
+  , onLoadMain
+  , onLoadMainWith
     -- *** Event Map
   , svgEvents
   ) where
@@ -20,7 +22,7 @@ module Miso.Native.X.Element.Svg.Event
 import qualified Data.Map as M
 -----------------------------------------------------------------------------
 import           Miso.Event
-import           Miso.Types (Attribute, DOMRef)
+import           Miso.Types (Attribute, EventHandler, DOMRef)
 -----------------------------------------------------------------------------
 svgEvents :: Events
 svgEvents = M.fromList [ ("load", BUBBLE) ]
@@ -31,6 +33,32 @@ svgEvents = M.fromList [ ("load", BUBBLE) ]
 --
 onLoad :: action -> Attribute model action
 onLoad action = on "load" emptyDecoder (\() _ _ -> action)
+-----------------------------------------------------------------------------
+-- | Like 'onLoad', but dispatched on the Lynx __main thread__ ('MTS').
+--
+-- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
+-- @-XStaticPointers@.
+--
+-- @
+-- data Action = Loaded
+--
+-- view_ [ event (static (onLoadMain Loaded)) ] [ "some view" ]
+-- @
+--
+onLoadMain :: action -> EventHandler model action
+onLoadMain action = onMain "load" emptyDecoder (\() _ _ -> action)
+-----------------------------------------------------------------------------
+-- | Like 'onLoadMain', but the handler also receives read-only access to the
+-- @model@ and the target element's 'DOMRef' (for imperative MTS mutation).
+--
+-- @
+-- data Action = Loaded Model DOMRef
+--
+-- view_ [ event (static (onLoadMainWith Loaded)) ] [ "some view" ]
+-- @
+--
+onLoadMainWith :: (model -> DOMRef -> action) -> EventHandler model action
+onLoadMainWith action = onMain "load" emptyDecoder (\() m ref -> action m ref)
 -----------------------------------------------------------------------------
 -- | Like 'onLoad', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.

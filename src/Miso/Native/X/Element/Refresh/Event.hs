@@ -13,10 +13,16 @@ module Miso.Native.X.Element.Refresh.Event
   ( -- *** Events
     onHeaderOffset
   , onHeaderOffsetWith
+  , onHeaderOffsetMain
+  , onHeaderOffsetMainWith
   , onRefreshStateChange
   , onRefreshStateChangeWith
+  , onRefreshStateChangeMain
+  , onRefreshStateChangeMainWith
   , onStartRefresh
   , onStartRefreshWith
+  , onStartRefreshMain
+  , onStartRefreshMainWith
     -- *** Types
   , HeaderOffsetEvent (..)
   , RefreshStateChangeEvent (..)
@@ -34,7 +40,7 @@ import qualified Data.Map as M
 import           Miso.Event
 import           Miso.JSON
 import           Miso.String (MisoString)
-import           Miso.Types (Attribute, DOMRef)
+import           Miso.Types (Attribute, EventHandler, DOMRef)
 -----------------------------------------------------------------------------
 refreshEvents :: Events
 refreshEvents
@@ -94,6 +100,32 @@ startRefreshDecoder = ["detail"] `at` details
 onHeaderOffset :: (HeaderOffsetEvent -> action) -> Attribute model action
 onHeaderOffset action = on "headeroffset" headerOffsetDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
+-- | Like 'onHeaderOffset', but dispatched on the Lynx __main thread__ ('MTS').
+--
+-- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
+-- @-XStaticPointers@.
+--
+-- @
+-- data Action = Offset HeaderOffsetEvent
+--
+-- view_ [ event (static (onHeaderOffsetMain Offset)) ] [ "some view" ]
+-- @
+--
+onHeaderOffsetMain :: (HeaderOffsetEvent -> action) -> EventHandler model action
+onHeaderOffsetMain action = onMain "headeroffset" headerOffsetDecoder (\e _ _ -> action e)
+-----------------------------------------------------------------------------
+-- | Like 'onHeaderOffsetMain', but the handler also receives read-only access to
+-- the @model@ and the target element's 'DOMRef' (for imperative MTS mutation).
+--
+-- @
+-- data Action = Offset HeaderOffsetEvent Model DOMRef
+--
+-- view_ [ event (static (onHeaderOffsetMainWith Offset)) ] [ "some view" ]
+-- @
+--
+onHeaderOffsetMainWith :: (HeaderOffsetEvent -> model -> DOMRef -> action) -> EventHandler model action
+onHeaderOffsetMainWith action = onMain "headeroffset" headerOffsetDecoder action
+-----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/refresh.html#bindrefreshstatechange
 --
 -- Triggered when the \<refresh-header\> state changes.
@@ -101,12 +133,65 @@ onHeaderOffset action = on "headeroffset" headerOffsetDecoder (\e _ _ -> action 
 onRefreshStateChange :: (RefreshStateChangeEvent -> action) -> Attribute model action
 onRefreshStateChange action = on "refreshstatechange" refreshStateChangeDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
+-- | Like 'onRefreshStateChange', but dispatched on the Lynx __main thread__ ('MTS').
+--
+-- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
+-- @-XStaticPointers@.
+--
+-- @
+-- data Action = StateChanged RefreshStateChangeEvent
+--
+-- view_ [ event (static (onRefreshStateChangeMain StateChanged)) ] [ "some view" ]
+-- @
+--
+onRefreshStateChangeMain :: (RefreshStateChangeEvent -> action) -> EventHandler model action
+onRefreshStateChangeMain action = onMain "refreshstatechange" refreshStateChangeDecoder (\e _ _ -> action e)
+-----------------------------------------------------------------------------
+-- | Like 'onRefreshStateChangeMain', but the handler also receives read-only
+-- access to the @model@ and the target element's 'DOMRef' (for imperative MTS
+-- mutation).
+--
+-- @
+-- data Action = StateChanged RefreshStateChangeEvent Model DOMRef
+--
+-- view_ [ event (static (onRefreshStateChangeMainWith StateChanged)) ] [ "some view" ]
+-- @
+--
+onRefreshStateChangeMainWith :: (RefreshStateChangeEvent -> model -> DOMRef -> action) -> EventHandler model action
+onRefreshStateChangeMainWith action = onMain "refreshstatechange" refreshStateChangeDecoder action
+-----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/refresh.html#bindstartrefresh
 --
 -- Triggered when the pull threshold is reached or @autoStartRefresh@ is called.
 --
 onStartRefresh :: (StartRefreshEvent -> action) -> Attribute model action
 onStartRefresh action = on "startrefresh" startRefreshDecoder (\e _ _ -> action e)
+-----------------------------------------------------------------------------
+-- | Like 'onStartRefresh', but dispatched on the Lynx __main thread__ ('MTS').
+--
+-- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
+-- @-XStaticPointers@.
+--
+-- @
+-- data Action = Started StartRefreshEvent
+--
+-- view_ [ event (static (onStartRefreshMain Started)) ] [ "some view" ]
+-- @
+--
+onStartRefreshMain :: (StartRefreshEvent -> action) -> EventHandler model action
+onStartRefreshMain action = onMain "startrefresh" startRefreshDecoder (\e _ _ -> action e)
+-----------------------------------------------------------------------------
+-- | Like 'onStartRefreshMain', but the handler also receives read-only access to
+-- the @model@ and the target element's 'DOMRef' (for imperative MTS mutation).
+--
+-- @
+-- data Action = Started StartRefreshEvent Model DOMRef
+--
+-- view_ [ event (static (onStartRefreshMainWith Started)) ] [ "some view" ]
+-- @
+--
+onStartRefreshMainWith :: (StartRefreshEvent -> model -> DOMRef -> action) -> EventHandler model action
+onStartRefreshMainWith action = onMain "startrefresh" startRefreshDecoder action
 -----------------------------------------------------------------------------
 -- | Like 'onHeaderOffset', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.

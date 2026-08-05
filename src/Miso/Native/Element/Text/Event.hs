@@ -14,8 +14,12 @@ module Miso.Native.Element.Text.Event
   ( -- *** Events
     onLayout
   , onLayoutWith
+  , onLayoutMain
+  , onLayoutMainWith
   , onSelectionChange
   , onSelectionChangeWith
+  , onSelectionChangeMain
+  , onSelectionChangeMainWith
     -- *** Types
   , LayoutEvent          (..)
   , LineInfo             (..)
@@ -33,7 +37,7 @@ import qualified Data.Map as M
 import           Miso.Event
 import           Miso.JSON
 ----------------------------------------------------------------------------
-import           Miso.Types (Attribute, DOMRef)
+import           Miso.Types (Attribute, EventHandler, DOMRef)
 ----------------------------------------------------------------------------
 textEvents :: Events
 textEvents
@@ -63,6 +67,32 @@ textEvents
 onLayout :: (LayoutEvent -> action) -> Attribute model action
 onLayout action = on "layout" layoutDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
+-- | Like 'onLayout', but dispatched on the Lynx __main thread__ ('MTS').
+--
+-- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
+-- @-XStaticPointers@.
+--
+-- @
+-- data Action = HandleLayout LayoutEvent
+--
+-- view_ [ event (static (onLayoutMain HandleLayout)) ] [ "some view" ]
+-- @
+--
+onLayoutMain :: (LayoutEvent -> action) -> EventHandler model action
+onLayoutMain action = onMain "layout" layoutDecoder (\e _ _ -> action e)
+-----------------------------------------------------------------------------
+-- | Like 'onLayoutMain', but the handler also receives read-only access to the
+-- @model@ and the target element's 'DOMRef' (for imperative MTS mutation).
+--
+-- @
+-- data Action = HandleLayout LayoutEvent Model DOMRef
+--
+-- view_ [ event (static (onLayoutMainWith HandleLayout)) ] [ "some view" ]
+-- @
+--
+onLayoutMainWith :: (LayoutEvent -> model -> DOMRef -> action) -> EventHandler model action
+onLayoutMainWith action = onMain "layout" layoutDecoder action
+-----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/text.html#selectionchange
 --
 -- This event is triggered whenever the selected text range changes.
@@ -82,6 +112,32 @@ onLayout action = on "layout" layoutDecoder (\e _ _ -> action e)
 --
 onSelectionChange :: (SelectionChangeEvent -> action) -> Attribute model action
 onSelectionChange action = on "selectionchange" selectionChangeDecoder (\e _ _ -> action e)
+-----------------------------------------------------------------------------
+-- | Like 'onSelectionChange', but dispatched on the Lynx __main thread__ ('MTS').
+--
+-- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
+-- @-XStaticPointers@.
+--
+-- @
+-- data Action = HandleSelectionChange SelectionChangeEvent
+--
+-- view_ [ event (static (onSelectionChangeMain HandleSelectionChange)) ] [ "some view" ]
+-- @
+--
+onSelectionChangeMain :: (SelectionChangeEvent -> action) -> EventHandler model action
+onSelectionChangeMain action = onMain "selectionchange" selectionChangeDecoder (\e _ _ -> action e)
+-----------------------------------------------------------------------------
+-- | Like 'onSelectionChangeMain', but the handler also receives read-only access
+-- to the @model@ and the target element's 'DOMRef' (for imperative MTS mutation).
+--
+-- @
+-- data Action = HandleSelectionChange SelectionChangeEvent Model DOMRef
+--
+-- view_ [ event (static (onSelectionChangeMainWith HandleSelectionChange)) ] [ "some view" ]
+-- @
+--
+onSelectionChangeMainWith :: (SelectionChangeEvent -> model -> DOMRef -> action) -> EventHandler model action
+onSelectionChangeMainWith action = onMain "selectionchange" selectionChangeDecoder action
 -----------------------------------------------------------------------------
 selectionChangeDecoder :: Decoder SelectionChangeEvent
 selectionChangeDecoder = ["detail"] `at` parser

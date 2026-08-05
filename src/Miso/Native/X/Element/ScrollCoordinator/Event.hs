@@ -13,6 +13,8 @@ module Miso.Native.X.Element.ScrollCoordinator.Event
   ( -- *** Events
     onOffset
   , onOffsetWith
+  , onOffsetMain
+  , onOffsetMainWith
     -- *** Types
   , ScrollCoordinatorOffsetEvent (..)
     -- *** Decoders
@@ -25,7 +27,7 @@ import qualified Data.Map as M
 -----------------------------------------------------------------------------
 import           Miso.Event
 import           Miso.JSON
-import           Miso.Types (Attribute, DOMRef)
+import           Miso.Types (Attribute, EventHandler, DOMRef)
 -----------------------------------------------------------------------------
 scrollCoordinatorEvents :: Events
 scrollCoordinatorEvents = M.fromList [ ("offset", BUBBLE) ]
@@ -53,6 +55,32 @@ offsetDecoder = ["detail"] `at` details
 --
 onOffset :: (ScrollCoordinatorOffsetEvent -> action) -> Attribute model action
 onOffset action = on "offset" offsetDecoder (\e _ _ -> action e)
+-----------------------------------------------------------------------------
+-- | Like 'onOffset', but dispatched on the Lynx __main thread__ ('MTS').
+--
+-- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
+-- @-XStaticPointers@.
+--
+-- @
+-- data Action = Offset ScrollCoordinatorOffsetEvent
+--
+-- view_ [ event (static (onOffsetMain Offset)) ] [ "some view" ]
+-- @
+--
+onOffsetMain :: (ScrollCoordinatorOffsetEvent -> action) -> EventHandler model action
+onOffsetMain action = onMain "offset" offsetDecoder (\e _ _ -> action e)
+-----------------------------------------------------------------------------
+-- | Like 'onOffsetMain', but the handler also receives read-only access to the
+-- @model@ and the target element's 'DOMRef' (for imperative MTS mutation).
+--
+-- @
+-- data Action = Offset ScrollCoordinatorOffsetEvent Model DOMRef
+--
+-- view_ [ event (static (onOffsetMainWith Offset)) ] [ "some view" ]
+-- @
+--
+onOffsetMainWith :: (ScrollCoordinatorOffsetEvent -> model -> DOMRef -> action) -> EventHandler model action
+onOffsetMainWith action = onMain "offset" offsetDecoder action
 -----------------------------------------------------------------------------
 -- | Like 'onOffset', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
