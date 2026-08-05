@@ -61,7 +61,7 @@ instance ToJSON GlassStyle where
 --
 -- *Android 3.9+*. The raw id of the Android Lynx view to capture and blur.
 --
-androidCaptureTarget_ :: MisoString -> Attribute action
+androidCaptureTarget_ :: MisoString -> Attribute model action
 androidCaptureTarget_ = textProp "android-capture-target"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/blur-view.html#blur-effect
@@ -73,7 +73,7 @@ androidCaptureTarget_ = textProp "android-capture-target"
 --
 -- Default Value: 'BlurLight'
 --
-blurEffect_ :: BlurEffect -> Attribute action
+blurEffect_ :: BlurEffect -> Attribute model action
 blurEffect_ = prop "blur-effect"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/blur-view.html#blur-radius
@@ -82,7 +82,7 @@ blurEffect_ = prop "blur-effect"
 --
 -- Default Value: @\"0px\"@
 --
-blurRadius_ :: MisoString -> Attribute action
+blurRadius_ :: MisoString -> Attribute model action
 blurRadius_ = textProp "blur-radius"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/blur-view.html#blur-sampling
@@ -91,7 +91,7 @@ blurRadius_ = textProp "blur-radius"
 --
 -- Default Value: 6
 --
-blurSampling_ :: Int -> Attribute action
+blurSampling_ :: Int -> Attribute model action
 blurSampling_ = intProp "blur-sampling"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/blur-view.html#enable-auto-blur
@@ -100,14 +100,14 @@ blurSampling_ = intProp "blur-sampling"
 --
 -- Default Value: 'True'
 --
-enableAutoBlur_ :: Bool -> Attribute action
+enableAutoBlur_ :: Bool -> Attribute model action
 enableAutoBlur_ = boolProp "enable-auto-blur"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/blur-view.html#experimental-update-blur-radius
 --
 -- *Android 3.4+*. Switches the internal blur-buffer refresh mechanism.
 --
-experimentalUpdateBlurRadius_ :: Bool -> Attribute action
+experimentalUpdateBlurRadius_ :: Bool -> Attribute model action
 experimentalUpdateBlurRadius_ = boolProp "experimental-update-blur-radius"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/blur-view.html#glass-interactive
@@ -116,7 +116,7 @@ experimentalUpdateBlurRadius_ = boolProp "experimental-update-blur-radius"
 --
 -- Default Value: 'False'
 --
-glassInteractive_ :: Bool -> Attribute action
+glassInteractive_ :: Bool -> Attribute model action
 glassInteractive_ = boolProp "glass-interactive"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/blur-view.html#glass-style
@@ -127,7 +127,7 @@ glassInteractive_ = boolProp "glass-interactive"
 --
 -- Default Value: 'GlassRegular'
 --
-glassStyle_ :: GlassStyle -> Attribute action
+glassStyle_ :: GlassStyle -> Attribute model action
 glassStyle_ = prop "glass-style"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/blur-view.html#glass-tint-color
@@ -136,7 +136,7 @@ glassStyle_ = prop "glass-style"
 --
 -- Default Value: @\"transparent\"@
 --
-glassTintColor_ :: MisoString -> Attribute action
+glassTintColor_ :: MisoString -> Attribute model action
 glassTintColor_ = textProp "glass-tint-color"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/blur-view.html#spacing
@@ -145,6 +145,6 @@ glassTintColor_ = textProp "glass-tint-color"
 --
 -- Default Value: 0
 --
-spacing_ :: Int -> Attribute action
+spacing_ :: Int -> Attribute model action
 spacing_ = intProp "spacing"
 -----------------------------------------------------------------------------

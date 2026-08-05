@@ -30,7 +30,7 @@ import qualified Data.Map as M
 -----------------------------------------------------------------------------
 import           Miso.Event
 import           Miso.JSON
-import           Miso.Types (EventHandler, DOMRef)
+import           Miso.Types (DOMRef, Attribute)
 -----------------------------------------------------------------------------
 viewpagerEvents :: Events
 viewpagerEvents
@@ -66,37 +66,35 @@ offsetChangeDecoder = ["detail"] `at` details
 --
 -- Triggered with the current page index after the transition completes.
 --
-onChange :: (ViewpagerChangeEvent -> action) -> EventHandler action
-onChange action = on "change" viewpagerChangeDecoder (\e _ -> action e)
+onChange :: (ViewpagerChangeEvent -> action) -> Attribute model action
+onChange action = on "change" viewpagerChangeDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/viewpager.html#bindoffsetchange
 --
 -- Triggered with the scrolling progress during a page transition.
 --
-onOffsetChange :: (Double -> action) -> EventHandler action
-onOffsetChange action = on "offsetchange" offsetChangeDecoder (\e _ -> action e)
+onOffsetChange :: (Double -> action) -> Attribute model action
+onOffsetChange action = on "offsetchange" offsetChangeDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/viewpager.html#bindwillchange
 --
 -- Triggered with the next page index before the transition starts.
 --
-onWillChange :: (ViewpagerChangeEvent -> action) -> EventHandler action
-onWillChange action = on "willchange" viewpagerChangeDecoder (\e _ -> action e)
------------------------------------------------------------------------------
-
+onWillChange :: (ViewpagerChangeEvent -> action) -> Attribute model action
+onWillChange action = on "willchange" viewpagerChangeDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
 -- | Like 'onChange', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onChangeWith :: (ViewpagerChangeEvent -> DOMRef -> action) -> EventHandler action
-onChangeWith action = on "change" viewpagerChangeDecoder action
+onChangeWith :: (ViewpagerChangeEvent -> DOMRef -> action) -> Attribute model action
+onChangeWith action = on "change" viewpagerChangeDecoder $ \vpce _ domRef -> action vpce domRef
 -----------------------------------------------------------------------------
 -- | Like 'onOffsetChange', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onOffsetChangeWith :: (Double -> DOMRef -> action) -> EventHandler action
-onOffsetChangeWith action = on "offsetchange" offsetChangeDecoder action
+onOffsetChangeWith :: (Double -> DOMRef -> action) -> Attribute model action
+onOffsetChangeWith action = on "offsetchange" offsetChangeDecoder $ \vpce _ domRef -> action vpce domRef
 -----------------------------------------------------------------------------
 -- | Like 'onWillChange', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onWillChangeWith :: (ViewpagerChangeEvent -> DOMRef -> action) -> EventHandler action
-onWillChangeWith action = on "willchange" viewpagerChangeDecoder action
+onWillChangeWith :: (ViewpagerChangeEvent -> DOMRef -> action) -> Attribute model action
+onWillChangeWith action = on "willchange" viewpagerChangeDecoder $ \vpce _ domRef -> action vpce domRef
 -----------------------------------------------------------------------------

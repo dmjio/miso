@@ -31,7 +31,9 @@
 module Miso.Mathml
    ( -- * Elements
      module Miso.Mathml.Element
+   , module Miso.Mathml.Property
    ) where
 -----------------------------------------------------------------------------
 import Miso.Mathml.Element
+import Miso.Mathml.Property
 -----------------------------------------------------------------------------

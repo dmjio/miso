@@ -106,167 +106,167 @@ import           Miso.Property
 -- | [dir](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Global_attributes/dir)
 --
 -- @since 1.9.0.0
-dir_ :: MisoString -> Attribute action
+dir_ :: MisoString -> Attribute model action
 dir_ = textProp "dir"
 -----------------------------------------------------------------------------
 -- | [displaystyle](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Global_attributes/displaystyle)
 --
 -- @since 1.9.0.0
-displaystyle_ :: MisoString -> Attribute action
+displaystyle_ :: MisoString -> Attribute model action
 displaystyle_ = textProp "displaystyle"
 ------------------------------------------------------------------------------
 -- | [scriptlevel](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Global_attributes/scriptlevel)
 --
 -- @since 1.9.0.0
-scriptlevel_ :: Int -> Attribute action
+scriptlevel_ :: Int -> Attribute model action
 scriptlevel_ = intProp "scriptlevel"
 -----------------------------------------------------------------------------
 -- | @since 1.9.0.0
-accent_ ::  Bool -> Attribute action
+accent_ ::  Bool -> Attribute model action
 accent_ = boolProp "accent"
 -----------------------------------------------------------------------------
 -- | @since 1.9.0.0
-accentunder_ ::  Bool -> Attribute action
+accentunder_ ::  Bool -> Attribute model action
 accentunder_ = boolProp "accentunder"
 -----------------------------------------------------------------------------
 -- | @since 1.9.0.0
-align_ ::  Bool -> Attribute action
+align_ ::  Bool -> Attribute model action
 align_ = boolProp "align"
 -----------------------------------------------------------------------------
 -- | @since 1.9.0.0
-columnalign_ :: MisoString -> Attribute action
+columnalign_ :: MisoString -> Attribute model action
 columnalign_ = textProp "columnalign"
 -----------------------------------------------------------------------------
 -- | @since 1.9.0.0
-columnlines_ :: MisoString -> Attribute action
+columnlines_ :: MisoString -> Attribute model action
 columnlines_ = textProp "columnlines"
 -----------------------------------------------------------------------------
 -- | @since 1.9.0.0
-columnspacing_ :: MisoString -> Attribute action
+columnspacing_ :: MisoString -> Attribute model action
 columnspacing_ = textProp "columnspacing"
 -----------------------------------------------------------------------------
 -- | @since 1.9.0.0
-columnspan_ :: Int -> Attribute action
+columnspan_ :: Int -> Attribute model action
 columnspan_ = intProp "columnspan"
 -----------------------------------------------------------------------------
 -- | @since 1.9.0.0
-depth_ :: MisoString -> Attribute action
+depth_ :: MisoString -> Attribute model action
 depth_ = textProp "depth"
 -----------------------------------------------------------------------------
 -- | @since 1.9.0.0
-display_ :: MisoString -> Attribute action
+display_ :: MisoString -> Attribute model action
 display_ = textProp "display"
 -----------------------------------------------------------------------------
 -- | @since 1.9.0.0
-fence_ :: Bool -> Attribute action
+fence_ :: Bool -> Attribute model action
 fence_ = boolProp "fence"
 -----------------------------------------------------------------------------
 -- | @since 1.9.0.0
-frame_ :: MisoString -> Attribute action
+frame_ :: MisoString -> Attribute model action
 frame_ = textProp "frame"
 -----------------------------------------------------------------------------
 -- | @since 1.9.0.0
-framespacing_ :: MisoString -> Attribute action
+framespacing_ :: MisoString -> Attribute model action
 framespacing_ = textProp "framespacing"
 -----------------------------------------------------------------------------
 -- | @since 1.9.0.0
-height_ :: MisoString -> Attribute action
+height_ :: MisoString -> Attribute model action
 height_ = textProp "height"
 -----------------------------------------------------------------------------
 -- | @since 1.9.0.0
-href_ :: MisoString -> Attribute action
+href_ :: MisoString -> Attribute model action
 href_ = textProp "href"
 -----------------------------------------------------------------------------
 -- | @since 1.9.0.0
-id_ :: MisoString -> Attribute action
+id_ :: MisoString -> Attribute model action
 id_ = textProp "id"
 -----------------------------------------------------------------------------
 -- | @since 1.9.0.0
-linethickness_ :: MisoString -> Attribute action
+linethickness_ :: MisoString -> Attribute model action
 linethickness_ = textProp "linethickness"
 -----------------------------------------------------------------------------
 -- | @since 1.9.0.0
-lspace_ :: MisoString -> Attribute action
+lspace_ :: MisoString -> Attribute model action
 lspace_ = textProp "lspace"
 -- | @since 1.9.0.0
 -----------------------------------------------------------------------------
 -- | @since 1.9.0.0
-mathbackground_ :: MisoString -> Attribute action
+mathbackground_ :: MisoString -> Attribute model action
 mathbackground_ = textProp "mathbackground"
 -----------------------------------------------------------------------------
 -- | @since 1.9.0.0
-mathcolor_ :: MisoString -> Attribute action
+mathcolor_ :: MisoString -> Attribute model action
 mathcolor_ = textProp "mathcolor"
 -----------------------------------------------------------------------------
 -- | @since 1.9.0.0
-mathsize_ :: MisoString -> Attribute action
+mathsize_ :: MisoString -> Attribute model action
 mathsize_ = textProp "mathsize"
 -----------------------------------------------------------------------------
 -- | @since 1.9.0.0
-mathvariant_ :: MisoString -> Attribute action
+mathvariant_ :: MisoString -> Attribute model action
 mathvariant_ = textProp "mathvariant"
 -----------------------------------------------------------------------------
 -- | @since 1.9.0.0
-maxsize_ :: MisoString -> Attribute action
+maxsize_ :: MisoString -> Attribute model action
 maxsize_ = textProp "maxsize"
 -----------------------------------------------------------------------------
 -- | @since 1.9.0.0
-minsize_ :: MisoString -> Attribute action
+minsize_ :: MisoString -> Attribute model action
 minsize_ = textProp "minsize"
 -----------------------------------------------------------------------------
 -- | @since 1.9.0.0
-movablelimits_ :: Bool -> Attribute action
+movablelimits_ :: Bool -> Attribute model action
 movablelimits_ = boolProp "movablelimits"
 -----------------------------------------------------------------------------
 -- | @since 1.9.0.0
-notation_ :: MisoString -> Attribute action
+notation_ :: MisoString -> Attribute model action
 notation_ = textProp "notation"
 -----------------------------------------------------------------------------
 -- | @since 1.9.0.0
-rowalign_ :: MisoString -> Attribute action
+rowalign_ :: MisoString -> Attribute model action
 rowalign_ = textProp "rowalign"
 -----------------------------------------------------------------------------
 -- | @since 1.9.0.0
-rowlines_ :: MisoString -> Attribute action
+rowlines_ :: MisoString -> Attribute model action
 rowlines_ = textProp "rowlines"
 -----------------------------------------------------------------------------
 -- | @since 1.9.0.0
-rowspacing_ :: MisoString -> Attribute action
+rowspacing_ :: MisoString -> Attribute model action
 rowspacing_ = textProp "rowspacing"
 -----------------------------------------------------------------------------
 -- | @since 1.9.0.0
-rowspan_ :: Int -> Attribute action
+rowspan_ :: Int -> Attribute model action
 rowspan_ = intProp "rowspan"
 -----------------------------------------------------------------------------
 -- | @since 1.9.0.0
-rspace_ :: MisoString -> Attribute action
+rspace_ :: MisoString -> Attribute model action
 rspace_ = textProp "rspace"
 -----------------------------------------------------------------------------
 -- | @since 1.9.0.0
-separator_ :: Bool -> Attribute action
+separator_ :: Bool -> Attribute model action
 separator_ = boolProp "separator"
 -----------------------------------------------------------------------------
 -- | @since 1.9.0.0
-stretchy_ :: Bool -> Attribute action
+stretchy_ :: Bool -> Attribute model action
 stretchy_ = boolProp "stretchy"
 -----------------------------------------------------------------------------
 -- | @since 1.9.0.0
-symmetric_ :: Bool -> Attribute action
+symmetric_ :: Bool -> Attribute model action
 symmetric_ = boolProp "symmetric"
 -----------------------------------------------------------------------------
 -- | @since 1.9.0.0
-voffset_ :: MisoString -> Attribute action
+voffset_ :: MisoString -> Attribute model action
 voffset_ = textProp "voffset"
 -----------------------------------------------------------------------------
 -- | @since 1.9.0.0
-width_ :: MisoString -> Attribute action
+width_ :: MisoString -> Attribute model action
 width_ = textProp "width"
 -----------------------------------------------------------------------------
 -- | @since 1.9.0.0
-close_ :: MisoString -> Attribute action
+close_ :: MisoString -> Attribute model action
 close_ = textProp "close"
 -----------------------------------------------------------------------------
 -- | @since 1.9.0.0
-open_ :: MisoString -> Attribute action
+open_ :: MisoString -> Attribute model action
 open_ = textProp "open"
 -----------------------------------------------------------------------------

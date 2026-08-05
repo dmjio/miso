@@ -20,7 +20,7 @@ module Miso.Native.X.Element.Svg.Event
 import qualified Data.Map as M
 -----------------------------------------------------------------------------
 import           Miso.Event
-import           Miso.Types (EventHandler, DOMRef)
+import           Miso.Types (Attribute, DOMRef)
 -----------------------------------------------------------------------------
 svgEvents :: Events
 svgEvents = M.fromList [ ("load", BUBBLE) ]
@@ -29,13 +29,11 @@ svgEvents = M.fromList [ ("load", BUBBLE) ]
 --
 -- Triggered when the SVG finishes loading.
 --
-onLoad :: action -> EventHandler action
-onLoad action = on "load" emptyDecoder (\() _ -> action)
------------------------------------------------------------------------------
-
+onLoad :: action -> Attribute model action
+onLoad action = on "load" emptyDecoder (\() _ _ -> action)
 -----------------------------------------------------------------------------
 -- | Like 'onLoad', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onLoadWith :: (DOMRef -> action) -> EventHandler action
-onLoadWith action = on "load" emptyDecoder (\() ref -> action ref)
+onLoadWith :: (DOMRef -> action) -> Attribute model action
+onLoadWith action = on "load" emptyDecoder (\() _ ref -> action ref)
 -----------------------------------------------------------------------------

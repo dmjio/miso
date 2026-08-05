@@ -24,6 +24,17 @@ build_dir := "sample-app-native/build"
 serve_dir := "sample-app-native/build/dist"
 port      := "8080"
 
+# Optional global stylesheet compiled into the Lynx bundle. If this file exists
+# it is imported by the rspeedy entry so `className "foo"` resolves against its
+# rules (Lynx compiles CSS ahead-of-time; runtime `document`-based injection via
+# Sheet/Href/Style does not work on Lynx). See bundle-lynx.
+styles_css := "sample-app-native/styles.css"
+
+# Which sample-app-native executable to bundle. Override to build the element
+# gallery instead of the default fetch demo:
+#     just rebuild-native exe=gallery-native
+exe := "app-native"
+
 # GHC JS backend selection (same flags as the `native` devshell `build`).
 jsflags := "--with-compiler=javascript-unknown-ghcjs-ghc --with-hc-pkg=javascript-unknown-ghcjs-ghc-pkg"
 
@@ -38,13 +49,13 @@ bundle-runtime:
 
 # 2. Compile the Haskell app with the GHC JS backend, emitting all.js.
 build-native-js:
-    cabal build app-native {{jsflags}}
+    cabal build {{exe}} {{jsflags}}
 
 # 3. Bundle all.js into a Lynx bundle (dist/main.lynx.bundle) via rspeedy.
 bundle-lynx:
     #!/usr/bin/env bash
     set -euo pipefail
-    alljs="$(cabal list-bin app-native {{jsflags}}).jsexe/all.js"
+    alljs="$(cabal list-bin {{exe}} {{jsflags}}).jsexe/all.js"
     rm -rf {{build_dir}}
     mkdir -p {{build_dir}}
     # Pre-bundle all.js so rspeedy's client-side build doesn't choke on the GHC
@@ -52,11 +63,21 @@ bundle-lynx:
     bun build --minify-whitespace --target=bun --outfile={{build_dir}}/all.js "$alljs"
     # rspeedy resolves @lynx-js/* from node_modules next to lynx.config.ts.
     ln -sfn "$(dirname "$(command -v rspeedy)")/../lib/node_modules" {{build_dir}}/node_modules
+    # Wrapper entry: import an optional user stylesheet (compiled into the bundle
+    # under the global cssId 0 that the runtime scopes the page to) before the
+    # GHC-generated all.js. rspeedy's entry can't be all.js directly if we want
+    # CSS, since all.js is generated and can't `import './styles.css'`.
+    if [ -f "{{styles_css}}" ]; then
+      cp "{{styles_css}}" {{build_dir}}/styles.css
+      printf "import './styles.css';\nimport './all.js';\n" > {{build_dir}}/entry.js
+    else
+      printf "import './all.js';\n" > {{build_dir}}/entry.js
+    fi
     cat > {{build_dir}}/lynx.config.ts <<'EOF'
     import { defineConfig } from '@lynx-js/rspeedy';
     import { pluginReactLynx } from '@lynx-js/react-rsbuild-plugin';
     export default defineConfig({
-      source: { entry: './all.js' },
+      source: { entry: './entry.js' },
       plugins: [ pluginReactLynx() ],
     });
     EOF

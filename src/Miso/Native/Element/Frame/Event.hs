@@ -30,7 +30,7 @@ import qualified Data.Map as M
 import           Miso.Event
 import           Miso.JSON
 import           Miso.String (MisoString)
-import           Miso.Types (EventHandler, DOMRef)
+import           Miso.Types (Attribute, DOMRef)
 -----------------------------------------------------------------------------
 frameEvents :: Events
 frameEvents
@@ -98,8 +98,8 @@ frameLoadMetricsDecoder = ["detail"] `at` details
 --
 -- @
 --
-onLoad :: (FrameLoadEvent -> action) -> EventHandler action
-onLoad action = on "load" frameLoadDecoder (\e _ -> action e)
+onLoad :: (FrameLoadEvent -> action) -> Attribute model action
+onLoad action = on "load" frameLoadDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/frame.html#bindloadmetrics
 --
@@ -116,18 +116,16 @@ onLoad action = on "load" frameLoadDecoder (\e _ -> action e)
 --
 -- @
 --
-onLoadMetrics :: (FrameLoadMetricsEvent -> action) -> EventHandler action
-onLoadMetrics action = on "loadmetrics" frameLoadMetricsDecoder (\e _ -> action e)
------------------------------------------------------------------------------
-
+onLoadMetrics :: (FrameLoadMetricsEvent -> action) -> Attribute model action
+onLoadMetrics action = on "loadmetrics" frameLoadMetricsDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
 -- | Like 'onLoad', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onLoadWith :: (FrameLoadEvent -> DOMRef -> action) -> EventHandler action
-onLoadWith action = on "load" frameLoadDecoder action
+onLoadWith :: (FrameLoadEvent -> DOMRef -> action) -> Attribute model action
+onLoadWith action = on "load" frameLoadDecoder $ \f _ domRef -> action f domRef
 -----------------------------------------------------------------------------
 -- | Like 'onLoadMetrics', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onLoadMetricsWith :: (FrameLoadMetricsEvent -> DOMRef -> action) -> EventHandler action
-onLoadMetricsWith action = on "loadmetrics" frameLoadMetricsDecoder action
+onLoadMetricsWith :: (FrameLoadMetricsEvent -> DOMRef -> action) -> Attribute model action
+onLoadMetricsWith action = on "loadmetrics" frameLoadMetricsDecoder $ \f _ domRef -> action f domRef
 -----------------------------------------------------------------------------

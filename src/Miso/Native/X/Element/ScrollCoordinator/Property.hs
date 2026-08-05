@@ -47,7 +47,7 @@ instance ToJSON RefreshMode where
 --
 -- Default Value: 'False'
 --
-androidNestedScrollAsChild_ :: Bool -> Attribute action
+androidNestedScrollAsChild_ :: Bool -> Attribute model action
 androidNestedScrollAsChild_ = boolProp "android-nested-scroll-as-child"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/scroll-coordinator.html#bounces
@@ -57,7 +57,7 @@ androidNestedScrollAsChild_ = boolProp "android-nested-scroll-as-child"
 --
 -- Default Value: 'True'
 --
-bounces_ :: Bool -> Attribute action
+bounces_ :: Bool -> Attribute model action
 bounces_ = boolProp "bounces"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/scroll-coordinator.html#enable-scroll
@@ -66,7 +66,7 @@ bounces_ = boolProp "bounces"
 --
 -- Default Value: 'True'
 --
-enableScroll_ :: Bool -> Attribute action
+enableScroll_ :: Bool -> Attribute model action
 enableScroll_ = boolProp "enable-scroll"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/scroll-coordinator.html#enable-scroll-bar
@@ -76,7 +76,7 @@ enableScroll_ = boolProp "enable-scroll"
 --
 -- Default Value: 'False'
 --
-enableScrollBar_ :: Bool -> Attribute action
+enableScrollBar_ :: Bool -> Attribute model action
 enableScrollBar_ = boolProp "enable-scroll-bar"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/scroll-coordinator.html#granularity
@@ -85,7 +85,7 @@ enableScrollBar_ = boolProp "enable-scroll-bar"
 --
 -- Default Value: 0.01
 --
-granularity_ :: Double -> Attribute action
+granularity_ :: Double -> Attribute model action
 granularity_ = doubleProp "granularity"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/scroll-coordinator.html#header-over-slot
@@ -94,7 +94,7 @@ granularity_ = doubleProp "granularity"
 --
 -- Default Value: 'False'
 --
-headerOverSlot_ :: Bool -> Attribute action
+headerOverSlot_ :: Bool -> Attribute model action
 headerOverSlot_ = boolProp "header-over-slot"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/scroll-coordinator.html#ios-force-scroll-detach
@@ -103,7 +103,7 @@ headerOverSlot_ = boolProp "header-over-slot"
 --
 -- Default Value: 'False'
 --
-iosForceScrollDetach_ :: Bool -> Attribute action
+iosForceScrollDetach_ :: Bool -> Attribute model action
 iosForceScrollDetach_ = boolProp "ios-force-scroll-detach"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/scroll-coordinator.html#ios-scrolls-to-top
@@ -112,7 +112,7 @@ iosForceScrollDetach_ = boolProp "ios-force-scroll-detach"
 --
 -- Default Value: 'False'
 --
-iosScrollsToTop_ :: Bool -> Attribute action
+iosScrollsToTop_ :: Bool -> Attribute model action
 iosScrollsToTop_ = boolProp "ios-scrolls-to-top"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/scroll-coordinator.html#refresh-mode
@@ -123,6 +123,6 @@ iosScrollsToTop_ = boolProp "ios-scrolls-to-top"
 --
 -- Default Value: 'RefreshNone'
 --
-refreshMode_ :: RefreshMode -> Attribute action
+refreshMode_ :: RefreshMode -> Attribute model action
 refreshMode_ = prop "refresh-mode"
 -----------------------------------------------------------------------------

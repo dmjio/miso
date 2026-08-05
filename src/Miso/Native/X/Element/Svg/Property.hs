@@ -12,12 +12,14 @@
 module Miso.Native.X.Element.Svg.Property
   ( -- *** Property
     content_
+  , contentRaw_
   , src_
   ) where
 -----------------------------------------------------------------------------
-import           Miso.String (MisoString)
-import           Miso.Types (Attribute)
+import           Miso.String (MisoString, ms)
+import           Miso.Types (Attribute, View)
 import           Miso.Property
+import           Miso.Html.Render (toHtml)
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/svg.html#content
 --
@@ -25,8 +27,19 @@ import           Miso.Property
 --
 -- > content_ "<svg>...</svg>"
 --
-content_ :: MisoString -> Attribute action
-content_ = textProp "content"
+contentRaw_ :: MisoString -> Attribute model action
+contentRaw_ = textProp "content"
+-----------------------------------------------------------------------------
+-- | https://lynxjs.org/api/elements/built-in/svg.html#content
+--
+-- Inline SVG XML content using 'miso' 'Miso.Typess.View' Syntax.
+--
+-- > content_ (svg_ [] [])
+--
+-- N.B. Must use "Miso.Svg" and 'Miso.Svg.Element.svg_' combinator.
+--
+content_ :: View context model action -> Attribute model action
+content_ = textProp "content" . ms . toHtml
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/svg.html#src
 --
@@ -34,6 +47,6 @@ content_ = textProp "content"
 --
 -- > src_ "https://url.com/image.svg"
 --
-src_ :: MisoString -> Attribute action
+src_ :: MisoString -> Attribute model action
 src_ = textProp "src"
 -----------------------------------------------------------------------------

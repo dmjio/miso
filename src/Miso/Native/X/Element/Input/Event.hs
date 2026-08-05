@@ -37,7 +37,7 @@ import qualified Data.Map as M
 import           Miso.Event
 import           Miso.JSON
 import           Miso.String (MisoString)
-import           Miso.Types (EventHandler, DOMRef)
+import           Miso.Types (Attribute, DOMRef)
 -----------------------------------------------------------------------------
 inputEvents :: Events
 inputEvents
@@ -106,61 +106,59 @@ selectionDecoder = ["detail"] `at` details
 --
 -- Triggered when the input is blurred, outputting the current value.
 --
-onBlur :: (MisoString -> action) -> EventHandler action
-onBlur action = on "blur" inputValueDecoder (\e _ -> action e)
+onBlur :: (MisoString -> action) -> Attribute model action
+onBlur action = on "blur" inputValueDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/input.html#bindconfirm
 --
 -- Triggered when the confirm button is clicked, outputting the current value.
 --
-onConfirm :: (MisoString -> action) -> EventHandler action
-onConfirm action = on "confirm" inputValueDecoder (\e _ -> action e)
+onConfirm :: (MisoString -> action) -> Attribute model action
+onConfirm action = on "confirm" inputValueDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/input.html#bindfocus
 --
 -- Triggered when the input is focused, outputting the current value.
 --
-onFocus :: (MisoString -> action) -> EventHandler action
-onFocus action = on "focus" inputValueDecoder (\e _ -> action e)
+onFocus :: (MisoString -> action) -> Attribute model action
+onFocus action = on "focus" inputValueDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/input.html#bindinput
 --
 -- Triggered when the input content changes.
 --
-onInput :: (InputEvent -> action) -> EventHandler action
-onInput action = on "input" inputDecoder (\e _ -> action e)
+onInput :: (InputEvent -> action) -> Attribute model action
+onInput action = on "input" inputDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/input.html#bindselection
 --
 -- Triggered when the input selection changes.
 --
-onSelection :: (SelectionEvent -> action) -> EventHandler action
-onSelection action = on "selection" selectionDecoder (\e _ -> action e)
------------------------------------------------------------------------------
-
+onSelection :: (SelectionEvent -> action) -> Attribute model action
+onSelection action = on "selection" selectionDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
 -- | Like 'onBlur', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onBlurWith :: (MisoString -> DOMRef -> action) -> EventHandler action
-onBlurWith action = on "blur" inputValueDecoder action
+onBlurWith :: (MisoString -> DOMRef -> action) -> Attribute model action
+onBlurWith action = on "blur" inputValueDecoder $ \v _ domRef -> action v domRef
 -----------------------------------------------------------------------------
 -- | Like 'onConfirm', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onConfirmWith :: (MisoString -> DOMRef -> action) -> EventHandler action
-onConfirmWith action = on "confirm" inputValueDecoder action
+onConfirmWith :: (MisoString -> DOMRef -> action) -> Attribute model action
+onConfirmWith action = on "confirm" inputValueDecoder $ \v _ domRef -> action v domRef
 -----------------------------------------------------------------------------
 -- | Like 'onFocus', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onFocusWith :: (MisoString -> DOMRef -> action) -> EventHandler action
-onFocusWith action = on "focus" inputValueDecoder action
+onFocusWith :: (MisoString -> DOMRef -> action) -> Attribute model action
+onFocusWith action = on "focus" inputValueDecoder $ \v _ domRef -> action v domRef
 -----------------------------------------------------------------------------
 -- | Like 'onInput', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onInputWith :: (InputEvent -> DOMRef -> action) -> EventHandler action
-onInputWith action = on "input" inputDecoder action
+onInputWith :: (InputEvent -> DOMRef -> action) -> Attribute model action
+onInputWith action = on "input" inputDecoder $ \v _ domRef -> action v domRef
 -----------------------------------------------------------------------------
 -- | Like 'onSelection', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onSelectionWith :: (SelectionEvent -> DOMRef -> action) -> EventHandler action
-onSelectionWith action = on "selection" selectionDecoder action
+onSelectionWith :: (SelectionEvent -> DOMRef -> action) -> Attribute model action
+onSelectionWith action = on "selection" selectionDecoder $ \v _ domRef -> action v domRef
 -----------------------------------------------------------------------------

@@ -198,7 +198,7 @@ initialize
   -- ^ Initial props for this component
   -> Maybe Key
   -- ^ Optional key for stable hot-reload model recovery
-  -> StaticKey
+  -> Maybe StaticKey
   -- ^ 'StaticPtr' key for cross-thread (Lynx) child component lifecycle
   -> Component context props model action
   -> IO DOMRef
@@ -306,8 +306,12 @@ initialize events _componentParentId hydrate isRoot initialProps maybeKey _compo
   initialDraw initializedModel events hydrate isRoot comp vcomponent
   forM_ mount _componentSink
 #ifdef NATIVE
+  -- Ship the child's initial @props@ so the MTS can rebuild the mirror
+  -- component by applying the 'Props' constructor recovered from the
+  -- 'StaticKey'. The no-props case serializes @()@ (JSON @null@).
   when (bts && not isRoot) $
-    postComponent MOUNT _componentStaticKey _componentId _componentParentId Nothing (Just _componentDOMRef)
+    postComponent MOUNT _componentStaticKey _componentId _componentParentId
+      (Just (toJSON initialProps)) (Just _componentDOMRef)
 #endif
   pure vcomponent
 -----------------------------------------------------------------------------
@@ -365,7 +369,7 @@ scheduler Proxy =
             -- needed here; the sentinel key is never dereferenced on the far side.
             when bts $ do
               currentContext <- readIORef @context globalContext
-              postComponent CONTEXT_HYDRATE contextHydrateStaticKey minBound minBound
+              postComponent CONTEXT_HYDRATE (Just contextHydrateStaticKey) minBound minBound
                 (Just (toJSON currentContext)) Nothing
 #endif
         | vcompId < 0 -> do
@@ -660,13 +664,6 @@ componentProps = lens _componentProps $ \record field -> record { _componentProp
 prevComponentProps :: Lens (ComponentState context props model action) props
 prevComponentProps = lens _prevComponentProps $ \record field -> record { _prevComponentProps = field }
 -----------------------------------------------------------------------------
--- | Hydrate avoids calling @diff@, and instead calls @hydrate@
--- 'Draw' invokes 'Miso.Diff.diff'
-data Hydrate
-  = Draw
-  | Hydrate
-  deriving (Show, Eq)
------------------------------------------------------------------------------
 -- | t'Miso.Types.Component' state, data associated with the lifetime of a t'Miso.Types.Component'
 data ComponentState context props model action
   = ComponentState
@@ -674,7 +671,7 @@ data ComponentState context props model action
   -- ^ The ID of the current t'Miso.Types.Component'
   , _componentKey :: Maybe Key
   -- ^ Optional key for stable hot-reload model recovery
-  , _componentStaticKey :: StaticKey
+  , _componentStaticKey :: Maybe StaticKey
   -- ^ 'StaticPtr' key of the originating t'VComp', used to instruct the MTS
   -- to mount, hydrate, or unmount this child across the Lynx thread boundary.
   -- 'Nothing' for the root (each thread mounts the root locally).
@@ -982,8 +979,8 @@ cleanup Proxy live domRef = do
           freeLifecycleHooks cs
       else do
         -- We can do a full unmount if we're not doing hot reload
-        forM_ (IM.toDescList vcomps) $ \(_, vcomp_) ->
-          unmountComponent @context vcomp_
+        forM_ (IM.toDescList vcomps) $ \(_, _vcomp_) ->
+          unmountComponent @context _vcomp_
     atomicWriteIORef componentIds topLevelComponentId
     atomicWriteIORef globalQueue mempty
     unless live (atomicWriteIORef components mempty)
@@ -1079,68 +1076,28 @@ unmountComponent cs@ComponentState {..} = do
 -- infrastructure for each sub-component. During this
 -- process we go between the Haskell heap and the JS heap.
 buildVTree
-  :: forall context action . Eq context
+  :: forall context model action . Eq context
   => Events
   -> ComponentId
   -> ComponentId
   -> Hydrate
   -> Sink action
   -> LogLevel
-  -> View context action
+  -> View context model action
   -> IO VTree
 buildVTree events_ parentId_ vcompId hydrate snk logLevel_ = \case
-  VComp ptr -> case deRefStaticPtr ptr of
-    SomeComponent maybeKey newProps app -> do
-      vcomp_ <- create
+  VComp someComp -> buildComp Nothing someComp
 
-      mountCallback <- do
-        syncCallback1' $ \parent_ -> do
-          ComponentState {..} <- initialize events_ vcompId hydrate False newProps maybeKey (staticKey ptr) app (pure parent_)
-          modifyComponent vcompId (children %= IS.insert _componentId)
-          vtree <- toJSVal =<< readIORef _componentVTree
-          FFI.set "parent" vcomp_ (Object vtree)
-          obj <- create
-          setProp "componentId" _componentId obj
-          setProp "componentTree" vtree obj
-          toJSVal obj
+  VCompStatic ptr props -> case deRefStaticPtr ptr of
+    SomeStaticComponent mk -> buildComp (Just (staticKey ptr)) (mk props)
 
-      unmountCallback <- toJSVal =<< do
-        FFI.syncCallback1 $ \vcompId_ -> do
-          componentId_ <- fromJSValUnchecked vcompId_
-          IM.lookup componentId_ <$> readIORef components >>= \case
-            Nothing -> pure ()
-            Just componentState -> do
-              forM_ (unmount app) (_componentSink componentState)
-              unmountComponent @context componentState
-
-      -- When props are present, install a diffProps callback.
-      -- Comparison happens in Haskell against _componentLastProps — no round-trip.
-      -- TypeScript calls diffProps() unconditionally; Haskell decides whether to dispatch.
-      diffPropsCallback <- toJSVal =<< do
-        syncCallback $ do
-          componentId_ <- fromJSValUnchecked =<< vcomp_ ! ("componentId" :: MisoString)
-          currentProps <- _componentProps . (IM.! componentId_) <$> readIORef components
-          when (currentProps /= newProps) $ do
-            modifyComponent componentId_ $ do
-              componentProps .= newProps
-              prevComponentProps .= currentProps
-            enqueueSchedule componentId_
-
-      FFI.set "diffProps" diffPropsCallback vcomp_
-      FFI.set "child" jsNull vcomp_
-      forM_ maybeKey (\key -> FFI.set "key" key vcomp_)
-      FFI.set "mount" mountCallback vcomp_
-      FFI.set "unmount" unmountCallback vcomp_
-      FFI.set "eventPropagation" (eventPropagation app) vcomp_
-      FFI.set "type" VCompType vcomp_
-      pure (VTree vcomp_)
-  VNode ns tag attrs kids directEvents -> do
+  VNode ns tag attrs kids _directEvents -> do
     vnode_ <- createNode "vnode" ns tag
     setAttrs vnode_ attrs snk vcompId logLevel_ events_
 #ifdef NATIVE
     -- Only the Lynx native runtime consumes directEvents; the web/WASM diff
     -- never reads it (all HTML/SVG/MathML nodes carry an empty set anyway).
-    FFI.set "directEvents" (Set.toList directEvents) vnode_
+    FFI.set "directEvents" (Set.toList _directEvents) vnode_
 #endif
     vchildren <- toJSVal =<< procreate vnode_
     FFI.set "children" vchildren vnode_
@@ -1187,6 +1144,51 @@ buildVTree events_ parentId_ vcompId hydrate snk logLevel_ = \case
                 VTree child <- buildVTree events_ parentId_ vcompId hydrate snk logLevel_ kid
                 FFI.set "parent" parentVTree child
                 pure (child : acc)
+  where
+    -- Shared construction for 'VComp' and 'VCompStatic'. The only difference is
+    -- the 'StaticKey' passed to 'initialize': 'Nothing' for dynamic components,
+    -- @Just (staticKey ptr)@ for statically-referenced ones.
+    buildComp :: Maybe StaticKey -> SomeComponent context -> IO VTree
+    buildComp maybeStaticKey (SomeComponent maybeKey newProps app) = do
+      comp <- create
+      mountCallback <- do
+        syncCallback1' $ \parent_ -> do
+          ComponentState {..} <- initialize events_ vcompId hydrate False newProps maybeKey maybeStaticKey app (pure parent_)
+          modifyComponent vcompId (children %= IS.insert _componentId)
+          vtree <- toJSVal =<< readIORef _componentVTree
+          FFI.set "parent" comp (Object vtree)
+          obj <- create
+          setProp "componentId" _componentId obj
+          setProp "componentTree" vtree obj
+          toJSVal obj
+      unmountCallback <- toJSVal =<< do
+        FFI.syncCallback1 $ \vcompId_ -> do
+          componentId_ <- fromJSValUnchecked vcompId_
+          IM.lookup componentId_ <$> readIORef components >>= \case
+            Nothing -> pure ()
+            Just componentState -> do
+              forM_ (unmount app) (_componentSink componentState)
+              unmountComponent @context componentState
+      -- When props are present, install a diffProps callback.
+      -- Comparison happens in Haskell against _componentLastProps — no round-trip.
+      -- TypeScript calls diffProps() unconditionally; Haskell decides whether to dispatch.
+      diffPropsCallback <- toJSVal =<< do
+        syncCallback $ do
+          componentId_ <- fromJSValUnchecked =<< comp ! ("componentId" :: MisoString)
+          currentProps <- _componentProps . (IM.! componentId_) <$> readIORef components
+          when (currentProps /= newProps) $ do
+            modifyComponent componentId_ $ do
+              componentProps .= newProps
+              prevComponentProps .= currentProps
+            enqueueSchedule componentId_
+      FFI.set "diffProps" diffPropsCallback comp
+      FFI.set "child" jsNull comp
+      forM_ maybeKey (\key -> FFI.set "key" key comp)
+      FFI.set "mount" mountCallback comp
+      FFI.set "unmount" unmountCallback comp
+      FFI.set "eventPropagation" (eventPropagation app) comp
+      FFI.set "type" VCompType comp
+      pure (VTree comp)
 -----------------------------------------------------------------------------
 -- | @createNode@
 -- A helper function for constructing a vtree (used for @vcomp@ and @vnode@)
@@ -1213,13 +1215,15 @@ createNode typ ns tag = do
 -- DOM node
 setAttrs
   :: Object
-  -> [Attribute action]
+  -> [Attribute model action]
   -> Sink action
   -> ComponentId
   -> LogLevel
   -> Events
   -> IO ()
-setAttrs vnode_@(Object jval) attrs snk vcompId logLevel events =
+setAttrs vnode_@(Object jval) attrs snk vcompId logLevel events = do
+  -- TODO: this not yet present because still unmounted. should it be (IO model) ?
+  m <- (IM.! vcompId) <$> readIORef components
   forM_ attrs $ \case
     Property "key" v -> do
       value <- toJSVal v
@@ -1230,22 +1234,22 @@ setAttrs vnode_@(Object jval) attrs snk vcompId logLevel events =
       value <- toJSVal v
       o <- getProp "props" vnode_
       FFI.set k value (Object o)
-    On ptr ->
+    On callback -> do
+      FFI.set "pendingComponentId" vcompId vnode_
+      callback (_componentModel m) snk (VTree vnode_) logLevel events
+    OnStatic ptr ->
+      -- Stash the handler's 'StaticKey' and owning 'ComponentId' on the node
+      -- so 'onWithOptions' can attach them to the per-event object; the native
+      -- PATCH protocol ships them to the MTS for main-thread ('MTS') dispatch.
+      -- Browser\/WASM never dereferences them. 'pendingMainThread' starts
+      -- 'False'; 'Miso.Event.mainThread' (part of @callback@) flips it 'True'
+      -- so only marked handlers opt in.
       case deRefStaticPtr ptr of
         EventHandler callback -> do
-          -- Stash the handler's 'StaticKey' and owning 'ComponentId' on the node
-          -- so 'onWithOptions' can attach them to the per-event object it creates;
-          -- the native PATCH protocol ships them to the MTS for main-thread ('MTS')
-          -- dispatch. Browser\/WASM never dereferences them, so skip the work there.
-          -- 'pendingMainThread' starts 'False'; the 'Miso.Event.mainThread' wrapper
-          -- (part of @callback@) flips it 'True' so only marked handlers opt in.
-          when (not web) $ do
-            FFI.set "pendingStaticKey" (staticKey ptr) vnode_
-            FFI.set "pendingComponentId" vcompId vnode_
-            FFI.set "pendingMainThread" False vnode_
-          callback snk (VTree vnode_) logLevel events
-    OnLocal (EventHandler callback) ->
-      callback snk (VTree vnode_) logLevel events
+          FFI.set "pendingStaticKey" (staticKey ptr) vnode_
+          FFI.set "pendingComponentId" vcompId vnode_
+          FFI.set "pendingMainThread" False vnode_
+          callback (_componentModel m) snk (VTree vnode_) logLevel events
     Styles styles -> do
       cssObj <- getProp "css" vnode_
       forM_ (M.toList styles) $ \(k,v) -> do
@@ -2035,9 +2039,9 @@ initComponent
   -> Component context props model action
   -> Maybe Key
   -> props
-  -> StaticKey
+  -> Maybe StaticKey
   -> IO ()
-initComponent events hydrate live initialContext vcomp_@Component {..} key props sk = do
+initComponent events hydrate live initialContext comp_@Component {..} key props sk = do
 #ifdef WASM
       $(evalFile MISO_JS_PATH)
       atomicWriteIORef loadedJS True
@@ -2057,38 +2061,50 @@ initComponent events hydrate live initialContext vcomp_@Component {..} key props
         when web (cleanup proxy live root)
         atomicWriteIORef globalContext initialContext
         -- dmj: top-level Component always responsive to Context changes
-        let vcomp_' = vcomp_ { useContext = True }
-        void $ initialize events rootComponentId hydrate True props key sk vcomp_' (pure root)
+        let comp_' = comp_ { useContext = True }
+        void $ initialize events rootComponentId hydrate True props key sk comp_' (pure root)
         atomicWriteIORef schedulerThread =<< forkIO (scheduler proxy)
 ----------------------------------------------------------------------------
--- | Used for bidirectional cross-thread communication.
+-- | Placeholder passed to a 'Props' constructor when only the resulting
+-- 'SomeComponent'\'s /types/ (@model@ \/ @props@ \/ @action@) are needed, not a
+-- real @props@ value — e.g. to recover the @action@ type for decoding. Safe
+-- because every 'Props' built by @mount_@ \/ @mountWithProps@ \/ @(+>)@ is lazy
+-- in its @props@ argument, so applying it never forces this.
 #ifdef NATIVE
+propsTypeOnly :: props
+propsTypeOnly = error "Miso.Runtime: props forced during type-only Props application"
+-----------------------------------------------------------------------------
+-- | Used for bidirectional cross-thread communication.
 effectListener :: forall context jsval . ToJSVal jsval => Proxy context -> jsval -> IO ()
 effectListener Proxy jsval = void $ do
   ctx <- toJSVal jsval
   FFI.addEventListener ctx "Miso.effects" $ \msgEvent ->
     flip catch (\(e :: SomeException) ->
-        FFI.consoleError ("effectListener: exception in callback: " <> ms (show e))) $ do
+        FFI.consoleError ("[effectListener]: exception in callback: " <> ms (show e))) $ do
       msg <- Object msgEvent ! "data"
       EFFECT {..} <- fromJSValUnchecked msg :: IO EFFECT
-      unsafeLookupStaticPtr effectStaticKey >>= \case
-        Nothing ->
-          FFI.consoleError "[effectListener]: staticPtr NOT found for effectStaticKey"
-        Just ptr ->
-          case deRefStaticPtr ptr of
-            SomeComponent _key _props (_ :: Component context props model action) ->
-              case fromJSON effectAction :: Result action of
-                Success action -> do
-                  comps <- readIORef components
-                  case IM.lookup effectComponentId comps of
-                    Nothing ->
-                      FFI.consoleError $ ms $
-                        "[effectListener]: ComponentId NOT registered:" <> ms effectComponentId
-                    Just ComponentState {..} -> do
-                      FFI.consoleLog "[effectListener]: Sinking action into Component"
-                      _componentSink action
-                Error e ->
-                  FFI.consoleError ("[effectListener]: action decode error: " <> ms e)
+      case effectStaticKey of
+        Nothing -> FFI.consoleError "[effectListener]: must use 'static' keyword when mounting Component w/ native"
+        Just key_ -> do
+          unsafeLookupStaticPtr key_ >>= \case
+            Nothing ->
+              FFI.consoleError "[effectListener]: staticPtr NOT found for effectStaticKey"
+            Just ptr ->
+              case deRefStaticPtr ptr of
+               SomeStaticComponent mk -> case mk propsTypeOnly of
+                SomeComponent _key _props (_ :: Component context props model action) ->
+                  case fromJSON effectAction :: Result action of
+                    Success action -> do
+                      comps <- readIORef components
+                      case IM.lookup effectComponentId comps of
+                        Nothing ->
+                          FFI.consoleError $ ms $
+                            "[effectListener]: ComponentId NOT registered:" <> ms effectComponentId
+                        Just ComponentState {..} -> do
+                          FFI.consoleLog "[effectListener]: Sinking action into Component"
+                          _componentSink action
+                    Error e ->
+                      FFI.consoleError ("[effectListener]: action decode error: " <> ms e)
 #endif
 ----------------------------------------------------------------------------
 -- | Used for unidirectional BTS -> MTS communication
@@ -2109,69 +2125,79 @@ componentListener Proxy (BTS ctx) = void $ do
   FFI.addEventListener ctx "Miso.components" $ \msgEvent -> do
     msg <- Object msgEvent ! "data"
     COMPONENT {..} <- fromJSValUnchecked msg :: IO COMPONENT
-    Just ptr <- unsafeLookupStaticPtr componentComponentStaticKey
-    case deRefStaticPtr ptr of
-      SomeComponent _key _props (vcomp_ :: Component context props model action) ->
-        case componentComponentType of
-          READY -> -- dmj: unblocks main thread scheduler
-            notify btsReady
-            -- Context is global and not tied to any component: recover the @context@
-            -- type from 'Proxy' (no 'StaticPtr' deref), seed the global cell, then let
-            -- the MTS scheduler redraw every 'useContext' component via the
-            -- propagation sentinel.
-          CONTEXT_HYDRATE ->
-            case componentComponentPayload of
-              Nothing ->
-                FFI.consoleError "[COMPONENT]: No context to hydrate"
-              Just c ->
-                case fromJSON c :: Result context of
-                  -- State-only sync: the MTS never paints from context (the BTS ships
-                  -- DOM patches via the JS patch protocol), so no redraw is enqueued.
-                  Success newContext ->
-                    atomicWriteIORef globalContext newContext
-                  Error e ->
-                    FFI.consoleError ("[COMPONENT]: Could not decode context: " <> e)
-          MOUNT -> do
-            -- The BTS ships its @{ nodeId }@ 'DOMRef'; resolve it to the real
-            -- native element via @globalThis.runtime.nodes[nodeId]@ so the MTS
-            -- 'ComponentInfo' Reader ('componentInfoDOMRef') holds a live ref.
-            -- The MTS never paints here (the BTS drives drawing over the patch
-            -- protocol); this only seeds the mirror component's state.
-            parent_ <- maybe (unObject <$> create) resolveNodeRef componentComponentDOMRef
-            void $ initialize mempty componentComponentId Draw False _props
-              Nothing (staticKey ptr) vcomp_ (pure parent_)
-          UNMOUNT ->
-            IM.lookup componentComponentId <$> readIORef components >>= \case
-              Nothing ->
-                FFI.consoleError $ "[COMPONENT]: Couldn't find Component to unmount " <>
-                  ms (show componentComponentId)
-              Just c -> unmountComponent @context c
-          MODEL_HYDRATE -> do
-            case componentComponentPayload of
-              Nothing ->
-                FFI.consoleError "[COMPONENT]: No model to hydrate"
-              Just m ->
-                case fromJSON m :: Result model of
-                  Success newModel ->
-                    modifyComponent componentComponentId $ do
-                      componentModel .= newModel
-                  Error e ->
-                    FFI.consoleError ("[COMPONENT]: Could not decode model: " <> e)
-          -- State-only: drawing on the MTS is driven by the JS patch
-          -- protocol, so props hydration syncs state without redrawing.
-          PROPS_HYDRATE -> do
-            case componentComponentPayload of
-              Nothing ->
-                FFI.consoleError "[COMPONENT]: No props to hydrate"
-              Just props ->
-                case fromJSON props :: Result props of
-                  Success newProps -> do
-                    modifyComponent componentComponentId $ do
-                      currentProps <- use componentProps
-                      prevComponentProps .= currentProps
-                      componentProps .= newProps
-                  Error e ->
-                    FFI.consoleError ("[COMPONENT]: Could not decode props: " <> e)
+    case componentComponentStaticKey of
+      Nothing -> FFI.consoleError "[COMPONENT]: must use 'static' keyword for Component mounting"
+      Just key_ -> do
+        Just ptr <- unsafeLookupStaticPtr key_
+        case deRefStaticPtr ptr of
+         SomeStaticComponent mk -> case mk propsTypeOnly of
+          SomeComponent _key _props (comp_ :: Component context props model action) ->
+            case componentComponentType of
+              READY -> -- dmj: unblocks main thread scheduler
+                notify btsReady
+                -- Context is global and not tied to any component: recover the @context@
+                -- type from 'Proxy' (no 'StaticPtr' deref), seed the global cell, then let
+                -- the MTS scheduler redraw every 'useContext' component via the
+                -- propagation sentinel.
+              CONTEXT_HYDRATE ->
+                case componentComponentPayload of
+                  Nothing ->
+                    FFI.consoleError "[COMPONENT]: No context to hydrate"
+                  Just c ->
+                    case fromJSON c :: Result context of
+                      -- State-only sync: the MTS never paints from context (the BTS ships
+                      -- DOM patches via the JS patch protocol), so no redraw is enqueued.
+                      Success newContext ->
+                        atomicWriteIORef globalContext newContext
+                      Error e ->
+                        FFI.consoleError ("[COMPONENT]: Could not decode context: " <> e)
+              MOUNT -> do
+                -- The BTS ships its @{ nodeId }@ 'DOMRef'; resolve it to the real
+                -- native element via @globalThis.runtime.nodes[nodeId]@ so the MTS
+                -- 'ComponentInfo' Reader ('componentInfoDOMRef') holds a live ref.
+                -- The MTS never paints here (the BTS drives drawing over the patch
+                -- protocol); this only seeds the mirror component's state.
+                parent_ <- maybe (unObject <$> create) resolveNodeRef componentComponentDOMRef
+                -- Recover the child's initial @props@ from the wire (the BTS ships
+                -- them on 'MOUNT'), decoded at the @props@ type recovered above.
+                case componentComponentPayload of
+                  Just pv | Success initProps <- (fromJSON pv :: Result props) ->
+                    void $ initialize mempty componentComponentId Draw False initProps
+                      Nothing (Just (staticKey ptr)) comp_ (pure parent_)
+                  _ ->
+                    FFI.consoleError "[COMPONENT]: MOUNT missing/invalid props payload"
+              UNMOUNT ->
+                IM.lookup componentComponentId <$> readIORef components >>= \case
+                  Nothing ->
+                    FFI.consoleError $ "[COMPONENT]: Couldn't find Component to unmount " <>
+                      ms (show componentComponentId)
+                  Just c -> unmountComponent @context c
+              MODEL_HYDRATE -> do
+                case componentComponentPayload of
+                  Nothing ->
+                    FFI.consoleError "[COMPONENT]: No model to hydrate"
+                  Just m ->
+                    case fromJSON m :: Result model of
+                      Success newModel ->
+                        modifyComponent componentComponentId $ do
+                          componentModel .= newModel
+                      Error e ->
+                        FFI.consoleError ("[COMPONENT]: Could not decode model: " <> e)
+              -- State-only: drawing on the MTS is driven by the JS patch
+              -- protocol, so props hydration syncs state without redrawing.
+              PROPS_HYDRATE -> do
+                case componentComponentPayload of
+                  Nothing ->
+                    FFI.consoleError "[COMPONENT]: No props to hydrate"
+                  Just props ->
+                    case fromJSON props :: Result props of
+                      Success newProps -> do
+                        modifyComponent componentComponentId $ do
+                          currentProps <- use componentProps
+                          prevComponentProps .= currentProps
+                          componentProps .= newProps
+                      Error e ->
+                        FFI.consoleError ("[COMPONENT]: Could not decode props: " <> e)
 #endif
 ----------------------------------------------------------------------------
 -- | Dispatch a main-thread ('MTS') event on the Haskell layer.
@@ -2202,6 +2228,11 @@ dispatchMainThreadEvent arg =
     unsafeLookupStaticPtr (fromMisoString skHex) >>= \case
       Nothing ->
         FFI.consoleError ("[MTS dispatch] no handler for staticKey " <> skHex)
+      -- Fully-applied 'On' handlers resolve to a runnable 'EventHandler', so the
+      -- MTS rebuilds them from the 'StaticKey' alone. An 'OnWith' handler's key
+      -- resolves to a @payload -> EventHandler@ constructor; running it on the
+      -- MTS additionally requires the forwarded @pendingPayload@ decoded at the
+      -- @payload@ type — see note below (not yet wired end-to-end).
       Just ehPtr -> case deRefStaticPtr ehPtr of
         EventHandler cb -> do
           comps <- readIORef components
@@ -2212,7 +2243,7 @@ dispatchMainThreadEvent arg =
               -- Run the handler with this component's sink to install its
               -- 'runEvent' (decoder + sink) on a throwaway node, then fire it.
               scratch <- createNode "vnode" HTML "div"
-              cb _componentSink (VTree scratch) Off mempty
+              cb _componentModel _componentSink (VTree scratch) Off mempty
               runner <- lookupEventRunner scratch eventName
               forM_ runner $ \fn ->
                 void (call (Object fn) global [eventVal, targetVal])
@@ -2250,7 +2281,7 @@ registerMainThreadDispatch = do
 #ifdef NATIVE
 postComponent
   :: ComponentType
-  -> StaticKey
+  -> Maybe StaticKey
   -> ComponentId
   -> ComponentId
   -> Maybe Value
@@ -2270,7 +2301,7 @@ postComponent componentType_ sk componentId_ parentId_ model_ domRef_ = do
 --
 -- A no-op on plain web builds (neither 'mts' nor 'bts').
 #ifdef NATIVE
-postEffect :: StaticKey -> ComponentId -> Value -> IO ()
+postEffect :: Maybe StaticKey -> ComponentId -> Value -> IO ()
 postEffect sk componentId_ action_ = do
   when mts $ do
     ctx <- getBTSContext
@@ -2359,7 +2390,7 @@ instance FromJSVal ComponentType where
 -- | Cross-thread component lifecycle message (BTS → MTS).
 data COMPONENT = COMPONENT
   { componentComponentType :: ComponentType
-  , componentComponentStaticKey :: StaticKey
+  , componentComponentStaticKey :: Maybe StaticKey
   , componentComponentId :: ComponentId
   , componentComponentParentId :: ComponentId
   , componentComponentPayload :: Maybe Value
@@ -2389,7 +2420,7 @@ instance FromJSVal COMPONENT where
     let o = Object x
     mct  <- fromJSVal =<< getProp "componentType" o
     msk  <- fromJSVal =<< getProp "staticKey" o
-    let key = fromMisoString <$> msk
+    let key = fmap fromMisoString <$> msk
     mcid <- fromJSVal =<< getProp "compId" o
     mcpid <- fromJSVal =<< getProp "compParentId" o
     mp   <- fromJSVal =<< getProp "payload" o
@@ -2401,7 +2432,7 @@ instance FromJSVal COMPONENT where
 data EFFECT = EFFECT
   { effectComponentId :: ComponentId
   , effectAction :: Value
-  , effectStaticKey :: StaticKey
+  , effectStaticKey :: Maybe StaticKey
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
 instance ToJSVal EFFECT where

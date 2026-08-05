@@ -33,7 +33,7 @@ import           Miso.Property
 --
 -- Default Value: 'False'
 --
-androidAlwaysOverscroll_ :: Bool -> Attribute action
+androidAlwaysOverscroll_ :: Bool -> Attribute model action
 androidAlwaysOverscroll_ = boolProp "android-always-overscroll"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/viewpager.html#android-force-can-scroll
@@ -42,7 +42,7 @@ androidAlwaysOverscroll_ = boolProp "android-always-overscroll"
 --
 -- Default Value: 'False'
 --
-androidForceCanScroll_ :: Bool -> Attribute action
+androidForceCanScroll_ :: Bool -> Attribute model action
 androidForceCanScroll_ = boolProp "android-force-can-scroll"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/viewpager.html#bounces
@@ -51,7 +51,7 @@ androidForceCanScroll_ = boolProp "android-force-can-scroll"
 --
 -- Default Value: 'True'
 --
-bounces_ :: Bool -> Attribute action
+bounces_ :: Bool -> Attribute model action
 bounces_ = boolProp "bounces"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/viewpager.html#enable-scroll
@@ -60,7 +60,7 @@ bounces_ = boolProp "bounces"
 --
 -- Default Value: 'True'
 --
-enableScroll_ :: Bool -> Attribute action
+enableScroll_ :: Bool -> Attribute model action
 enableScroll_ = boolProp "enable-scroll"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/viewpager.html#initial-select-index
@@ -69,7 +69,7 @@ enableScroll_ = boolProp "enable-scroll"
 --
 -- Default Value: 0
 --
-initialSelectIndex_ :: Int -> Attribute action
+initialSelectIndex_ :: Int -> Attribute model action
 initialSelectIndex_ = intProp "initial-select-index"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/viewpager.html#ios-gesture-direction
@@ -78,7 +78,7 @@ initialSelectIndex_ = intProp "initial-select-index"
 --
 -- Default Value: 'False'
 --
-iosGestureDirection_ :: Bool -> Attribute action
+iosGestureDirection_ :: Bool -> Attribute model action
 iosGestureDirection_ = boolProp "ios-gesture-direction"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/viewpager.html#ios-gesture-offset
@@ -87,14 +87,14 @@ iosGestureDirection_ = boolProp "ios-gesture-direction"
 --
 -- Default Value: 0
 --
-iosGestureOffset_ :: Int -> Attribute action
+iosGestureOffset_ :: Int -> Attribute model action
 iosGestureOffset_ = intProp "ios-gesture-offset"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/viewpager.html#ios-recognized-gesture-class
 --
 -- *iOS* only. @UIGestureRecognizer@ class name for simultaneous recognition.
 --
-iosRecognizedGestureClass_ :: MisoString -> Attribute action
+iosRecognizedGestureClass_ :: MisoString -> Attribute model action
 iosRecognizedGestureClass_ = textProp "ios-recognized-gesture-class"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/viewpager.html#ios-recognized-view-tag
@@ -103,7 +103,7 @@ iosRecognizedGestureClass_ = textProp "ios-recognized-gesture-class"
 --
 -- Default Value: 0
 --
-iosRecognizedViewTag_ :: Int -> Attribute action
+iosRecognizedViewTag_ :: Int -> Attribute model action
 iosRecognizedViewTag_ = intProp "ios-recognized-view-tag"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/viewpager.html#keep-item-view
@@ -112,6 +112,6 @@ iosRecognizedViewTag_ = intProp "ios-recognized-view-tag"
 --
 -- Default Value: 'False'
 --
-keepItemView_ :: Bool -> Attribute action
+keepItemView_ :: Bool -> Attribute model action
 keepItemView_ = boolProp "keep-item-view"
 -----------------------------------------------------------------------------

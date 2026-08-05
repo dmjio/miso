@@ -34,7 +34,7 @@ import qualified Data.Map as M
 import           Miso.Event
 import           Miso.JSON
 import           Miso.String (MisoString)
-import           Miso.Types (EventHandler, DOMRef)
+import           Miso.Types (Attribute, DOMRef)
 -----------------------------------------------------------------------------
 refreshEvents :: Events
 refreshEvents
@@ -91,37 +91,35 @@ startRefreshDecoder = ["detail"] `at` details
 --
 -- Triggered during movement while the \<refresh-header\> is exposed.
 --
-onHeaderOffset :: (HeaderOffsetEvent -> action) -> EventHandler action
-onHeaderOffset action = on "headeroffset" headerOffsetDecoder (\e _ -> action e)
+onHeaderOffset :: (HeaderOffsetEvent -> action) -> Attribute model action
+onHeaderOffset action = on "headeroffset" headerOffsetDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/refresh.html#bindrefreshstatechange
 --
 -- Triggered when the \<refresh-header\> state changes.
 --
-onRefreshStateChange :: (RefreshStateChangeEvent -> action) -> EventHandler action
-onRefreshStateChange action = on "refreshstatechange" refreshStateChangeDecoder (\e _ -> action e)
+onRefreshStateChange :: (RefreshStateChangeEvent -> action) -> Attribute model action
+onRefreshStateChange action = on "refreshstatechange" refreshStateChangeDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/refresh.html#bindstartrefresh
 --
 -- Triggered when the pull threshold is reached or @autoStartRefresh@ is called.
 --
-onStartRefresh :: (StartRefreshEvent -> action) -> EventHandler action
-onStartRefresh action = on "startrefresh" startRefreshDecoder (\e _ -> action e)
------------------------------------------------------------------------------
-
+onStartRefresh :: (StartRefreshEvent -> action) -> Attribute model action
+onStartRefresh action = on "startrefresh" startRefreshDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
 -- | Like 'onHeaderOffset', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onHeaderOffsetWith :: (HeaderOffsetEvent -> DOMRef -> action) -> EventHandler action
-onHeaderOffsetWith action = on "headeroffset" headerOffsetDecoder action
+onHeaderOffsetWith :: (HeaderOffsetEvent -> DOMRef -> action) -> Attribute model action
+onHeaderOffsetWith action = on "headeroffset" headerOffsetDecoder $ \h _ domRef -> action h domRef
 -----------------------------------------------------------------------------
 -- | Like 'onRefreshStateChange', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onRefreshStateChangeWith :: (RefreshStateChangeEvent -> DOMRef -> action) -> EventHandler action
-onRefreshStateChangeWith action = on "refreshstatechange" refreshStateChangeDecoder action
+onRefreshStateChangeWith :: (RefreshStateChangeEvent -> DOMRef -> action) -> Attribute model action
+onRefreshStateChangeWith action = on "refreshstatechange" refreshStateChangeDecoder $ \h _ domRef -> action h domRef
 -----------------------------------------------------------------------------
 -- | Like 'onStartRefresh', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onStartRefreshWith :: (StartRefreshEvent -> DOMRef -> action) -> EventHandler action
-onStartRefreshWith action = on "startrefresh" startRefreshDecoder action
+onStartRefreshWith :: (StartRefreshEvent -> DOMRef -> action) -> Attribute model action
+onStartRefreshWith action = on "startrefresh" startRefreshDecoder $ \h _ domRef -> action h domRef
 -----------------------------------------------------------------------------

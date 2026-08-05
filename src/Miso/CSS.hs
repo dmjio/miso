@@ -638,7 +638,7 @@ sheet_ = StyleSheet
 --
 -- <https://developer.mozilla.org/en-US/docs/Web/CSS>
 --
-style_ :: [Style] -> Attribute action
+style_ :: [Style] -> Attribute model action
 style_ = MT.Styles . M.fromList
 -----------------------------------------------------------------------------
 -- | Sets the @style@ attribute to a raw CSS string.
@@ -653,7 +653,7 @@ style_ = MT.Styles . M.fromList
 --
 -- <https://developer.mozilla.org/en-US/docs/Web/CSS>
 --
-styleInline_ ::  MisoString -> Attribute action
+styleInline_ ::  MisoString -> Attribute model action
 styleInline_ = textProp "style"
 -----------------------------------------------------------------------------
 -- | Renders a t'Styles' to a t'MisoString'

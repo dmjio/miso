@@ -94,7 +94,7 @@ prop
   -- ^ DOM property name (e.g. @\"value\"@, @\"className\"@)
   -> a
   -- ^ Property value; serialised to JSON before diffing
-  -> Attribute action
+  -> Attribute model action
 prop k v = Property k (toJSON v)
 -----------------------------------------------------------------------------
 -- | Set field to 'Bool' value
@@ -103,7 +103,7 @@ boolProp
   -- ^ DOM property name
   -> Bool
   -- ^ Property value
-  -> Attribute action
+  -> Attribute model action
 boolProp = prop
 -----------------------------------------------------------------------------
 -- | Set field to 'String' value
@@ -112,7 +112,7 @@ stringProp
   -- ^ DOM property name
   -> String
   -- ^ Property value
-  -> Attribute action
+  -> Attribute model action
 stringProp = prop
 -----------------------------------------------------------------------------
 -- | Set field to 'MisoString' value
@@ -121,7 +121,7 @@ textProp
   -- ^ DOM property name
   -> MisoString
   -- ^ Property value
-  -> Attribute action
+  -> Attribute model action
 textProp = prop
 -----------------------------------------------------------------------------
 -- | Set field to t'Object' value
@@ -130,7 +130,7 @@ objectProp
   -- ^ DOM property name
   -> Object
   -- ^ JSON object value
-  -> Attribute action
+  -> Attribute model action
 objectProp = prop
 -----------------------------------------------------------------------------
 -- | Set field to 'Int' value
@@ -139,7 +139,7 @@ intProp
   -- ^ DOM property name
   -> Int
   -- ^ Property value
-  -> Attribute action
+  -> Attribute model action
 intProp = prop
 -----------------------------------------------------------------------------
 -- | Set field to 'Integer' value
@@ -148,7 +148,7 @@ integerProp
   -- ^ DOM property name
   -> Integer
   -- ^ Property value
-  -> Attribute action
+  -> Attribute model action
 integerProp = prop
 -----------------------------------------------------------------------------
 -- | Set field to 'Double' value
@@ -157,21 +157,21 @@ doubleProp
   -- ^ DOM property name
   -> Double
   -- ^ Property value
-  -> Attribute action
+  -> Attribute model action
 doubleProp = prop
 -----------------------------------------------------------------------------
 -- | Set 'Miso.Types.Key' on 'VNode'.
-keyProp :: ToKey key => key -> Attribute action
+keyProp :: ToKey key => key -> Attribute model action
 keyProp key = prop "key" (toKey key)
 -----------------------------------------------------------------------------
 -- | Synonym for 'keyProp'
--- Allows a user to specify a t'Key' inside of an '[Attribute action]'
-key_ :: ToKey key => key -> Attribute action
+-- Allows a user to specify a t'Key' inside of an '[Attribute model action]'
+key_ :: ToKey key => key -> Attribute model action
 key_ = keyProp
 -----------------------------------------------------------------------------
 -- | Smart constructor for specifying 'class'
 --
 -- @since 1.9.0.0
-classList :: [MisoString] -> Attribute action
+classList :: [MisoString] -> Attribute model action
 classList = ClassList
 -----------------------------------------------------------------------------

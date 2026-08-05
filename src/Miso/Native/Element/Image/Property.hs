@@ -38,7 +38,7 @@ import           Miso.Property
 --
 -- Default Value: "scaleToFill"
 --
-mode_ :: MisoString -> Attribute action
+mode_ :: MisoString -> Attribute model action
 mode_ = textProp "mode"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/image.html#placeholder
@@ -48,7 +48,7 @@ mode_ = textProp "mode"
 --
 -- > placeholder_ "value"
 --
-placeholder_ :: MisoString -> Attribute action
+placeholder_ :: MisoString -> Attribute model action
 placeholder_ = textProp "placeholder"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/image.html#blur-radius
@@ -59,7 +59,7 @@ placeholder_ = textProp "placeholder"
 --
 -- Default Value: "0px"
 --
-blurRadius_ :: MisoString -> Attribute action
+blurRadius_ :: MisoString -> Attribute model action
 blurRadius_ = textProp "blur-radius"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/image.html#prefetch-widthprefetch-height
@@ -72,7 +72,7 @@ blurRadius_ = textProp "blur-radius"
 --
 -- Default Value: "0px"
 --
-prefetchWidth_ :: MisoString -> Attribute action
+prefetchWidth_ :: MisoString -> Attribute model action
 prefetchWidth_ = textProp "prefetch-width"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/image.html#prefetch-widthprefetch-height
@@ -85,7 +85,7 @@ prefetchWidth_ = textProp "prefetch-width"
 --
 -- Default Value: "0px"
 --
-prefetchHeight_ :: MisoString -> Attribute action
+prefetchHeight_ :: MisoString -> Attribute model action
 prefetchHeight_ = textProp "prefetch-height"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/image.html#cap-insets
@@ -98,7 +98,7 @@ prefetchHeight_ = textProp "prefetch-height"
 --
 -- Default Value: "0px 0px 0px 0px"
 --
-capInsets_ :: MisoString -> Attribute action
+capInsets_ :: MisoString -> Attribute model action
 capInsets_ = textProp "cap-insets"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/image.html#cap-insets-scale
@@ -109,7 +109,7 @@ capInsets_ = textProp "cap-insets"
 --
 -- Default Value: 1
 --
-capInsetsScale_ :: Int -> Attribute action
+capInsetsScale_ :: Int -> Attribute model action
 capInsetsScale_ = intProp "cap-insets-scale"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/image.html#loop-count
@@ -120,7 +120,7 @@ capInsetsScale_ = intProp "cap-insets-scale"
 --
 -- Default Value: 0
 --
-loopCount_ :: Int -> Attribute action
+loopCount_ :: Int -> Attribute model action
 loopCount_ = intProp "loop-count"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/image.html#image-config
@@ -133,7 +133,7 @@ loopCount_ = intProp "loop-count"
 --
 -- Default Value: 'ARGB_8888'
 --
-imageConfig_ :: MisoString -> Attribute action
+imageConfig_ :: MisoString -> Attribute model action
 imageConfig_ = textProp "image-config"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/image.html#auto-size
@@ -147,7 +147,7 @@ imageConfig_ = textProp "image-config"
 --
 -- Default Value: 'False'
 --
-autoSize_ :: Bool -> Attribute action
+autoSize_ :: Bool -> Attribute model action
 autoSize_ = boolProp "auto-size"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/image.html#defer-src-invalidation
@@ -159,7 +159,7 @@ autoSize_ = boolProp "auto-size"
 --
 -- Default Value: 'False'
 --
-deferSrcInvalidation_ :: Bool -> Attribute action
+deferSrcInvalidation_ :: Bool -> Attribute model action
 deferSrcInvalidation_ = boolProp "defer-src-invalidation"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/image.html#autoplay
@@ -171,7 +171,7 @@ deferSrcInvalidation_ = boolProp "defer-src-invalidation"
 --
 -- Default Value: 'True'
 --
-autoPlay_ :: Bool -> Attribute action
+autoPlay_ :: Bool -> Attribute model action
 autoPlay_ = boolProp "autoplay"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/image.html#tint-color
@@ -183,6 +183,6 @@ autoPlay_ = boolProp "autoplay"
 --
 -- Default Value: 0
 --
-tintColor_ :: Int -> Attribute action
+tintColor_ :: Int -> Attribute model action
 tintColor_ = intProp "tint-color"
 -----------------------------------------------------------------------------

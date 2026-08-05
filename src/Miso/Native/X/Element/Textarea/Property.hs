@@ -74,7 +74,7 @@ instance ToJSON ConfirmType where
 --
 -- Default Value: 'True'
 --
-androidFullscreenMode_ :: Bool -> Attribute action
+androidFullscreenMode_ :: Bool -> Attribute model action
 androidFullscreenMode_ = boolProp "android-fullscreen-mode"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/textarea.html#bounces
@@ -83,7 +83,7 @@ androidFullscreenMode_ = boolProp "android-fullscreen-mode"
 --
 -- Default Value: 'True'
 --
-bounces_ :: Bool -> Attribute action
+bounces_ :: Bool -> Attribute model action
 bounces_ = boolProp "bounces"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/textarea.html#confirm-type
@@ -92,7 +92,7 @@ bounces_ = boolProp "bounces"
 --
 -- Default Value: 'ConfirmDone'
 --
-confirmType_ :: ConfirmType -> Attribute action
+confirmType_ :: ConfirmType -> Attribute model action
 confirmType_ = prop "confirm-type"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/textarea.html#disabled
@@ -101,7 +101,7 @@ confirmType_ = prop "confirm-type"
 --
 -- Default Value: 'False'
 --
-disabled_ :: Bool -> Attribute action
+disabled_ :: Bool -> Attribute model action
 disabled_ = boolProp "disabled"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/textarea.html#enable-scroll-bar
@@ -110,14 +110,14 @@ disabled_ = boolProp "disabled"
 --
 -- Default Value: 'False'
 --
-enableScrollBar_ :: Bool -> Attribute action
+enableScrollBar_ :: Bool -> Attribute model action
 enableScrollBar_ = boolProp "enable-scroll-bar"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/textarea.html#input-filter
 --
 -- Filters the input content in the form of a regular expression.
 --
-inputFilter_ :: MisoString -> Attribute action
+inputFilter_ :: MisoString -> Attribute model action
 inputFilter_ = textProp "input-filter"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/textarea.html#ios-auto-correct
@@ -126,7 +126,7 @@ inputFilter_ = textProp "input-filter"
 --
 -- Default Value: 'True'
 --
-iosAutoCorrect_ :: Bool -> Attribute action
+iosAutoCorrect_ :: Bool -> Attribute model action
 iosAutoCorrect_ = boolProp "ios-auto-correct"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/textarea.html#ios-spell-check
@@ -135,14 +135,14 @@ iosAutoCorrect_ = boolProp "ios-auto-correct"
 --
 -- Default Value: 'True'
 --
-iosSpellCheck_ :: Bool -> Attribute action
+iosSpellCheck_ :: Bool -> Attribute model action
 iosSpellCheck_ = boolProp "ios-spell-check"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/textarea.html#line-spacing
 --
 -- Line spacing.
 --
-lineSpacing_ :: Double -> Attribute action
+lineSpacing_ :: Double -> Attribute model action
 lineSpacing_ = doubleProp "line-spacing"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/textarea.html#maxlength
@@ -151,21 +151,21 @@ lineSpacing_ = doubleProp "line-spacing"
 --
 -- Default Value: 140
 --
-maxlength_ :: Int -> Attribute action
+maxlength_ :: Int -> Attribute model action
 maxlength_ = intProp "maxlength"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/textarea.html#maxlines
 --
 -- Maximum number of input lines.
 --
-maxlines_ :: Int -> Attribute action
+maxlines_ :: Int -> Attribute model action
 maxlines_ = intProp "maxlines"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/textarea.html#placeholder
 --
 -- Placeholder text display.
 --
-placeholder_ :: MisoString -> Attribute action
+placeholder_ :: MisoString -> Attribute model action
 placeholder_ = textProp "placeholder"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/textarea.html#readonly
@@ -174,7 +174,7 @@ placeholder_ = textProp "placeholder"
 --
 -- Default Value: 'False'
 --
-readonly_ :: Bool -> Attribute action
+readonly_ :: Bool -> Attribute model action
 readonly_ = boolProp "readonly"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/textarea.html#show-soft-input-on-focus
@@ -183,7 +183,7 @@ readonly_ = boolProp "readonly"
 --
 -- Default Value: 'True'
 --
-showSoftInputOnFocus_ :: Bool -> Attribute action
+showSoftInputOnFocus_ :: Bool -> Attribute model action
 showSoftInputOnFocus_ = boolProp "show-soft-input-on-focus"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/textarea.html#type
@@ -192,6 +192,6 @@ showSoftInputOnFocus_ = boolProp "show-soft-input-on-focus"
 --
 -- Default Value: 'TextareaText'
 --
-type_ :: TextareaType -> Attribute action
+type_ :: TextareaType -> Attribute model action
 type_ = prop "type"
 -----------------------------------------------------------------------------

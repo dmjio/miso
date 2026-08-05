@@ -1,5 +1,7 @@
 #import "ViewController.h"
 #import "TemplateProvider.h"
+#import "MisoNativeModule.h"
+#import "NativeLocalStorageModule.h"
 #import <Lynx/LynxConfig.h>
 #import <Lynx/LynxView.h>
 #import <Lynx/LynxViewBuilder.h>
@@ -22,7 +24,12 @@ static NSString* const kTemplateURL = @"main.lynx.bundle";
   CGSize screenSize = self.view.bounds.size;
 
   LynxView* lynxView = [[LynxView alloc] initWithBuilderBlock:^(LynxViewBuilder* builder) {
-    builder.config = [[LynxConfig alloc] initWithProvider:[TemplateProvider new]];
+    LynxConfig* config = [[LynxConfig alloc] initWithProvider:[TemplateProvider new]];
+    // Register native modules so the background-thread JS can reach them via
+    // NativeModules.<name>. NativeLocalStorageModule backs Miso.Storage.
+    [config registerModule:[MisoNativeModule class]];
+    [config registerModule:[NativeLocalStorageModule class]];
+    builder.config = config;
     builder.screenSize = screenSize;
     builder.fontScale = 1.0;
     // miso runs a dual-thread (MTS/BTS) app; AllOnUI is the explorer default and

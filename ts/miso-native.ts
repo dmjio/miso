@@ -1,11 +1,13 @@
 import {
   TextEncoder,
+  TextDecoder,
 } from "text-encoding";
 
 import JSBI from "jsbi";
 
 /* Polyfills for native, these come first */
 globalThis['TextEncoder'] = TextEncoder as any;
+globalThis['TextDecoder'] = TextDecoder as any;
 globalThis['BigInt'] = JSBI.BigInt as any;
 globalThis['JSBI'] = JSBI;
 

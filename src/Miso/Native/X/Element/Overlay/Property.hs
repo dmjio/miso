@@ -61,7 +61,7 @@ instance ToJSON OverlayMode where
 --
 -- Default Value: 'False'
 --
-iosEnableSwipeBack_ :: Bool -> Attribute action
+iosEnableSwipeBack_ :: Bool -> Attribute model action
 iosEnableSwipeBack_ = boolProp "ios-enable-swipe-back"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/overlay.html#level
@@ -73,7 +73,7 @@ iosEnableSwipeBack_ = boolProp "ios-enable-swipe-back"
 --
 -- Default Value: 'Level1'
 --
-level_ :: OverlayLevel -> Attribute action
+level_ :: OverlayLevel -> Attribute model action
 level_ = prop "level"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/overlay.html#mode
@@ -85,7 +85,7 @@ level_ = prop "level"
 --
 -- Default Value: 'ModeWindow'
 --
-mode_ :: OverlayMode -> Attribute action
+mode_ :: OverlayMode -> Attribute model action
 mode_ = prop "mode"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/overlay.html#visible
@@ -94,6 +94,6 @@ mode_ = prop "mode"
 --
 -- Default Value: 'False'
 --
-visible_ :: Bool -> Attribute action
+visible_ :: Bool -> Attribute model action
 visible_ = boolProp "visible"
 -----------------------------------------------------------------------------

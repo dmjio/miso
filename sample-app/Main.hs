@@ -12,16 +12,12 @@ module Main where
 import           Miso
 import qualified Miso.Html as H
 import           Miso.Lens
-import           Miso.JSON
-----------------------------------------------------------------------------
-import GHC.Generics
 ----------------------------------------------------------------------------
 -- | Component model state
 data Model
   = Model
   { _counter :: Int
-  } deriving stock (Show, Eq, Generic)
-    deriving anyclass (FromJSON, ToJSON)
+  } deriving stock (Show, Eq)
 ----------------------------------------------------------------------------
 counter :: Lens Model Int
 counter = lens _counter $ \record field -> record { _counter = field }
@@ -31,15 +27,14 @@ data Action
   = AddOne
   | SubtractOne
   | SayHelloWorld
-  deriving stock (Generic, Show, Eq)
-  deriving anyclass (ToJSON, FromJSON)
+  deriving stock (Show, Eq)
 ----------------------------------------------------------------------------
 -- | Entry point for a miso application
 main :: IO ()
 #ifdef INTERACTIVE
-main = live defaultEvents (static (mount_ app))
+main = live defaultEvents app
 #else
-main = startApp defaultEvents (static (mount_ app))
+main = startApp defaultEvents app
 #endif
 ----------------------------------------------------------------------------
 -- | WASM export, required when compiling w/ the WASM backend.
@@ -65,9 +60,11 @@ updateModel = \case
   SayHelloWorld -> io_ (consoleLog "Hello world")
 ----------------------------------------------------------------------------
 -- | Constructs a virtual DOM from a model
-viewModel :: () -> () -> Model -> View () Action
-viewModel _ _ _ = vcomp (static (mount_ testComp))
-----------------------------------------------------------------------------
-testComp :: Component () props () Action
-testComp = component () (\_ -> pure ()) (\_ _ _ -> "foo")
+viewModel :: () -> () -> Model -> View () Model Action
+viewModel _ _ (Model x) =
+  vfrag
+  [ H.button_ [ H.onClick AddOne ] [ "+" ]
+  , text (ms x)
+  , H.button_ [ H.onClick SubtractOne ] [ "-" ]
+  ]
 ----------------------------------------------------------------------------

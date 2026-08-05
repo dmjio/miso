@@ -1,7 +1,6 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE CPP            #-}
 {-# LANGUAGE LambdaCase     #-}
-{-# LANGUAGE StaticPointers #-}
 -----------------------------------------------------------------------------
 {-# OPTIONS_GHC -Wno-duplicate-exports #-}
 -----------------------------------------------------------------------------
@@ -1774,7 +1773,9 @@ import           Miso.Subscription
 import           Miso.Types
 import           Miso.Util
 ----------------------------------------------------------------------------
-import           GHC.StaticPtr (StaticPtr, deRefStaticPtr, staticKey)
+#ifdef NATIVE
+import           Miso.JSON (ToJSON, FromJSON)
+#endif
 ----------------------------------------------------------------------------
 -- | Runs an @miso@ application.
 --
@@ -1782,45 +1783,47 @@ import           GHC.StaticPtr (StaticPtr, deRefStaticPtr, staticKey)
 -- Always mounts to \<body\>. Copies page into the virtual DOM.
 --
 -- @
--- {-# LANGUAGE StaticPointers #-}
---
 -- main :: 'IO' ()
--- main = 'miso' 'defaultEvents' (static ('vcomp' (mount_ app)))
+-- main = 'miso' 'defaultEvents' app
 -- @
 miso
-  :: Events
+#ifdef NATIVE
+  :: (Eq model, ToJSON model, ToJSON action, FromJSON model, FromJSON action)
+#else
+  :: Eq model
+#endif
+  => Events
   -- ^ Globally delegated Events
-  -> (URI -> StaticPtr (SomeComponent ()))
+  -> (URI -> Component () () model action)
   -- ^ The Component application, with the current URI as an argument
   -> IO ()
 miso events f = do
-  ptr <- f <$> getURI
-  case deRefStaticPtr ptr of
-    SomeComponent key props_ comp_ ->
-      initComponent events Hydrate False () comp_ { mountPoint = Nothing }
-        key props_ (staticKey ptr)
+  comp_ <- f <$> getURI
+  initComponent events Hydrate False () (comp_ { mountPoint = Nothing })
+    Nothing () Nothing
 ----------------------------------------------------------------------------
 -- | Like 'miso', except discards the 'Miso.Router.URI' argument.
 --
 -- Use this function if you'd like to prerender, but not use navigation.
 --
 -- @
--- {-# LANGUAGE StaticPointers #-}
---
 -- main :: 'IO' ()
--- main = 'prerender' 'defaultEvents' (static ('vcomp' (mount_ app)))
+-- main = 'prerender' 'defaultEvents' app
 -- @
 prerender
-  :: Events
+#ifdef NATIVE
+  :: (Eq model, ToJSON model, ToJSON action, FromJSON model, FromJSON action)
+#else
+  :: Eq model
+#endif
+  => Events
   -- ^ Globally delegated 'Events'
-  -> StaticPtr (SomeComponent ())
+  -> Component () () model action
   -- ^ 'Component' application
   -> IO ()
-prerender events ptr =
-  case deRefStaticPtr ptr of
-    SomeComponent key props_ comp_ ->
-      initComponent events Hydrate False () comp_ { mountPoint = Nothing }
-        key props_ (staticKey ptr)
+prerender events comp_ =
+  initComponent events Hydrate False () comp_ { mountPoint = Nothing }
+    Nothing () Nothing
 -----------------------------------------------------------------------------
 -- | Like 'miso', except it does not perform page hydration.
 --
@@ -1830,22 +1833,23 @@ prerender events ptr =
 -- unless you are using prerendering.
 --
 -- @
--- {-# LANGUAGE StaticPointers #-}
 --
 -- main :: 'IO' ()
--- main = 'startApp' 'defaultEvents' (static ('vcomp' (mount_ app)))
+-- main = 'startApp' 'defaultEvents' app
 -- @
 --
 startApp
-  :: Events
+#ifdef NATIVE
+  :: (Eq model, ToJSON model, ToJSON action, FromJSON model, FromJSON action)
+#else
+  :: Eq model
+#endif
+  => Events
   -- ^ Globally delegated 'Events'
-  -> StaticPtr (SomeComponent ())
+  -> Component () () model action
   -- ^ 'Component' application
   -> IO ()
-startApp events ptr =
-  case deRefStaticPtr ptr of
-    SomeComponent key props_ vcomp_ ->
-      initComponent events Draw False () vcomp_ key props_ (staticKey ptr)
+startApp events comp_ = initComponent events Draw False () comp_ Nothing () Nothing
 -----------------------------------------------------------------------------
 -- | Like 'startApp', but seeds the global React-style @context@ with an
 -- initial value.
@@ -1856,10 +1860,8 @@ startApp events ptr =
 -- re-rendered whenever the context changes.
 --
 -- @
--- {-# LANGUAGE StaticPointers #-}
---
 -- main :: 'IO' ()
--- main = 'startAppWithContext' 'defaultEvents' Light (static (mount_ app))
+-- main = 'startAppWithContext' 'defaultEvents' Light app
 --
 -- data Theme = Light | Dark deriving (Show, Eq)
 -- @
@@ -1869,23 +1871,31 @@ startApp events ptr =
 --
 -- @since 1.9.0.0
 startAppWithContext
-  :: Events
+#ifdef NATIVE
+  :: (Eq model, ToJSON model, ToJSON action, FromJSON model, FromJSON action, FromJSON context, ToJSON context, Eq context)
+#else
+  :: (Eq model, Eq context)
+#endif
+  => Events
   -- ^ Globally delegated 'Events'
   -> context
   -- ^ Initial global @context@
-  -> StaticPtr (SomeComponent context)
+  -> Component context () model action
   -- ^ 'Component' application
   -> IO ()
-startAppWithContext events initialContext ptr =
-  case deRefStaticPtr ptr of
-    SomeComponent key props_ vcomp_ ->
-      initComponent events Draw False initialContext vcomp_ key props_ (staticKey ptr)
+startAppWithContext events initialContext comp_ =
+  initComponent events Draw False initialContext comp_ Nothing () Nothing
 -----------------------------------------------------------------------------
 -- | Alias for 'Miso.miso'.
 (🍜)
-  :: Events
+#ifdef NATIVE
+  :: (Eq model, ToJSON model, ToJSON action, FromJSON model, FromJSON action)
+#else
+  :: Eq model
+#endif
+  => Events
   -- ^ Globally delegated 'Events'
-  -> (URI -> StaticPtr (SomeComponent ()))
+  -> (URI -> Component () () model action)
   -- ^ 'Component' application, with the current URI as an argument
   -> IO ()
 (🍜) = miso
@@ -1899,22 +1909,23 @@ startAppWithContext events initialContext ptr =
 -- It is expected to be run on an empty @\<body\>@
 --
 -- @
--- {-# LANGUAGE StaticPointers #-}
---
 -- main :: IO ()
--- main = 'renderApp' 'defaultEvents' "my-context" (static app)
+-- main = 'renderApp' 'defaultEvents' "my-context" app
 -- @
 renderApp
-  :: Events
+#ifdef NATIVE
+  :: (Eq model, ToJSON model, ToJSON action, FromJSON model, FromJSON action)
+#else
+  :: Eq model
+#endif
+  => Events
   -- ^ Globally delegated 'Events'
   -> MisoString
   -- ^ Name of the JS object that contains the drawing context
-  -> StaticPtr (SomeComponent ())
+  -> Component () () model action
   -- ^ 'Component' application
   -> IO ()
-renderApp events renderer ptr = do
+renderApp events renderer comp_ = do
   FFI.setDrawingContext renderer
-  case deRefStaticPtr ptr of
-    SomeComponent key props_ comp ->
-      initComponent events Draw False () comp key props_ (staticKey ptr)
+  initComponent events Draw False () comp_ Nothing () Nothing
 ----------------------------------------------------------------------------

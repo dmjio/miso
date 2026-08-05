@@ -33,7 +33,7 @@ import qualified Data.Map as M
 import           Miso.Event
 import           Miso.JSON
 ----------------------------------------------------------------------------
-import           Miso.Types (EventHandler, DOMRef)
+import           Miso.Types (Attribute, DOMRef)
 ----------------------------------------------------------------------------
 textEvents :: Events
 textEvents
@@ -60,8 +60,8 @@ textEvents
 --
 -- @
 --
-onLayout :: (LayoutEvent -> action) -> EventHandler action
-onLayout action = on "layout" layoutDecoder (\e _ -> action e)
+onLayout :: (LayoutEvent -> action) -> Attribute model action
+onLayout action = on "layout" layoutDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/text.html#selectionchange
 --
@@ -80,8 +80,8 @@ onLayout action = on "layout" layoutDecoder (\e _ -> action e)
 --
 -- @
 --
-onSelectionChange :: (SelectionChangeEvent -> action) -> EventHandler action
-onSelectionChange action = on "selectionchange" selectionChangeDecoder (\e _ -> action e)
+onSelectionChange :: (SelectionChangeEvent -> action) -> Attribute model action
+onSelectionChange action = on "selectionchange" selectionChangeDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
 selectionChangeDecoder :: Decoder SelectionChangeEvent
 selectionChangeDecoder = ["detail"] `at` parser
@@ -142,15 +142,13 @@ data Size
   { sizeWidth, sizeHeight :: Double
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
-
------------------------------------------------------------------------------
 -- | Like 'onLayout', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onLayoutWith :: (LayoutEvent -> DOMRef -> action) -> EventHandler action
-onLayoutWith action = on "layout" layoutDecoder action
+onLayoutWith :: (LayoutEvent -> DOMRef -> action) -> Attribute model action
+onLayoutWith action = on "layout" layoutDecoder $ \v _ domRef -> action v domRef
 -----------------------------------------------------------------------------
 -- | Like 'onSelectionChange', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onSelectionChangeWith :: (SelectionChangeEvent -> DOMRef -> action) -> EventHandler action
-onSelectionChangeWith action = on "selectionchange" selectionChangeDecoder action
+onSelectionChangeWith :: (SelectionChangeEvent -> DOMRef -> action) -> Attribute model action
+onSelectionChangeWith action = on "selectionchange" selectionChangeDecoder $ \v _ domRef -> action v domRef
 -----------------------------------------------------------------------------

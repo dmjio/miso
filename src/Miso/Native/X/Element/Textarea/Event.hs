@@ -13,8 +13,12 @@ module Miso.Native.X.Element.Textarea.Event
   ( -- *** Events
     onBlur
   , onBlurWith
+  , onBlurMain
+  , onBlurMainWith
   , onConfirm
   , onConfirmWith
+  , onConfirmMain
+  , onConfirmMainWith
   , onFocus
   , onFocusWith
   , onInput
@@ -37,11 +41,10 @@ import qualified Data.Map as M
 import           Miso.Event
 import           Miso.JSON
 import           Miso.String (MisoString)
-import           Miso.Types (EventHandler, DOMRef)
+import           Miso.Types (Attribute, EventHandler, DOMRef)
 -----------------------------------------------------------------------------
 textareaEvents :: Events
-textareaEvents
-  = M.fromList
+textareaEvents = M.fromList
   [ ("blur", BUBBLE)
   , ("confirm", BUBBLE)
   , ("focus", BUBBLE)
@@ -104,62 +107,110 @@ selectionDecoder = ["detail"] `at` details
 --
 -- Triggered when the textarea is blurred, outputting the current value.
 --
-onBlur :: (MisoString -> action) -> EventHandler action
-onBlur action = on "blur" textareaValueDecoder (\e _ -> action e)
+onBlur :: (MisoString -> action) -> Attribute model action
+onBlur action = on "blur" textareaValueDecoder (\e _ _ -> action e)
+-----------------------------------------------------------------------------
+-- | https://lynxjs.org/api/elements/built-in/textarea.html#bindblur
+--
+-- Triggered when the textarea is blurred, outputting the current value.
+--
+-- Called on main thread, provides read-only access to model.
+-- Meant to be used with '-XStaticPointers'.
+--
+-- data Action = CurrentValue MisoString
+--
+-- @
+-- view_ [ event (static (onBlurMain CurrentValue)) ] [ "some view" ]
+-- @
+--
+onBlurMain :: (MisoString -> action) -> EventHandler model action
+onBlurMain action = onMain "blur" textareaValueDecoder (\e _ _ -> action e)
+-----------------------------------------------------------------------------
+-- | https://lynxjs.org/api/elements/built-in/textarea.html#bindblur
+--
+-- Triggered when the textarea is blurred, outputting the current value.
+--
+-- Called on main thread, provides read-only access to model.
+-- Meant to be used with '-XStaticPointers'.
+--
+-- @
+--
+-- data Action = CurrentValue MisoString Model DOMRef
+--
+-- view_ [ event (static (onBlurMain CurrentValue)) ] [ "some view" ]
+--
+-- @
+--
+onBlurMainWith :: (MisoString -> model -> DOMRef -> action) -> EventHandler model action
+onBlurMainWith action = onMain "blur" textareaValueDecoder action
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/textarea.html#bindconfirm
 --
 -- Triggered when the confirm button is clicked (only when @confirm-type@ is
 -- defined), outputting the current value.
 --
-onConfirm :: (MisoString -> action) -> EventHandler action
-onConfirm action = on "confirm" textareaValueDecoder (\e _ -> action e)
+onConfirm :: (MisoString -> action) -> Attribute model action
+onConfirm action = on "confirm" textareaValueDecoder (\e _ _ -> action e)
+-----------------------------------------------------------------------------
+-- | https://lynxjs.org/api/elements/built-in/textarea.html#bindconfirm
+--
+-- Triggered when the confirm button is clicked (only when @confirm-type@ is
+-- defined), outputting the current value.
+--
+onConfirmMain :: (MisoString -> action) -> EventHandler model action
+onConfirmMain action = onMain "confirm" textareaValueDecoder (\e _ _ -> action e)
+-----------------------------------------------------------------------------
+-- | https://lynxjs.org/api/elements/built-in/textarea.html#bindconfirm
+--
+-- Triggered when the confirm button is clicked (only when @confirm-type@ is
+-- defined), outputting the current value.
+--
+onConfirmMainWith :: (MisoString -> action) -> EventHandler model action
+onConfirmMainWith action = onMain "confirm" textareaValueDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/textarea.html#bindfocus
 --
 -- Triggered when the textarea is focused, outputting the current value.
 --
-onFocus :: (MisoString -> action) -> EventHandler action
-onFocus action = on "focus" textareaValueDecoder (\e _ -> action e)
+onFocus :: (MisoString -> action) -> Attribute model action
+onFocus action = on "focus" textareaValueDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/textarea.html#bindinput
 --
 -- Triggered when the textarea content changes.
 --
-onInput :: (TextareaEvent -> action) -> EventHandler action
-onInput action = on "input" textareaDecoder (\e _ -> action e)
+onInput :: (TextareaEvent -> action) -> Attribute model action
+onInput action = on "input" textareaDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/textarea.html#bindselection
 --
 -- Triggered when the textarea selection changes.
 --
-onSelection :: (SelectionEvent -> action) -> EventHandler action
-onSelection action = on "selection" selectionDecoder (\e _ -> action e)
------------------------------------------------------------------------------
-
+onSelection :: (SelectionEvent -> action) -> Attribute model action
+onSelection action = on "selection" selectionDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
 -- | Like 'onBlur', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onBlurWith :: (MisoString -> DOMRef -> action) -> EventHandler action
-onBlurWith action = on "blur" textareaValueDecoder action
+onBlurWith :: (MisoString -> DOMRef -> action) -> Attribute model action
+onBlurWith action = on "blur" textareaValueDecoder $ \v _ domRef -> action v domRef
 -----------------------------------------------------------------------------
 -- | Like 'onConfirm', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onConfirmWith :: (MisoString -> DOMRef -> action) -> EventHandler action
-onConfirmWith action = on "confirm" textareaValueDecoder action
+onConfirmWith :: (MisoString -> DOMRef -> action) -> Attribute model action
+onConfirmWith action = on "confirm" textareaValueDecoder $ \v _ domRef -> action v domRef
 -----------------------------------------------------------------------------
 -- | Like 'onFocus', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onFocusWith :: (MisoString -> DOMRef -> action) -> EventHandler action
-onFocusWith action = on "focus" textareaValueDecoder action
+onFocusWith :: (MisoString -> DOMRef -> action) -> Attribute model action
+onFocusWith action = on "focus" textareaValueDecoder $ \v _ domRef -> action v domRef
 -----------------------------------------------------------------------------
 -- | Like 'onInput', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onInputWith :: (TextareaEvent -> DOMRef -> action) -> EventHandler action
-onInputWith action = on "input" textareaDecoder action
+onInputWith :: (TextareaEvent -> DOMRef -> action) -> Attribute model action
+onInputWith action = on "input" textareaDecoder $ \v _ domRef -> action v domRef
 -----------------------------------------------------------------------------
 -- | Like 'onSelection', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onSelectionWith :: (SelectionEvent -> DOMRef -> action) -> EventHandler action
-onSelectionWith action = on "selection" selectionDecoder action
+onSelectionWith :: (SelectionEvent -> DOMRef -> action) -> Attribute model action
+onSelectionWith action = on "selection" selectionDecoder $ \v _ domRef -> action v domRef
 -----------------------------------------------------------------------------

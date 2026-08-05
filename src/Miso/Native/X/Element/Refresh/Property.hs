@@ -26,6 +26,6 @@ import           Miso.Property
 --
 -- Default Value: 'True'
 --
-enableRefresh_ :: Bool -> Attribute action
+enableRefresh_ :: Bool -> Attribute model action
 enableRefresh_ = boolProp "enable-refresh"
 -----------------------------------------------------------------------------

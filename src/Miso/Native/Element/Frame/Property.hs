@@ -31,7 +31,7 @@ import           Miso.Types
 --
 -- > src_ "http://url-goes-here.com"
 --
-src_ :: MisoString -> Attribute action
+src_ :: MisoString -> Attribute model action
 src_ = textProp "src"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/frame.html#auto-height
@@ -42,7 +42,7 @@ src_ = textProp "src"
 --
 -- Default Value: 'False'
 --
-autoHeight_ :: Bool -> Attribute action
+autoHeight_ :: Bool -> Attribute model action
 autoHeight_ = boolProp "auto-height"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/frame.html#auto-width
@@ -53,7 +53,7 @@ autoHeight_ = boolProp "auto-height"
 --
 -- Default Value: 'False'
 --
-autoWidth_ :: Bool -> Attribute action
+autoWidth_ :: Bool -> Attribute model action
 autoWidth_ = boolProp "auto-width"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/frame.html#data
@@ -62,7 +62,7 @@ autoWidth_ = boolProp "auto-width"
 --
 -- > data_ (object [ "key" .= "value" ])
 --
-data_ :: Value -> Attribute action
+data_ :: Value -> Attribute model action
 data_ = prop "data"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/frame.html#enable-multi-async-thread
@@ -73,7 +73,7 @@ data_ = prop "data"
 --
 -- Default Value: 'False'
 --
-enableMultiAsyncThread_ :: Bool -> Attribute action
+enableMultiAsyncThread_ :: Bool -> Attribute model action
 enableMultiAsyncThread_ = boolProp "enable-multi-async-thread"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/frame.html#global-props
@@ -82,7 +82,7 @@ enableMultiAsyncThread_ = boolProp "enable-multi-async-thread"
 --
 -- > globalProps_ (object [ "theme" .= "dark" ])
 --
-globalProps_ :: Value -> Attribute action
+globalProps_ :: Value -> Attribute model action
 globalProps_ = prop "global-props"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/frame.html#preset-height
@@ -92,7 +92,7 @@ globalProps_ = prop "global-props"
 --
 -- > presetHeight_ "100px"
 --
-presetHeight_ :: MisoString -> Attribute action
+presetHeight_ :: MisoString -> Attribute model action
 presetHeight_ = textProp "preset-height"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/frame.html#preset-width
@@ -102,6 +102,6 @@ presetHeight_ = textProp "preset-height"
 --
 -- > presetWidth_ "100px"
 --
-presetWidth_ :: MisoString -> Attribute action
+presetWidth_ :: MisoString -> Attribute model action
 presetWidth_ = textProp "preset-width"
 -----------------------------------------------------------------------------

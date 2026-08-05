@@ -92,69 +92,69 @@ module Miso.Svg.Event
 -----------------------------------------------------------------------------
 import Miso.Event (on, emptyDecoder)
 import Miso.Html.Event (onClick)
-import Miso.Types (EventHandler)
+import Miso.Types (Attribute)
 -----------------------------------------------------------------------------
 -- | onBegin event
-onBegin :: action -> EventHandler action
-onBegin action = on "begin" emptyDecoder $ \() _ -> action
+onBegin :: action -> Attribute model action
+onBegin action = on "begin" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | onEnd event
-onEnd :: action -> EventHandler action
-onEnd action = on "end" emptyDecoder $ \() _ -> action
+onEnd :: action -> Attribute model action
+onEnd action = on "end" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | onRepeat event
-onRepeat :: action -> EventHandler action
-onRepeat action = on "repeat" emptyDecoder $ \() _ -> action
+onRepeat :: action -> Attribute model action
+onRepeat action = on "repeat" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | onAbort event
-onAbort :: action -> EventHandler action
-onAbort action = on "abort" emptyDecoder $ \() _ -> action
+onAbort :: action -> Attribute model action
+onAbort action = on "abort" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | onError event
-onError :: action -> EventHandler action
-onError action = on "error" emptyDecoder $ \() _ -> action
+onError :: action -> Attribute model action
+onError action = on "error" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | onResize event
-onResize :: action -> EventHandler action
-onResize action = on "resize" emptyDecoder $ \() _ -> action
+onResize :: action -> Attribute model action
+onResize action = on "resize" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | onScroll event
-onScroll :: action -> EventHandler action
-onScroll action = on "scroll" emptyDecoder $ \() _ -> action
+onScroll :: action -> Attribute model action
+onScroll action = on "scroll" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | onZoom event
-onZoom :: action -> EventHandler action
-onZoom action = on "zoom" emptyDecoder $ \() _ -> action
+onZoom :: action -> Attribute model action
+onZoom action = on "zoom" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | onActivate event
-onActivate :: action -> EventHandler action
-onActivate action = on "activate" emptyDecoder $ \() _ -> action
+onActivate :: action -> Attribute model action
+onActivate action = on "activate" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | onFocusIn event
-onFocusIn :: action -> EventHandler action
-onFocusIn action = on "focusin" emptyDecoder $ \() _ -> action
+onFocusIn :: action -> Attribute model action
+onFocusIn action = on "focusin" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | onFocusOut event
-onFocusOut :: action -> EventHandler action
-onFocusOut action = on "focusout" emptyDecoder $ \() _ -> action
+onFocusOut :: action -> Attribute model action
+onFocusOut action = on "focusout" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | onMouseDown event
-onMouseDown :: action -> EventHandler action
-onMouseDown action = on "mousedown" emptyDecoder $ \() _ -> action
+onMouseDown :: action -> Attribute model action
+onMouseDown action = on "mousedown" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | onMouseMove event
-onMouseMove :: action -> EventHandler action
-onMouseMove action = on "mousemove" emptyDecoder $ \() _ -> action
+onMouseMove :: action -> Attribute model action
+onMouseMove action = on "mousemove" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | onMouseOut event
-onMouseOut :: action -> EventHandler action
-onMouseOut action = on "mouseout" emptyDecoder $ \() _ -> action
+onMouseOut :: action -> Attribute model action
+onMouseOut action = on "mouseout" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | onMouseOver event
-onMouseOver :: action -> EventHandler action
-onMouseOver action = on "mouseover" emptyDecoder $ \() _ -> action
+onMouseOver :: action -> Attribute model action
+onMouseOver action = on "mouseover" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | onMouseUp event
-onMouseUp :: action -> EventHandler action
-onMouseUp action = on "mouseup" emptyDecoder $ \() _ -> action
+onMouseUp :: action -> Attribute model action
+onMouseUp action = on "mouseup" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------

@@ -71,7 +71,9 @@ function processMessage (m : PATCH, runtime) {
       runtime.nodes[m.nodeId] = node;
       break;
     case "createTextNode":
-      runtime.nodes[m.nodeId] = drawingContext.createTextNode (m.text);
+      node = drawingContext.createTextNode (m.text);
+      __SetConfig (node, { nodeId : m.nodeId });
+      runtime.nodes[m.nodeId] = node;
       break;
     case "createElementNS":
       node = drawingContext.createElementNS (m.namespace, m.tag);
@@ -84,7 +86,7 @@ function processMessage (m : PATCH, runtime) {
       break;
     case "insertBefore":
       drawingContext.insertBefore
-        (runtime.nodes[m.parent], runtime.nodes[m.child], runtime.nodes[m.node]);
+        (runtime.nodes[m.parent], runtime.nodes[m.node], runtime.nodes[m.child]);
       break;
     case "setAttribute":
       drawingContext.setAttribute (runtime.nodes[m.nodeId], m.key, m.value);
@@ -98,14 +100,18 @@ function processMessage (m : PATCH, runtime) {
     case "appendChild":
       drawingContext.appendChild (runtime.nodes[m.parent], runtime.nodes[m.child]);
       break;
-    case "removeChild":
-      drawingContext.removeChild (runtime.nodes[m.parent], runtime.nodes[m.child]);
-      dropChildren (runtime.nodes, runtime.nodes[m.child]);
+    case "removeChild": {
+      const removed = runtime.nodes[m.child];
+      drawingContext.removeChild (runtime.nodes[m.parent], removed);
+      dropChildren (runtime.nodes, removed);
       break;
-    case "replaceChild":
-      drawingContext.replaceChild (runtime.nodes[m.parent], runtime.nodes[m.new], runtime.nodes[m.current]);
-      dropChildren (runtime.nodes, runtime.nodes[m.current]);
+    }
+    case "replaceChild": {
+      const replaced = runtime.nodes[m.current];
+      drawingContext.replaceChild (runtime.nodes[m.parent], runtime.nodes[m.new], replaced);
+      dropChildren (runtime.nodes, replaced);
       break;
+    }
     case "removeAttribute":
       drawingContext.removeAttribute (runtime.nodes[m.nodeId], m.key);
       break;
@@ -134,10 +140,14 @@ function processMessage (m : PATCH, runtime) {
   }
 }
 
-/* This purges all descendants from runtime.nodes map */
-function dropChildren (nodeMap, node) {
-   delete nodeMap[node.nodeId];
-   for (const child of node.children) {
+/* Recursively purge a subtree from runtime.nodes. ElementRef is an opaque
+   native handle (no `.children`/`.nodeId` JS properties), so read the id from
+   Config and walk children via the element PAPI. `node` is captured before
+   detachment, so its subtree is still intact here. */
+function dropChildren (nodeMap: Record<number, ElementRef>, node: ElementRef) {
+   const nodeId = __GetConfig(node)?.nodeId as number | undefined;
+   if (nodeId !== undefined) delete nodeMap[nodeId];
+   for (let child = __FirstElement(node) as ElementRef; child; child = __NextElement(child) as ElementRef) {
       dropChildren(nodeMap, child);
    }
 }

@@ -36,7 +36,7 @@ import qualified Data.Map as M
 import           Miso.Event
 import           Miso.JSON
 import           Miso.String (MisoString)
-import           Miso.Types (EventHandler, DOMRef)
+import           Miso.Types (Attribute, DOMRef)
 -----------------------------------------------------------------------------
 overlayEvents :: Events
 overlayEvents
@@ -89,61 +89,59 @@ overlayTouchDecoder = ["detail"] `at` details
 --
 -- Triggered when the overlay is hidden.
 --
-onDismissOverlay :: action -> EventHandler action
-onDismissOverlay action = on "dismissoverlay" emptyDecoder (\() _ -> action)
+onDismissOverlay :: action -> Attribute model action
+onDismissOverlay action = on "dismissoverlay" emptyDecoder (\() _ _ -> action)
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/overlay.html#binderror
 --
 -- *Android 2.18+*. Triggered on an overlay error.
 --
-onError :: (OverlayErrorEvent -> action) -> EventHandler action
-onError action = on "error" overlayErrorDecoder (\e _ -> action e)
+onError :: (OverlayErrorEvent -> action) -> Attribute model action
+onError action = on "error" overlayErrorDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/overlay.html#bindoverlaytouch
 --
 -- Triggered when the overlay is touched.
 --
-onOverlayTouch :: (OverlayTouchEvent -> action) -> EventHandler action
-onOverlayTouch action = on "overlaytouch" overlayTouchDecoder (\e _ -> action e)
+onOverlayTouch :: (OverlayTouchEvent -> action) -> Attribute model action
+onOverlayTouch action = on "overlaytouch" overlayTouchDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/overlay.html#bindrequestclose
 --
 -- Triggered when the back button is clicked.
 --
-onRequestClose :: action -> EventHandler action
-onRequestClose action = on "requestclose" emptyDecoder (\() _ -> action)
+onRequestClose :: action -> Attribute model action
+onRequestClose action = on "requestclose" emptyDecoder (\() _ _ -> action)
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/overlay.html#bindshowoverlay
 --
 -- Triggered when the overlay is displayed.
 --
-onShowOverlay :: action -> EventHandler action
-onShowOverlay action = on "showoverlay" emptyDecoder (\() _ -> action)
------------------------------------------------------------------------------
-
+onShowOverlay :: action -> Attribute model action
+onShowOverlay action = on "showoverlay" emptyDecoder (\() _ _ -> action)
 -----------------------------------------------------------------------------
 -- | Like 'onDismissOverlay', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onDismissOverlayWith :: (DOMRef -> action) -> EventHandler action
-onDismissOverlayWith action = on "dismissoverlay" emptyDecoder (\() ref -> action ref)
+onDismissOverlayWith :: (DOMRef -> action) -> Attribute model action
+onDismissOverlayWith action = on "dismissoverlay" emptyDecoder (\() _ ref -> action ref)
 -----------------------------------------------------------------------------
 -- | Like 'onError', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onErrorWith :: (OverlayErrorEvent -> DOMRef -> action) -> EventHandler action
-onErrorWith action = on "error" overlayErrorDecoder action
+onErrorWith :: (OverlayErrorEvent -> DOMRef -> action) -> Attribute model action
+onErrorWith action = on "error" overlayErrorDecoder $ \v _ domRef -> action v domRef
 -----------------------------------------------------------------------------
 -- | Like 'onOverlayTouch', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onOverlayTouchWith :: (OverlayTouchEvent -> DOMRef -> action) -> EventHandler action
-onOverlayTouchWith action = on "overlaytouch" overlayTouchDecoder action
+onOverlayTouchWith :: (OverlayTouchEvent -> DOMRef -> action) -> Attribute model action
+onOverlayTouchWith action = on "overlaytouch" overlayTouchDecoder $ \v _ domRef -> action v domRef
 -----------------------------------------------------------------------------
 -- | Like 'onRequestClose', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onRequestCloseWith :: (DOMRef -> action) -> EventHandler action
-onRequestCloseWith action = on "requestclose" emptyDecoder (\() ref -> action ref)
+onRequestCloseWith :: (DOMRef -> action) -> Attribute model action
+onRequestCloseWith action = on "requestclose" emptyDecoder (\() _ ref -> action ref)
 -----------------------------------------------------------------------------
 -- | Like 'onShowOverlay', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onShowOverlayWith :: (DOMRef -> action) -> EventHandler action
-onShowOverlayWith action = on "showoverlay" emptyDecoder (\() ref -> action ref)
+onShowOverlayWith :: (DOMRef -> action) -> Attribute model action
+onShowOverlayWith action = on "showoverlay" emptyDecoder (\() _ ref -> action ref)
 -----------------------------------------------------------------------------

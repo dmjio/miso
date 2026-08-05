@@ -19,6 +19,49 @@ function nextNodeId () : number {
   return globalThis['nodeId']++;
 }
 
+// --- <list> virtualization (minimal, non-recycling) ---------------------------
+// Lynx <list> is a recycler: its children are NOT mounted directly. The engine
+// drives rendering via a `componentAtIndex` callback, and it only starts asking
+// for cells once we declare them through the `update-list-info` attribute. We
+// hold each list's item elements and serve them back by index — one element per
+// cell, with no reuse pool (that's the "full recycler" upgrade path).
+type ListState = { node: ElementRef; items: Array<ElementRef>; known: number };
+const listStates = new Map<number, ListState>();
+
+function listStateOf(parent: ElementRef): ListState | undefined {
+  return listStates.get(__GetElementUniqueID(parent));
+}
+
+// Emit the incremental insert/remove diff (tail-based) so the engine learns how
+// many cells exist and requests them via componentAtIndex.
+function commitListInfo(st: ListState): void {
+  const cur = st.items.length;
+  if (cur === st.known) return;
+  // Each insert action must carry the item's platform info — crucially the
+  // `item-key` — inline in the payload, not just as an element attribute.
+  // react-lynx builds `{ position, type, ...__listItemPlatformInfo }` (see
+  // listUpdateInfo.ts `__toAttribute`), where the spread supplies item-key /
+  // reuse-identifier. Omitting item-key here makes Lynx's "parse insert"
+  // reject the cells ("illegal list item-key") and the list renders empty.
+  // We read the info back off each stored <list-item> element.
+  const insertAction: Array<Record<string, any>> = [];
+  const removeAction: Array<{ position: number }> = [];
+  if (cur > st.known) {
+    for (let i = st.known; i < cur; i++) {
+      const el = st.items[i];
+      const itemKey = __GetAttributeByName(el, 'item-key');
+      const reuseId = __GetAttributeByName(el, 'reuse-identifier');
+      const action: Record<string, any> = { position: i, type: 'list-item', 'item-key': itemKey };
+      if (reuseId != null) action['reuse-identifier'] = reuseId;
+      insertAction.push(action);
+    }
+  } else {
+    for (let i = st.known - 1; i >= cur; i--) removeAction.push({ position: i });
+  }
+  __SetAttribute(st.node, 'update-list-info', { insertAction, removeAction } as any);
+  st.known = cur;
+}
+
 // Route one native event through main-thread delegation: fire any main-thread
 // handlers along the target -> mount chain (phase-ordered), otherwise forward
 // the delegation stack to the BTS which runs its own delegateEvent over the
@@ -127,7 +170,12 @@ export const drawingContext : DrawingContext<ElementRef> = {
       return getDOMRef(x.nextSibling);
   },
   createTextNode : (s: string) => {
-    const node = __CreateRawText(s);
+    const node = __CreateRawText(s) as ElementRef;
+    // Scope every element to the global stylesheet (cssId 0) so class rules
+    // from styles.css resolve. Miso creates elements via raw element PAPI, and
+    // those do NOT inherit the page's cssId — each one must be tagged
+    // explicitly. See ts/miso/native/mts.ts `__SetCSSId([page],0)`.
+    __SetCSSId ([node], 0);
     if (globalThis['initialDraw']) {
         const nodeId: number = nextNodeId ();
         globalThis['runtime']['nodes'][nodeId] = node;
@@ -157,19 +205,50 @@ export const drawingContext : DrawingContext<ElementRef> = {
           case 'text':
               node = __CreateText(pageId);
               break;
-          case 'list':
-              node = __CreateList(pageId, undefined, null, null);
+          case 'list': {
+              node = __CreateList(
+                  pageId,
+                  (list, listID, cellIndex, opId) => {
+                      const st = listStates.get(__GetElementUniqueID(list));
+                      const root = st && st.items[cellIndex];
+                      if (!root) return undefined;
+                      __AppendElement(list, root);
+                      const sign = __GetElementUniqueID(root);
+                      __FlushElementTree(root, { triggerLayout: true, operationID: opId, elementID: sign, listID } as any);
+                      return sign;
+                  },
+                  () => { /* non-recycling: each cell keeps its own element */ },
+                  null,
+              );
+              listStates.set(__GetElementUniqueID(node), { node, items: [], known: 0 });
               break;
+          }
           case 'image':
               node = __CreateImage(pageId);
               break;
           case 'frame':
-              node = __CreateFrame(pageId, null);
+              // options is optional (Record<string, unknown>); passing `null`
+              // trips a native `NSArray insertObject:atIndex: object cannot be
+              // nil`, so omit it entirely — matches __CreateView/__CreateImage.
+              node = __CreateFrame(pageId);
               break;
           default:
               node = __CreateElement(tag, pageId);
               break;
       }
+      // A native creator can return nil for an unsupported/unregistered element
+      // (a tag with no working PAPI on this Lynx build). `__SetCSSId([nil], 0)`
+      // then crashes natively with `NSArray insertObject:atIndex: object cannot
+      // be nil`. Guard it: name the offending tag and fall back to an empty
+      // <view> so the tree stays valid instead of taking down the whole app.
+      if (!node) {
+          console.error('[createElement]: native creator returned nil for tag "' + tag + '" — falling back to <view>');
+          node = __CreateView(pageId);
+      }
+      // Scope to the global stylesheet (cssId 0) so `className` rules resolve;
+      // raw-PAPI elements do not inherit the page's cssId. createElementNS
+      // delegates here, so it is covered too.
+      __SetCSSId ([node], 0);
       if (globalThis['initialDraw']) {
           const nodeId: number = nextNodeId ();
           globalThis['runtime']['nodes'][nodeId] = node;
@@ -178,15 +257,30 @@ export const drawingContext : DrawingContext<ElementRef> = {
       return node;
   },
   appendChild : (parent, child) => {
+    const st = listStateOf(parent);
+    if (st) { st.items.push(child); return child; }
     return __AppendElement (parent, child);
   },
   replaceChild : (parent, n, o) => {
     return __ReplaceElements (parent, [n], [o]);
   },
   removeChild : (parent, child) => {
+    const st = listStateOf(parent);
+    if (st) {
+      const i = st.items.indexOf(child);
+      if (i >= 0) st.items.splice(i, 1);
+      return child;
+    }
+    listStates.delete(__GetElementUniqueID(child));
     return __RemoveElement (parent, child);
   },
   insertBefore : (parent, child, node) => {
+    const st = listStateOf(parent);
+    if (st) {
+      const i = st.items.indexOf(node);
+      if (i < 0) st.items.push(child); else st.items.splice(i, 0, child);
+      return child;
+    }
     return __InsertElementBefore (parent, child, node);
   },
   swapDOMRefs: (a: ElementRef, b: ElementRef, p: ElementRef): void => {
@@ -210,6 +304,7 @@ export const drawingContext : DrawingContext<ElementRef> = {
       return __SetInlineStyles(node, nCss)
   },
   flush : () => {
+    for (const st of listStates.values()) commitListInfo(st);
     if (globalThis['initialDraw']) {
       globalThis['initialDraw'] = false;
     }

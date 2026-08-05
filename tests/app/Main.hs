@@ -122,7 +122,7 @@ mountedComponents :: Test Int
 mountedComponents = IM.size <$> liftIO (readIORef components)
 -----------------------------------------------------------------------------
 testComponent :: Component () () Int Action
-testComponent = component (0 :: Int) update_ $ \_ _ _ -> button_ [ id_ "foo", event (static (onClick AddOne)) ] [ "click me " ]
+testComponent = component (0 :: Int) update_ $ \_ _ _ -> button_ [ id_ "foo", onClick AddOne ] [ "click me " ]
   where
     update_ = \case
       AddOne -> this += 1
@@ -1649,11 +1649,11 @@ main = withJS $ do
 
     describe "Component tests" $ do
       it "Should mount one component" $ do
-        liftIO (startApp mempty (static (mount_ testComponent)))
+        liftIO (startApp mempty testComponent)
         mountedComponents >>= (`shouldBe` 1)
 
       it "Should have parent field present on VDOM nodes" $ do
-        _ <- liftIO (startApp mempty (static (mount_ testComponent)))
+        _ <- liftIO (startApp mempty testComponent)
         ComponentState {..} <- liftIO $ (IM.! 1) <$> readIORef components
         VTree (Object ref) <- liftIO (readIORef _componentVTree)
         parentDomRef <- liftIO (ref ! "domRef")
@@ -1665,9 +1665,9 @@ main = withJS $ do
         parentFieldUndefined `shouldBe` False
 
       it "Should mount 1000 components" $ do
-        liftIO $ startApp mempty $ static (mount_ $
+        liftIO $ startApp mempty $
           ((component (0 :: Int) noop $ \_ _ _ ->
-            div_ [] (replicate 999 (vcomp (static (mount_ testComponent))))) :: Component () () Int Action))
+            div_ [] (replicate 999 (mount_ testComponent))))
         mountedComponents >>= (`shouldBe` 1000)
 
     describe "Miso.DSL `await` tests" $ do

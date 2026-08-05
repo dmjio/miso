@@ -102,21 +102,21 @@ defaultListOptions
 -- The item-key attribute is a required attribute on \<list-item\>.
 -- 
 --
-itemKey_ :: MisoString -> Attribute action
+itemKey_ :: MisoString -> Attribute model action
 itemKey_ = textProp "item-key"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/list.html#enable-scroll
 --
 -- Indicates whether the \<list\> component is allowed to scroll.
 --
-enableScroll_ :: Bool -> Attribute action
+enableScroll_ :: Bool -> Attribute model action
 enableScroll_ = boolProp "enable-scroll"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/list.html#enable-nested-scroll
 --
 -- Indicates whether \<list\> can achieve nested scrolling with other scrollable containers. When enabled, the inner container scrolls first, followed by the outer container.
 --
-enableNestedScroll_ :: Bool -> Attribute action
+enableNestedScroll_ :: Bool -> Attribute model action
 enableNestedScroll_ = boolProp "enable-nested-scroll"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/list.html#list-main-axis-gap
@@ -124,7 +124,7 @@ enableNestedScroll_ = boolProp "enable-nested-scroll"
 -- Specifies the spacing of \<list\> child nodes in the main axis direction,
 -- which needs to be written in the style.
 --
-listMainAxisGap_ :: MisoString -> Attribute action
+listMainAxisGap_ :: MisoString -> Attribute model action
 listMainAxisGap_ = textProp "list-main-axis-gap"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/list.html#list-cross-axis-gap
@@ -132,7 +132,7 @@ listMainAxisGap_ = textProp "list-main-axis-gap"
 -- Specifies the spacing of <list> child nodes in the cross axis direction,
 -- which needs to be written in the style.
 --
-listCrossAxisGap_ :: MisoString -> Attribute action
+listCrossAxisGap_ :: MisoString -> Attribute model action
 listCrossAxisGap_ = textProp "list-cross-axis-gap"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/list.html#sticky
@@ -140,14 +140,14 @@ listCrossAxisGap_ = textProp "list-cross-axis-gap"
 -- Declared on the \<list\> component to control whether the \<list\> component
 -- as a whole is allowed to be sticky at the top or bottom.
 --
-sticky_ :: Bool -> Attribute action
+sticky_ :: Bool -> Attribute model action
 sticky_ = boolProp "sticky"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/list.html#sticky-offset
 --
 -- The offset distance from the top or bottom of \<list\> for sticky positioning, in 'px'.
 --
-stickyOffset_ :: Int -> Attribute action
+stickyOffset_ :: Int -> Attribute model action
 stickyOffset_ = intProp "sticky-offset"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/list.html#sticky-top
@@ -155,7 +155,7 @@ stickyOffset_ = intProp "sticky-offset"
 -- Declared on the \<list-item\> child node to control whether the node will
 -- be sticky at the top.
 --
-stickyTop_ :: Bool -> Attribute action
+stickyTop_ :: Bool -> Attribute model action
 stickyTop_ = boolProp "sticky-top"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/list.html#sticky-bottom
@@ -163,7 +163,7 @@ stickyTop_ = boolProp "sticky-top"
 -- Declared on the \<list-item\> child node to control whether the node
 -- will be sticky at the bottom.
 --
-stickyBottom_ :: Bool -> Attribute action
+stickyBottom_ :: Bool -> Attribute model action
 stickyBottom_ = boolProp "sticky-bottom"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/list.html#bounces
@@ -175,7 +175,7 @@ stickyBottom_ = boolProp "sticky-bottom"
 --
 -- Default value: 'True'
 --
-bounces_ :: Bool -> Attribute action
+bounces_ :: Bool -> Attribute model action
 bounces_ = boolProp "bounces"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/list.html#initial-scroll-index
@@ -183,7 +183,7 @@ bounces_ = boolProp "bounces"
 -- Specifies the node position to which \<list\> automatically scrolls after
 -- rendering effective only once.
 --
-initialScrollIndex_ :: Int -> Attribute action
+initialScrollIndex_ :: Int -> Attribute model action
 initialScrollIndex_ = intProp "initial-scroll-index"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/list.html#need-visible-item-info
@@ -198,7 +198,7 @@ initialScrollIndex_ = intProp "initial-scroll-index"
 --
 -- Default value: 'False'
 --
-needVisibleItemInfo_ :: Bool -> Attribute action
+needVisibleItemInfo_ :: Bool -> Attribute model action
 needVisibleItemInfo_ = boolProp "need-visible-item-info"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/list.html#upper-threshold-item-count
@@ -207,7 +207,7 @@ needVisibleItemInfo_ = boolProp "need-visible-item-info"
 -- child nodes at the top of \<list\> is less than `upper-threshold-item-count`
 -- for the first time.
 --
-upperThresholdItemCount_ :: Int -> Attribute action
+upperThresholdItemCount_ :: Int -> Attribute model action
 upperThresholdItemCount_ = intProp "upper-threshold-item-count"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/list.html#lower-threshold-item-count
@@ -216,7 +216,7 @@ upperThresholdItemCount_ = intProp "upper-threshold-item-count"
 -- displayable child nodes at the bottom of \<list\> is less than
 -- `lower-threshold-item-count` for the first time.
 --
-lowerThresholdItemCount_ :: Int -> Attribute action
+lowerThresholdItemCount_ :: Int -> Attribute model action
 lowerThresholdItemCount_ = intProp "lower-threshold-item-count"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/list.html#scroll-event-throttle
@@ -226,7 +226,7 @@ lowerThresholdItemCount_ = intProp "lower-threshold-item-count"
 --
 -- Default Value: 200
 --
-scrollEventThrottle_ :: Int -> Attribute action
+scrollEventThrottle_ :: Int -> Attribute model action
 scrollEventThrottle_ = intProp "scroll-event-throttle"
 -----------------------------------------------------------------------------
 data ListItemSnapAlignment
@@ -250,7 +250,7 @@ instance ToJSON ListItemSnapAlignment where
 -- - `factor`: The parameter for paginated positioning, with a range of `[0, 1]`.
 -- - `offset`: Additional `offset` parameter added on top of `factor`.
 --
-itemSnap_ :: ListItemSnapAlignment -> Attribute action
+itemSnap_ :: ListItemSnapAlignment -> Attribute model action
 itemSnap_ = prop "item-snap"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/list.html#need-layout-complete-info
@@ -259,7 +259,7 @@ itemSnap_ = prop "item-snap"
 -- before and after this layout, the \<list\> Diff information that triggered this
 -- layout, and the current \<list\> scroll state information.
 --
-needLayoutCompleteInfo_ :: Bool -> Attribute action
+needLayoutCompleteInfo_ :: Bool -> Attribute model action
 needLayoutCompleteInfo_ = prop "need-layout-complete-info"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/list.html#layout-id
@@ -269,7 +269,7 @@ needLayoutCompleteInfo_ = prop "need-layout-complete-info"
 --
 -- Default Value: -1
 --
-layoutId_ :: Int -> Attribute action
+layoutId_ :: Int -> Attribute model action
 layoutId_ = prop "layout-id"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/list.html#preload-buffer-count
@@ -278,7 +278,7 @@ layoutId_ = prop "layout-id"
 --
 -- Default Value: 0
 --
-preloadBufferCount_ :: Int -> Attribute action
+preloadBufferCount_ :: Int -> Attribute model action
 preloadBufferCount_ = intProp "preload-buffer-count"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/list.html#scroll-bar-enable
@@ -289,7 +289,7 @@ preloadBufferCount_ = intProp "preload-buffer-count"
 --
 -- Default value: 'True'
 --
-scrollBarEnable_ :: Bool -> Attribute action
+scrollBarEnable_ :: Bool -> Attribute model action
 scrollBarEnable_ = boolProp "scroll-bar-enable"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/list.html#reuse-identifier
@@ -298,7 +298,7 @@ scrollBarEnable_ = boolProp "scroll-bar-enable"
 -- component reuses \<list-item\> based on the reuse-identifier attribute value.
 -- Only \<list-item\> with the same reuse-identifier attribute value will be reused.
 --
-reuseIdentifier_ :: MisoString -> Attribute action
+reuseIdentifier_ :: MisoString -> Attribute model action
 reuseIdentifier_ = textProp "reuse-identifier"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/list.html#full-span
@@ -306,7 +306,7 @@ reuseIdentifier_ = textProp "reuse-identifier"
 -- The full-span attribute is used to indicate that a \<list-item\>
 -- occupies a full row or column.
 --
-fullSpan_ :: Bool -> Attribute action
+fullSpan_ :: Bool -> Attribute model action
 fullSpan_ = boolProp "full-span"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/list.html#estimated-main-axis-size-px
@@ -315,7 +315,7 @@ fullSpan_ = boolProp "full-span"
 -- before it is fully rendered, in px. If not set, the default value is the size
 -- of \<list\> in the main axis direction.
 --
-estimatedMainAxisSizePx_ :: Int -> Attribute action
+estimatedMainAxisSizePx_ :: Int -> Attribute model action
 estimatedMainAxisSizePx_ = intProp "estimated-main-axis-size-px"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/list.html#recyclable
@@ -326,7 +326,7 @@ estimatedMainAxisSizePx_ = intProp "estimated-main-axis-size-px"
 --
 -- Default Value: 'True'
 --
-recyclable_ :: Bool -> Attribute action
+recyclable_ :: Bool -> Attribute model action
 recyclable_ = boolProp "recyclable"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/list.html#update-animation
@@ -336,7 +336,7 @@ recyclable_ = boolProp "recyclable"
 --
 -- > updateAnimation_ "none"
 --
-updateAnimation_ :: MisoString -> Attribute action
+updateAnimation_ :: MisoString -> Attribute model action
 updateAnimation_ = textProp "update-animation"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/list.html#harmony-scroll-edge-effect
@@ -350,7 +350,7 @@ updateAnimation_ = textProp "update-animation"
 --
 -- Default Value: 'True'
 --
-harmonyScrollEdgeEffect_ :: Bool -> Attribute action
+harmonyScrollEdgeEffect_ :: Bool -> Attribute model action
 harmonyScrollEdgeEffect_ = boolProp "harmony-scroll-edge-effect"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/list.html#experimental-recycle-sticky-item
@@ -361,6 +361,6 @@ harmonyScrollEdgeEffect_ = boolProp "harmony-scroll-edge-effect"
 --
 -- Default Value: 'True'
 --
-experimentalRecycleStickyItem_ :: Bool -> Attribute action
+experimentalRecycleStickyItem_ :: Bool -> Attribute model action
 experimentalRecycleStickyItem_ = boolProp "experimental-recycle-sticky-item"
 -----------------------------------------------------------------------------

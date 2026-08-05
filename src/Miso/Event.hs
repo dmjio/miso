@@ -29,9 +29,10 @@
 module Miso.Event
    ( -- *** Smart constructors
      on
+   , onMain
    , onCapture
    , onWithOptions
-   , mainThread
+   , onMainWithOptions
    , Phase (..)
    -- *** Lifecycle events
    , onCreated
@@ -47,14 +48,32 @@ module Miso.Event
 -----------------------------------------------------------------------------
 import           Control.Monad (when)
 import qualified Data.Map.Strict as M
+import qualified Data.IntMap.Strict as IM
+import           Data.IORef
 import           Miso.JSON (parseEither)
 -----------------------------------------------------------------------------
 import           Miso.DSL
 import           Miso.Event.Decoder
 import           Miso.Event.Types
 import qualified Miso.FFI.Internal as FFI
-import           Miso.Types (LogLevel(..), DOMRef, VTree(..), EventHandler(..))
+import           Miso.Types (LogLevel(..), DOMRef, VTree(..), EventHandler(..), Attribute(..))
+import           Miso.Runtime
 import           Miso.String (MisoString, ms)
+-----------------------------------------------------------------------------
+-- | Like 'on' but meant to used with the "Miso.Native" namespace.
+--
+-- @
+-- view_ [ event $ static ('onMain' "tap" emptyDecoder ) ] [ text_ \"+\" ]
+-- @
+--
+onMain :: MisoString
+   -- ^ DOM event name (e.g. @\"click\"@, @\"input\"@)
+   -> Decoder result
+   -- ^ How to extract a Haskell value from the browser event object
+   -> (result -> model -> DOMRef -> action)
+   -- ^ Converts the decoded payload and the element's DOM reference to an @action@
+   -> EventHandler model action
+onMain = onMainWithOptions BUBBLE defaultOptions
 -----------------------------------------------------------------------------
 -- | Attach a bubble-phase event handler to a VDOM node.
 -- Convenience wrapper for @'onWithOptions' 'BUBBLE' 'defaultOptions'@.
@@ -69,11 +88,11 @@ import           Miso.String (MisoString, ms)
 --
 on :: MisoString
    -- ^ DOM event name (e.g. @\"click\"@, @\"input\"@)
-   -> Decoder r
+   -> Decoder result
    -- ^ How to extract a Haskell value from the browser event object
-   -> (r -> DOMRef -> action)
+   -> (result -> model -> DOMRef -> action)
    -- ^ Converts the decoded payload and the element's DOM reference to an @action@
-   -> EventHandler action
+   -> Attribute model action
 on = onWithOptions BUBBLE defaultOptions
 -----------------------------------------------------------------------------
 -- | Attach a capture-phase event handler to a VDOM node.
@@ -90,12 +109,47 @@ on = onWithOptions BUBBLE defaultOptions
 onCapture
    :: MisoString
    -- ^ DOM event name (e.g. @\"click\"@)
-   -> Decoder r
+   -> Decoder result
    -- ^ How to extract a Haskell value from the browser event object
-   -> (r -> DOMRef -> action)
+   -> (result -> model -> DOMRef -> action)
    -- ^ Converts the decoded payload and the element's DOM reference to an @action@
-   -> EventHandler action
+   -> Attribute model action
 onCapture = onWithOptions CAPTURE defaultOptions
+-----------------------------------------------------------------------------
+-- | Mark an event handler to be dispatched on the Lynx __main thread__ ('MTS')
+-- rather than the background thread. This is the analog of Lynx's
+-- @main-thread:bind@ prefix, and is decided __per handler__ — so @tap@ can be a
+-- main-thread handler on one element and a background handler on another.
+--
+-- A main-thread handler runs imperatively on the MTS (no VDOM diff, no repaint);
+-- pair it with a @*With@ combinator to receive the target 'DOMRef' and mutate it
+-- via "Miso.Native.MainThread". No-op on the browser\/WASM runtime.
+--
+-- @
+-- view_ [ event (static (mainThread (onTapWith Grow))) ] children
+-- @
+--
+-- @since 1.9.0.0
+onMainWithOptions
+  :: Phase
+  -- ^ Event propagation phase: 'BUBBLE' (default) or 'CAPTURE'
+  -> Options
+  -- ^ Propagation options (@preventDefault@, @stopPropagation@)
+  -> MisoString
+  -- ^ DOM event name (e.g. @\"click\"@, @\"keydown\"@)
+  -> Decoder result
+  -- ^ How to extract a Haskell value from the browser event object
+  -> (result -> model -> DOMRef -> action)
+  -- ^ Converts the decoded payload and the element's DOM reference to an @action@
+  -> EventHandler model action
+onMainWithOptions phase opts name decoder conversion =
+  EventHandler $ \m snk tree ll events -> do
+    case onWithOptions phase opts name decoder conversion of
+      On cb -> do
+        FFI.set "pendingMainThread" True =<< toObject tree
+        cb m snk tree ll events
+      _ ->
+        error "onMainWithOptions: impossible"
 -----------------------------------------------------------------------------
 -- | Attach an event handler with explicit phase and propagation options.
 --
@@ -119,33 +173,13 @@ onWithOptions
   -- ^ Propagation options (@preventDefault@, @stopPropagation@)
   -> MisoString
   -- ^ DOM event name (e.g. @\"click\"@, @\"keydown\"@)
-  -> Decoder r
+  -> Decoder result
   -- ^ How to extract a Haskell value from the browser event object
-  -> (r -> DOMRef -> action)
+  -> (result -> model -> DOMRef -> action)
   -- ^ Converts the decoded payload and the element's DOM reference to an @action@
-  -> EventHandler action
--- | Mark an event handler to be dispatched on the Lynx __main thread__ ('MTS')
--- rather than the background thread. This is the analog of Lynx's
--- @main-thread:bind@ prefix, and is decided __per handler__ — so @tap@ can be a
--- main-thread handler on one element and a background handler on another.
---
--- A main-thread handler runs imperatively on the MTS (no VDOM diff, no repaint);
--- pair it with a @*With@ combinator to receive the target 'DOMRef' and mutate it
--- via "Miso.Native.MainThread". No-op on the browser\/WASM runtime.
---
--- @
--- view_ [ event (static (mainThread (onTapWith Grow))) ] children
--- @
---
--- @since 1.9.0.0
-mainThread :: EventHandler action -> EventHandler action
-mainThread (EventHandler cb) =
-  EventHandler $ \sink vtree@(VTree node) logLevel events -> do
-    FFI.set "pendingMainThread" True node
-    cb sink vtree logLevel events
------------------------------------------------------------------------------
+  -> Attribute model action
 onWithOptions phase options eventName Decoder{..} toAction =
-  EventHandler $ \sink (VTree n) logLevel events -> do
+  On $ \_model sink (VTree n) logLevel events -> do
     when (logLevel == DebugAll || logLevel == DebugEvents) $
       case M.lookup eventName events of
         Nothing ->
@@ -169,7 +203,10 @@ onWithOptions phase options eventName Decoder{..} toAction =
         Just v <- fromJSVal =<< FFI.eventJSON decodeAtVal e
         case parseEither decoder v of
           Left msg -> FFI.consoleError ("[EVENT DECODE ERROR]: " <> ms msg)
-          Right event -> sink (toAction event domRef)
+          Right event -> do
+            vcompId <- fromJSValUnchecked =<< getProp "pendingComponentId" n
+            ComponentState {..} <- (IM.! vcompId) <$> readIORef components
+            sink (toAction event _componentModel domRef)
     FFI.set "runEvent" cb eventHandlerObject
     FFI.set "options" jsOptions eventHandlerObject
     -- Only 'mainThread'-marked handlers carry their 'StaticKey' \/ 'ComponentId'
@@ -198,9 +235,9 @@ onWithOptions phase options eventName Decoder{..} toAction =
 onCreated
   :: action
   -- ^ Action to dispatch after the element is inserted into the DOM
-  -> EventHandler action
+  -> Attribute model action
 onCreated action =
-  EventHandler $ \sink (VTree object) _ _ -> do
+  On $ \_model sink (VTree object) _ _ -> do
     callback <- FFI.syncCallback (sink action)
     FFI.set "onCreated" callback object
 -----------------------------------------------------------------------------
@@ -213,9 +250,9 @@ onCreated action =
 onCreatedWith
   :: (DOMRef -> action)
   -- ^ Callback receiving the element's 'DOMRef' after it is inserted into the DOM
-  -> EventHandler action
+  -> Attribute model action
 onCreatedWith action =
-  EventHandler $ \sink (VTree object) _ _ -> do
+  On $ \_model sink (VTree object) _ _ -> do
     callback <- FFI.syncCallback1 (sink . action)
     FFI.set "onCreated" callback object
 -----------------------------------------------------------------------------
@@ -228,9 +265,9 @@ onCreatedWith action =
 onDestroyed
   :: action
   -- ^ Action to dispatch after the element is removed from the DOM
-  -> EventHandler action
+  -> Attribute model action
 onDestroyed action =
-  EventHandler $ \sink (VTree object) _ _ -> do
+  On $ \_model sink (VTree object) _ _ -> do
     callback <- FFI.syncCallback (sink action)
     FFI.set "onDestroyed" callback object
 -----------------------------------------------------------------------------
@@ -244,9 +281,9 @@ onDestroyed action =
 onBeforeDestroyed
   :: action
   -- ^ Action to dispatch just before the element is removed from the DOM
-  -> EventHandler action
+  -> Attribute model action
 onBeforeDestroyed action =
-  EventHandler $ \sink (VTree object) _ _ -> do
+  On $ \_model sink (VTree object) _ _ -> do
     callback <- FFI.syncCallback (sink action)
     FFI.set "onBeforeDestroyed" callback object
 -----------------------------------------------------------------------------
@@ -257,9 +294,9 @@ onBeforeDestroyed action =
 onBeforeDestroyedWith
   :: (DOMRef -> action)
   -- ^ Callback receiving the element's 'DOMRef' just before it is removed from the DOM
-  -> EventHandler action
+  -> Attribute model action
 onBeforeDestroyedWith action =
-  EventHandler $ \sink (VTree object) _ _ -> do
+  On $ \_model sink (VTree object) _ _ -> do
     callback <- FFI.syncCallback1 (sink . action)
     FFI.set "onBeforeDestroyed" callback object
 -----------------------------------------------------------------------------
@@ -273,9 +310,9 @@ onBeforeDestroyedWith action =
 onBeforeCreated
   :: action
   -- ^ Action to dispatch just before the element is inserted into the DOM
-  -> EventHandler action
+  -> Attribute model action
 onBeforeCreated action =
-  EventHandler $ \sink (VTree object) _ _ -> do
+  On $ \_model sink (VTree object) _ _ -> do
     callback <- FFI.syncCallback (sink action)
     FFI.set "onBeforeCreated" callback object
 -----------------------------------------------------------------------------

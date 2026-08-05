@@ -62,7 +62,7 @@ import           Miso.Types
 --
 -- > id_ "test"
 --
-id_ :: MisoString -> Attribute action
+id_ :: MisoString -> Attribute model action
 id_ = textProp "id"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#name
@@ -71,7 +71,7 @@ id_ = textProp "id"
 --
 -- > name_ "test"
 --
-name_ :: MisoString -> Attribute action
+name_ :: MisoString -> Attribute model action
 name_ = textProp "name"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#classname
@@ -80,7 +80,7 @@ name_ = textProp "name"
 --
 -- > className_ "foo"
 --
-className_ :: MisoString -> Attribute action
+className_ :: MisoString -> Attribute model action
 className_ = textProp "className"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#flatten
@@ -92,7 +92,7 @@ className_ = textProp "className"
 --
 -- > flatten_ True
 --
-flatten_ :: Bool -> Attribute action
+flatten_ :: Bool -> Attribute model action
 flatten_ = boolProp "flatten"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#exposure-id
@@ -101,7 +101,7 @@ flatten_ = boolProp "flatten"
 --
 -- > exposureId_ "id-goes-here"
 --
-exposureId_ :: MisoString -> Attribute action
+exposureId_ :: MisoString -> Attribute model action
 exposureId_ = textProp "exposure-id"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#exposure-scene
@@ -111,7 +111,7 @@ exposureId_ = textProp "exposure-id"
 --
 -- > exposureScene_ "example-scene"
 --
-exposureScene_ :: MisoString -> Attribute action
+exposureScene_ :: MisoString -> Attribute model action
 exposureScene_ = textProp "exposure-scene"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#exposure-ui-margin-
@@ -124,7 +124,7 @@ exposureScene_ = textProp "exposure-scene"
 --
 -- Default Value: "0px"
 --
-exposeUIMarginTop_ :: MisoString -> Attribute action
+exposeUIMarginTop_ :: MisoString -> Attribute model action
 exposeUIMarginTop_ = textProp "exposure-ui-margin-top"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#exposure-ui-margin-
@@ -137,7 +137,7 @@ exposeUIMarginTop_ = textProp "exposure-ui-margin-top"
 --
 -- Default Value: "0px"
 --
-exposeUIMarginBottom_ :: MisoString -> Attribute action
+exposeUIMarginBottom_ :: MisoString -> Attribute model action
 exposeUIMarginBottom_ = textProp "exposure-ui-margin-bottom"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#exposure-ui-margin-
@@ -150,7 +150,7 @@ exposeUIMarginBottom_ = textProp "exposure-ui-margin-bottom"
 --
 -- Default Value: "0px"
 --
-exposeUIMarginLeft_ :: MisoString -> Attribute action
+exposeUIMarginLeft_ :: MisoString -> Attribute model action
 exposeUIMarginLeft_ = textProp "exposure-ui-margin-left"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#exposure-ui-margin-
@@ -164,7 +164,7 @@ exposeUIMarginLeft_ = textProp "exposure-ui-margin-left"
 -- Default Value: "0px"
 --
 -----------------------------------------------------------------------------
-exposeUIMarginRight_ :: MisoString -> Attribute action
+exposeUIMarginRight_ :: MisoString -> Attribute model action
 exposeUIMarginRight_ = textProp "exposure-ui-margin-right"
 -- | https://lynxjs.org/api/elements/built-in/view.html#exposure-screen-margin-
 --
@@ -176,7 +176,7 @@ exposeUIMarginRight_ = textProp "exposure-ui-margin-right"
 --
 -- Default Value: "0px"
 --
-exposeScreenMarginTop_ :: MisoString -> Attribute action
+exposeScreenMarginTop_ :: MisoString -> Attribute model action
 exposeScreenMarginTop_ = textProp "exposure-screen-margin-top"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#exposure-screen-margin-
@@ -189,7 +189,7 @@ exposeScreenMarginTop_ = textProp "exposure-screen-margin-top"
 --
 -- Default Value: "0px"
 --
-exposeScreenMarginBottom_ :: MisoString -> Attribute action
+exposeScreenMarginBottom_ :: MisoString -> Attribute model action
 exposeScreenMarginBottom_ = textProp "exposure-screen-margin-bottom"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#exposure-screen-margin-
@@ -202,7 +202,7 @@ exposeScreenMarginBottom_ = textProp "exposure-screen-margin-bottom"
 --
 -- Default Value: "0px"
 --
-exposeScreenMarginLeft_ :: MisoString -> Attribute action
+exposeScreenMarginLeft_ :: MisoString -> Attribute model action
 exposeScreenMarginLeft_ = textProp "exposure-screen-margin-left"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#exposure-screen-margin-
@@ -215,7 +215,7 @@ exposeScreenMarginLeft_ = textProp "exposure-screen-margin-left"
 --
 -- Default Value: "0px"
 --
-exposeScreenMarginRight_ :: MisoString -> Attribute action
+exposeScreenMarginRight_ :: MisoString -> Attribute model action
 exposeScreenMarginRight_ = textProp "exposure-screen-margin-right"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#exposure-area
@@ -230,7 +230,7 @@ exposeScreenMarginRight_ = textProp "exposure-screen-margin-right"
 --
 -- Default Value: "0%"
 --
-exposureArea_ :: MisoString -> Attribute action
+exposureArea_ :: MisoString -> Attribute model action
 exposureArea_ = textProp "exposure-area"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#enable-exposure-ui-margin
@@ -243,7 +243,7 @@ exposureArea_ = textProp "exposure-area"
 --
 -- Default Value: 'False'
 --
-enableExposureUIMargin_ :: Bool -> Attribute action
+enableExposureUIMargin_ :: Bool -> Attribute model action
 enableExposureUIMargin_ = boolProp "enable-exposure-ui-margin"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#enable-exposure-ui-clip
@@ -255,7 +255,7 @@ enableExposureUIMargin_ = boolProp "enable-exposure-ui-margin"
 --
 -- Default Value: 'False'
 --
-enableExposureUIClip_ :: Bool -> Attribute action
+enableExposureUIClip_ :: Bool -> Attribute model action
 enableExposureUIClip_ = boolProp "enable-exposure-ui-clip"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#accessibility-element
@@ -264,7 +264,7 @@ enableExposureUIClip_ = boolProp "enable-exposure-ui-clip"
 --
 -- > accessibilityElement_ True
 --
-accessibilityElement_ :: Bool -> Attribute action
+accessibilityElement_ :: Bool -> Attribute model action
 accessibilityElement_ = boolProp "accessibility-element"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#accessibility-label
@@ -275,7 +275,7 @@ accessibilityElement_ = boolProp "accessibility-element"
 --
 -- > accessibilityLabel_ "some-label"
 --
-accessibilityLabel_ :: MisoString -> Attribute action
+accessibilityLabel_ :: MisoString -> Attribute model action
 accessibilityLabel_ = textProp "accessibility-label"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#accessibility-trait
@@ -287,7 +287,7 @@ accessibilityLabel_ = textProp "accessibility-label"
 --
 -- Default Value: "button"
 --
-accessibilityTrait_ :: MisoString -> Attribute action
+accessibilityTrait_ :: MisoString -> Attribute model action
 accessibilityTrait_ = textProp "accessibility-trait"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#accessibility-elements
@@ -298,7 +298,7 @@ accessibilityTrait_ = textProp "accessibility-trait"
 --
 -- > accessibilityElements_ "view-3,view-2,view-5,view-1,view-4"
 --
-accessibilityElements_ :: MisoString -> Attribute action
+accessibilityElements_ :: MisoString -> Attribute model action
 accessibilityElements_ = textProp "accessibility-elements"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#accessibility-elements-a11y
@@ -307,7 +307,7 @@ accessibilityElements_ = textProp "accessibility-elements"
 --
 -- > accessibilityElementsA11y_ "id"
 --
-accessibilityElementsA11y_ :: MisoString -> Attribute action
+accessibilityElementsA11y_ :: MisoString -> Attribute model action
 accessibilityElementsA11y_ = textProp "accessibility-elements-a11y"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#accessibility-exclusive-hidden
@@ -318,7 +318,7 @@ accessibilityElementsA11y_ = textProp "accessibility-elements-a11y"
 --
 -- Default Value: 'True'
 --
-accessibilityElementsHidden_ :: Bool -> Attribute action
+accessibilityElementsHidden_ :: Bool -> Attribute model action
 accessibilityElementsHidden_ = boolProp "accessibility-elements-hidden"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#accessibility-exclusive-focus
@@ -329,7 +329,7 @@ accessibilityElementsHidden_ = boolProp "accessibility-elements-hidden"
 --
 -- Default Value: 'True'
 --
-accessibilityExclusiveFocus_ :: Bool -> Attribute action
+accessibilityExclusiveFocus_ :: Bool -> Attribute model action
 accessibilityExclusiveFocus_ = boolProp "accessibility-exclusive-focus"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#a11y-id
@@ -338,7 +338,7 @@ accessibilityExclusiveFocus_ = boolProp "accessibility-exclusive-focus"
 --
 -- > a11yId_ "test"
 --
-a11yId_ :: MisoString -> Attribute action
+a11yId_ :: MisoString -> Attribute model action
 a11yId_ = textProp "a11y-id"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#ios-platform-accessibility-id
@@ -348,7 +348,7 @@ a11yId_ = textProp "a11y-id"
 --
 -- > iosPlatformAccessibilityId_ "view-3"
 --
-iosPlatformAccessibilityId_ :: MisoString -> Attribute action
+iosPlatformAccessibilityId_ :: MisoString -> Attribute model action
 iosPlatformAccessibilityId_ = textProp "ios-platform-accessibility-id"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#user-interaction-enabled
@@ -360,7 +360,7 @@ iosPlatformAccessibilityId_ = textProp "ios-platform-accessibility-id"
 --
 -- Default Value: 'True'
 --
-userInteractionEnabled_ :: Bool -> Attribute action
+userInteractionEnabled_ :: Bool -> Attribute model action
 userInteractionEnabled_ = boolProp "user-interaction-enabled"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#native-interaction-enabled
@@ -375,7 +375,7 @@ userInteractionEnabled_ = boolProp "user-interaction-enabled"
 --
 -- Default Value: 'True' for *iOS*, 'False' for *Android*
 --
-nativeInteractionEnabled_ :: Bool -> Attribute action
+nativeInteractionEnabled_ :: Bool -> Attribute model action
 nativeInteractionEnabled_ = boolProp "native-interaction-enabled"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#pan-intercept-direction
@@ -386,7 +386,7 @@ nativeInteractionEnabled_ = boolProp "native-interaction-enabled"
 --
 -- Default Value: "none"
 --
-panInterceptDirection_ :: MisoString -> Attribute action
+panInterceptDirection_ :: MisoString -> Attribute model action
 panInterceptDirection_ = textProp "pan-intercept-direction"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#pan-intercept-scope
@@ -398,7 +398,7 @@ panInterceptDirection_ = textProp "pan-intercept-direction"
 --
 -- Default Value: "none"
 --
-panInterceptScope_ :: MisoString -> Attribute action
+panInterceptScope_ :: MisoString -> Attribute model action
 panInterceptScope_ = textProp "pan-intercept-scope"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#block-native-event
@@ -411,7 +411,7 @@ panInterceptScope_ = textProp "pan-intercept-scope"
 --
 -- Default Value: 'False'
 --
-blockNativeEvent_ :: Bool -> Attribute action
+blockNativeEvent_ :: Bool -> Attribute model action
 blockNativeEvent_ = boolProp "block-native-event"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#block-native-event-areas
@@ -422,7 +422,7 @@ blockNativeEvent_ = boolProp "block-native-event"
 --
 -- Default Value: []
 --
-blockNativeEventAreas_ :: [Int] -> Attribute action
+blockNativeEventAreas_ :: [Int] -> Attribute model action
 blockNativeEventAreas_ = prop "block-native-event-areas"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#consume-slide-event
@@ -437,7 +437,7 @@ blockNativeEventAreas_ = prop "block-native-event-areas"
 --
 -- Default Value: []
 --
-consumeSlideEvent_ :: [Double] -> Attribute action
+consumeSlideEvent_ :: [Double] -> Attribute model action
 consumeSlideEvent_ = prop "consume-slide-event"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#event-through
@@ -450,7 +450,7 @@ consumeSlideEvent_ = prop "consume-slide-event"
 --
 -- Default Value: 'False'
 --
-eventThrough_ :: Bool -> Attribute action
+eventThrough_ :: Bool -> Attribute model action
 eventThrough_ = boolProp "event-through"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#event-through-active-regions
@@ -462,7 +462,7 @@ eventThrough_ = boolProp "event-through"
 --
 -- Default Value: []
 --
-eventThroughActiveRegions_ :: [[Double]] -> Attribute action
+eventThroughActiveRegions_ :: [[Double]] -> Attribute model action
 eventThroughActiveRegions_ = prop "event-through-active-regions"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#enable-touch-pseudo-propagation
@@ -474,7 +474,7 @@ eventThroughActiveRegions_ = prop "event-through-active-regions"
 --
 -- Default Value: 'False'
 --
-enableTouchPseudoPropagation_ :: Bool -> Attribute action
+enableTouchPseudoPropagation_ :: Bool -> Attribute model action
 enableTouchPseudoPropagation_ = boolProp "enable-touch-pseudo-propagation"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#hit-slop
@@ -486,7 +486,7 @@ enableTouchPseudoPropagation_ = boolProp "enable-touch-pseudo-propagation"
 --
 -- Default Value: "0px"
 --
-hitSlop_ :: MisoString -> Attribute action
+hitSlop_ :: MisoString -> Attribute model action
 hitSlop_ = textProp "hit-slop"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#ignore-focus
@@ -503,7 +503,7 @@ hitSlop_ = textProp "hit-slop"
 --
 -- Default Value: 'False
 --
-ignoreFocus_ :: MisoString -> Attribute action
+ignoreFocus_ :: MisoString -> Attribute model action
 ignoreFocus_ = textProp "ignore-focus"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#ios-enable-simultaneous-touch
@@ -514,7 +514,7 @@ ignoreFocus_ = textProp "ignore-focus"
 --
 -- Default Value: 'False'
 --
-iosEnableSimultaneousTouch_ :: Bool -> Attribute action
+iosEnableSimultaneousTouch_ :: Bool -> Attribute model action
 iosEnableSimultaneousTouch_ = boolProp "ios-enable-simultaneous-touch"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#__lynx_timing_flag
@@ -527,6 +527,6 @@ iosEnableSimultaneousTouch_ = boolProp "ios-enable-simultaneous-touch"
 --
 -- > lynxTimingFlag_ "test"
 --
-lynxTimingFlag_ :: MisoString -> Attribute action
+lynxTimingFlag_ :: MisoString -> Attribute model action
 lynxTimingFlag_ = textProp "__lynx_timing_flag"
 -----------------------------------------------------------------------------

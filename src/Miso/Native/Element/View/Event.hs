@@ -23,7 +23,10 @@ module Miso.Native.Element.View.Event
   , onTouchCancel
   , onTouchCancelWith
   , onTap
+  , onTapMain
   , onTapWith
+  , onTapMainWith
+  , onTapMainModel
   , onLongPress
   , onLongPressWith
   , onLayoutChange
@@ -65,14 +68,13 @@ import Control.Applicative (liftA2)
 #endif
 -----------------------------------------------------------------------------
 import qualified Data.Map as M
-import           Miso.Event (on, Decoder(..), DecodeTarget(..), Events, emptyDecoder, Phase(BUBBLE))
+import           Miso.Event (on, onMain, Decoder(..), DecodeTarget(..), Events, emptyDecoder, Phase(BUBBLE))
 import           Miso.JSON
 import           Miso.String (MisoString)
-import           Miso.Types (EventHandler, DOMRef)
+import           Miso.Types (Attribute, EventHandler, DOMRef)
 ----------------------------------------------------------------------------
 viewEvents :: Events
-viewEvents
-  = M.fromList
+viewEvents = M.fromList
   [ ("touchstart", BUBBLE)
   , ("touchmove", BUBBLE)
   , ("touchend", BUBBLE)
@@ -244,8 +246,8 @@ uiAppearanceDetailDecoder = Decoder {..}
 -- update (HandleTouch TouchEvent {..}) = do
 --   io_ (consoleLog "touch event received")
 --
-onTouchStart :: (TouchEvent -> action) -> EventHandler action
-onTouchStart action = on "touchstart" touchDecoder (\x _ -> action x)
+onTouchStart :: (TouchEvent -> action) -> Attribute model action
+onTouchStart action = on "touchstart" touchDecoder (\x _ _ -> action x)
 ----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#touchmove
 --
@@ -264,8 +266,8 @@ onTouchStart action = on "touchstart" touchDecoder (\x _ -> action x)
 --
 -- @
 --
-onTouchMove :: (TouchEvent -> action) -> EventHandler action
-onTouchMove action = on "touchmove" touchDecoder (\x _ -> action x)
+onTouchMove :: (TouchEvent -> action) -> Attribute model action
+onTouchMove action = on "touchmove" touchDecoder (\x _ _ -> action x)
 ----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#touchend
 --
@@ -284,8 +286,8 @@ onTouchMove action = on "touchmove" touchDecoder (\x _ -> action x)
 --
 -- @
 --
-onTouchEnd :: (TouchEvent -> action) -> EventHandler action
-onTouchEnd action = on "touchend" touchDecoder (\x _ -> action x)
+onTouchEnd :: (TouchEvent -> action) -> Attribute model action
+onTouchEnd action = on "touchend" touchDecoder (\x _ _ -> action x)
 ----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#touchcancel
 --
@@ -305,8 +307,8 @@ onTouchEnd action = on "touchend" touchDecoder (\x _ -> action x)
 --
 -- @
 --
-onTouchCancel :: (TouchEvent -> action) -> EventHandler action
-onTouchCancel action = on "touchcancel" touchDecoder (\x _ -> action x)
+onTouchCancel :: (TouchEvent -> action) -> Attribute model action
+onTouchCancel action = on "touchcancel" touchDecoder (\x _ _ -> action x)
 ----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#tap
 --
@@ -324,8 +326,71 @@ onTouchCancel action = on "touchcancel" touchDecoder (\x _ -> action x)
 --
 -- @
 --
-onTap :: action -> EventHandler action
-onTap action = on "tap" emptyDecoder (\() _ -> action)
+onTap :: action -> Attribute model action
+onTap action = on "tap" emptyDecoder (\() _ _ -> action)
+----------------------------------------------------------------------------
+-- | https://lynxjs.org/api/elements/built-in/view.html#tap
+--
+-- It belongs to [touch event](https://lynxjs.org/api/lynx-api/event/touch-event.html),
+-- which is triggered when the finger clicks on the touch surface.
+--
+-- Unlike 'onTap', 'onTapMain' is necessary for handling tap events on the main thread (MTS).
+--
+-- @
+-- data Action = HandleTap
+--
+-- view :: context -> props -> Model -> View context Action
+-- view model = view_ [ event $ static (onTapMain HandleTap) ]
+--
+-- update :: Action -> Effect context props Model Action
+-- update HandleTap = io_ (consoleLog "touch event received")
+--
+-- @
+--
+onTapMain :: action -> EventHandler model action
+onTapMain action = onMain "tap" emptyDecoder (\() _ _ -> action)
+----------------------------------------------------------------------------
+-- | https://lynxjs.org/api/elements/built-in/view.html#tap
+--
+-- It belongs to [touch event](https://lynxjs.org/api/lynx-api/event/touch-event.html),
+-- which is triggered when the finger clicks on the touch surface.
+--
+-- Unlike 'onTap', 'onTapMain' is necessary for handling tap events on the main thread (MTS).
+--
+-- @
+-- data Action = HandleTap
+--
+-- view :: context -> props -> Model -> View context Action
+-- view model = view_ [ event $ static (onTapMain HandleTap) ]
+--
+-- update :: Action -> Effect context props Model Action
+-- update HandleTap = io_ (consoleLog "touch event received")
+--
+-- @
+--
+onTapMainWith :: (DOMRef -> action) -> EventHandler model action
+onTapMainWith action = onMain "tap" emptyDecoder (\() _ -> action)
+----------------------------------------------------------------------------
+-- | https://lynxjs.org/api/elements/built-in/view.html#tap
+--
+-- It belongs to [touch event](https://lynxjs.org/api/lynx-api/event/touch-event.html),
+-- which is triggered when the finger clicks on the touch surface.
+--
+-- Unlike 'onTap', 'onTapMain' is necessary for handling tap events on the main thread (MTS).
+--
+-- @
+-- data Action = HandleTap
+--
+-- view :: context -> props -> Model -> View context Action
+-- view model = view_ [ event $ static (onTapMain HandleTap) ]
+--
+-- update :: Action -> Effect context props Model Action
+-- update HandleTap = io_ (consoleLog "touch event received")
+--
+-- @
+--
+onTapMainModel :: (model -> action) -> EventHandler model action
+onTapMainModel action = onMain "tap" emptyDecoder (\() m _ -> action m)
 ----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#longpress
 --
@@ -343,8 +408,8 @@ onTap action = on "tap" emptyDecoder (\() _ -> action)
 --
 -- @
 --
-onLongPress :: (TouchEvent -> action) -> EventHandler action
-onLongPress action = on "longpress" touchDecoder (\x _ -> action x)
+onLongPress :: (TouchEvent -> action) -> Attribute model action
+onLongPress action = on "longpress" touchDecoder (\x _ _ -> action x)
 ----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#layoutchange
 --
@@ -363,8 +428,8 @@ onLongPress action = on "longpress" touchDecoder (\x _ -> action x)
 --   io_ (consoleLog "layout changed")
 -- @
 --
-onLayoutChange :: (LayoutChangeDetailEvent -> action) -> EventHandler action
-onLayoutChange action = on "layoutchange" layoutChangeDetailDecoder (\x _ -> action x)
+onLayoutChange :: (LayoutChangeDetailEvent -> action) -> Attribute model action
+onLayoutChange action = on "layoutchange" layoutChangeDetailDecoder (\x _ _ -> action x)
 ----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#uiappear
 --
@@ -381,8 +446,8 @@ onLayoutChange action = on "layoutchange" layoutChangeDetailDecoder (\x _ -> act
 --   io_ (consoleLog "appearance detail event received")
 -- @
 --
-onAppear :: (UIAppearanceDetailEvent -> action) -> EventHandler action
-onAppear action = on "uiappear" uiAppearanceDetailDecoder (\x _ -> action x)
+onAppear :: (UIAppearanceDetailEvent -> action) -> Attribute model action
+onAppear action = on "uiappear" uiAppearanceDetailDecoder (\x _ _ -> action x)
 ----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#uidisappear
 --
@@ -399,8 +464,8 @@ onAppear action = on "uiappear" uiAppearanceDetailDecoder (\x _ -> action x)
 --   io_ (consoleLog "appearance detail event received")
 -- @
 --
-onDisappear :: (UIAppearanceDetailEvent -> action) -> EventHandler action
-onDisappear action = on "uidisappear" uiAppearanceDetailDecoder (\x _ -> action x)
+onDisappear :: (UIAppearanceDetailEvent -> action) -> Attribute model action
+onDisappear action = on "uidisappear" uiAppearanceDetailDecoder (\x _ _ -> action x)
 ----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#animationstart
 --
@@ -417,8 +482,8 @@ onDisappear action = on "uidisappear" uiAppearanceDetailDecoder (\x _ -> action 
 --   io_ (consoleLog "animation event received")
 -- @
 --
-onAnimationStart :: (AnimationEvent -> action) -> EventHandler action
-onAnimationStart action = on "animationstart" animationDecoder $ (\x _ -> action x)
+onAnimationStart :: (AnimationEvent -> action) -> Attribute model action
+onAnimationStart action = on "animationstart" animationDecoder $ (\x _ _ -> action x)
 ----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#animationend
 --
@@ -435,8 +500,8 @@ onAnimationStart action = on "animationstart" animationDecoder $ (\x _ -> action
 --   io_ (consoleLog "animation event received")
 -- @
 --
-onAnimationEnd :: (AnimationEvent -> action) -> EventHandler action
-onAnimationEnd action = on "animationend" animationDecoder (\x _ -> action x)
+onAnimationEnd :: (AnimationEvent -> action) -> Attribute model action
+onAnimationEnd action = on "animationend" animationDecoder (\x _ _ -> action x)
 ----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#animationcancel
 --
@@ -453,8 +518,8 @@ onAnimationEnd action = on "animationend" animationDecoder (\x _ -> action x)
 --   io_ (consoleLog "animation event received")
 -- @
 --
-onAnimationCancel :: (AnimationEvent -> action) -> EventHandler action
-onAnimationCancel action = on "animationcancel" animationDecoder (\x _ -> action x)
+onAnimationCancel :: (AnimationEvent -> action) -> Attribute model action
+onAnimationCancel action = on "animationcancel" animationDecoder (\x _ _ -> action x)
 ----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#animationiteration
 --
@@ -471,8 +536,8 @@ onAnimationCancel action = on "animationcancel" animationDecoder (\x _ -> action
 --   io_ (consoleLog "animation event received")
 -- @
 --
-onAnimationIteration :: (AnimationEvent -> action) -> EventHandler action
-onAnimationIteration action = on "animationiteration" animationDecoder (\x _ -> action x)
+onAnimationIteration :: (AnimationEvent -> action) -> Attribute model action
+onAnimationIteration action = on "animationiteration" animationDecoder (\x _ _ -> action x)
 ----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#transitionstart
 --
@@ -489,8 +554,8 @@ onAnimationIteration action = on "animationiteration" animationDecoder (\x _ -> 
 --   io_ (consoleLog "transition event received")
 -- @
 --
-onTransitionStart :: (AnimationEvent -> action) -> EventHandler action
-onTransitionStart action = on "transitionstart" animationDecoder (\x _ -> action x)
+onTransitionStart :: (AnimationEvent -> action) -> Attribute model action
+onTransitionStart action = on "transitionstart" animationDecoder (\x _ _ -> action x)
 ----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#transitionend
 --
@@ -507,8 +572,8 @@ onTransitionStart action = on "transitionstart" animationDecoder (\x _ -> action
 --   io_ (consoleLog "transition event received")
 -- @
 --
-onTransitionEnd :: (AnimationEvent -> action) -> EventHandler action
-onTransitionEnd action = on "transitionend" animationDecoder (\x _ -> action x)
+onTransitionEnd :: (AnimationEvent -> action) -> Attribute model action
+onTransitionEnd action = on "transitionend" animationDecoder (\x _ _ -> action x)
 ----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#transitioncancel
 --
@@ -525,88 +590,86 @@ onTransitionEnd action = on "transitionend" animationDecoder (\x _ -> action x)
 --   io_ (consoleLog "transition event received")
 -- @
 --
-onTransitionCancel :: (AnimationEvent -> action) -> EventHandler action
-onTransitionCancel action = on "transitioncancel" animationDecoder (\x _ -> action x)
-----------------------------------------------------------------------------
-
+onTransitionCancel :: (AnimationEvent -> action) -> Attribute model action
+onTransitionCancel action = on "transitioncancel" animationDecoder (\x _ _ -> action x)
 -----------------------------------------------------------------------------
 -- | Like 'onTouchStart', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onTouchStartWith :: (TouchEvent -> DOMRef -> action) -> EventHandler action
-onTouchStartWith action = on "touchstart" touchDecoder action
+onTouchStartWith :: (TouchEvent -> DOMRef -> action) -> Attribute model action
+onTouchStartWith action = on "touchstart" touchDecoder $ \t _ d -> action t d
 -----------------------------------------------------------------------------
 -- | Like 'onTouchMove', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onTouchMoveWith :: (TouchEvent -> DOMRef -> action) -> EventHandler action
-onTouchMoveWith action = on "touchmove" touchDecoder action
+onTouchMoveWith :: (TouchEvent -> DOMRef -> action) -> Attribute model action
+onTouchMoveWith action = on "touchmove" touchDecoder $ \t _ d -> action t d
 -----------------------------------------------------------------------------
 -- | Like 'onTouchEnd', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onTouchEndWith :: (TouchEvent -> DOMRef -> action) -> EventHandler action
-onTouchEndWith action = on "touchend" touchDecoder action
+onTouchEndWith :: (TouchEvent -> DOMRef -> action) -> Attribute model action
+onTouchEndWith action = on "touchend" touchDecoder $ \t _ d -> action t d
 -----------------------------------------------------------------------------
 -- | Like 'onTouchCancel', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onTouchCancelWith :: (TouchEvent -> DOMRef -> action) -> EventHandler action
-onTouchCancelWith action = on "touchcancel" touchDecoder action
+onTouchCancelWith :: (TouchEvent -> DOMRef -> action) -> Attribute model action
+onTouchCancelWith action = on "touchcancel" touchDecoder $ \t _ d -> action t d
 -----------------------------------------------------------------------------
 -- | Like 'onTap', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onTapWith :: (DOMRef -> action) -> EventHandler action
-onTapWith action = on "tap" emptyDecoder (\() ref -> action ref)
+onTapWith :: (DOMRef -> action) -> Attribute model action
+onTapWith action = on "tap" emptyDecoder (\() _ ref -> action ref)
 -----------------------------------------------------------------------------
 -- | Like 'onLongPress', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onLongPressWith :: (TouchEvent -> DOMRef -> action) -> EventHandler action
-onLongPressWith action = on "longpress" touchDecoder action
+onLongPressWith :: (TouchEvent -> DOMRef -> action) -> Attribute model action
+onLongPressWith action = on "longpress" touchDecoder $ \t _ d -> action t d
 -----------------------------------------------------------------------------
 -- | Like 'onLayoutChange', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onLayoutChangeWith :: (LayoutChangeDetailEvent -> DOMRef -> action) -> EventHandler action
-onLayoutChangeWith action = on "layoutchange" layoutChangeDetailDecoder action
+onLayoutChangeWith :: (LayoutChangeDetailEvent -> DOMRef -> action) -> Attribute model action
+onLayoutChangeWith action = on "layoutchange" layoutChangeDetailDecoder $ \lcde _ domRef -> action lcde domRef
 -----------------------------------------------------------------------------
 -- | Like 'onAppear', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onAppearWith :: (UIAppearanceDetailEvent -> DOMRef -> action) -> EventHandler action
-onAppearWith action = on "uiappear" uiAppearanceDetailDecoder action
+onAppearWith :: (UIAppearanceDetailEvent -> DOMRef -> action) -> Attribute model action
+onAppearWith action = on "uiappear" uiAppearanceDetailDecoder $ \ui _ domRef -> action ui domRef
 -----------------------------------------------------------------------------
 -- | Like 'onDisappear', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onDisappearWith :: (UIAppearanceDetailEvent -> DOMRef -> action) -> EventHandler action
-onDisappearWith action = on "uidisappear" uiAppearanceDetailDecoder action
+onDisappearWith :: (UIAppearanceDetailEvent -> DOMRef -> action) -> Attribute model action
+onDisappearWith action = on "uidisappear" uiAppearanceDetailDecoder $ \ui _ domRef -> action ui domRef
 -----------------------------------------------------------------------------
 -- | Like 'onAnimationStart', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onAnimationStartWith :: (AnimationEvent -> DOMRef -> action) -> EventHandler action
-onAnimationStartWith action = on "animationstart" animationDecoder action
+onAnimationStartWith :: (AnimationEvent -> DOMRef -> action) -> Attribute model action
+onAnimationStartWith action = on "animationstart" animationDecoder $ \ui _ domRef -> action ui domRef
 -----------------------------------------------------------------------------
 -- | Like 'onAnimationEnd', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onAnimationEndWith :: (AnimationEvent -> DOMRef -> action) -> EventHandler action
-onAnimationEndWith action = on "animationend" animationDecoder action
+onAnimationEndWith :: (AnimationEvent -> DOMRef -> action) -> Attribute model action
+onAnimationEndWith action = on "animationend" animationDecoder $ \ui _ domRef -> action ui domRef
 -----------------------------------------------------------------------------
 -- | Like 'onAnimationCancel', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onAnimationCancelWith :: (AnimationEvent -> DOMRef -> action) -> EventHandler action
-onAnimationCancelWith action = on "animationcancel" animationDecoder action
+onAnimationCancelWith :: (AnimationEvent -> DOMRef -> action) -> Attribute model action
+onAnimationCancelWith action = on "animationcancel" animationDecoder $ \ui _ domRef -> action ui domRef
 -----------------------------------------------------------------------------
 -- | Like 'onAnimationIteration', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onAnimationIterationWith :: (AnimationEvent -> DOMRef -> action) -> EventHandler action
-onAnimationIterationWith action = on "animationiteration" animationDecoder action
+onAnimationIterationWith :: (AnimationEvent -> DOMRef -> action) -> Attribute model action
+onAnimationIterationWith action = on "animationiteration" animationDecoder $ \ui _ domRef -> action ui domRef
 -----------------------------------------------------------------------------
 -- | Like 'onTransitionStart', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onTransitionStartWith :: (AnimationEvent -> DOMRef -> action) -> EventHandler action
-onTransitionStartWith action = on "transitionstart" animationDecoder action
+onTransitionStartWith :: (AnimationEvent -> DOMRef -> action) -> Attribute model action
+onTransitionStartWith action = on "transitionstart" animationDecoder $ \ui _ domRef -> action ui domRef
 -----------------------------------------------------------------------------
 -- | Like 'onTransitionEnd', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onTransitionEndWith :: (AnimationEvent -> DOMRef -> action) -> EventHandler action
-onTransitionEndWith action = on "transitionend" animationDecoder action
+onTransitionEndWith :: (AnimationEvent -> DOMRef -> action) -> Attribute model action
+onTransitionEndWith action = on "transitionend" animationDecoder $ \ui _ domRef -> action ui domRef
 -----------------------------------------------------------------------------
 -- | Like 'onTransitionCancel', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onTransitionCancelWith :: (AnimationEvent -> DOMRef -> action) -> EventHandler action
-onTransitionCancelWith action = on "transitioncancel" animationDecoder action
+onTransitionCancelWith :: (AnimationEvent -> DOMRef -> action) -> Attribute model action
+onTransitionCancelWith action = on "transitioncancel" animationDecoder $ \ui _ domRef -> action ui domRef
 -----------------------------------------------------------------------------

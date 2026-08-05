@@ -103,186 +103,186 @@ import           Miso.Types
 -----------------------------------------------------------------------------
 -- | Low-level helper used to construct 'MATHML' 'node' in 'Miso.Types.View'.
 -- Most View helpers in this module are defined in terms of it.
-nodeMathml :: MisoString -> [Attribute action] -> [View context action] -> View context action
+nodeMathml :: MisoString -> [Attribute model action] -> [View context model action] -> View context model action
 nodeMathml nodeName = node MATHML nodeName
 -----------------------------------------------------------------------------
 -- | [\<annotation-xml\>](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Element/annotation-xml)
 --
 -- @since 1.9.0.0
-annotationXml_ :: [Attribute action] -> [View context action] -> View context action
+annotationXml_ :: [Attribute model action] -> [View context model action] -> View context model action
 annotationXml_ = nodeMathml "annotation-xml"
 -----------------------------------------------------------------------------
 -- | [\<annotation\>](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Element/annotation)
 --
 -- @since 1.9.0.0
-annotation_ :: [Attribute action] -> [View context action] -> View context action
+annotation_ :: [Attribute model action] -> [View context model action] -> View context model action
 annotation_ = nodeMathml "annotation"
 -----------------------------------------------------------------------------
 -- | [\<math\>](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Element/math)
 --
 -- @since 1.9.0.0
-math_ :: [Attribute action] -> [View context action] -> View context action
+math_ :: [Attribute model action] -> [View context model action] -> View context model action
 math_ = nodeMathml "math"
 -----------------------------------------------------------------------------
 -- | [\<merror\>](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Element/merror)
 --
 -- @since 1.9.0.0
-merror_ :: [Attribute action] -> [View context action] -> View context action
+merror_ :: [Attribute model action] -> [View context model action] -> View context model action
 merror_ = nodeMathml "merror"
 -----------------------------------------------------------------------------
 -- | [\<mfrac\>](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Element/mfrac)
 --
 -- @since 1.9.0.0
-mfrac_ :: [Attribute action] -> [View context action] -> View context action
+mfrac_ :: [Attribute model action] -> [View context model action] -> View context model action
 mfrac_ = nodeMathml "mfrac"
 -----------------------------------------------------------------------------
 -- | [\<mi\>](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Element/mi)
 --
 -- @since 1.9.0.0
-mi_ :: [Attribute action] -> [View context action] -> View context action
+mi_ :: [Attribute model action] -> [View context model action] -> View context model action
 mi_ = nodeMathml "mi"
 -----------------------------------------------------------------------------
 -- | [\<mmultiscripts\>](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Element/mmultiscripts)
 --
 -- @since 1.9.0.0
-mmultiscripts_ :: [Attribute action] -> [View context action] -> View context action
+mmultiscripts_ :: [Attribute model action] -> [View context model action] -> View context model action
 mmultiscripts_ = nodeMathml "mmultiscripts"
 -----------------------------------------------------------------------------
 -- | [\<mn\>](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Element/mn)
 --
 -- @since 1.9.0.0
-mn_ :: [Attribute action] -> [View context action] -> View context action
+mn_ :: [Attribute model action] -> [View context model action] -> View context model action
 mn_ = nodeMathml "mn"
 -----------------------------------------------------------------------------
 -- | [\<mo\>](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Element/mo)
 --
 -- @since 1.9.0.0
-mo_ :: [Attribute action] -> [View context action] -> View context action
+mo_ :: [Attribute model action] -> [View context model action] -> View context model action
 mo_ = nodeMathml "mo"
 -----------------------------------------------------------------------------
 -- | [\<mover\>](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Element/mover)
 --
 -- @since 1.9.0.0
-mover_ :: [Attribute action] -> [View context action] -> View context action
+mover_ :: [Attribute model action] -> [View context model action] -> View context model action
 mover_ = nodeMathml "mover"
 -----------------------------------------------------------------------------
 -- | [\<mpadded\>](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Element/mpadded)
 --
 -- @since 1.9.0.0
-mpadded_ :: [Attribute action] -> [View context action] -> View context action
+mpadded_ :: [Attribute model action] -> [View context model action] -> View context model action
 mpadded_ = nodeMathml "mpadded"
 -----------------------------------------------------------------------------
 -- | [\<mphantom\>](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Element/mphantom)
 --
 -- @since 1.9.0.0
-mphantom_ :: [Attribute action] -> [View context action] -> View context action
+mphantom_ :: [Attribute model action] -> [View context model action] -> View context model action
 mphantom_ = nodeMathml "mphantom"
 -----------------------------------------------------------------------------
 -- | [\<mprescripts\>](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Element/mprescripts)
 --
 -- @since 1.9.0.0
-mprescripts_ :: [Attribute action] -> [View context action] -> View context action
+mprescripts_ :: [Attribute model action] -> [View context model action] -> View context model action
 mprescripts_ = nodeMathml "mprescripts"
 -----------------------------------------------------------------------------
 -- | [\<mroot\>](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Element/mroot)
 --
 -- @since 1.9.0.0
-mroot_ :: [Attribute action] -> [View context action] -> View context action
+mroot_ :: [Attribute model action] -> [View context model action] -> View context model action
 mroot_ = nodeMathml "mroot"
 -----------------------------------------------------------------------------
 -- | [\<mrow\>](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Element/mrow)
 --
 -- @since 1.9.0.0
-mrow_ :: [Attribute action] -> [View context action] -> View context action
+mrow_ :: [Attribute model action] -> [View context model action] -> View context model action
 mrow_ = nodeMathml "mrow"
 -----------------------------------------------------------------------------
 -- | [\<ms\>](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Element/ms)
 --
 -- @since 1.9.0.0
-ms_ :: [Attribute action] -> [View context action] -> View context action
+ms_ :: [Attribute model action] -> [View context model action] -> View context model action
 ms_ = nodeMathml "ms"
 -----------------------------------------------------------------------------
 -- | [\<mspace\>](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Element/mspace)
 --
 -- @since 1.9.0.0
-mspace_ :: [Attribute action] -> [View context action] -> View context action
+mspace_ :: [Attribute model action] -> [View context model action] -> View context model action
 mspace_ = nodeMathml "mspace"
 -----------------------------------------------------------------------------
 -- | [\<msqrt\>](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Element/msqrt)
 --
 -- @since 1.9.0.0
-msqrt_ :: [Attribute action] -> [View context action] -> View context action
+msqrt_ :: [Attribute model action] -> [View context model action] -> View context model action
 msqrt_ = nodeMathml "msqrt"
 -----------------------------------------------------------------------------
 -- | [\<mstyle\>](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Element/mstyle)
 --
 -- @since 1.9.0.0
-mstyle_ :: [Attribute action] -> [View context action] -> View context action
+mstyle_ :: [Attribute model action] -> [View context model action] -> View context model action
 mstyle_ = nodeMathml "mstyle"
 -----------------------------------------------------------------------------
 -- | [\<msub\>](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Element/msub)
 --
 -- @since 1.9.0.0
-msub_ :: [Attribute action] -> [View context action] -> View context action
+msub_ :: [Attribute model action] -> [View context model action] -> View context model action
 msub_ = nodeMathml "msub"
 -----------------------------------------------------------------------------
 -- | [\<msubsup\>](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Element/msubsup)
 --
 -- @since 1.9.0.0
-msubsup_ :: [Attribute action] -> [View context action] -> View context action
+msubsup_ :: [Attribute model action] -> [View context model action] -> View context model action
 msubsup_ = nodeMathml "msubsup"
 -----------------------------------------------------------------------------
 -- | [\<msup\>](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Element/msup)
 --
 -- @since 1.9.0.0
-msup_ :: [Attribute action] -> [View context action] -> View context action
+msup_ :: [Attribute model action] -> [View context model action] -> View context model action
 msup_ = nodeMathml "msup"
 -----------------------------------------------------------------------------
 -- | [\<mtable\>](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Element/mtable)
 --
 -- @since 1.9.0.0
-mtable_ :: [Attribute action] -> [View context action] -> View context action
+mtable_ :: [Attribute model action] -> [View context model action] -> View context model action
 mtable_ = nodeMathml "mtable"
 -----------------------------------------------------------------------------
 -- | [\<mtd\>](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Element/mtd)
 --
 -- @since 1.9.0.0
-mtd_ :: [Attribute action] -> [View context action] -> View context action
+mtd_ :: [Attribute model action] -> [View context model action] -> View context model action
 mtd_ = nodeMathml "mtd"
 -----------------------------------------------------------------------------
 -- | [\<mtext\>](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Element/mtext)
 --
 -- @since 1.9.0.0
-mtext_ :: [Attribute action] -> [View context action] -> View context action
+mtext_ :: [Attribute model action] -> [View context model action] -> View context model action
 mtext_ = nodeMathml "mtext"
 -----------------------------------------------------------------------------
 -- | [\<mtr\>](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Element/mtr)
 --
 -- @since 1.9.0.0
-mtr_ :: [Attribute action] -> [View context action] -> View context action
+mtr_ :: [Attribute model action] -> [View context model action] -> View context model action
 mtr_ = nodeMathml "mtr"
 -----------------------------------------------------------------------------
 -- | [\<munder\>](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Element/munder)
 --
 -- @since 1.9.0.0
-munder_ :: [Attribute action] -> [View context action] -> View context action
+munder_ :: [Attribute model action] -> [View context model action] -> View context model action
 munder_ = nodeMathml "munder"
 -----------------------------------------------------------------------------
 -- | [\<munderover\>](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Element/munderover)
 --
 -- @since 1.9.0.0
-munderover_ :: [Attribute action] -> [View context action] -> View context action
+munderover_ :: [Attribute model action] -> [View context model action] -> View context model action
 munderover_ = nodeMathml "munderover"
 -----------------------------------------------------------------------------
 -- | [\<semantics\>](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Element/semantics)
 --
 -- @since 1.9.0.0
-semantics_ :: [Attribute action] -> [View context action] -> View context action
+semantics_ :: [Attribute model action] -> [View context model action] -> View context model action
 semantics_ = nodeMathml "semantics"
 -----------------------------------------------------------------------------
 -- | [\<semantics\>](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Element/mfenced)
 --
 -- @since 1.9.0.0
-mfenced_ :: [Attribute action] -> [View context action] -> View context action
+mfenced_ :: [Attribute model action] -> [View context model action] -> View context model action
 mfenced_ = nodeMathml "mfenced"
 -----------------------------------------------------------------------------

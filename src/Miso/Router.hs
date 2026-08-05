@@ -355,7 +355,7 @@ class Router route where
   route = toRoute . prettyURI
 
   -- | Convenience for specifying a URL as a hyperlink reference in 'Miso.Types.View'
-  href_ :: route -> Attribute action
+  href_ :: route -> Attribute model action
   href_ = P.href_ . prettyRoute
 
   -- | Route pretty printing

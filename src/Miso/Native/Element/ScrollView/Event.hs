@@ -31,9 +31,9 @@ module Miso.Native.Element.ScrollView.Event
 -----------------------------------------------------------------------------
 import qualified Data.Map as M
 -----------------------------------------------------------------------------
-import           Miso.Types (EventHandler, DOMRef)
+import           Miso.Types (Attribute, DOMRef)
 import           Miso.Event
-import           Miso.JSON (withObject, (.:), (.:?), (.!=))
+import           Miso.JSON (withObject, (.:?), (.!=))
 import           Miso.String (MisoString)
 -----------------------------------------------------------------------------
 scrollViewEvents :: Events
@@ -50,7 +50,9 @@ scrollDecoder :: Decoder ScrollEvent
 scrollDecoder = ["detail"] `at` do
   withObject "ScrollEvent" $ \o ->
     ScrollEvent
-      <$> o .: "type"
+      -- @type@ is present on native scroll events but omitted by the web
+      -- (LynxDevTool) preview; keep it optional so decoding succeeds in both.
+      <$> o .:? "type" .!= ""
       <*> o .:? "deltaX" .!= 0
       <*> o .:? "deltaY" .!= 0
       <*> o .:? "scrollLeft" .!= 0
@@ -80,8 +82,8 @@ data ScrollEvent
 --
 -- @
 --
-onScroll :: (ScrollEvent -> action) -> EventHandler action
-onScroll action = on "scroll" scrollDecoder (\x _ -> action x)
+onScroll :: (ScrollEvent -> action) -> Attribute model action
+onScroll action = on "scroll" scrollDecoder (\x _ _ -> action x)
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/scroll-view.html#scrolltoupper
 --
@@ -98,8 +100,8 @@ onScroll action = on "scroll" scrollDecoder (\x _ -> action x)
 --
 -- @
 --
-onScrollToUpper :: (ScrollEvent -> action) -> EventHandler action
-onScrollToUpper action = on "scrolltoupper" scrollDecoder (\x _ -> action x)
+onScrollToUpper :: (ScrollEvent -> action) -> Attribute model action
+onScrollToUpper action = on "scrolltoupper" scrollDecoder (\x _ _ -> action x)
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/scroll-view.html#scrolltolower
 --
@@ -116,8 +118,8 @@ onScrollToUpper action = on "scrolltoupper" scrollDecoder (\x _ -> action x)
 --
 -- @
 --
-onScrollToLower :: (ScrollEvent -> action) -> EventHandler action
-onScrollToLower action = on "scrolltolower" scrollDecoder (\x _ -> action x)
+onScrollToLower :: (ScrollEvent -> action) -> Attribute model action
+onScrollToLower action = on "scrolltolower" scrollDecoder (\x _ _ -> action x)
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/scroll-view.html#scrollend
 --
@@ -134,8 +136,8 @@ onScrollToLower action = on "scrolltolower" scrollDecoder (\x _ -> action x)
 --
 -- @
 --
-onScrollEnd :: (ScrollEvent -> action) -> EventHandler action
-onScrollEnd action = on "scrollend" scrollDecoder (\x _ -> action x)
+onScrollEnd :: (ScrollEvent -> action) -> Attribute model action
+onScrollEnd action = on "scrollend" scrollDecoder (\x _ _ -> action x)
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/scroll-view.html#contentsizechanged
 --
@@ -157,33 +159,31 @@ onScrollEnd action = on "scrollend" scrollDecoder (\x _ -> action x)
 --
 -- @
 --
-onContentSizeChanged :: (ScrollEvent -> action) -> EventHandler action
-onContentSizeChanged action = on "contentsizechanged" scrollDecoder (\x _ -> action x)
------------------------------------------------------------------------------
-
+onContentSizeChanged :: (ScrollEvent -> action) -> Attribute model action
+onContentSizeChanged action = on "contentsizechanged" scrollDecoder (\x _ _ -> action x)
 -----------------------------------------------------------------------------
 -- | Like 'onScroll', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onScrollWith :: (ScrollEvent -> DOMRef -> action) -> EventHandler action
-onScrollWith action = on "scroll" scrollDecoder action
+onScrollWith :: (ScrollEvent -> DOMRef -> action) -> Attribute model action
+onScrollWith action = on "scroll" scrollDecoder $ \se _ domRef -> action se domRef
 -----------------------------------------------------------------------------
 -- | Like 'onScrollToUpper', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onScrollToUpperWith :: (ScrollEvent -> DOMRef -> action) -> EventHandler action
-onScrollToUpperWith action = on "scrolltoupper" scrollDecoder action
+onScrollToUpperWith :: (ScrollEvent -> DOMRef -> action) -> Attribute model action
+onScrollToUpperWith action = on "scrolltoupper" scrollDecoder $ \se _ domRef -> action se domRef
 -----------------------------------------------------------------------------
 -- | Like 'onScrollToLower', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onScrollToLowerWith :: (ScrollEvent -> DOMRef -> action) -> EventHandler action
-onScrollToLowerWith action = on "scrolltolower" scrollDecoder action
+onScrollToLowerWith :: (ScrollEvent -> DOMRef -> action) -> Attribute model action
+onScrollToLowerWith action = on "scrolltolower" scrollDecoder $ \se _ domRef -> action se domRef
 -----------------------------------------------------------------------------
 -- | Like 'onScrollEnd', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onScrollEndWith :: (ScrollEvent -> DOMRef -> action) -> EventHandler action
-onScrollEndWith action = on "scrollend" scrollDecoder action
+onScrollEndWith :: (ScrollEvent -> DOMRef -> action) -> Attribute model action
+onScrollEndWith action = on "scrollend" scrollDecoder $ \se _ domRef -> action se domRef
 -----------------------------------------------------------------------------
 -- | Like 'onContentSizeChanged', but the handler also receives the target element's 'DOMRef'.
 -- Use for main-thread ('MTS') handlers that imperatively mutate the element.
-onContentSizeChangedWith :: (ScrollEvent -> DOMRef -> action) -> EventHandler action
-onContentSizeChangedWith action = on "contentsizechanged" scrollDecoder action
+onContentSizeChangedWith :: (ScrollEvent -> DOMRef -> action) -> Attribute model action
+onContentSizeChangedWith action = on "contentsizechanged" scrollDecoder $ \se _ domRef -> action se domRef
 -----------------------------------------------------------------------------

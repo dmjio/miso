@@ -33,7 +33,7 @@ import           Miso.Property
 --
 -- Default Value: -1
 --
-textMaxLine_ :: Int -> Attribute action
+textMaxLine_ :: Int -> Attribute model action
 textMaxLine_ = intProp "text-maxline"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/text.html#include-font-padding
@@ -47,7 +47,7 @@ textMaxLine_ = intProp "text-maxline"
 -- 
 -- Default Value: 'False'
 --
-includeFontPadding_ :: Bool -> Attribute action
+includeFontPadding_ :: Bool -> Attribute model action
 includeFontPadding_ = boolProp "include-font-padding"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/text.html#tail-color-convert
@@ -60,7 +60,7 @@ includeFontPadding_ = boolProp "include-font-padding"
 -- 
 -- Default Value: 'False'
 --
-tailColorConvert_ :: Bool -> Attribute action
+tailColorConvert_ :: Bool -> Attribute model action
 tailColorConvert_ = boolProp "tail-color-convert"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/text.html#text-single-line-vertical-align
@@ -74,7 +74,7 @@ tailColorConvert_ = boolProp "tail-color-convert"
 --
 -- Default Value: "normal"
 --
-textSingleLineVerticalAlign_ :: MisoString -> Attribute action
+textSingleLineVerticalAlign_ :: MisoString -> Attribute model action
 textSingleLineVerticalAlign_ = textProp "text-single-line-vertical-align"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/text.html#text-selection
@@ -86,7 +86,7 @@ textSingleLineVerticalAlign_ = textProp "text-single-line-vertical-align"
 --
 -- Default Value: 'False'
 --
-textSelection_ :: Bool -> Attribute action
+textSelection_ :: Bool -> Attribute model action
 textSelection_ = boolProp "text-selection"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/text.html#custom-context-menu
@@ -98,7 +98,7 @@ textSelection_ = boolProp "text-selection"
 --
 -- Default Value: 'False'
 --
-customContextMenu_ :: Bool -> Attribute action
+customContextMenu_ :: Bool -> Attribute model action
 customContextMenu_ = boolProp "custom-context-menu"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/text.html#custom-text-selection
@@ -112,6 +112,6 @@ customContextMenu_ = boolProp "custom-context-menu"
 --
 -- Default Value: 'False'
 --
-customTextSelection_ :: Bool -> Attribute action
+customTextSelection_ :: Bool -> Attribute model action
 customTextSelection_ = boolProp "custom-text-selection"
 -----------------------------------------------------------------------------

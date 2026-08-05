@@ -39,7 +39,7 @@ import           Miso.Types (View, Attribute, node, nodeDirectEvents, Namespace(
 -----------------------------------------------------------------------------
 -- | Smart constructor for constructing a built-in lynx element.
 --
-lynx_ :: MisoString -> [Attribute action] -> [View context action] -> View context action
+lynx_ :: MisoString -> [Attribute model action] -> [View context model action] -> View context model action
 lynx_ = node HTML
 -----------------------------------------------------------------------------
 -- | Like 'lynx_', but declares the events this element dispatches /directly/ on
@@ -52,9 +52,9 @@ lynxDirect_
   -- ^ Events dispatched directly on this element
   -> MisoString
   -- ^ Tag name
-  -> [Attribute action]
-  -> [View context action]
-  -> View context action
+  -> [Attribute model action]
+  -> [View context model action]
+  -> View context model action
 lynxDirect_ direct tag attrs kids = nodeDirectEvents HTML tag attrs direct kids
 -----------------------------------------------------------------------------
 -- | <https://lynxjs.org/api/elements/built-in/page.html>
@@ -68,7 +68,7 @@ lynxDirect_ direct tag attrs kids = nodeDirectEvents HTML tag attrs direct kids
 -- only be one 'page' present at at time. We include it here for completeness,
 -- and because 'page' functionality might change in the future.
 --
-page_ :: [Attribute action] -> [View context action] -> View context action
+page_ :: [Attribute model action] -> [View context model action] -> View context model action
 page_ = lynx_ "page"
 -----------------------------------------------------------------------------
 -- | <https://lynxjs.org/api/elements/built-in/scroll-view.html>
@@ -77,7 +77,7 @@ page_ = lynx_ "page"
 -- for all other elements; its attributes, events, and methods can be
 -- used in other elements.
 --
-scrollView_ :: [Attribute action] -> [View context action] -> View context action
+scrollView_ :: [Attribute model action] -> [View context model action] -> View context model action
 scrollView_ = lynxDirect_
   [ "scroll", "scrolltoupper", "scrolltolower", "scrollend", "contentsizechanged" ]
   "scroll-view"
@@ -88,7 +88,7 @@ scrollView_ = lynxDirect_
 -- for all other elements; its attributes, events, and methods can be
 -- used in other elements.
 --
-view_ :: [Attribute action] -> [View context action] -> View context action
+view_ :: [Attribute model action] -> [View context model action] -> View context model action
 view_ = lynx_ "view"
 -----------------------------------------------------------------------------
 -- | <https://lynxjs.org/api/elements/built-in/image.html>
@@ -110,19 +110,19 @@ view_ = lynx_ "view"
 --
 -- > image_ "https://url.com/image.png" []
 --
-image_ :: MisoString -> [Attribute action] -> View context action
+image_ :: MisoString -> [Attribute model action] -> View context model action
 image_ url attrs = lynxDirect_
   [ "load", "error", "startplay", "currentloopcomplete", "finalloopcomplete" ]
   "image" (textProp "src" url : attrs) []
 -----------------------------------------------------------------------------
 -- | <https://lynxjs.org/api/elements/built-in/list.html>
 --
-listItem_ :: [Attribute action] -> [View context action] -> View context action
+listItem_ :: [Attribute model action] -> [View context model action] -> View context model action
 listItem_ = lynx_ "list-item"
 -----------------------------------------------------------------------------
 -- | <https://lynxjs.org/api/elements/built-in/list.html>
 --
-list_ :: ListOptions -> [Attribute action] -> [View context action] -> View context action
+list_ :: ListOptions -> [Attribute model action] -> [View context model action] -> View context model action
 list_ ListOptions {..} attrs = lynxDirect_
   [ "scroll", "scrolltoupper", "scrolltolower", "scrollstatechange", "layoutcomplete", "snap" ]
   "list" (defaults <> attrs)
@@ -140,7 +140,7 @@ list_ ListOptions {..} attrs = lynxDirect_
 -- nest <text>, <image>, and <view> components to achieve relatively complex
 -- text and image content presentation.
 --
-text_ :: [Attribute action] -> [View context action] -> View context action
+text_ :: [Attribute model action] -> [View context model action] -> View context model action
 text_ = lynxDirect_ [ "layout", "selectionchange" ] "text"
 -----------------------------------------------------------------------------
 -- | <https://lynxjs.org/api/elements/built-in/frame.html>
@@ -148,6 +148,6 @@ text_ = lynxDirect_ [ "layout", "selectionchange" ] "text"
 -- A page element similar to HTML's \<iframe\>, which can embed a Lynx page
 -- into the current page.
 --
-frame_ :: [Attribute action] -> View context action
+frame_ :: [Attribute model action] -> View context model action
 frame_ attrs = lynxDirect_ [ "load", "loadmetrics" ] "frame" attrs []
 -----------------------------------------------------------------------------

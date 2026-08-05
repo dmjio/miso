@@ -24,11 +24,19 @@ with pkgs.haskell.lib;
   sample-app-native-bundle =
     let
       hsPkg = pkgs.pkgsCross.ghcjs.haskell.packages.ghcNative.sample-app-native;
+      # Wrapper entry so styles.css is compiled into the Lynx bundle (under
+      # global cssId 0). all.js is GHC-generated and cannot `import` CSS itself,
+      # so the wrapper pulls it into the module graph.
+      stylesCss = ./sample-app-native/styles.css;
+      entryJs = pkgs.writeText "entry.js" ''
+        import './styles.css';
+        import './all.js';
+      '';
       lynxConfig = pkgs.writeText "lynx.config.ts" ''
         import { defineConfig } from '@lynx-js/rspeedy';
         import { pluginReactLynx } from '@lynx-js/react-rsbuild-plugin';
         export default defineConfig({
-          source: { entry: './all.js' },
+          source: { entry: './entry.js' },
           plugins: [ pluginReactLynx() ],
         });
       '';
@@ -53,6 +61,8 @@ with pkgs.haskell.lib;
         # Wire up rspeedy's node_modules so config imports resolve
         ln -s ${pkgs.rspeedy}/lib/node_modules build/node_modules
         cp ${lynxConfig} build/lynx.config.ts
+        cp ${stylesCss} build/styles.css
+        cp ${entryJs} build/entry.js
 
         cd build
         ${pkgs.rspeedy}/bin/rspeedy build

@@ -74,7 +74,7 @@ instance ToJSON ConfirmType where
 --
 -- Default Value: 'True'
 --
-androidFullscreenMode_ :: Bool -> Attribute action
+androidFullscreenMode_ :: Bool -> Attribute model action
 androidFullscreenMode_ = boolProp "android-fullscreen-mode"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/input.html#confirm-type
@@ -85,7 +85,7 @@ androidFullscreenMode_ = boolProp "android-fullscreen-mode"
 --
 -- Default Value: 'ConfirmSend'
 --
-confirmType_ :: ConfirmType -> Attribute action
+confirmType_ :: ConfirmType -> Attribute model action
 confirmType_ = prop "confirm-type"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/input.html#disabled
@@ -96,7 +96,7 @@ confirmType_ = prop "confirm-type"
 --
 -- Default Value: 'False'
 --
-disabled_ :: Bool -> Attribute action
+disabled_ :: Bool -> Attribute model action
 disabled_ = boolProp "disabled"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/input.html#input-filter
@@ -105,7 +105,7 @@ disabled_ = boolProp "disabled"
 --
 -- > inputFilter_ "[0-9]"
 --
-inputFilter_ :: MisoString -> Attribute action
+inputFilter_ :: MisoString -> Attribute model action
 inputFilter_ = textProp "input-filter"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/input.html#ios-auto-correct
@@ -116,7 +116,7 @@ inputFilter_ = textProp "input-filter"
 --
 -- Default Value: 'True'
 --
-iosAutoCorrect_ :: Bool -> Attribute action
+iosAutoCorrect_ :: Bool -> Attribute model action
 iosAutoCorrect_ = boolProp "ios-auto-correct"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/input.html#ios-spell-check
@@ -127,7 +127,7 @@ iosAutoCorrect_ = boolProp "ios-auto-correct"
 --
 -- Default Value: 'True'
 --
-iosSpellCheck_ :: Bool -> Attribute action
+iosSpellCheck_ :: Bool -> Attribute model action
 iosSpellCheck_ = boolProp "ios-spell-check"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/input.html#maxlength
@@ -138,7 +138,7 @@ iosSpellCheck_ = boolProp "ios-spell-check"
 --
 -- Default Value: 140
 --
-maxlength_ :: Int -> Attribute action
+maxlength_ :: Int -> Attribute model action
 maxlength_ = intProp "maxlength"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/input.html#placeholder
@@ -147,7 +147,7 @@ maxlength_ = intProp "maxlength"
 --
 -- > placeholder_ "Enter your name"
 --
-placeholder_ :: MisoString -> Attribute action
+placeholder_ :: MisoString -> Attribute model action
 placeholder_ = textProp "placeholder"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/input.html#readonly
@@ -158,7 +158,7 @@ placeholder_ = textProp "placeholder"
 --
 -- Default Value: 'False'
 --
-readonly_ :: Bool -> Attribute action
+readonly_ :: Bool -> Attribute model action
 readonly_ = boolProp "readonly"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/input.html#show-soft-input-on-focus
@@ -169,7 +169,7 @@ readonly_ = boolProp "readonly"
 --
 -- Default Value: 'True'
 --
-showSoftInputOnFocus_ :: Bool -> Attribute action
+showSoftInputOnFocus_ :: Bool -> Attribute model action
 showSoftInputOnFocus_ = boolProp "show-soft-input-on-focus"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/input.html#type
@@ -180,6 +180,6 @@ showSoftInputOnFocus_ = boolProp "show-soft-input-on-focus"
 --
 -- Default Value: 'InputText'
 --
-type_ :: InputType -> Attribute action
+type_ :: InputType -> Attribute model action
 type_ = prop "type"
 -----------------------------------------------------------------------------

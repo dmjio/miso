@@ -206,430 +206,430 @@ import           Miso.Property
 --
 -- > div_ [ classList_ [ ("empty", null items) ] [ ]
 --
-classList_ :: [(MisoString, Bool)] -> Attribute action
+classList_ :: [(MisoString, Bool)] -> Attribute model action
 classList_ xs = classList [ t | (t, True) <- xs ]
 -----------------------------------------------------------------------------
 -- | Define multiple classes
 --
 -- > div_ [ classes_ [ "red", "warning" ] ] []
 --
-classes_ :: [MisoString] -> Attribute action
+classes_ :: [MisoString] -> Attribute model action
 classes_ = classList
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/title>
-title_ :: MisoString -> Attribute action
+title_ :: MisoString -> Attribute model action
 title_ = textProp "title"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Element/option#selected>
-selected_ :: Bool -> Attribute action
+selected_ :: Bool -> Attribute model action
 selected_ = boolProp "selected"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/hidden>
-hidden_ :: Bool -> Attribute action
+hidden_ :: Bool -> Attribute model action
 hidden_ = boolProp "hidden"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/inert>
-inert_ :: Bool -> Attribute action
+inert_ :: Bool -> Attribute model action
 inert_ = boolProp "inert"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/lang>
-lang_ :: MisoString -> Attribute action
+lang_ :: MisoString -> Attribute model action
 lang_ = textProp "lang"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLInputElement/value>
-value_ :: MisoString -> Attribute action
+value_ :: MisoString -> Attribute model action
 value_ = textProp "value"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLInputElement/defaultValue>
-defaultValue_ :: MisoString -> Attribute action
+defaultValue_ :: MisoString -> Attribute model action
 defaultValue_    = textProp "defaultValue"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/accept>
-accept_ :: MisoString -> Attribute action
+accept_ :: MisoString -> Attribute model action
 accept_  = textProp "accept"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLFormElement/acceptCharset>
-acceptCharset_ :: MisoString -> Attribute action
+acceptCharset_ :: MisoString -> Attribute model action
 acceptCharset_   = textProp "acceptCharset"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLFormElement/action>
-action_ :: MisoString -> Attribute action
+action_ :: MisoString -> Attribute model action
 action_  = textProp "action"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/autocomplete>
-autocomplete_ :: Bool -> Attribute action
+autocomplete_ :: Bool -> Attribute model action
 autocomplete_ b = textProp "autocomplete" (if b then "on" else "off")
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/autosave>
-autosave_ :: MisoString -> Attribute action
+autosave_ :: MisoString -> Attribute model action
 autosave_ = textProp "autosave"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/autocorrect>
-autocorrect_ :: Bool -> Attribute action
+autocorrect_ :: Bool -> Attribute model action
 autocorrect_ b = textProp "autocomplete" (if b then "on" else "off")
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/spellcheck>
-spellcheck_ :: Bool -> Attribute action
+spellcheck_ :: Bool -> Attribute model action
 spellcheck_ b = textProp "autocomplete" (if b then "on" else "off")
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/role>
-role_ :: MisoString -> Attribute action
+role_ :: MisoString -> Attribute model action
 role_ = textProp "role"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/disabled>
-disabled_ :: Attribute action
+disabled_ :: Attribute model action
 disabled_ = boolProp "disabled" True
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLFormElement/enctype>
-enctype_ :: MisoString -> Attribute action
+enctype_ :: MisoString -> Attribute model action
 enctype_ = textProp "enctype"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/formation>
-formation_ :: MisoString -> Attribute action
+formation_ :: MisoString -> Attribute model action
 formation_ = textProp "formation"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/list>
-list_ :: MisoString -> Attribute action
+list_ :: MisoString -> Attribute model action
 list_  = textProp "list"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/maxlength>
-maxlength_ :: MisoString -> Attribute action
+maxlength_ :: MisoString -> Attribute model action
 maxlength_ = textProp "maxlength"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/minlength>
-minlength_ :: MisoString -> Attribute action
+minlength_ :: MisoString -> Attribute model action
 minlength_ = textProp "minlength"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/method>
-method_ :: MisoString -> Attribute action
+method_ :: MisoString -> Attribute model action
 method_  = textProp "method"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes/multiple>
-multiple_ :: Bool -> Attribute action
+multiple_ :: Bool -> Attribute model action
 multiple_ = boolProp "multiple"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLFormElement/noValidate>
-noValidate_ :: Bool -> Attribute action
+noValidate_ :: Bool -> Attribute model action
 noValidate_      = boolProp "noValidate"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/pattern>
-pattern_ :: MisoString -> Attribute action
+pattern_ :: MisoString -> Attribute model action
 pattern_ = textProp "pattern"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/details#open>
-open_ :: Bool -> Attribute action
+open_ :: Bool -> Attribute model action
 open_ = boolProp "open"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/readonly>
-readonly_ :: Bool -> Attribute action
+readonly_ :: Bool -> Attribute model action
 readonly_ = boolProp "readOnly"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes/required>
-required_ :: Bool -> Attribute action
+required_ :: Bool -> Attribute model action
 required_ = boolProp "required"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/size>
-size_ :: MisoString -> Attribute action
+size_ :: MisoString -> Attribute model action
 size_  = textProp "size"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/for>
-for_ :: MisoString -> Attribute action
+for_ :: MisoString -> Attribute model action
 for_ = textProp "for"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/ref>
-ref_ :: MisoString -> Attribute action
+ref_ :: MisoString -> Attribute model action
 ref_ = textProp "ref"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/form>
-form_ :: MisoString -> Attribute action
+form_ :: MisoString -> Attribute model action
 form_ = textProp "form"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/max>
-max_ :: MisoString -> Attribute action
+max_ :: MisoString -> Attribute model action
 max_ = textProp "max"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/min>
-min_ :: MisoString -> Attribute action
+min_ :: MisoString -> Attribute model action
 min_ = textProp "min"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/step>
-step_ :: MisoString -> Attribute action
+step_ :: MisoString -> Attribute model action
 step_  = textProp "step"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/cols>
-cols_ :: MisoString -> Attribute action
+cols_ :: MisoString -> Attribute model action
 cols_  = textProp "cols"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/rows>
-rows_ :: MisoString -> Attribute action
+rows_ :: MisoString -> Attribute model action
 rows_  = textProp "rows"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/wrap>
-wrap_ :: MisoString -> Attribute action
+wrap_ :: MisoString -> Attribute model action
 wrap_  = textProp "wrap"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/target>
-target_ :: MisoString -> Attribute action
+target_ :: MisoString -> Attribute model action
 target_  = textProp "target"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/download>
-download_ :: MisoString -> Attribute action
+download_ :: MisoString -> Attribute model action
 download_ = textProp "download"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/downloadAs>
-downloadAs_ :: MisoString -> Attribute action
+downloadAs_ :: MisoString -> Attribute model action
 downloadAs_      = textProp "downloadAs"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/hreflang>
-hreflang_ :: MisoString -> Attribute action
+hreflang_ :: MisoString -> Attribute model action
 hreflang_ = textProp "hreflang"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/media>
-media_ :: MisoString -> Attribute action
+media_ :: MisoString -> Attribute model action
 media_ = textProp "media"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/ping>
-ping_ :: MisoString -> Attribute action
+ping_ :: MisoString -> Attribute model action
 ping_  = textProp "ping"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/rel>
-rel_ :: MisoString -> Attribute action
+rel_ :: MisoString -> Attribute model action
 rel_ = textProp "rel"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLImageElement/isMap>
-ismap_ :: Bool -> Attribute action
+ismap_ :: Bool -> Attribute model action
 ismap_ = boolProp "ismap"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/usemap>
-usemap_ :: MisoString -> Attribute action
+usemap_ :: MisoString -> Attribute model action
 usemap_  = textProp "usemap"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/shape>
-shape_ :: MisoString -> Attribute action
+shape_ :: MisoString -> Attribute model action
 shape_ = textProp "shape"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/coords>
-coords_ :: MisoString -> Attribute action
+coords_ :: MisoString -> Attribute model action
 coords_  = textProp "coords"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/src>
-src_ :: MisoString -> Attribute action
+src_ :: MisoString -> Attribute model action
 src_ = textProp "src"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/height>
-height_ :: MisoString -> Attribute action
+height_ :: MisoString -> Attribute model action
 height_  = textProp "height"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/width>
-width_ :: MisoString -> Attribute action
+width_ :: MisoString -> Attribute model action
 width_ = textProp "width"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/alt>
-alt_ :: MisoString -> Attribute action
+alt_ :: MisoString -> Attribute model action
 alt_ = textProp "alt"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/loading>
-loading_ :: MisoString -> Attribute action
+loading_ :: MisoString -> Attribute model action
 loading_ = textProp "loading"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/autoplay>
-autoplay_ :: Bool -> Attribute action
+autoplay_ :: Bool -> Attribute model action
 autoplay_ = boolProp "autoplay"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/currentTime>
-currentTime_ :: Double -> Attribute action
+currentTime_ :: Double -> Attribute model action
 currentTime_ = doubleProp "currentTime"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/defaultMuted>
-defaultMuted_ :: Bool -> Attribute action
+defaultMuted_ :: Bool -> Attribute model action
 defaultMuted_ = boolProp "defaultMuted"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/defaultPlaybackRate>
-defaultPlaybackRate_ :: Double -> Attribute action
+defaultPlaybackRate_ :: Double -> Attribute model action
 defaultPlaybackRate_ = doubleProp "defaultPlaybackRate"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/mediaGroup>
-mediaGroup_ :: MisoString -> Attribute action
+mediaGroup_ :: MisoString -> Attribute model action
 mediaGroup_ = textProp "mediaGroup"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/muted>
-muted_ :: Bool -> Attribute action
+muted_ :: Bool -> Attribute model action
 muted_ = boolProp "muted"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/playbackRate>
-playbackRate_ :: Double -> Attribute action
+playbackRate_ :: Double -> Attribute model action
 playbackRate_ = doubleProp "playbackRate"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/preload>
-preload_ :: MisoString -> Attribute action
+preload_ :: MisoString -> Attribute model action
 preload_ = textProp "preload"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/seeking>
-seeking_ :: Bool -> Attribute action
+seeking_ :: Bool -> Attribute model action
 seeking_ = boolProp "seeking"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/volume>
-volume_ :: Double -> Attribute action
+volume_ :: Double -> Attribute model action
 volume_ = doubleProp "volume"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/controls>
-controls_ :: Bool -> Attribute action
+controls_ :: Bool -> Attribute model action
 controls_ = boolProp "controls"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/loop>
-loop_ :: Bool -> Attribute action
+loop_ :: Bool -> Attribute model action
 loop_  = boolProp "loop"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLVideoElement/poster>
-poster_ :: MisoString -> Attribute action
+poster_ :: MisoString -> Attribute model action
 poster_  = textProp "poster"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/default>
-default_ :: Bool -> Attribute action
+default_ :: Bool -> Attribute model action
 default_ = boolProp "default"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/kind>
-kind_ :: MisoString -> Attribute action
+kind_ :: MisoString -> Attribute model action
 kind_  = textProp "kind"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/srclang>
-srclang_ :: MisoString -> Attribute action
+srclang_ :: MisoString -> Attribute model action
 srclang_ = textProp "srclang"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/sandbox>
-sandbox_ :: MisoString -> Attribute action
+sandbox_ :: MisoString -> Attribute model action
 sandbox_ = textProp "sandbox"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/seamless>
-seamless_ :: MisoString -> Attribute action
+seamless_ :: MisoString -> Attribute model action
 seamless_ = textProp "seamless"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/srcdoc>
-srcdoc_ :: MisoString -> Attribute action
+srcdoc_ :: MisoString -> Attribute model action
 srcdoc_  = textProp "srcdoc"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/ol#reversed>
-reversed_ :: Bool -> Attribute action
+reversed_ :: Bool -> Attribute model action
 reversed_ = boolProp "reversed"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/align>
-align_ :: MisoString -> Attribute action
+align_ :: MisoString -> Attribute model action
 align_ = textProp "align"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/colspan>
-colspan_ :: MisoString -> Attribute action
+colspan_ :: MisoString -> Attribute model action
 colspan_ = textProp "colspan"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/rowspan>
-rowspan_ :: MisoString -> Attribute action
+rowspan_ :: MisoString -> Attribute model action
 rowspan_ = textProp "rowspan"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/headers>
-headers_ :: MisoString -> Attribute action
+headers_ :: MisoString -> Attribute model action
 headers_ = textProp "headers"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/scope>
-scope_ :: MisoString -> Attribute action
+scope_ :: MisoString -> Attribute model action
 scope_ = textProp "scope"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/async>
-async_ :: Bool -> Attribute action
+async_ :: Bool -> Attribute model action
 async_ = boolProp "async"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/charset>
-charset_ :: MisoString -> Attribute action
+charset_ :: MisoString -> Attribute model action
 charset_ = textProp "charset"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/content>
-content_ :: MisoString -> Attribute action
+content_ :: MisoString -> Attribute model action
 content_ = textProp "content"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLScriptElement/defer>
-defer_ :: Bool -> Attribute action
+defer_ :: Bool -> Attribute model action
 defer_ = boolProp "defer"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/httpEquiv>
-httpEquiv_ :: MisoString -> Attribute action
+httpEquiv_ :: MisoString -> Attribute model action
 httpEquiv_ = textProp "httpEquiv"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/language>
-language_ :: MisoString -> Attribute action
+language_ :: MisoString -> Attribute model action
 language_ = textProp "language"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/scoped>
-scoped_ :: MisoString -> Attribute action
+scoped_ :: MisoString -> Attribute model action
 scoped_  = textProp "scoped"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/type>
-type_ :: MisoString -> Attribute action
+type_ :: MisoString -> Attribute model action
 type_ = textProp "type"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLLinkElement/name>
-name_ :: MisoString -> Attribute action
+name_ :: MisoString -> Attribute model action
 name_ = textProp "name"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLLinkElement/href>
-href_ :: MisoString -> Attribute action
+href_ :: MisoString -> Attribute model action
 href_ = textProp "href"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/id>
-id_ :: MisoString -> Attribute action
+id_ :: MisoString -> Attribute model action
 id_ = textProp "id"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLInputElement/placeholder>
-placeholder_ :: MisoString -> Attribute action
+placeholder_ :: MisoString -> Attribute model action
 placeholder_ = textProp "placeholder"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLInputElement/checked>
-checked_ :: Bool -> Attribute action
+checked_ :: Bool -> Attribute model action
 checked_ = boolProp "checked"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/autofocus>
-autofocus_ :: Bool -> Attribute action
+autofocus_ :: Bool -> Attribute model action
 autofocus_ = boolProp "autofocus"
 -----------------------------------------------------------------------------
 -- | Set "className" property
 -- <https://developer.mozilla.org/en-US/docs/Web/API/Element/className>
-class_ :: MisoString -> Attribute action
+class_ :: MisoString -> Attribute model action
 class_ = className
 -----------------------------------------------------------------------------
 -- | Set "className" property
 -- <https://developer.mozilla.org/en-US/docs/Web/API/Element/className>
-className :: MisoString -> Attribute action
+className :: MisoString -> Attribute model action
 className name = classList [name]
 -----------------------------------------------------------------------------
 -- | Set "data-*" property
 -- https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/data-*
-data_ :: MisoString -> MisoString -> Attribute action
+data_ :: MisoString -> MisoString -> Attribute model action
 data_ k v = textProp ("data-" <> k) v
 -----------------------------------------------------------------------------
 -- | @since 1.9.0.0
-xmlns_ :: MisoString -> Attribute action
+xmlns_ :: MisoString -> Attribute model action
 xmlns_ = textProp "xmlns"
 -----------------------------------------------------------------------------
 -- | @since 1.9.0.0
-aria_ :: MisoString -> MisoString -> Attribute action
+aria_ :: MisoString -> MisoString -> Attribute model action
 aria_ k = textProp ("aria-" <> k)
 -----------------------------------------------------------------------------
 -- | @since 1.9.0.0
-label_ :: MisoString -> Attribute action
+label_ :: MisoString -> Attribute model action
 label_ = textProp "label"
 -----------------------------------------------------------------------------
 -- | @since 1.9.0.0
-draggable_ :: Bool -> Attribute action
+draggable_ :: Bool -> Attribute model action
 draggable_ = boolProp "draggable"
 -----------------------------------------------------------------------------
 -- | @since 1.9.0.0
-scrolling_ :: MisoString -> Attribute action
+scrolling_ :: MisoString -> Attribute model action
 scrolling_ = textProp "scrolling"
 -----------------------------------------------------------------------------
 -- | @since 1.9.0.0
-frameborder_ :: MisoString -> Attribute action
+frameborder_ :: MisoString -> Attribute model action
 frameborder_ = textProp "frameborder"
 -----------------------------------------------------------------------------
 -- | [tabindex](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute/tabindex) attribute
 --
 -- @since 1.9.0.0
-tabindex_ ::  MisoString -> Attribute action
+tabindex_ ::  MisoString -> Attribute model action
 tabindex_ = textProp "tabindex"
 -----------------------------------------------------------------------------

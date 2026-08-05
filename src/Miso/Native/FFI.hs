@@ -13,8 +13,6 @@ module Miso.Native.FFI
   ( -- *** Lynx specific FFI
     setInterval
   , clearInterval
-  , setTimeout
-  , clearTimeout
   , invokeExec
   ) where
 ----------------------------------------------------------------------------
@@ -37,20 +35,6 @@ clearInterval :: Double -> IO Double
 clearInterval intervalId = do
   result <- jsg "lynx" # "clearInterval" $ [intervalId]
   fromJSValUnchecked result
------------------------------------------------------------------------------
--- | <https://lynxjs.org/api/lynx-api/global/set-timeout.html>
---
-setTimeout :: Double -> IO () -> IO Double
-setTimeout delay f = do
-  cb <- toJSVal (asyncCallback f)
-  v <- toJSVal delay
-  result <- jsg "lynx" # "setTimeout" $ [cb, v]
-  fromJSValUnchecked result
------------------------------------------------------------------------------
--- | <https://lynxjs.org/api/lynx-api/global/clear-timeout.html>
---
-clearTimeout :: Double -> IO ()
-clearTimeout timerId = void $ jsg "lynx" # "clearTimeout" $ [timerId]
 -----------------------------------------------------------------------------
 -- | <https://lynxjs.org/api/lynx-api/nodes-ref/nodes-ref-invoke.html>
 --
