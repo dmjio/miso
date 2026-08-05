@@ -9,6 +9,10 @@ common options
     ld-options:
       -sENVIRONMENT=shell -sWASM=0 -sEXPORTED_RUNTIME_METHODS=HEAP8
 
+  if !arch(wasm32) && !arch(javascript)
+    ghc-options:
+      -O0
+
 executable app-native
   import:
     options

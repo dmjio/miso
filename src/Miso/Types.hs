@@ -555,16 +555,16 @@ key +> child = VComp (SomeComponent (Just (toKey key)) () child)
 -- against each other. Otherwise, you will need a key to distinguish between
 -- the two t'Miso.Types.Component', to ensure unmounting and mounting occurs.
 --
--- Note the argument order (@component@ first, @props@ last): this makes the
--- partial application @mountWithProps child@ a closed @props -> component@
--- constructor suitable for @static@, so a parent can pass runtime @props@ via
--- 'vcomp' without an explicit lambda:
+-- It takes only the @component@ and yields a closed @props -> component@
+-- constructor ('SomeStaticComponent') suitable for @static@ — the @props@ value
+-- is /not/ supplied here, but later at the 'vcomp' site, so a parent can pass
+-- runtime @props@ (e.g. derived from its own @model@) without an explicit lambda:
 --
 -- Static mounting automatically provides the 'key_' at compile time (via 'GHC.StaticPtr.staticKey').
 -- So the user doesn't need to use the '+>' combinators.
 --
 -- @
--- vcomp (static (mountWithProps child)) (model ^. field)
+-- vcomp (model ^. field) (static (mountStaticWithProps child))
 -- @
 --
 -- @since 1.11.0.0
@@ -593,11 +593,11 @@ mountWithProps props comp = VComp (SomeComponent Nothing props comp)
 -----------------------------------------------------------------------------
 -- | t'Miso.Types.Component' mounting combinator.
 --
--- Like 'mountWithProps' but keyed (@component@ first, @props@ supplied later at
--- the 'vcomp' site):
+-- Like 'mountStaticWithProps' but keyed (@props@ supplied later at the 'vcomp'
+-- site):
 --
 -- @
--- vcomp (static (mountWithProps_ "key" child)) (model ^. field)
+-- vcomp (model ^. field) (static (mountStaticWithProps_ "key" child))
 -- @
 --
 -- @since 1.11.0.0
@@ -688,13 +688,12 @@ mount_ comp = VComp (SomeComponent Nothing () comp)
 -- the 'Props'.
 --
 -- @
--- div_ [] [ vcomp (static (mountStatic_ myComp)) ]
+-- div_ [] [ vcomp_ (static (mountStatic_ myComp)) ]
 -- @
 --
 -- @since 1.12.0.0
 vcomp
-  :: Eq props
-  => props
+  :: props
   -> StaticPtr (SomeStaticComponent props context)
   -> View context model action
 vcomp = flip VCompStatic

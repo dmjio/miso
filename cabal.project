@@ -1,7 +1,6 @@
 packages:
   .
   sample-app/
-  sample-app-native/
   tests/
 
 allow-newer:
