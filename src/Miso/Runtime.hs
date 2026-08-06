@@ -1222,7 +1222,6 @@ setAttrs
   -> Events
   -> IO ()
 setAttrs vnode_@(Object jval) attrs snk vcompId logLevel events = do
-  -- TODO: this not yet present because still unmounted. should it be (IO model) ?
   m <- (IM.! vcompId) <$> readIORef components
   forM_ attrs $ \case
     Property "key" v -> do

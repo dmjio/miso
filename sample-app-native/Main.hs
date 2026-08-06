@@ -21,6 +21,7 @@ import           Miso.Native
 import           Miso.Html.Property (id_, className, width_, height_)
 import           Miso.Property (textProp)
 import           Miso.Native.X.Element.Refresh.Method (finishRefresh)
+import           Miso.Native.MainThread (setStyleProperty)
 import           Control.Monad (when)
 import           Control.Concurrent (threadDelay)
 import qualified Miso.CSS as CSS
@@ -72,7 +73,33 @@ data Action
   -- ^ pull-to-refresh triggered: load rows, then finish
   | RefreshDone
   -- ^ finishRefresh acknowledged
+  | ToggleTheme
+  -- ^ flips the app-global 'Theme' context (see 'mountedComponentSection')
+  | Pulse DOMRef
+  -- ^ main-thread ('MTS') tap handler: scale-bounce the target element
+  -- imperatively, no BTS round-trip (see 'mainThreadSection')
+  | Fade DOMRef MisoString
+  -- ^ main-thread ('MTS') scroll handler: fade the target element to the
+  -- given opacity, computed from the scroll offset (see 'mainThreadSection')
+  | StorageInputChanged MisoString
+  -- ^ the localStorage demo's input value changed
+  | StorageSave
+  -- ^ persist the current input value under 'storageKey'
+  | StorageLoad
+  -- ^ kick off an async read of 'storageKey'
+  | StorageLoaded (Maybe MisoString)
+  -- ^ 'StorageLoad' result: 'Nothing' if the key was never set (or cleared)
+  | StorageClear
+  -- ^ wipe all localStorage
   deriving stock (Generic)
+  deriving anyclass (ToJSON, FromJSON)
+-----------------------------------------------------------------------------
+-- | App-global React-style context, exercised via 'nativeWithContext' /
+-- 'modifyContext'. Read by 'mountedComponentSection' \/ 'badgeComponent' to
+-- prove context propagates both to the top-level app and across the
+-- dual-thread boundary into a statically-mounted child.
+data Theme = Light | Dark
+  deriving stock (Eq, Show, Generic)
   deriving anyclass (ToJSON, FromJSON)
 -----------------------------------------------------------------------------
 data Model = Model
@@ -86,16 +113,21 @@ data Model = Model
     -- ^ overlay layer visibility
   , refreshRows :: Int
     -- ^ rows in the pull-to-refresh list (grows on refresh)
+  , storageInput :: MisoString
+    -- ^ pending value for the localStorage demo's <input>
+  , storageLoaded :: Maybe MisoString
+    -- ^ last value read back from localStorage ('Nothing' if unset/cleared)
   } deriving stock (Eq, Generic)
     deriving anyclass (ToJSON, FromJSON)
 -----------------------------------------------------------------------------
 main :: IO ()
-main = native (nativeEvents <> nativeXEvents) (static (mountStatic_ galleryComponent))
+main = nativeWithContext (nativeEvents <> nativeXEvents) Dark
+  (static (mountStatic_ galleryComponent))
 -----------------------------------------------------------------------------
-galleryComponent :: App Model Action
-galleryComponent = component (Model [] False False False 6) updateModel viewModel
+galleryComponent :: Component Theme () Model Action
+galleryComponent = component (Model [] False False False 6 "" Nothing) updateModel viewModel
 -----------------------------------------------------------------------------
-updateModel :: Action -> Effect context props Model Action
+updateModel :: Action -> Effect Theme () Model Action
 updateModel = \case
   Log msg ->
     modify $ \m -> m { eventLog = take 10 (msg : eventLog m) }
@@ -114,9 +146,41 @@ updateModel = \case
     finishRefresh "#refresh-demo" RefreshDone (const RefreshDone)
   RefreshDone ->
     modify $ \m -> m { eventLog = take 10 ("refresh: finished" : eventLog m) }
+  ToggleTheme -> do
+    modifyContext (\t -> if t == Dark then Light else Dark)
+    modify $ \m -> m { eventLog = take 10 ("theme: toggle" : eventLog m) }
+  Pulse domRef -> io_ $ do
+    setStyleProperty domRef "transform" "scale(1.3)"
+    threadDelay 150000
+    setStyleProperty domRef "transform" "scale(1.0)"
+  Fade domRef opacity ->
+    io_ (setStyleProperty domRef "opacity" opacity)
+  StorageInputChanged v ->
+    modify $ \m -> m { storageInput = v }
+  StorageSave -> do
+    v <- gets storageInput
+    io_ (setLocalStorage storageKey v)
+    modify $ \m -> m { eventLog = take 10 ("storage: saved" : eventLog m) }
+  StorageLoad ->
+    io (StorageLoaded <$> getLocalStorage storageKey)
+  StorageLoaded mv ->
+    modify $ \m -> m
+      { storageLoaded = mv
+      , eventLog = take 10 (("storage: loaded " <> maybe "(nothing)" id mv) : eventLog m)
+      }
+  StorageClear -> do
+    io_ clearLocalStorage
+    modify $ \m -> m { storageLoaded = Nothing, eventLog = take 10 ("storage: cleared" : eventLog m) }
 -----------------------------------------------------------------------------
-viewModel :: context -> props -> Model -> View context Model Action
-viewModel _ _ Model{..} = view_
+-- | Key used by 'storageSection'. On Lynx, 'getLocalStorage' \/
+-- 'setLocalStorage' \/ 'clearLocalStorage' route through the
+-- @NativeLocalStorageModule@ native module rather than the browser Web
+-- Storage API (see "Miso.Storage").
+storageKey :: MisoString
+storageKey = "gallery-demo-key"
+-----------------------------------------------------------------------------
+viewModel :: Theme -> () -> Model -> View Theme Model Action
+viewModel theme _ Model{..} = view_
   [ CSS.style_
     [ CSS.height "100vh"
     , CSS.width "100%"
@@ -153,6 +217,9 @@ viewModel _ _ Model{..} = view_
     , blurViewSection
     , webviewSection
     , overlaySection overlayOpen
+    , mainThreadSection
+    , mountedComponentSection theme (length eventLog)
+    , storageSection storageInput storageLoaded
     ]
   ]
 -----------------------------------------------------------------------------
@@ -602,4 +669,149 @@ overlaySection open = section "<overlay> \8212 independent layer (tap to open)"
           [ text "overlay content \8212 tap to dismiss" ] ]
     ]
   ]
+-----------------------------------------------------------------------------
+-- | Main-thread ('MTS') event handlers — dispatched via 'event' \/ 'static',
+-- run imperatively with no VDOM diff and no BTS round-trip. 'Pulse' fires from
+-- a tap ('onTapMainWith'); 'Fade' fires from scrolling ('onScrollMainWith')
+-- and fades the scroll-view itself based on scroll offset. Each mutates only
+-- a property the declarative 'CSS.style_' below never sets ("transform" /
+-- "opacity"), per the single-owner discipline in "Miso.Native.MainThread".
+mainThreadSection :: View context Model Action
+mainThreadSection = section "main-thread (MTS) events \8212 gesture + scroll, no BTS round-trip"
+  [ view_
+    [ event (static (VE.onTapMainWith Pulse))
+    , CSS.style_
+      [ CSS.width "100%", CSS.height "48px"
+      , CSS.display "flex", CSS.alignItems "center", CSS.justifyContent "center"
+      , CSS.backgroundColor CSS.darkorange
+      , CSS.transition "transform 0.15s ease"
+      ]
+    ]
+    [ text_ [ CSS.style_ [ CSS.color CSS.white, txtLine ] ]
+        [ text "tap to pulse (main-thread, no round-trip)" ] ]
+  , scrollView_
+    [ event (static (SE.onScrollMainWith (\SE.ScrollEvent{..} _ domRef -> Fade domRef (opacityFor scrollTop))))
+    , SP.scrollOrientation_ "vertical"
+    , SP.enableScroll_ True
+    , CSS.style_
+      [ CSS.width "100%", CSS.height "90px", CSS.display "flex", CSS.flexDirection "column"
+      , CSS.backgroundColor CSS.gold
+      ]
+    ]
+    [ view_
+      [ CSS.style_
+        [ CSS.width "100%", CSS.height "36px", CSS.flexShrink 0
+        , CSS.display "flex", CSS.alignItems "center", CSS.padding "8px"
+        , CSS.backgroundColor (if even i then CSS.white else CSS.gainsboro)
+        ]
+      ]
+      [ text_ [ CSS.style_ [ txtLine ] ] [ text (ms ("scroll to fade row " <> show i)) ] ]
+    | i <- [1 .. 8 :: Int]
+    ]
+  ]
+-----------------------------------------------------------------------------
+-- | Maps a scroll-view's @scrollTop@ to an opacity string, clamped to
+-- [0.2, 1.0] over the first 150px of scroll. Used by 'mainThreadSection'.
+opacityFor :: Double -> MisoString
+opacityFor y = ms (show (max 0.2 (1 - min 1 (y / 150))))
+-----------------------------------------------------------------------------
+-- | Props for the statically-mounted child below: derived from the parent
+-- 'Model' and re-sent on every parent update, so a growing 'badgeEventCount'
+-- proves props update across the dual-thread boundary, not just at the
+-- initial mount.
+data BadgeProps = BadgeProps
+  { badgeEventCount :: Int
+  } deriving stock (Eq, Generic)
+    deriving anyclass (ToJSON, FromJSON)
+-----------------------------------------------------------------------------
+-- | Child-local state: lives and updates entirely inside 'badgeComponent',
+-- independent of the parent's 'Model'.
+data BadgeModel = BadgeModel
+  { badgeTaps :: Int
+  } deriving stock (Eq, Generic)
+    deriving anyclass (ToJSON, FromJSON)
+-----------------------------------------------------------------------------
+data BadgeAction
+  = BadgeTap
+  deriving stock (Generic)
+  deriving anyclass (ToJSON, FromJSON)
+-----------------------------------------------------------------------------
+-- | Mounted statically via 'vcomp' from 'mountedComponentSection' — this is
+-- the only place in the gallery that mounts a component /outside/ the
+-- top-level app. Opts into 'useContext' so it re-renders when the parent
+-- flips 'Theme' via 'ToggleTheme'.
+badgeComponent :: Component Theme BadgeProps BadgeModel BadgeAction
+badgeComponent = (component (BadgeModel 0) badgeUpdate badgeView) { useContext = True }
+-----------------------------------------------------------------------------
+badgeUpdate :: BadgeAction -> Effect Theme BadgeProps BadgeModel BadgeAction
+badgeUpdate BadgeTap = modify $ \m -> m { badgeTaps = badgeTaps m + 1 }
+-----------------------------------------------------------------------------
+badgeView :: Theme -> BadgeProps -> BadgeModel -> View Theme BadgeModel BadgeAction
+badgeView theme BadgeProps{..} BadgeModel{..} = view_
+  [ VE.onTap BadgeTap
+  , CSS.style_
+    [ CSS.width "100%", CSS.height "56px"
+    , CSS.display "flex", CSS.alignItems "center", CSS.justifyContent "center"
+    , CSS.backgroundColor (if theme == Dark then CSS.midnightblue else CSS.lightyellow)
+    ]
+  ]
+  [ text_
+    [ CSS.style_ [ CSS.color (if theme == Dark then CSS.white else CSS.black), txtLine ] ]
+    [ text (ms ("parent events: " <> show badgeEventCount <> " \183 child taps: " <> show badgeTaps)) ]
+  ]
+-----------------------------------------------------------------------------
+-- | Mounts 'badgeComponent' statically with props derived from the parent
+-- model, and a "toggle theme" control above it so context propagation into
+-- the child is visible: tapping it flips the badge's own colors.
+mountedComponentSection :: Theme -> Int -> View Theme Model Action
+mountedComponentSection theme eventCount = section "vcomp \8212 statically-mounted child (props / context / model)"
+  [ view_
+    [ VE.onTap ToggleTheme
+    , CSS.style_
+      [ CSS.height "36px", CSS.marginBottom "6px"
+      , CSS.display "flex", CSS.alignItems "center", CSS.justifyContent "center"
+      , CSS.backgroundColor (if theme == Dark then CSS.slategray else CSS.silver)
+      ]
+    ]
+    [ text_ [ CSS.style_ [ CSS.color CSS.white, txtLine ] ]
+        [ text (ms ("tap to toggle theme (currently " <> show theme <> ")")) ] ]
+  , vcomp (BadgeProps eventCount) (static (mountStaticWithProps_ "gallery-badge" badgeComponent))
+  ]
+-----------------------------------------------------------------------------
+-- | <input> + localStorage — exercises 'getLocalStorage' \/ 'setLocalStorage'
+-- \/ 'clearLocalStorage'. On Lynx these route through the
+-- @NativeLocalStorageModule@ native module rather than the browser Web
+-- Storage API (see "Miso.Storage"), so this is also a live end-to-end check
+-- of that native-module round-trip (async callback -> BTS).
+storageSection :: MisoString -> Maybe MisoString -> View context Model Action
+storageSection inputVal loaded = section "localStorage \8212 save / load / clear (native module)"
+  [ input_
+    [ placeholder_ "value to save\8230"
+    , textProp "value" inputVal
+    , InE.onInput (\e -> StorageInputChanged (InE.inputValue e))
+    , CSS.style_
+      [ CSS.height "44px", CSS.width "100%", CSS.fontSize "16px"
+      , CSS.backgroundColor CSS.white, CSS.padding "8px", CSS.marginBottom "6px"
+      ]
+    ]
+  , view_
+    [ CSS.style_ [ CSS.display "flex", CSS.flexDirection "row" ] ]
+    [ storageButton CSS.seagreen "save" StorageSave
+    , storageButton CSS.steelblue "load" StorageLoad
+    , storageButton CSS.crimson "clear" StorageClear
+    ]
+  , text_
+    [ CSS.style_ [ CSS.fontSize "13px", CSS.color CSS.black, CSS.marginTop "6px", txtLine ] ]
+    [ text (ms ("loaded: " <> maybe "(nothing)" id loaded)) ]
+  ]
+  where
+    storageButton bg lbl action = view_
+      [ VE.onTap action
+      , CSS.style_
+        [ CSS.flexGrow 1, CSS.height "40px", CSS.marginRight "6px"
+        , CSS.display "flex", CSS.alignItems "center", CSS.justifyContent "center"
+        , CSS.backgroundColor bg
+        ]
+      ]
+      [ text_ [ CSS.style_ [ CSS.color CSS.white, txtLine ] ] [ text lbl ] ]
 -----------------------------------------------------------------------------

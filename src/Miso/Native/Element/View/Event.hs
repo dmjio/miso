@@ -187,11 +187,12 @@ animationDecoder :: Decoder AnimationEvent
 animationDecoder = Decoder {..}
   where
     decodeAt = DecodeTarget mempty
-    decoder = withObject "animationDecoder" $ \o ->
+    decoder = withObject "animationDecoder" $ \o -> do
+      d <- o .: "detail"
       AnimationEvent
-        <$> o .: "animation_type"
-        <*> o .: "animation_name"
-        <*> o .: "new_animator"
+        <$> d .: "animation_type"
+        <*> d .: "animation_name"
+        <*> d .: "new_animator"
 -----------------------------------------------------------------------------
 data LayoutChangeDetailEvent
   = LayoutChangeDetailEvent
@@ -237,7 +238,7 @@ data UIAppearanceDetailEventType
 instance FromJSON UIAppearanceDetailEventType where
   parseJSON = withText "UIAppearanceDetailEventType" $ \case
     "uiappear" -> pure UIAppear
-    "uidisppear" -> pure UIDisappear
+    "uidisappear" -> pure UIDisappear
     x -> typeMismatch "UIAppearanceDetailEventType" (String x)
 -----------------------------------------------------------------------------
 data UIAppearanceDetailEvent

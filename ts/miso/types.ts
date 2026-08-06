@@ -142,12 +142,6 @@ export type HydrationContext<T> = {
 
 export type PRNG = (() => (number));
 
-export type ComponentContext = {
-  mountComponent : (componentId: ComponentId, model: Object) => void,
-  modelHydration : (componentId: ComponentId, model: Object) => void
-  unmountComponent : (componentId: ComponentId) => void,
-}
-
 export type DrawingContext<T> = {
   nextSibling : (node: VTree<T>) => T | null;
   createTextNode : (s: string) => T;
@@ -216,9 +210,6 @@ export type PATCH
   | RemoveAttribute
   | SetTextContent
   | SetInlineStyle
-  | MountComponent
-  | UnmountComponent
-  | ModelHydration
   | AddClass
   | RemoveClass
   | AddEvent
@@ -226,30 +217,10 @@ export type PATCH
   | Flush;
 
 /* Event protocol: MTS → BTS */
-export type EVENT = ProcessEvent;
-
 export type ProcessEvent = {
   stack: Array<number>,
   event: Object, /* Event object, will be JSON'ified */
   type: "processEvent"
-};
-
-export type ModelHydration = {
-  componentId: ComponentId,
-  model: Object,
-  type: "modelHydration"
-};
-
-export type MountComponent = {
-  type: "mount",
-  componentId: ComponentId,
-  model: Object,
-  mountPoint: number
-};
-
-export type UnmountComponent = {
-  type: "unmount",
-  componentId: ComponentId,
 };
 
 export type InsertBefore = {

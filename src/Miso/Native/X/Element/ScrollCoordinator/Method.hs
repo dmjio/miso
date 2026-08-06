@@ -23,7 +23,7 @@ data SetFoldExpanded = SetFoldExpanded MisoString Bool
 instance ToJSVal SetFoldExpanded where
   toJSVal (SetFoldExpanded offset_ smooth) = do
     o <- create
-    set "offset_" offset_ o
+    set "offset" offset_ o
     set "smooth" smooth o
     toJSVal o
 -----------------------------------------------------------------------------

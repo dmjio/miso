@@ -1,0 +1,12 @@
+-- Native (LynxJS) build plan: miso is compiled with +native and linked
+-- against sample-app-native. Built with the GHC JS backend (see justfile).
+-- The default cabal.project keeps miso NON-native for web/wasm/x86_64/HLS.
+packages:
+  .
+  sample-app-native/
+
+allow-newer:
+  all:base
+
+package miso
+  flags: +native +template-haskell

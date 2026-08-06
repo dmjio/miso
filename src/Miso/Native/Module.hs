@@ -73,10 +73,14 @@ callNativeModule name method args = do
   void $ m # method $ jsArgs
 ----------------------------------------------------------------------------
 -- | Invoke a callback-based native-module method. The native result is decoded
--- via 'FromJSON' and handed to the supplied continuation.
+-- via 'FromJSON' and handed to the supplied continuation, which fires exactly
+-- once — with @'Left' error@ if the native call errored or the result failed
+-- to decode. Callers that block awaiting the continuation (e.g. via an
+-- 'Control.Concurrent.MVar.MVar') can therefore rely on it always firing,
+-- instead of hanging forever on the error path.
 --
 -- > callNativeModuleWith "NativeLocalStorageModule" "getStorageItem"
--- >   [ String "myKey" ] (\\value -> …)
+-- >   [ String "myKey" ] (either (const Nothing) Just)
 --
 -- The callback is appended to @args@ automatically.
 --
@@ -89,8 +93,8 @@ callNativeModuleWith
   -- ^ Method name
   -> [Value]
   -- ^ Arguments (callback appended automatically)
-  -> (result -> IO ())
-  -- ^ Continuation invoked when the native callback fires
+  -> (Either MisoString result -> IO ())
+  -- ^ Continuation invoked exactly once when the native callback fires
   -> IO ()
 callNativeModuleWith name method args k = do
   m      <- getNativeModule name
@@ -98,8 +102,12 @@ callNativeModuleWith name method args k = do
   cb     <- toJSVal =<< asyncCallback1 (\jval -> do
               result <- fromJSVal_Value jval
               case fromJSON <$> result of
-                Just (Success x) -> k x
-                Just (Error e)   -> consoleError ("callNativeModuleWith: " <> ms e)
-                Nothing          -> consoleError "callNativeModuleWith: unreadable native result")
+                Just (Success x) -> k (Right x)
+                Just (Error e)   -> do
+                  consoleError ("callNativeModuleWith: " <> ms e)
+                  k (Left (ms e))
+                Nothing          -> do
+                  consoleError "callNativeModuleWith: unreadable native result"
+                  k (Left "callNativeModuleWith: unreadable native result"))
   void $ m # method $ (jsArgs ++ [cb])
 ----------------------------------------------------------------------------

@@ -17,10 +17,12 @@
 -- [MVU](https://elm-lang.org) programming model, 'Component' API, event
 -- delegation and virtual-DOM diffing you use on the web ("Miso") carry over
 -- unchanged — only the element vocabulary differs ('Miso.Native.Element.view_',
--- 'Miso.Native.Element.text_', … instead of @div_@ \/ @span_@) and rendering is
--- performed by Lynx's element PAPI rather than by mutating a browser DOM.
+-- 'Miso.Native.Element.text_', … instead of 'Miso.Html.Element.div_' \/
+-- 'Miso.Html.Element.span_') and rendering is performed by Lynx's
+-- [element PAPI](https://lynxjs.org/api/engine/element-api) rather than by
+-- mutating a browser DOM.
 --
--- This module is the native analog of the 'Miso.miso' \/ 'Miso.startComponent'
+-- This module is the native analog of the 'Miso.miso' \/ 'Miso.startApp'
 -- entrypoints: 'native' (and 'nativeWithContext') boot a root 'Component' onto
 -- the Lynx runtime.
 --

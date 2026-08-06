@@ -84,7 +84,7 @@ instance FromJSON ScrollEvent where
       <*> o .:? "scrollHeight" .!= 0
       <*> o .:? "listWidth" .!= 0
       <*> o .:? "listHeight" .!= 0
-      <*> o .: "listEventSource"
+      <*> o .: "eventSource"
       <*> o .: "attachedCells"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/list.html#scroll

@@ -172,11 +172,11 @@ data LayoutEvent
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
 layoutDecoder :: Decoder LayoutEvent
-layoutDecoder = [] `at` do
+layoutDecoder = ["detail"] `at` do
   withObject "LayoutEvent" $ \o ->
     LayoutEvent
       <$> o .: "lineCount"
-      <*> o .: "lineInfo"
+      <*> o .: "lines"
       <*> do
         s <- o .: "size"
         Size <$> s .: "width" <*> s .: "height"

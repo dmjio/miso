@@ -103,9 +103,12 @@ getLocalStorage
 -- On Lynx the browser Web Storage API is unavailable; route through the
 -- @NativeLocalStorageModule@ native module. Its @getStorageItem@ is
 -- callback-based, so block on an 'MVar' until the native side responds.
+-- 'callNativeModuleWith' always fires its continuation exactly once (even on
+-- error), so this can never hang; a native-side error is treated as a miss.
 getLocalStorage key = do
   var <- newEmptyMVar
-  callNativeModuleWith "NativeLocalStorageModule" "getStorageItem" [toJSON key] (putMVar var)
+  callNativeModuleWith "NativeLocalStorageModule" "getStorageItem" [toJSON key] $
+    putMVar var . either (const Nothing) id
   takeMVar var
 #else
 getLocalStorage key =
