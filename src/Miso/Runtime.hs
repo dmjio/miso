@@ -303,6 +303,13 @@ initialize events _componentParentId hydrate isRoot initialProps maybeKey _compo
   when isRoot (delegator _componentDOMRef _componentVTree events (logLevel `elem` [DebugEvents, DebugAll]))
   registerComponent vcomponent
   initSubs subs _componentSubThreads _componentSink
+  -- Runs on every thread. On Lynx the MTS paints the initial frame directly
+  -- (fast first frame) while the BTS builds the same VTree but suppresses its
+  -- create-patches (deterministic nodeId parity keeps both trees addressable) —
+  -- both governed by the global 'initialDraw' latch in the drawing contexts,
+  -- which 'initComponent' clears ONCE the whole root mount finishes (see the note
+  -- there). Flipping it per 'flush' tripped on the first nested child mount and
+  -- leaked the rest of the initial frame as patches, doubling the MTS's paint.
   initialDraw initializedModel events hydrate isRoot comp vcomponent
   forM_ mount _componentSink
 #ifdef NATIVE
@@ -2062,6 +2069,19 @@ initComponent events hydrate live initialContext comp_@Component {..} key props 
         -- dmj: top-level Component always responsive to Context changes
         let comp_' = comp_ { useContext = True }
         void $ initialize events rootComponentId hydrate True props key sk comp_' (pure root)
+#ifdef NATIVE
+        -- The root mount (root + every nested component drawn synchronously above)
+        -- is now complete on this thread, so clear the global 'initialDraw' latch
+        -- exactly ONCE. This flips the drawing contexts out of initial-frame mode:
+        -- the MTS stops self-assigning nodeIds (later nodes arrive via update
+        -- patches carrying their id) and the BTS stops suppressing patch emission
+        -- and starts shipping updates. Doing this here — rather than inside the
+        -- contexts' 'flush' — is the fix for the doubled render: the initial draw
+        -- performs one 'flush' per mounted component, so a per-'flush' flip tripped
+        -- on the first nested child and leaked the rest of the frame as patches.
+        do gt <- jsg ("globalThis" :: MisoString)
+           FFI.set "initialDraw" False (Object gt)
+#endif
         atomicWriteIORef schedulerThread =<< forkIO (scheduler proxy)
 ----------------------------------------------------------------------------
 -- | Placeholder passed to a 'Props' constructor when only the resulting
@@ -2126,77 +2146,96 @@ componentListener Proxy (BTS ctx) = void $ do
     COMPONENT {..} <- fromJSValUnchecked msg :: IO COMPONENT
     case componentComponentStaticKey of
       Nothing -> FFI.consoleError "[COMPONENT]: must use 'static' keyword for Component mounting"
-      Just key_ -> do
-        Just ptr <- unsafeLookupStaticPtr key_
-        case deRefStaticPtr ptr of
-         SomeStaticComponent mk -> case mk propsTypeOnly of
-          SomeComponent _key _props (comp_ :: Component context props model action) ->
-            case componentComponentType of
-              READY -> -- dmj: unblocks main thread scheduler
-                notify btsReady
-                -- Context is global and not tied to any component: recover the @context@
-                -- type from 'Proxy' (no 'StaticPtr' deref), seed the global cell, then let
-                -- the MTS scheduler redraw every 'useContext' component via the
-                -- propagation sentinel.
-              CONTEXT_HYDRATE ->
-                case componentComponentPayload of
-                  Nothing ->
-                    FFI.consoleError "[COMPONENT]: No context to hydrate"
-                  Just c ->
-                    case fromJSON c :: Result context of
-                      -- State-only sync: the MTS never paints from context (the BTS ships
-                      -- DOM patches via the JS patch protocol), so no redraw is enqueued.
-                      Success newContext ->
-                        atomicWriteIORef globalContext newContext
-                      Error e ->
-                        FFI.consoleError ("[COMPONENT]: Could not decode context: " <> e)
-              MOUNT -> do
-                -- The BTS ships its @{ nodeId }@ 'DOMRef'; resolve it to the real
-                -- native element via @globalThis.runtime.nodes[nodeId]@ so the MTS
-                -- 'ComponentInfo' Reader ('componentInfoDOMRef') holds a live ref.
-                -- The MTS never paints here (the BTS drives drawing over the patch
-                -- protocol); this only seeds the mirror component's state.
-                parent_ <- maybe (unObject <$> create) resolveNodeRef componentComponentDOMRef
-                -- Recover the child's initial @props@ from the wire (the BTS ships
-                -- them on 'MOUNT'), decoded at the @props@ type recovered above.
-                case componentComponentPayload of
-                  Just pv | Success initProps <- (fromJSON pv :: Result props) ->
-                    void $ initialize mempty componentComponentId Draw False initProps
-                      Nothing (Just (staticKey ptr)) comp_ (pure parent_)
-                  _ ->
-                    FFI.consoleError "[COMPONENT]: MOUNT missing/invalid props payload"
-              UNMOUNT ->
-                IM.lookup componentComponentId <$> readIORef components >>= \case
-                  Nothing ->
-                    FFI.consoleError $ "[COMPONENT]: Couldn't find Component to unmount " <>
-                      ms (show componentComponentId)
-                  Just c -> unmountComponent @context c
-              MODEL_HYDRATE -> do
-                case componentComponentPayload of
-                  Nothing ->
-                    FFI.consoleError "[COMPONENT]: No model to hydrate"
-                  Just m ->
-                    case fromJSON m :: Result model of
-                      Success newModel ->
-                        modifyComponent componentComponentId $ do
-                          componentModel .= newModel
-                      Error e ->
-                        FFI.consoleError ("[COMPONENT]: Could not decode model: " <> e)
-              -- State-only: drawing on the MTS is driven by the JS patch
-              -- protocol, so props hydration syncs state without redrawing.
-              PROPS_HYDRATE -> do
-                case componentComponentPayload of
-                  Nothing ->
-                    FFI.consoleError "[COMPONENT]: No props to hydrate"
-                  Just props ->
-                    case fromJSON props :: Result props of
-                      Success newProps -> do
-                        modifyComponent componentComponentId $ do
-                          currentProps <- use componentProps
-                          prevComponentProps .= currentProps
-                          componentProps .= newProps
-                      Error e ->
-                        FFI.consoleError ("[COMPONENT]: Could not decode props: " <> e)
+      Just key_ ->
+        -- 'READY' and 'CONTEXT_HYDRATE' never need the 'StaticPtr' and must be
+        -- handled BEFORE the lookup: READY only unblocks the MTS scheduler, and
+        -- CONTEXT_HYDRATE recovers @context@ from 'Proxy' and deliberately rides a
+        -- sentinel 'StaticKey' ('contextHydrateStaticKey' = @Fingerprint 0 0@) that
+        -- is never registered. Dereferencing that sentinel (as the other message
+        -- types must) throws and tears down the MTS lepus context on the first
+        -- context change, so only the type-recovering messages do the lookup.
+        case componentComponentType of
+          READY -> -- dmj: unblocks main thread scheduler
+            notify btsReady
+          CONTEXT_HYDRATE ->
+            case componentComponentPayload of
+              Nothing ->
+                FFI.consoleError "[COMPONENT]: No context to hydrate"
+              Just c ->
+                case fromJSON c :: Result context of
+                  -- State-only sync: the MTS never paints from context (the BTS ships
+                  -- DOM patches via the JS patch protocol), so no redraw is enqueued.
+                  Success newContext ->
+                    atomicWriteIORef globalContext newContext
+                  Error e ->
+                    FFI.consoleError ("[COMPONENT]: Could not decode context: " <> e)
+          _ ->
+            unsafeLookupStaticPtr key_ >>= \case
+              Nothing ->
+                FFI.consoleError "[COMPONENT]: staticPtr NOT found for componentStaticKey"
+              Just ptr ->
+                case deRefStaticPtr ptr of
+                 SomeStaticComponent mk -> case mk propsTypeOnly of
+                  SomeComponent _key _props (comp_ :: Component context props model action) ->
+                    case componentComponentType of
+                      MOUNT ->
+                        -- The MTS paints the initial frame itself, so any child that is part
+                        -- of that frame is already mounted+registered here by the root
+                        -- 'initialDraw' (nodeIds in lockstep with the BTS, so updates land on
+                        -- it). The BTS still posts 'MOUNT' for every non-root child; re-running
+                        -- 'initialize' for one we already have would paint a SECOND, orphaned
+                        -- copy — the doubled 'vcomp'. So mount only children we don't yet know:
+                        -- that is exactly the components created later, during a BTS update,
+                        -- which the MTS learns about solely through this message.
+                        IM.member componentComponentId <$> readIORef components >>= \case
+                          True -> pure ()
+                          False -> do
+                            -- The BTS ships its @{ nodeId }@ 'DOMRef'; resolve it to the real
+                            -- native element via @globalThis.runtime.nodes[nodeId]@ so the MTS
+                            -- 'ComponentInfo' Reader ('componentInfoDOMRef') holds a live ref.
+                            parent_ <- maybe (unObject <$> create) resolveNodeRef componentComponentDOMRef
+                            -- Recover the child's initial @props@ from the wire (the BTS ships
+                            -- them on 'MOUNT'), decoded at the @props@ type recovered above.
+                            case componentComponentPayload of
+                              Just pv | Success initProps <- (fromJSON pv :: Result props) ->
+                                void $ initialize mempty componentComponentId Draw False initProps
+                                  Nothing (Just (staticKey ptr)) comp_ (pure parent_)
+                              _ ->
+                                FFI.consoleError "[COMPONENT]: MOUNT missing/invalid props payload"
+                      UNMOUNT ->
+                        IM.lookup componentComponentId <$> readIORef components >>= \case
+                          Nothing ->
+                            FFI.consoleError $ "[COMPONENT]: Couldn't find Component to unmount " <>
+                              ms (show componentComponentId)
+                          Just c -> unmountComponent @context c
+                      MODEL_HYDRATE -> do
+                        case componentComponentPayload of
+                          Nothing ->
+                            FFI.consoleError "[COMPONENT]: No model to hydrate"
+                          Just m ->
+                            case fromJSON m :: Result model of
+                              Success newModel ->
+                                modifyComponent componentComponentId $ do
+                                  componentModel .= newModel
+                              Error e ->
+                                FFI.consoleError ("[COMPONENT]: Could not decode model: " <> e)
+                      -- State-only: drawing on the MTS is driven by the JS patch
+                      -- protocol, so props hydration syncs state without redrawing.
+                      PROPS_HYDRATE -> do
+                        case componentComponentPayload of
+                          Nothing ->
+                            FFI.consoleError "[COMPONENT]: No props to hydrate"
+                          Just props ->
+                            case fromJSON props :: Result props of
+                              Success newProps -> do
+                                modifyComponent componentComponentId $ do
+                                  currentProps <- use componentProps
+                                  prevComponentProps .= currentProps
+                                  componentProps .= newProps
+                              Error e ->
+                                FFI.consoleError ("[COMPONENT]: Could not decode props: " <> e)
+                      -- 'READY' \/ 'CONTEXT_HYDRATE' handled above (no deref), so
+                      -- GHC knows they can't reach here — no catch-all needed.
 #endif
 ----------------------------------------------------------------------------
 -- | Dispatch a main-thread ('MTS') event on the Haskell layer.
@@ -2242,6 +2281,10 @@ dispatchMainThreadEvent arg =
               -- Run the handler with this component's sink to install its
               -- 'runEvent' (decoder + sink) on a throwaway node, then fire it.
               scratch <- createNode "vnode" HTML "div"
+              -- 'runEvent' re-reads the live model at fire time via
+              -- @pendingComponentId@ on its node (see 'onWithOptions'); stamp it on
+              -- the scratch node so that lookup resolves instead of throwing.
+              FFI.set "pendingComponentId" compId scratch
               cb _componentModel _componentSink (VTree scratch) Off mempty
               runner <- lookupEventRunner scratch eventName
               forM_ runner $ \fn ->

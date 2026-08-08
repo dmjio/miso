@@ -12,12 +12,15 @@ module Main where
 import           Miso
 import qualified Miso.Html as H
 import           Miso.Lens
+import           Miso.JSON
+import           GHC.Generics (Generic)
 ----------------------------------------------------------------------------
 -- | Component model state
 data Model
   = Model
   { _counter :: Int
-  } deriving stock (Show, Eq)
+  } deriving stock (Show, Eq, Generic)
+    deriving anyclass (ToJSON, FromJSON)
 ----------------------------------------------------------------------------
 counter :: Lens Model Int
 counter = lens _counter $ \record field -> record { _counter = field }
@@ -27,7 +30,8 @@ data Action
   = AddOne
   | SubtractOne
   | SayHelloWorld
-  deriving stock (Show, Eq)
+  deriving stock (Show, Eq, Generic)
+  deriving anyclass (ToJSON, FromJSON)
 ----------------------------------------------------------------------------
 -- | Entry point for a miso application
 main :: IO ()

@@ -247,10 +247,14 @@ const drawingContext : DrawingContext<NodeId> = {
     return;
   },
   flush : () => {
-     /* send patches from BTS to MTS for application */
-     if (globalThis['initialDraw']) {
-       globalThis['initialDraw'] = false;
-     } else {
+     /* Send patches from BTS to MTS for application. During the initial frame the
+        MTS paints the tree itself, so the BTS suppresses (drops) its create-patches
+        and only keeps the VTree it built (nodeIds stay parity-aligned with the MTS).
+        The `initialDraw` latch is cleared ONCE by the runtime after the whole root
+        mount completes (Miso.Runtime.initComponent) — NOT here — because the initial
+        draw performs one flush per mounted component; flipping it per-flush tripped
+        on the first nested child and leaked the rest of the frame as duplicate nodes. */
+     if (!globalThis['initialDraw']) {
        const context = lynx.getCoreContext();
        if (context)
          context.dispatchEvent({ type: 'Miso.patches', data: globalThis['patches'] as Array<PATCH> });

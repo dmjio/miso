@@ -14,11 +14,27 @@ module Miso.Native.FFI
     setInterval
   , clearInterval
   , invokeExec
+  , enableDebugging
   ) where
 ----------------------------------------------------------------------------
 import Control.Monad
 -----------------------------------------------------------------------------
 import Miso
+-----------------------------------------------------------------------------
+-- | Turn on the native console→syslog bridge for on-device debugging.
+--
+-- On a physical device, background-thread @console.*@ output is not printed to
+-- the platform log (iOS syslog / Android logcat) without a LynxDevTool
+-- connection. After calling this, every 'Miso.FFI.consoleError' (and any other
+-- @console.error@) is mirrored — prefixed @[miso]@ — through
+-- @lynx.reportError@, which the host /does/ surface in the device log. Grep for
+-- @[miso]@ in @idevicesyslog@ (iOS) or @adb logcat@ (Android).
+--
+-- Sets @globalThis.debug = true@; the bridge checks that flag per line, so this
+-- takes effect immediately even though it runs after startup. Enable it early
+-- (e.g. at the top of @main@) to capture diagnostics from the whole session.
+enableDebugging :: IO ()
+enableDebugging = set "debug" True . Object =<< jsg "globalThis"
 -----------------------------------------------------------------------------
 -- | <https://lynxjs.org/api/lynx-api/global/set-interval.html>
 --

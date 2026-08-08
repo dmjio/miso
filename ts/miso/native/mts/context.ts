@@ -28,6 +28,23 @@ function nextNodeId () : number {
 type ListState = { node: ElementRef; items: Array<ElementRef>; known: number };
 const listStates = new Map<number, ListState>();
 
+// Main-thread event routing registry, keyed by the element's `nodeId`.
+// NOT stored in element config directly: Lynx __SetConfig/__GetConfig round-trips
+// flat scalars (`nodeId`) but drops nested objects, so a nested registry written
+// at paint read back `undefined` at dispatch. We also can't key by
+// __GetElementUniqueID (not stable between the painted element and the tap
+// target). `nodeId` is the identity the whole patch/event system uses and DOES
+// round-trip via config — it's how buildStack ships the BTS delegation stack —
+// so we read it back with `__GetConfig(node).nodeId` on both sides.
+// Set in addEvent, read in routeEvent, cleared in removeEvent.
+type MainThreadEntry = { staticKey : string; componentId : number; options : any };
+type MainThreadKeys  = { captures : Record<string, MainThreadEntry>; bubbles : Record<string, MainThreadEntry> };
+const mainThreadKeys = new Map<number, MainThreadKeys>();
+
+function nodeIdOf(node : ElementRef) : number | undefined {
+  return (__GetConfig(node) as any)?.nodeId as number | undefined;
+}
+
 function listStateOf(parent: ElementRef): ListState | undefined {
   return listStates.get(__GetElementUniqueID(parent));
 }
@@ -78,9 +95,16 @@ function routeEvent(e: Event, name: string, capture: boolean, mount: ElementRef,
   // Capture runs mount -> target (top-down); bubble runs target -> mount
   // (bottom-up). chain is target-first, so reverse for capture.
   const order = capture ? chain.slice().reverse() : chain;
+  const other = phase === 'bubbles' ? 'captures' : 'bubbles';
   let fired = false;
   for (const node of order) {
-    const entry = (__GetConfig(node) as any)?.eventKeys?.[phase]?.[name];
+    const nid = nodeIdOf(node);
+    const reg = nid !== undefined ? mainThreadKeys.get(nid) : undefined;
+    // The registry encodes the handler's intended phase; whether Lynx delivered
+    // the tap via its capture-catch or bubble-catch listener is an unrelated
+    // implementation detail. Dispatch the handler whenever its element sits on
+    // the propagation chain — prefer the fired phase, fall back to the other.
+    const entry = reg ? (reg[phase]?.[name] ?? reg[other]?.[name]) : undefined;
     if (!entry) continue;
     fired = true;
     // Route in JS: apply the handler's options, then dispatch on the Haskell
@@ -150,21 +174,25 @@ export const drawingContext : DrawingContext<ElementRef> = {
           }});
       }
       // Main-thread routing registry: only for handlers carrying a staticKey.
+      // Keyed by the element's stable unique id in `mainThreadKeys` (see note at
+      // its declaration) — NOT element config, which drops nested objects.
       if (key.staticKey === undefined) return;
-      const config = (__GetConfig(node) as any) ?? {};
-      const eventKeys = { captures : {}, bubbles : {}, ...config.eventKeys };
+      const nodeId = nodeIdOf(node);
+      if (nodeId === undefined) {
+        console.error('[miso mts] REG SKIPPED (no nodeId on node) name=' + name);
+        return;
+      }
+      const reg = mainThreadKeys.get(nodeId) ?? { captures : {}, bubbles : {} };
       const phase = key.capture ? 'captures' : 'bubbles';
-      eventKeys[phase] = { ...eventKeys[phase], [name] : { staticKey : key.staticKey, componentId : key.componentId, options : key.options } };
-      __SetConfig(node, { ...config, eventKeys });
+      reg[phase][name] = { staticKey : key.staticKey, componentId : key.componentId, options : key.options };
+      mainThreadKeys.set(nodeId, reg);
   },
   removeEvent : (node : ElementRef, name : string, capture : boolean) => {
-      const config = (__GetConfig(node) as any) ?? {};
+      const nodeId = nodeIdOf(node);
+      const reg = nodeId !== undefined ? mainThreadKeys.get(nodeId) : undefined;
+      if (!reg) return;
       const phase = capture ? 'captures' : 'bubbles';
-      if (config.eventKeys && config.eventKeys[phase] && name in config.eventKeys[phase]) {
-          const eventKeys = { ...config.eventKeys, [phase] : { ...config.eventKeys[phase] } };
-          delete eventKeys[phase][name];
-          __SetConfig(node, { ...config, eventKeys });
-      }
+      delete reg[phase][name];
   },
   nextSibling : (x : VComp<NodeId>) => {
       return getDOMRef(x.nextSibling);
@@ -305,9 +333,11 @@ export const drawingContext : DrawingContext<ElementRef> = {
   },
   flush : () => {
     for (const st of listStates.values()) commitListInfo(st);
-    if (globalThis['initialDraw']) {
-      globalThis['initialDraw'] = false;
-    }
+    // The `initialDraw` latch is cleared ONCE by the runtime after the whole root
+    // mount completes (Miso.Runtime.initComponent), NOT per-flush: while it is set,
+    // createElement/createTextNode self-assign parity nodeIds into runtime.nodes,
+    // and the initial draw flushes once per mounted component — a per-flush flip
+    // tripped on the first nested child, leaving later nodes unregistered.
     return __FlushElementTree();
   },
   getRoot : () => {

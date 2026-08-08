@@ -21,7 +21,9 @@ import           Miso.Native
 import           Miso.Html.Property (id_, className, width_, height_)
 import           Miso.Property (textProp)
 import           Miso.Native.X.Element.Refresh.Method (finishRefresh)
+import           Miso.Native.Element.Image.Method  (startAnimation, pauseAnimation, resumeAnimation, stopAnimation)
 import           Miso.Native.MainThread (setStyleProperty)
+import           Miso.Native.FFI (enableDebugging)
 import           Control.Monad (when)
 import           Control.Concurrent (threadDelay)
 import qualified Miso.CSS as CSS
@@ -81,6 +83,11 @@ data Action
   | Fade DOMRef MisoString
   -- ^ main-thread ('MTS') scroll handler: fade the target element to the
   -- given opacity, computed from the scroll offset (see 'mainThreadSection')
+  | MainThreadRead DOMRef Int
+  -- ^ main-thread ('MTS') tap handler that /reads/ the hydrated model on the
+  -- MTS (the @model@ param of 'onMain', same read path as 'onTapMainModel');
+  -- carries the tapped element and a value read from that model, proving the
+  -- BTS->MTS model-hydration read path (see 'mainThreadSection')
   | StorageInputChanged MisoString
   -- ^ the localStorage demo's input value changed
   | StorageSave
@@ -91,6 +98,14 @@ data Action
   -- ^ 'StorageLoad' result: 'Nothing' if the key was never set (or cleared)
   | StorageClear
   -- ^ wipe all localStorage
+  | AnimResume
+  -- ^ resume the animated <image> (see 'animationSection')
+  | AnimPause
+  -- ^ pause the animated <image>, keeping loop-count
+  | AnimStop
+  -- ^ stop the animated <image>, resetting loop-count
+  | AnimStart
+  -- ^ restart the animated <image> via the deprecated @startAnimate@ method
   deriving stock (Generic)
   deriving anyclass (ToJSON, FromJSON)
 -----------------------------------------------------------------------------
@@ -121,8 +136,10 @@ data Model = Model
     deriving anyclass (ToJSON, FromJSON)
 -----------------------------------------------------------------------------
 main :: IO ()
-main = nativeWithContext (nativeEvents <> nativeXEvents) Dark
-  (static (mountStatic_ galleryComponent))
+main = do
+  enableDebugging
+  nativeWithContext (nativeEvents <> nativeXEvents) Dark
+    (static (mountStatic_ galleryComponent))
 -----------------------------------------------------------------------------
 galleryComponent :: Component Theme () Model Action
 galleryComponent = component (Model [] False False False 6 "" Nothing) updateModel viewModel
@@ -155,6 +172,12 @@ updateModel = \case
     setStyleProperty domRef "transform" "scale(1.0)"
   Fade domRef opacity ->
     io_ (setStyleProperty domRef "opacity" opacity)
+  MainThreadRead domRef n ->
+    -- Runs on the MTS (no BTS round-trip). 'n' was read from the MTS-hydrated
+    -- model by the handler; reflect it visibly on the tapped element (opacity
+    -- scaled to how full the 10-entry event log is) to prove the read path
+    -- works, without routing through the console/error channel.
+    io_ (setStyleProperty domRef "opacity" (ms (show (mtsReadOpacity n))))
   StorageInputChanged v ->
     modify $ \m -> m { storageInput = v }
   StorageSave -> do
@@ -171,6 +194,12 @@ updateModel = \case
   StorageClear -> do
     io_ clearLocalStorage
     modify $ \m -> m { storageLoaded = Nothing, eventLog = take 10 ("storage: cleared" : eventLog m) }
+  -- 'invokeExec'-backed <image> animation methods (see 'animationSection'). Each
+  -- dispatches a UI method to the element selected by id and logs the outcome.
+  AnimResume -> resumeAnimation animId (Log "anim: resumed") (Log . ("anim: error " <>))
+  AnimPause  -> pauseAnimation  animId (Log "anim: paused")  (Log . ("anim: error " <>))
+  AnimStop   -> stopAnimation   animId (Log "anim: stopped") (Log . ("anim: error " <>))
+  AnimStart  -> startAnimation  animId (Log "anim: started (startAnimate)") (Log . ("anim: error " <>))
 -----------------------------------------------------------------------------
 -- | Key used by 'storageSection'. On Lynx, 'getLocalStorage' \/
 -- 'setLocalStorage' \/ 'clearLocalStorage' route through the
@@ -178,6 +207,12 @@ updateModel = \case
 -- Storage API (see "Miso.Storage").
 storageKey :: MisoString
 storageKey = "gallery-demo-key"
+-----------------------------------------------------------------------------
+-- | @id@ selector for the animated \<image\> exercised by 'animationSection'.
+-- Passed to the 'invokeExec'-backed 'startAnimation' \/ 'pauseAnimation' \/
+-- 'resumeAnimation' \/ 'stopAnimation' methods.
+animId :: MisoString
+animId = "#anim-gif"
 -----------------------------------------------------------------------------
 viewModel :: Theme -> () -> Model -> View Theme Model Action
 viewModel theme _ Model{..} = view_
@@ -206,6 +241,7 @@ viewModel theme _ Model{..} = view_
     , heartSection liked burst
     , textSection
     , imageSection
+    , animationSection
     , nestedScrollSection
     , scrollCoordinatorSection
     , listSection
@@ -391,6 +427,43 @@ imageSection = section "<image> \8212 load / error"
     , CSS.style_ [ CSS.width "100%", CSS.height "120px" ]
     ]
   ]
+-----------------------------------------------------------------------------
+-- | <image> animation methods — exercises the 'invokeExec'-backed
+-- 'resumeAnimation' \/ 'pauseAnimation' \/ 'stopAnimation' \/ 'startAnimation'
+-- UI methods (Lynx @SelectorQuery.invoke@) against an animated GIF. The GIF is
+-- loaded with @autoPlay_ False@ so "resume" has a visible effect; each button
+-- dispatches its method to the element selected by 'animId' and logs the result.
+-- 'startAnimation' maps to Lynx's deprecated @startAnimate@; the others are the
+-- current API.
+animationSection :: View context Model Action
+animationSection = section "<image> animation \8212 startAnimate / pause / resume / stop (invokeExec)"
+  [ image_ "https://upload.wikimedia.org/wikipedia/commons/2/2c/Rotating_earth_%28large%29.gif"
+    [ id_ "anim-gif"
+    , IP.mode_ "aspectFit"
+    , IP.autoPlay_ False
+    , IP.loopCount_ 0
+    , IE.onLoad (\_ -> Log "anim: image loaded")
+    , IE.onError (\_ -> Log "anim: image error")
+    , CSS.style_ [ CSS.width "100%", CSS.height "140px" ]
+    ]
+  , view_
+    [ CSS.style_ [ CSS.display "flex", CSS.flexDirection "row", CSS.marginTop "6px" ] ]
+    [ animButton CSS.seagreen  "resume" AnimResume
+    , animButton CSS.goldenrod "pause"  AnimPause
+    , animButton CSS.crimson   "stop"   AnimStop
+    , animButton CSS.slategray "start*" AnimStart
+    ]
+  ]
+  where
+    animButton bg lbl action = view_
+      [ VE.onTap action
+      , CSS.style_
+        [ CSS.flexGrow 1, CSS.height "40px", CSS.marginRight "6px"
+        , CSS.display "flex", CSS.alignItems "center", CSS.justifyContent "center"
+        , CSS.backgroundColor bg
+        ]
+      ]
+      [ text_ [ CSS.style_ [ CSS.color CSS.white, txtLine ] ] [ text lbl ] ]
 -----------------------------------------------------------------------------
 -- | <scroll-view> — nested horizontal scroll with edge + size events.
 nestedScrollSection :: View context Model Action
@@ -689,6 +762,17 @@ mainThreadSection = section "main-thread (MTS) events \8212 gesture + scroll, no
     ]
     [ text_ [ CSS.style_ [ CSS.color CSS.white, txtLine ] ]
         [ text "tap to pulse (main-thread, no round-trip)" ] ]
+  , view_
+    [ event (static (onMain "tap" emptyDecoder (\() m domRef -> MainThreadRead domRef (length (eventLog m)))))
+    , CSS.style_
+      [ CSS.width "100%", CSS.height "48px", CSS.marginTop "6px"
+      , CSS.display "flex", CSS.alignItems "center", CSS.justifyContent "center"
+      , CSS.backgroundColor CSS.mediumpurple
+      , CSS.transition "opacity 0.2s ease"
+      ]
+    ]
+    [ text_ [ CSS.style_ [ CSS.color CSS.white, txtLine ] ]
+        [ text "tap: read model on main-thread (opacity = event-log fill)" ] ]
   , scrollView_
     [ event (static (SE.onScrollMainWith (\SE.ScrollEvent{..} _ domRef -> Fade domRef (opacityFor scrollTop))))
     , SP.scrollOrientation_ "vertical"
@@ -714,6 +798,12 @@ mainThreadSection = section "main-thread (MTS) events \8212 gesture + scroll, no
 -- [0.2, 1.0] over the first 150px of scroll. Used by 'mainThreadSection'.
 opacityFor :: Double -> MisoString
 opacityFor y = ms (show (max 0.2 (1 - min 1 (y / 150))))
+-----------------------------------------------------------------------------
+-- | Maps the event-log entry count (0..10) read on the MTS to an opacity in
+-- [0.35, 1.0]. Used by 'mainThreadSection' to make the 'MainThreadRead' model
+-- read visible on the tapped element.
+mtsReadOpacity :: Int -> Double
+mtsReadOpacity n = max 0.35 (min 1 (fromIntegral n / 10))
 -----------------------------------------------------------------------------
 -- | Props for the statically-mounted child below: derived from the parent
 -- 'Model' and re-sent on every parent update, so a growing 'badgeEventCount'

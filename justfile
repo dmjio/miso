@@ -36,9 +36,8 @@ styles_css := "sample-app-native/styles.css"
 exe := "app-native"
 
 # GHC JS backend selection (same flags as the `native` devshell `build`).
-# The native project file turns on miso's +native flag (dual-thread arch),
-# scoped to this build only so the default web/wasm plan stays non-native.
-jsflags := "--project-file=cabal.project.native --with-compiler=javascript-unknown-ghcjs-ghc --with-hc-pkg=javascript-unknown-ghcjs-ghc-pkg"
+# miso's +native flag (dual-thread arch) is set in the default cabal.project.
+jsflags := "--with-compiler=javascript-unknown-ghcjs-ghc --with-hc-pkg=javascript-unknown-ghcjs-ghc-pkg"
 
 # List recipes
 default:

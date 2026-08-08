@@ -23,6 +23,33 @@ if (typeof (globalThis as any)['fetch'] === 'undefined') {
     (globalThis as any)['lynx'].fetch(input, init);
 }
 
+/* Bridge JS console diagnostics to the native (iOS/Android) device log, gated
+   behind `globalThis.debug`.
+   Lynx routes background-thread `console.*` through `__OnBTSConsoleEvent`, whose
+   text the host does NOT print to the device syslog — so miso's
+   `FFI.consoleError`/`consoleLog` diagnostics are invisible to `idevicesyslog`
+   without a LynxDevTool connection. Lynx's error reporter, by contrast, DOES
+   surface in the native log (that path is how a `Runtime.hs` exception appears
+   as `LynxTemplateRender onErrorOccurred`). Mirror `console.error` through
+   `lynx.reportError` (non-fatal) so on-device diagnostics are visible. Each line
+   is prefixed `[miso]` so it's greppable.
+   The override is always installed but only forwards when `globalThis.debug` is
+   truthy — checked per-call, NOT at install time — so enabling it after startup
+   works. Turn it on from Haskell via `Miso.Native.FFI.enableDebugging`. */
+try {
+  if (typeof (lynx as any)['reportError'] === 'function') {
+    const report = (msg: string) => {
+      try { (lynx as any).reportError(new Error(msg)); } catch (_e) { /* never let logging throw */ }
+    };
+    const origError = console.error.bind(console);
+    console.error = (...args: any[]) => {
+      origError(...args);
+      if ((globalThis as any)['debug'])
+        report('[miso] ' + args.map(a => { try { return String(a); } catch (_e) { return '<?>'; } }).join(' '));
+    };
+  }
+} catch (_e) { /* host may freeze `console`; bridging is best-effort */ }
+
 import {
   diff,
   hydrate,
