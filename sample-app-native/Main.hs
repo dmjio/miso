@@ -201,10 +201,8 @@ updateModel = \case
   AnimStop   -> stopAnimation   animId (Log "anim: stopped") (Log . ("anim: error " <>))
   AnimStart  -> startAnimation  animId (Log "anim: started (startAnimate)") (Log . ("anim: error " <>))
 -----------------------------------------------------------------------------
--- | Key used by 'storageSection'. On Lynx, 'getLocalStorage' \/
--- 'setLocalStorage' \/ 'clearLocalStorage' route through the
--- @NativeLocalStorageModule@ native module rather than the browser Web
--- Storage API (see "Miso.Storage").
+-- | Key used by 'storageSection' with 'getLocalStorage' \/
+-- 'setLocalStorage' \/ 'clearLocalStorage' (see "Miso.Storage").
 storageKey :: MisoString
 storageKey = "gallery-demo-key"
 -----------------------------------------------------------------------------
@@ -869,12 +867,9 @@ mountedComponentSection theme eventCount = section "vcomp \8212 statically-mount
   ]
 -----------------------------------------------------------------------------
 -- | <input> + localStorage — exercises 'getLocalStorage' \/ 'setLocalStorage'
--- \/ 'clearLocalStorage'. On Lynx these route through the
--- @NativeLocalStorageModule@ native module rather than the browser Web
--- Storage API (see "Miso.Storage"), so this is also a live end-to-end check
--- of that native-module round-trip (async callback -> BTS).
+-- \/ 'clearLocalStorage' via the browser Web Storage API (see "Miso.Storage").
 storageSection :: MisoString -> Maybe MisoString -> View context Model Action
-storageSection inputVal loaded = section "localStorage \8212 save / load / clear (native module)"
+storageSection inputVal loaded = section "localStorage \8212 save / load / clear"
   [ input_
     [ placeholder_ "value to save\8230"
     , textProp "value" inputVal

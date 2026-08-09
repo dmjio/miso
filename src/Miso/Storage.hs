@@ -1,5 +1,4 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -----------------------------------------------------------------------------
@@ -80,11 +79,6 @@ import           Control.Monad (void)
 -----------------------------------------------------------------------------
 import           Miso.DSL
 import           Miso.String (MisoString)
-#ifdef NATIVE
-import           Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
-import           Miso.JSON (toJSON)
-import           Miso.Native.Module (callNativeModule, callNativeModuleWith)
-#endif
 -----------------------------------------------------------------------------
 -- | Retrieves a value stored under the given key in session storage.
 getSessionStorage
@@ -99,21 +93,8 @@ getLocalStorage
   :: MisoString
   -- ^ Storage key to look up
   -> IO (Maybe MisoString)
-#ifdef NATIVE
--- On Lynx the browser Web Storage API is unavailable; route through the
--- @NativeLocalStorageModule@ native module. Its @getStorageItem@ is
--- callback-based, so block on an 'MVar' until the native side responds.
--- 'callNativeModuleWith' always fires its continuation exactly once (even on
--- error), so this can never hang; a native-side error is treated as a miss.
-getLocalStorage key = do
-  var <- newEmptyMVar
-  callNativeModuleWith "NativeLocalStorageModule" "getStorageItem" [toJSON key] $
-    putMVar var . either (const Nothing) id
-  takeMVar var
-#else
 getLocalStorage key =
   fromJSValUnchecked =<< flip getItem key =<< localStorage
-#endif
 -----------------------------------------------------------------------------
 -- | Sets the value of a key in local storage.
 --
@@ -124,14 +105,9 @@ setLocalStorage
   -> MisoString
   -- ^ Value to store
   -> IO ()
-#ifdef NATIVE
-setLocalStorage key value =
-  callNativeModule "NativeLocalStorageModule" "setStorageItem" [toJSON key, toJSON value]
-#else
 setLocalStorage key value = do
   s <- localStorage
   setItem s key value
-#endif
 -----------------------------------------------------------------------------
 -- | Sets the value of a key in session storage.
 --
@@ -172,11 +148,7 @@ removeSessionStorage key = do
 --
 -- @clearLocalStorage@ removes all values from local storage.
 clearLocalStorage :: IO ()
-#ifdef NATIVE
-clearLocalStorage = callNativeModule "NativeLocalStorageModule" "clearStorage" []
-#else
 clearLocalStorage = clear =<< localStorage
-#endif
 -----------------------------------------------------------------------------
 -- | Clears session storage.
 --
