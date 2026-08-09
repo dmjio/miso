@@ -183,3 +183,40 @@ jobs:
            -destination 'generic/platform=iOS Simulator' \
            CODE_SIGNING_ALLOWED=NO \
            build
+
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+     - uses: actions/checkout@v3.5.3
+     - name: Cancel Previous Runs
+       uses: styfle/cancel-workflow-action@0.9.1
+       with:
+         access_token: ${{ github.token }}
+     - uses: cachix/install-nix-action@v31
+       with:
+         extra_nix_config: |
+           experimental-features = nix-command flakes
+     - uses: cachix/cachix-action@v16
+       with:
+         name: haskell-miso-cachix
+         authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+
+     - name: Nix channel update
+       run: nix-channel --update
+
+     - uses: actions/setup-java@v4
+       with:
+         distribution: temurin
+         java-version: '17'
+
+     - name: Sample app native bundle
+       run: nix-build -A sample-app-native-bundle
+
+     - name: Embed bundle into Android host
+       run: |
+         mkdir -p sample-app-native/android/app/src/main/assets
+         cp result/main.lynx.bundle sample-app-native/android/app/src/main/assets/main.lynx.bundle
+
+     - name: (Android) assemble debug APK
+       working-directory: sample-app-native/android
+       run: ./gradlew :app:assembleDebug --no-daemon
