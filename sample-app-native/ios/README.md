@@ -50,7 +50,11 @@ open MisoLynx.xcworkspace     # NOT the .xcodeproj
 - First run on the device: **Settings → General → VPN & Device Management** →
   trust your developer profile.
 
-You should see the 🎈 — tap it and it scales via the main-thread CSS transition.
+You should see the gallery: a scrolling showcase of native Lynx elements (view
+gestures, a tappable heart "like" animation, text, image, list, input,
+scroll-coordinator, viewpager, refresh, svg, blur-view, webview, overlay, and
+main-thread tap/scroll handlers), with an event log at the top that fills in
+as you interact with each section.
 
 ## Iterating
 
