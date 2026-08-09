@@ -36,3 +36,5 @@ sample-app-native/build
 # haddocks
 haddocks/
 /sample-app/public/
+
+.gradle

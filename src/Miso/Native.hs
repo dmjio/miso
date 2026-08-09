@@ -252,6 +252,7 @@ module Miso.Native
 -----------------------------------------------------------------------------
 import Miso.Runtime (initComponent)
 import Miso.Types (Events, SomeStaticComponent(..), SomeComponent(..), Hydrate(..))
+import Miso.Types (mountStatic_, mountStaticWithProps_, mountStaticWithProps)
 import Miso.JSON (ToJSON, FromJSON)
 -----------------------------------------------------------------------------
 import Miso.Native.Element
