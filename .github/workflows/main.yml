@@ -156,3 +156,30 @@ jobs:
 
      - name: (x86) Miso GHC (GHC 9.12.2) test suite
        run: nix develop --command bash -c 'cabal build exe:component-tests'
+
+     - name: Sample app native bundle
+       run: nix-build -A sample-app-native-bundle
+
+     - name: Embed bundle into iOS host
+       run: |
+         mkdir -p sample-app-native/ios/Resource
+         cp result/main.lynx.bundle sample-app-native/ios/Resource/main.lynx.bundle
+
+     - name: iOS project + pods
+       working-directory: sample-app-native/ios
+       run: |
+         brew install xcodegen
+         xcodegen generate
+         pod install
+
+     - name: (iOS) xcodebuild MisoLynx (simulator, no signing)
+       working-directory: sample-app-native/ios
+       run: |
+         xcodebuild \
+           -workspace MisoLynx.xcworkspace \
+           -scheme MisoLynx \
+           -configuration Debug \
+           -sdk iphonesimulator \
+           -destination 'generic/platform=iOS Simulator' \
+           CODE_SIGNING_ALLOWED=NO \
+           build
