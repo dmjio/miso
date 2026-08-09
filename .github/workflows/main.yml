@@ -184,6 +184,16 @@ jobs:
      - name: (x86) Miso GHC (GHC 9.12.2) test suite
        run: nix develop --command bash -c 'cabal build exe:component-tests'
 
+  build-ios:
+    runs-on: macos-latest
+    needs: build-bundle
+    steps:
+     - uses: actions/checkout@v3.5.3
+     - name: Cancel Previous Runs
+       uses: styfle/cancel-workflow-action@0.9.1
+       with:
+         access_token: ${{ github.token }}
+
      - name: Download Lynx bundle
        uses: actions/download-artifact@v4
        with:
