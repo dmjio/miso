@@ -1679,9 +1679,17 @@ module Miso
   , vcomp
   , (+>)
   , mount_
+  , mountUseContext
+  , mountWithProps
     -- ** View
   , vnode
   , vtext
+  , text_
+  , text
+  , vfrag
+  , vfrag_
+  , fragment
+  , fragment_
     -- ** Sink
   , withSink
   , Sink

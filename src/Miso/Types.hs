@@ -64,7 +64,7 @@
 -- myApp :: 'App' Model Action
 -- myApp = ('component' initialModel update view)
 --   { 'subs'   = [ mySub ]
---   , 'styles' = [ 'Href' \"style.css\" False ]
+--   , 'styles' = [ 'Href' \"style.css\" (False :: 'CacheBust') ]
 --   }
 -- @
 --

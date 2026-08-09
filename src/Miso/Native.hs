@@ -187,7 +187,7 @@
 -- {-# LANGUAGE StaticPointers #-}
 --
 -- view _ _ _ =
---   view_ [ 'Miso.Types.event' (static ('Miso.Native.Element.View.Event.onTapMain' HandleTap)) ] []
+--   'view_' [ 'Miso.Types.event' (static ('Miso.Native.Element.View.Event.onTapMain' HandleTap)) ] []
 -- @
 --
 -- The same @static@ capture limitation applies: an @onTapMain@ handler refers to
@@ -214,17 +214,18 @@
 -- = A minimal native component
 --
 -- @
+-- -----------------------------------------------------------------------------
 -- {-# LANGUAGE StaticPointers #-}
 -- -----------------------------------------------------------------------------
 -- import "Miso"
 -- import "Miso.Native"
 -- -----------------------------------------------------------------------------
--- view :: context -> props -> Model -> View context Action
+-- view :: context -> props -> Model -> 'Miso.Types.View' context Action
 -- view _ _ m =
---   vfrag_
---   [ view_ [ onTap Increment ] [ text_ [] [ \"+\" ] ]
---   , text_ [] [ text $ ms (show m) ]
---   , view_ [ onTap Decrement ] [ text_ [] [ \"-\" ] ]
+--   'vfrag_'
+--   [ 'view_' [ 'Miso.Native.Element.View.Event.onTap' Increment ] [ 'text_' [] [ \"+\" ] ]
+--   , 'text_' [] [ 'text' $ 'Miso.String.ms' ('show' m) ]
+--   , 'view_' [ 'Miso.Native.Element.View.Event.onTap' Decrement ] [ 'text_' [] [ \"-\" ] ]
 --   ]
 -- @
 --
@@ -237,6 +238,10 @@ module Miso.Native
    ( -- * Entrypoint
      native
    , nativeWithContext
+     -- * 'Miso.Types.Component' mounting
+   , mountStatic_
+   , mountStaticWithProps
+   , mountStaticWithProps_
      -- * Element
    , module Miso.Native.Element
      -- * FFI
@@ -285,11 +290,11 @@ native events ptr =
 -- @
 -- {-# LANGUAGE StaticPointers #-}
 --
--- import Miso
--- import Miso.Native
+-- import "Miso"
+-- import "Miso.Native"
 --
 -- main :: IO ()
--- main = nativeWithContext nativeEvents () (static (mountStatic_ app))
+-- main = 'nativeWithContext' 'nativeEvents' () (static ('mountStatic_' app))
 -- @
 --
 nativeWithContext
