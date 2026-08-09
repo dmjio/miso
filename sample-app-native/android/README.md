@@ -4,8 +4,7 @@ Thin Android host that loads and renders the same `main.lynx.bundle` as the iOS
 host. Modeled on the official
 [integrating-lynx-demo-projects](https://github.com/lynx-family/integrating-lynx-demo-projects)
 `KotlinEmptyProject`. **Host-only — no native modules** (add a `LynxModule` +
-`SharedPreferences` later if you want the `Miso.Storage` bridge, mirroring
-`ios/App/NativeLocalStorageModule.m`).
+`SharedPreferences` later if you want the `Miso.Storage` bridge).
 
 > Status: hand-authored integration files. This is **not verified to build** in
 > this repo's CI — it needs the Android toolchain. Generate the Gradle wrapper
