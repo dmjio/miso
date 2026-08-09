@@ -88,16 +88,6 @@ data Action
   -- MTS (the @model@ param of 'onMain', same read path as 'onTapMainModel');
   -- carries the tapped element and a value read from that model, proving the
   -- BTS->MTS model-hydration read path (see 'mainThreadSection')
-  | StorageInputChanged MisoString
-  -- ^ the localStorage demo's input value changed
-  | StorageSave
-  -- ^ persist the current input value under 'storageKey'
-  | StorageLoad
-  -- ^ kick off an async read of 'storageKey'
-  | StorageLoaded (Maybe MisoString)
-  -- ^ 'StorageLoad' result: 'Nothing' if the key was never set (or cleared)
-  | StorageClear
-  -- ^ wipe all localStorage
   | AnimResume
   -- ^ resume the animated <image> (see 'animationSection')
   | AnimPause
@@ -128,10 +118,6 @@ data Model = Model
     -- ^ overlay layer visibility
   , refreshRows :: Int
     -- ^ rows in the pull-to-refresh list (grows on refresh)
-  , storageInput :: MisoString
-    -- ^ pending value for the localStorage demo's <input>
-  , storageLoaded :: Maybe MisoString
-    -- ^ last value read back from localStorage ('Nothing' if unset/cleared)
   } deriving stock (Eq, Generic)
     deriving anyclass (ToJSON, FromJSON)
 -----------------------------------------------------------------------------
@@ -142,7 +128,7 @@ main = do
     (static (mountStatic_ galleryComponent))
 -----------------------------------------------------------------------------
 galleryComponent :: Component Theme () Model Action
-galleryComponent = component (Model [] False False False 6 "" Nothing) updateModel viewModel
+galleryComponent = component (Model [] False False False 6) updateModel viewModel
 -----------------------------------------------------------------------------
 updateModel :: Action -> Effect Theme () Model Action
 updateModel = \case
@@ -178,33 +164,12 @@ updateModel = \case
     -- scaled to how full the 10-entry event log is) to prove the read path
     -- works, without routing through the console/error channel.
     io_ (setStyleProperty domRef "opacity" (ms (show (mtsReadOpacity n))))
-  StorageInputChanged v ->
-    modify $ \m -> m { storageInput = v }
-  StorageSave -> do
-    v <- gets storageInput
-    io_ (setLocalStorage storageKey v)
-    modify $ \m -> m { eventLog = take 10 ("storage: saved" : eventLog m) }
-  StorageLoad ->
-    io (StorageLoaded <$> getLocalStorage storageKey)
-  StorageLoaded mv ->
-    modify $ \m -> m
-      { storageLoaded = mv
-      , eventLog = take 10 (("storage: loaded " <> maybe "(nothing)" id mv) : eventLog m)
-      }
-  StorageClear -> do
-    io_ clearLocalStorage
-    modify $ \m -> m { storageLoaded = Nothing, eventLog = take 10 ("storage: cleared" : eventLog m) }
   -- 'invokeExec'-backed <image> animation methods (see 'animationSection'). Each
   -- dispatches a UI method to the element selected by id and logs the outcome.
   AnimResume -> resumeAnimation animId (Log "anim: resumed") (Log . ("anim: error " <>))
   AnimPause  -> pauseAnimation  animId (Log "anim: paused")  (Log . ("anim: error " <>))
   AnimStop   -> stopAnimation   animId (Log "anim: stopped") (Log . ("anim: error " <>))
   AnimStart  -> startAnimation  animId (Log "anim: started (startAnimate)") (Log . ("anim: error " <>))
------------------------------------------------------------------------------
--- | Key used by 'storageSection' with 'getLocalStorage' \/
--- 'setLocalStorage' \/ 'clearLocalStorage' (see "Miso.Storage").
-storageKey :: MisoString
-storageKey = "gallery-demo-key"
 -----------------------------------------------------------------------------
 -- | @id@ selector for the animated \<image\> exercised by 'animationSection'.
 -- Passed to the 'invokeExec'-backed 'startAnimation' \/ 'pauseAnimation' \/
@@ -253,7 +218,6 @@ viewModel theme _ Model{..} = view_
     , overlaySection overlayOpen
     , mainThreadSection
     , mountedComponentSection theme (length eventLog)
-    , storageSection storageInput storageLoaded
     ]
   ]
 -----------------------------------------------------------------------------
@@ -865,38 +829,4 @@ mountedComponentSection theme eventCount = section "vcomp \8212 statically-mount
         [ text (ms ("tap to toggle theme (currently " <> show theme <> ")")) ] ]
   , vcomp (BadgeProps eventCount) (static (mountStaticWithProps_ "gallery-badge" badgeComponent))
   ]
------------------------------------------------------------------------------
--- | <input> + localStorage — exercises 'getLocalStorage' \/ 'setLocalStorage'
--- \/ 'clearLocalStorage' via the browser Web Storage API (see "Miso.Storage").
-storageSection :: MisoString -> Maybe MisoString -> View context Model Action
-storageSection inputVal loaded = section "localStorage \8212 save / load / clear"
-  [ input_
-    [ placeholder_ "value to save\8230"
-    , textProp "value" inputVal
-    , InE.onInput (\e -> StorageInputChanged (InE.inputValue e))
-    , CSS.style_
-      [ CSS.height "44px", CSS.width "100%", CSS.fontSize "16px"
-      , CSS.backgroundColor CSS.white, CSS.padding "8px", CSS.marginBottom "6px"
-      ]
-    ]
-  , view_
-    [ CSS.style_ [ CSS.display "flex", CSS.flexDirection "row" ] ]
-    [ storageButton CSS.seagreen "save" StorageSave
-    , storageButton CSS.steelblue "load" StorageLoad
-    , storageButton CSS.crimson "clear" StorageClear
-    ]
-  , text_
-    [ CSS.style_ [ CSS.fontSize "13px", CSS.color CSS.black, CSS.marginTop "6px", txtLine ] ]
-    [ text (ms ("loaded: " <> maybe "(nothing)" id loaded)) ]
-  ]
-  where
-    storageButton bg lbl action = view_
-      [ VE.onTap action
-      , CSS.style_
-        [ CSS.flexGrow 1, CSS.height "40px", CSS.marginRight "6px"
-        , CSS.display "flex", CSS.alignItems "center", CSS.justifyContent "center"
-        , CSS.backgroundColor bg
-        ]
-      ]
-      [ text_ [ CSS.style_ [ CSS.color CSS.white, txtLine ] ] [ text lbl ] ]
 -----------------------------------------------------------------------------
