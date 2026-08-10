@@ -84,8 +84,12 @@ instance FromJSON ScrollEvent where
       <*> o .:? "scrollHeight" .!= 0
       <*> o .:? "listWidth" .!= 0
       <*> o .:? "listHeight" .!= 0
-      <*> o .: "eventSource"
-      <*> o .: "attachedCells"
+      -- `eventSource`/`attachedCells` are declared required in Lynx's
+      -- ListScrollInfo, but `attachedCells` is only populated when
+      -- `need-visible-item-info` is enabled (otherwise absent). Decode
+      -- defensively so a `scroll` event without them still succeeds.
+      <*> o .:? "eventSource" .!= SCROLL
+      <*> o .:? "attachedCells" .!= []
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/list.html#scroll
 data ScrollEvent
@@ -106,8 +110,8 @@ data ScrollEvent
 -----------------------------------------------------------------------------
 data Cell
   = Cell
-  { cellId :: Double
-  -- ^ Node id
+  { cellId :: MisoString
+  -- ^ Node id (Lynx types this @ListAttachedCell.id@ as a string)
   , cellItemKey :: MisoString
   -- ^ Node item-key
   , cellIndex, cellLeft, cellTop, cellRight, cellBottom :: Double

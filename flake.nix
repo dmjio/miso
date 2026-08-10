@@ -43,11 +43,21 @@
       let
         pkgs = import nixpkgs {
           inherit system;
-          # Miso's overlays
+          # Miso's overlays (provides rspeedy, ghcNative, mkLynxBundle, ...)
           overlays = [ (import ./nix/overlay.nix) ];
         };
       in
       {
+        # Reusable helpers for downstream flakes:
+        #   miso.lib.${system}.ghcNative      -- the GHC-JS (LynxJS) package set,
+        #                                        with miso-native, ready to
+        #                                        callCabal2nix your own app
+        #   miso.lib.${system}.mkLynxBundle   -- build a .lynx.bundle from it
+        lib = {
+          inherit (pkgs) mkLynxBundle;
+          ghcNative = pkgs.pkgsCross.ghcjs.haskell.packages.ghcNative;
+        };
+
         # Miso's packages
         packages = rec {
           # Default package is vanilla GHC 9.12.2 miso
@@ -72,51 +82,14 @@
           # rspeedy (LynxJS bundle builder, wraps rspack)
           inherit (pkgs) rspeedy;
 
-          # Lynx bundle for sample-app-native
-          sample-app-native-bundle =
-            let
-              hsPkg = pkgs.pkgsCross.ghcjs.haskell.packages.ghcNative.sample-app-native;
-              # Wrapper entry so styles.css is compiled into the Lynx bundle
-              # (under global cssId 0). all.js is GHC-generated and cannot
-              # `import` CSS itself, so the wrapper pulls it into the module graph.
-              stylesCss = ./sample-app-native/styles.css;
-              entryJs = pkgs.writeText "entry.js" ''
-                import './styles.css';
-                import './all.js';
-              '';
-              lynxConfig = pkgs.writeText "lynx.config.ts" ''
-                import { defineConfig } from '@lynx-js/rspeedy';
-                import { pluginReactLynx } from '@lynx-js/react-rsbuild-plugin';
-                export default defineConfig({
-                  source: { entry: './entry.js' },
-                  plugins: [ pluginReactLynx() ],
-                });
-              '';
-            in
-            pkgs.stdenv.mkDerivation {
-              name = "sample-app-native-bundle";
-              phases = [ "buildPhase" "installPhase" ];
-              nativeBuildInputs = [ pkgs.bun pkgs.rspeedy pkgs.nodejs ];
-              buildPhase = ''
-                export HOME=$TMPDIR
-                mkdir -p build
-                ${pkgs.bun}/bin/bun build \
-                  --minify-whitespace \
-                  --target=bun \
-                  --outfile=build/all.js \
-                  ${hsPkg}/bin/app-native.jsexe/all.js
-                ln -s ${pkgs.rspeedy}/lib/node_modules build/node_modules
-                cp ${lynxConfig} build/lynx.config.ts
-                cp ${stylesCss} build/styles.css
-                cp ${entryJs} build/entry.js
-                cd build
-                ${pkgs.rspeedy}/bin/rspeedy build
-              '';
-              installPhase = ''
-                mkdir -p $out
-                cp -r dist/. $out/
-              '';
-            };
+          # Lynx bundle for sample-app-native (built with the shared mkLynxBundle).
+          # The showcase uses remote image URLs, so it only needs styles.css.
+          sample-app-native-bundle = pkgs.mkLynxBundle {
+            name = "sample-app-native-bundle";
+            jsDrv = pkgs.pkgsCross.ghcjs.haskell.packages.ghcNative.sample-app-native;
+            exeName = "app-native";
+            styles = ./sample-app-native/styles.css;
+          };
 
           # Util
           inherit (pkgs.haskell.packages.ghc9122)

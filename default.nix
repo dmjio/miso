@@ -21,57 +21,14 @@ rec {
   sample-app-native-9122 = pkgs.pkgsCross.ghcjs.haskell.packages.ghcNative.sample-app-native;
 
   # Lynx bundle: compiles sample-app-native through rspeedy into a .lynx.bundle
+  # (via the shared mkLynxBundle helper). The showcase uses remote image URLs,
+  # so it only needs styles.css compiled in.
   sample-app-native-bundle =
-    let
-      hsPkg = pkgs.pkgsCross.ghcjs.haskell.packages.ghcNative.sample-app-native;
-      # Wrapper entry so styles.css is compiled into the Lynx bundle (under
-      # global cssId 0). all.js is GHC-generated and cannot `import` CSS itself,
-      # so the wrapper pulls it into the module graph.
-      stylesCss = ./sample-app-native/styles.css;
-      entryJs = pkgs.writeText "entry.js" ''
-        import './styles.css';
-        import './all.js';
-      '';
-      lynxConfig = pkgs.writeText "lynx.config.ts" ''
-        import { defineConfig } from '@lynx-js/rspeedy';
-        import { pluginReactLynx } from '@lynx-js/react-rsbuild-plugin';
-        export default defineConfig({
-          source: { entry: './entry.js' },
-          plugins: [ pluginReactLynx() ],
-        });
-      '';
-    in
-    pkgs.stdenv.mkDerivation {
+    pkgs.mkLynxBundle {
       name = "sample-app-native-bundle";
-      phases = [ "buildPhase" "installPhase" ];
-
-      nativeBuildInputs = [ pkgs.bun pkgs.rspeedy pkgs.nodejs ];
-
-      buildPhase = ''
-        export HOME=$TMPDIR
-        mkdir -p build
-
-        # Minify the GHC JS output (same as `bun build --minify-whitespace out.js` in reload)
-        ${pkgs.bun}/bin/bun build \
-          --minify-whitespace \
-          --target=bun \
-          --outfile=build/all.js \
-          ${hsPkg}/bin/app-native.jsexe/all.js
-
-        # Wire up rspeedy's node_modules so config imports resolve
-        ln -s ${pkgs.rspeedy}/lib/node_modules build/node_modules
-        cp ${lynxConfig} build/lynx.config.ts
-        cp ${stylesCss} build/styles.css
-        cp ${entryJs} build/entry.js
-
-        cd build
-        ${pkgs.rspeedy}/bin/rspeedy build
-      '';
-
-      installPhase = ''
-        mkdir -p $out
-        cp -r dist/. $out/
-      '';
+      jsDrv = pkgs.pkgsCross.ghcjs.haskell.packages.ghcNative.sample-app-native;
+      exeName = "app-native";
+      styles = ./sample-app-native/styles.css;
     };
 
   # Android host APK (Kotlin + Lynx SDK), built reproducibly via nixpkgs

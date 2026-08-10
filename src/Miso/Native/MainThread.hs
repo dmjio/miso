@@ -51,11 +51,15 @@ module Miso.Native.MainThread
   , setAttribute
   , getAttribute
   , flushElementTree
+    -- *** Element-tree navigation (main thread only)
+  , firstElementChild
+  , nextElementSibling
+  , parentElement
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad (void, forM_)
 -----------------------------------------------------------------------------
-import           Miso.DSL (jsg0, jsg2, jsg3, fromJSValUnchecked)
+import           Miso.DSL (jsg0, jsg1, jsg2, jsg3, fromJSValUnchecked)
 import           Miso.Effect (DOMRef)
 import           Miso.JSON (ToJSON(..), FromJSON(..), Value(Null))
 import           Miso.String (MisoString)
@@ -104,4 +108,18 @@ getAttribute node key =
 -- above already flush; call this directly only when batching lower-level calls.
 flushElementTree :: IO ()
 flushElementTree = void (jsg0 "__FlushElementTree")
+-----------------------------------------------------------------------------
+-- | First element child of a node (Lynx @__FirstElement@). Lets a main-thread
+-- handler reach a /different/ element than the event target by walking the
+-- tree — e.g. from a scroll handler's list ref to a sibling scrollbar thumb.
+firstElementChild :: DOMRef -> IO DOMRef
+firstElementChild = jsg1 "__FirstElement"
+-----------------------------------------------------------------------------
+-- | Next element sibling of a node (Lynx @__NextElement@).
+nextElementSibling :: DOMRef -> IO DOMRef
+nextElementSibling = jsg1 "__NextElement"
+-----------------------------------------------------------------------------
+-- | Parent element of a node (Lynx @__GetParent@).
+parentElement :: DOMRef -> IO DOMRef
+parentElement = jsg1 "__GetParent"
 -----------------------------------------------------------------------------
