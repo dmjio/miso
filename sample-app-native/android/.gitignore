@@ -1,0 +1,16 @@
+# Gradle
+.gradle/
+build/
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+.cxx/
+captures/
+
+# Local configuration (machine-specific SDK path)
+local.properties
+
+# Keystores
+*.jks
+*.keystore

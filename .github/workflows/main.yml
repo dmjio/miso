@@ -237,6 +237,26 @@ jobs:
        with:
          distribution: temurin
          java-version: '17'
+     - uses: cachix/install-nix-action@v31
+       with:
+         extra_nix_config: |
+           experimental-features = nix-command flakes
+     - uses: cachix/cachix-action@v16
+       with:
+         name: haskell-miso-cachix
+         authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+
+     - name: Nix channel update
+       run: nix-channel --update
+
+     - name: Bun install
+       run: nix-env -iA bun -f . && bun install
+
+     - name: Bun build js
+       run: bun run js
+
+     - name: (Android) Miso sample-app-native APK (nix)
+       run: nix-build -A sample-app-native-android
 
      - name: Download Lynx bundle
        uses: actions/download-artifact@v4

@@ -3,7 +3,7 @@
 with (import ./nix { inherit overlays; });
 
 with pkgs.haskell.lib;
-{
+rec {
   inherit pkgs legacyPkgs;
 
   # hackage release
@@ -73,6 +73,29 @@ with pkgs.haskell.lib;
         cp -r dist/. $out/
       '';
     };
+
+  # Android host APK (Kotlin + Lynx SDK), built reproducibly via nixpkgs
+  # androidenv + the gradle mitm-cache dep fetcher. Embeds the freshly built
+  # sample-app-native-bundle in assets. See nix/android.nix.
+  sample-app-native-android =
+    import ./nix/android.nix {
+      inherit pkgs;
+      bundle = sample-app-native-bundle;
+    };
+
+  # One-command emulator smoke test: boots an x86_64 AVD (uses KVM), installs the
+  # APK, and launches the gallery. Run: ./result/bin/run-test-emulator
+  sample-app-native-android-emulator =
+    pkgs.androidenv.emulateApp {
+      name = "run-miso-android";
+      platformVersion = "34";
+      abiVersion = "x86_64";
+      systemImageType = "google_apis";
+      app = sample-app-native-android;
+      package = "io.dmj.miso";
+      activity = ".MainActivity";
+    };
+
   miso-tests = pkgs.pkgsCross.ghcjs.haskell.packages.ghc9122.miso-tests;
 
   # ghcjs86
