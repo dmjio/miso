@@ -18,7 +18,10 @@ static NSString* const kTemplateURL = @"main.lynx.bundle";
 
 - (void)viewDidLoad {
   [super viewDidLoad];
-  self.view.backgroundColor = [UIColor whiteColor];
+  // Black so the safe-area bands (status bar / home indicator) around the
+  // safe-area-inset LynxView match the gallery's black background instead of
+  // showing white.
+  self.view.backgroundColor = [UIColor blackColor];
 
   CGSize screenSize = self.view.bounds.size;
 
