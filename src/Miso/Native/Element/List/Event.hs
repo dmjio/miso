@@ -142,7 +142,21 @@ data ScrollStateChange
   | Dragging
   | InertialScrolling
   | SmoothAnimationScrolling
-  deriving (Show, Eq, Enum)
+  deriving (Show, Eq)
+-----------------------------------------------------------------------------
+-- | Numbering matches Lynx's @ScrollState@ enum (@kIdle = 1@ … @kScrollAnimation
+-- = 4@), so 'toEnum'\/'fromEnum' agree with the wire and with 'FromJSON' below.
+-- (A derived 'Enum' would be 0-based and disagree with the values Lynx sends.)
+instance Enum ScrollStateChange where
+  fromEnum Stationary               = 1
+  fromEnum Dragging                 = 2
+  fromEnum InertialScrolling        = 3
+  fromEnum SmoothAnimationScrolling = 4
+  toEnum 1 = Stationary
+  toEnum 2 = Dragging
+  toEnum 3 = InertialScrolling
+  toEnum 4 = SmoothAnimationScrolling
+  toEnum n = error ("ScrollStateChange.toEnum: bad argument " <> show n)
 -----------------------------------------------------------------------------
 instance FromJSON ScrollStateChange where
   parseJSON = withNumber "ScrollStateChange" $ \case

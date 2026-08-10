@@ -385,10 +385,12 @@ function eventEntries<T>(c: VNode<T> | null, capture: boolean): Record<string,Ev
 }
 
 function sameEventKey(a: EventKey, b: EventKey): boolean {
+  // `options` is optional on EventKey (direct-bind/addEvent patches may omit it),
+  // so read through it defensively rather than dereferencing unconditionally.
   return a.staticKey === b.staticKey
       && a.componentId === b.componentId
-      && a.options.preventDefault === b.options.preventDefault
-      && a.options.stopPropagation === b.options.stopPropagation;
+      && a.options?.preventDefault === b.options?.preventDefault
+      && a.options?.stopPropagation === b.options?.stopPropagation;
 }
 
 function populateDomRef<T>(c: VNode<T>, context: DrawingContext<T>): void {

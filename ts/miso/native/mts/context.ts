@@ -41,6 +41,30 @@ type MainThreadEntry = { staticKey : string; componentId : number; options : any
 type MainThreadKeys  = { captures : Record<string, MainThreadEntry>; bubbles : Record<string, MainThreadEntry> };
 const mainThreadKeys = new Map<number, MainThreadKeys>();
 
+// Direct-bind event names attached per node (via `__AddEvent` in `addEvent`),
+// tracked by nodeId so they can be torn down when the node is destroyed. These
+// element-level listeners are otherwise bound for the element's whole lifetime
+// (the capability set is immutable for a reused node), so their only removal
+// point is destruction — see `destroyNodeEvents`.
+const directBindings = new Map<number, Set<string>>();
+
+// Tear down all event state for a destroyed node. Called from `dropChildren`
+// (ts/miso/native/mts.ts) when a subtree is removed, so neither the main-thread
+// routing registry nor the native direct-bind listeners leak per unmounted node.
+//
+// Lynx has no standalone `__RemoveEvent`: `__AddEvent(node, type, name,
+// undefined)` routes an empty callback to `FiberAddEvent`'s `RemoveEvent` path
+// (see lynx/core/renderer/dom/fiber/fiber_element.cc), so that is the removal
+// primitive for listeners bound with `__AddEvent`.
+export function destroyNodeEvents(node : ElementRef, nodeId : number) : void {
+  const direct = directBindings.get(nodeId);
+  if (direct) {
+    for (const name of direct) __AddEvent(node, 'catchEvent', name, undefined);
+    directBindings.delete(nodeId);
+  }
+  mainThreadKeys.delete(nodeId);
+}
+
 function nodeIdOf(node : ElementRef) : number | undefined {
   return (__GetConfig(node) as any)?.nodeId as number | undefined;
 }
@@ -172,6 +196,14 @@ export const drawingContext : DrawingContext<ElementRef> = {
               const evts = Array.isArray(event) ? event : [event];
               for (const e of evts) routeEvent(e, name, false, globalThis['page'], eventContext);
           }});
+          // Record the binding so it can be torn down on node destroy
+          // (`destroyNodeEvents`); there is no per-render removal path.
+          const directId = nodeIdOf(node);
+          if (directId !== undefined) {
+              const set = directBindings.get(directId) ?? new Set<string>();
+              set.add(name);
+              directBindings.set(directId, set);
+          }
       }
       // Main-thread routing registry: only for handlers carrying a staticKey.
       // Keyed by the element's stable unique id in `mainThreadKeys` (see note at
@@ -211,14 +243,13 @@ export const drawingContext : DrawingContext<ElementRef> = {
     }
     return node;
   },
-  createElementNS : (ns : string, tag : string) => {
-    const node = globalThis['miso']['context']['createElement'](tag);
-    if (globalThis['initialDraw']) {
-        const nodeId: number = nextNodeId ();
-        globalThis['runtime']['nodes'][nodeId] = node;
-        __SetConfig (node, { nodeId });
-    }
-    return node;
+  createElementNS : (_ns : string, tag : string) => {
+    // Lynx has no XML namespaces; delegate to the tag-based factory, which also
+    // handles cssId scoping and the initial-draw nodeId assignment. (The old
+    // `globalThis.miso.context.createElement` path referenced a nonexistent
+    // object — `globalThis.miso` only holds drawingContext/eventContext — and
+    // threw for any namespaced element.)
+    return drawingContext.createElement(tag);
   },
   createElement : (tag : string) => {
       var pageId = globalThis['native']['currentPageId'];

@@ -24,6 +24,7 @@ import type { ElementRef } from "@lynx-js/type-element-api";
 
 import
   { drawingContext
+  , destroyNodeEvents
   } from './mts/context';
 
 export function mts () {
@@ -146,7 +147,12 @@ function processMessage (m : PATCH, runtime) {
    detachment, so its subtree is still intact here. */
 function dropChildren (nodeMap: Record<number, ElementRef>, node: ElementRef) {
    const nodeId = __GetConfig(node)?.nodeId as number | undefined;
-   if (nodeId !== undefined) delete nodeMap[nodeId];
+   if (nodeId !== undefined) {
+      delete nodeMap[nodeId];
+      // Tear down this node's event state (main-thread routing registry + native
+      // direct-bind listeners), else each destroyed node leaks its entries.
+      destroyNodeEvents(node, nodeId);
+   }
    for (let child = __FirstElement(node) as ElementRef; child; child = __NextElement(child) as ElementRef) {
       dropChildren(nodeMap, child);
    }

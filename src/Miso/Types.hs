@@ -169,8 +169,6 @@ module Miso.Types
   , mountStatic_
   , mountStaticWithProps
   , mountStaticWithProps_
-  -- ** Key combinators
-  , keyed
   -- ** Fragment combinators
   , fragment
   , fragment_
@@ -464,34 +462,6 @@ data SomeStaticComponent props context
   = Eq props
   => SomeStaticComponent (props -> SomeComponent context)
 #endif
------------------------------------------------------------------------------
--- | Like '+>' but operates on any 'View', not just 'Component'.
---
--- This appends a 'Key' to any 'View'.
---
--- N.B. this is a no-op for 'VComp'. See '+>' for keying 'Component'
---
--- @
--- keyed "key" ("some text" :: View context model action)
--- keyed "key" $ div_ [ id_ "container" ] [ "content" ]
--- @
---
--- @since 1.10.0.0
-keyed
-  :: MisoString
-  -> View context model action
-  -> View context model action
-keyed key = \case
-  VText _ txt ->
-    VText (Just (Key key)) txt
-  VComp v ->
-    VComp v
-  VCompStatic props ptr ->
-    VCompStatic props ptr
-  VFrag _ kids ->
-    VFrag (Just (Key key)) kids
-  VNode ns tag attrs kids de ->
-    VNode ns tag (Property "key" (toJSON key) : attrs) kids de
 -----------------------------------------------------------------------------
 -- | Create a fragment (keyless).
 --

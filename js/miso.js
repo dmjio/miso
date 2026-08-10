@@ -639,7 +639,7 @@ function eventEntries(c, capture) {
   return out;
 }
 function sameEventKey(a, b) {
-  return a.staticKey === b.staticKey && a.componentId === b.componentId && a.options.preventDefault === b.options.preventDefault && a.options.stopPropagation === b.options.stopPropagation;
+  return a.staticKey === b.staticKey && a.componentId === b.componentId && a.options?.preventDefault === b.options?.preventDefault && a.options?.stopPropagation === b.options?.stopPropagation;
 }
 function populateDomRef(c, context) {
   if (c.ns === "svg") {

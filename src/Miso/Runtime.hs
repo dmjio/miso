@@ -421,11 +421,6 @@ scheduler Proxy =
       -- originating @action@ via 'postEffect' so 'update' re-runs on the other
       -- thread, where the same effect is now same-thread and executes its 'IO'
       -- locally. Otherwise run it locally against the component's own sink.
-      let
-        crossThread = \case
-            Just E.BTS -> mts   -- on MTS, effect wants BTS
-            Just E.MTS -> bts   -- on BTS, effect wants MTS
-            _          -> False -- same thread / no preference / web
       forM_ schedules $ \(originating, sched) -> case sched of
         ContextModify f ->
           atomicModifyIORef' globalContext $ \ctx -> (f ctx, ())
@@ -1027,10 +1022,15 @@ drain ComponentState {..} = do
        case _componentApplyActions actions _componentModel _componentProps currentContext of
          (_, schedules) -> do
            forM_ schedules $ \case
-             -- dmj: process all actions synchronously during unmount
-             (_, Schedule _ _ effect) -> -- todo: dmj cross thread effects ...
-               effect _componentSink
-                 `catch` (\(e :: SomeException) -> void (evaluate e))
+             -- dmj: process all actions synchronously during unmount. Respect
+             -- thread affinity: an effect tagged for the opposite Lynx thread is
+             -- forwarded via 'postEffect' (re-run of 'update' on the peer thread)
+             -- rather than evaluated here on the wrong thread.
+             (originating, Schedule mThread _ effect)
+               | crossThread mThread -> _componentPostEffect originating
+               | otherwise ->
+                   effect _componentSink
+                     `catch` (\(e :: SomeException) -> void (evaluate e))
              (_, ContextModify f) ->
                atomicModifyIORef' globalContext $ \ctx -> (f ctx, ())
            newContext <- readIORef globalContext
@@ -2376,6 +2376,14 @@ mts, bts, web :: Bool
 {-# NOINLINE bts #-}
 {-# NOINLINE web #-}
 (mts, bts, web) = unsafePerformIO FFI.getThreads
+-----------------------------------------------------------------------------
+-- | 'True' when a scheduled effect is tagged for the /opposite/ Lynx thread and
+-- must therefore be forwarded (via 'postEffect') rather than run locally.
+crossThread :: Maybe E.Thread -> Bool
+crossThread = \case
+  Just E.BTS -> mts   -- on MTS, effect wants BTS
+  Just E.MTS -> bts   -- on BTS, effect wants MTS
+  _          -> False -- same thread / no preference / web
 -----------------------------------------------------------------------------
 instance FromJSVal Fingerprint where
   fromJSVal x = fmap (fmap fromMisoString) (fromJSVal x :: IO (Maybe MisoString))

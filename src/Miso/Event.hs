@@ -1,4 +1,5 @@
 -----------------------------------------------------------------------------
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 -----------------------------------------------------------------------------
@@ -205,8 +206,11 @@ onWithOptions phase options eventName Decoder{..} toAction =
           Left msg -> FFI.consoleError ("[EVENT DECODE ERROR]: " <> ms msg)
           Right event -> do
             vcompId <- fromJSValUnchecked =<< getProp "pendingComponentId" n
-            ComponentState {..} <- (IM.! vcompId) <$> readIORef components
-            sink (toAction event _componentModel domRef)
+            IM.lookup vcompId <$> readIORef components >>= \case
+              Nothing ->
+                FFI.consoleError ("[COMPONENT]: No component found at ID: " <> ms vcompId)
+              Just ComponentState {..} ->
+                sink (toAction event _componentModel domRef)
     FFI.set "runEvent" cb eventHandlerObject
     FFI.set "options" jsOptions eventHandlerObject
     -- Only 'mainThread'-marked handlers carry their 'StaticKey' \/ 'ComponentId'
