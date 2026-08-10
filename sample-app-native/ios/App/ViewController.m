@@ -1,6 +1,5 @@
 #import "ViewController.h"
 #import "TemplateProvider.h"
-#import "MisoNativeModule.h"
 #import <Lynx/LynxConfig.h>
 #import <Lynx/LynxView.h>
 #import <Lynx/LynxViewBuilder.h>
@@ -27,9 +26,6 @@ static NSString* const kTemplateURL = @"main.lynx.bundle";
 
   LynxView* lynxView = [[LynxView alloc] initWithBuilderBlock:^(LynxViewBuilder* builder) {
     LynxConfig* config = [[LynxConfig alloc] initWithProvider:[TemplateProvider new]];
-    // Register native modules so the background-thread JS can reach them via
-    // NativeModules.<name>.
-    [config registerModule:[MisoNativeModule class]];
     builder.config = config;
     builder.screenSize = screenSize;
     builder.fontScale = 1.0;
