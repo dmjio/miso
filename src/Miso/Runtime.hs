@@ -426,7 +426,7 @@ scheduler Proxy =
           atomicModifyIORef' globalContext $ \ctx -> (f ctx, ())
         Schedule mThread synch effect ->
           if crossThread mThread
-            then _componentPostEffect originating
+            then _componentPostEffect originating `catch` exception
             else evalScheduled synch (effect _componentSink)
       updatedContext <- readIORef globalContext
       when (currentContext /= updatedContext) enqueueContextPropagation
@@ -1027,7 +1027,7 @@ drain ComponentState {..} = do
              -- forwarded via 'postEffect' (re-run of 'update' on the peer thread)
              -- rather than evaluated here on the wrong thread.
              (originating, Schedule mThread _ effect)
-               | crossThread mThread -> _componentPostEffect originating
+               | crossThread mThread -> _componentPostEffect originating `catch` exception
                | otherwise ->
                    effect _componentSink
                      `catch` exception
