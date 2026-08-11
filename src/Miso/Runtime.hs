@@ -1030,7 +1030,7 @@ drain ComponentState {..} = do
                | crossThread mThread -> _componentPostEffect originating
                | otherwise ->
                    effect _componentSink
-                     `catch` (\(e :: SomeException) -> void (evaluate e))
+                     `catch` exception
              (_, ContextModify f) ->
                atomicModifyIORef' globalContext $ \ctx -> (f ctx, ())
            newContext <- readIORef globalContext
