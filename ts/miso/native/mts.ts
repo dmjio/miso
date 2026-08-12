@@ -21,6 +21,7 @@ import
   } from "../../miso";
 
 import type { ElementRef } from "@lynx-js/type-element-api";
+import { observePatchedNodeId } from './node-id';
 
 import
   { drawingContext
@@ -70,16 +71,19 @@ function processMessage (m : PATCH, runtime) {
       node = drawingContext.createElement (m.tag);
       __SetConfig (node, { nodeId : m.nodeId });
       runtime.nodes[m.nodeId] = node;
+      observePatchedNodeId(m.nodeId);
       break;
     case "createTextNode":
       node = drawingContext.createTextNode (m.text);
       __SetConfig (node, { nodeId : m.nodeId });
       runtime.nodes[m.nodeId] = node;
+      observePatchedNodeId(m.nodeId);
       break;
     case "createElementNS":
       node = drawingContext.createElementNS (m.namespace, m.tag);
       __SetConfig (node, { nodeId : m.nodeId });
       runtime.nodes[m.nodeId] = node;
+      observePatchedNodeId(m.nodeId);
       break;
     case "swapDOMRefs":
       drawingContext.swapDOMRefs
@@ -157,4 +161,3 @@ function dropChildren (nodeMap: Record<number, ElementRef>, node: ElementRef) {
       dropChildren(nodeMap, child);
    }
 }
-

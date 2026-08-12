@@ -4,8 +4,9 @@
    and per-node event-registry teardown. The Lynx PAPI globals (`__GetConfig`,
    `__AddEvent`) and the `runtime`/`lynx` host objects are stubbed here — in a web
    build they don't exist, which is exactly why this code has no other coverage. */
-import { test, expect, describe, beforeEach, afterAll, beforeAll } from 'bun:test';
+import { test, expect, describe, beforeEach, afterEach, afterAll, beforeAll } from 'bun:test';
 import { routeEvent, destroyNodeEvents, drawingContext } from '../miso/native/mts/context';
+import { observePatchedNodeId } from '../miso/native/node-id';
 import type { EventContext } from '../miso/types';
 
 /* silence the module's console.error diagnostics */
@@ -150,5 +151,29 @@ describe('destroyNodeEvents — registry teardown', () => {
 
     expect(mtsDispatches.length).toBe(0);     // registry entry gone
     expect(btsDispatches.length).toBe(1);     // now treated as a background event
+  });
+});
+
+describe('Native MTS node id allocation', () => {
+  afterEach(() => {
+    globalThis['nodeId'] = 1;
+  });
+
+  test('advances past ids created by BTS patches', () => {
+    globalThis['nodeId'] = 29;
+
+    observePatchedNodeId(29);
+    observePatchedNodeId(30);
+    observePatchedNodeId(31);
+
+    expect(globalThis['nodeId']).toBe(32);
+  });
+
+  test('never rewinds after observing an older patch', () => {
+    globalThis['nodeId'] = 42;
+
+    observePatchedNodeId(17);
+
+    expect(globalThis['nodeId']).toBe(42);
   });
 });
