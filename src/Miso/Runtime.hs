@@ -209,7 +209,7 @@ initialize events _componentParentId hydrate isRoot initialProps maybeKey _compo
   let
     _componentProps = initialProps
     _componentSink = \action -> do
-      atomicModifyIORef' globalQueue (\q -> (enqueue _componentId action q, ()))
+      atomicModifyIORef' globalQueue (\q -> (enqueue _componentId (Local action) q, ()))
       notify globalWaiter
 
   initializedModel <-
@@ -281,11 +281,11 @@ initialize events _componentParentId hydrate isRoot initialProps maybeKey _compo
   let _componentPostEffect = \_ -> pure ()
 #endif
 
-  let _componentApplyActions = \(actions :: Seq action) model_ currentProps ctx -> do
+  let _componentApplyActions = \(actions :: Seq (Envelope action)) model_ currentProps ctx -> do
         let info = ComponentInfo _componentId _componentParentId _componentDOMRef currentProps ctx
-        foldl' (\(m, ss) a ->
-          case runEffect (update a) info m of
-            (n, sss) -> (n, ss <> [(a, s) | s <- sss ]))
+        foldl' (\(m, ss) env ->
+          case runEffect (update (envelopeAction env)) info m of
+            (n, sss) -> (n, ss <> [(env, s) | s <- sss ]))
           (model_, []) actions
 
   let vcomponent = ComponentState
@@ -422,13 +422,13 @@ scheduler Proxy =
     -- event handlers imperatively mutating a 'DOMRef' — must fire), but the
     -- subsequent draw is suppressed: the BTS is the sole paint authority and the
     -- MTS never diffs\/patches from the scheduler.
-    run :: ComponentId -> Seq action -> IO ()
+    run :: ComponentId -> Seq (Envelope action) -> IO ()
     run vcompId actions = do
       rendered <- commit vcompId actions
       when (not mts) (mapM_ renderComponent rendered)
     -----------------------------------------------------------------------------
     -- | Apply the actions across the model, evaluate async and sync IO.
-    commit :: ComponentId -> Seq action -> IO (Maybe ComponentId)
+    commit :: ComponentId -> Seq (Envelope action) -> IO (Maybe ComponentId)
     commit vcompId events = do
       currentContext <- readIORef @context globalContext
       vcomps <- readIORef components
@@ -440,13 +440,20 @@ scheduler Proxy =
       -- originating @action@ via 'postEffect' so 'update' re-runs on the other
       -- thread, where the same effect is now same-thread and executes its 'IO'
       -- locally. Otherwise run it locally against the component's own sink.
-      forM_ schedules $ \(originating, sched) -> case sched of
+      --
+      -- A 'Forwarded' action, however, already ran its 'update' at the origin
+      -- thread before being forwarded here; replaying it locally reproduces
+      -- every 'Schedule' the origin saw, so its cross-thread schedules (the
+      -- ones that were same-thread at the origin) must be discarded rather than
+      -- forwarded back — otherwise the action bounces between threads forever.
+      forM_ schedules $ \(env, sched) -> case sched of
         ContextModify f ->
           atomicModifyIORef' globalContext $ \ctx -> (f ctx, ())
-        Schedule mThread synch effect ->
-          if crossThread mThread
-            then _componentPostEffect originating
-            else evalScheduled synch (effect _componentSink)
+        Schedule mThread synch effect
+          | crossThread mThread -> case env of
+              Local originating -> _componentPostEffect originating
+              Forwarded _       -> pure ()
+          | otherwise -> evalScheduled synch (effect _componentSink)
       updatedContext <- readIORef globalContext
       -- 'not mts': the sentinel this enqueues is a no-op there (see the
       -- 'minBound' scheduler case) — MTS never draws context-driven changes
@@ -525,7 +532,7 @@ initialDraw initializedModel events hydrate isRoot Component {..} ComponentState
 -----------------------------------------------------------------------------
 -- | Pulls the next Component for processing out of the queue, along with
 -- its events.
-getBatch :: IO (Maybe (ComponentId, Seq action))
+getBatch :: IO (Maybe (ComponentId, Seq (Envelope action)))
 getBatch = do
   atomicModifyIORef' globalQueue $ \q ->
     case dequeue q of
@@ -534,14 +541,35 @@ getBatch = do
         (newQueue, Just (vcompId, actions))
 -----------------------------------------------------------------------------
 -- | Helper for event extraction at a specific 'ComponentId'
-drainQueueAt :: ComponentId -> IO (Seq a)
+drainQueueAt :: ComponentId -> IO (Seq (Envelope a))
 drainQueueAt vcompId = atomicModifyIORef' globalQueue (dequeueAt vcompId)
 -----------------------------------------------------------------------------
 -- | Data type for holding the events in the system along with
 -- the schedule of what events should be processed next
+-- | Provenance of a queued @action@. 'Local' actions originate on this thread
+-- (via '_componentSink'); 'Forwarded' actions arrived from the opposite Lynx
+-- thread over the @Miso.effects@ transport (see 'effectListener'). Both flow
+-- through the same ordered 'globalQueue' so the scheduler stays the single
+-- writer of every model, but the scheduler routes their cross-thread 'Schedule's
+-- differently: a 'Local' action forwards its cross-thread effects to the peer,
+-- whereas a 'Forwarded' action discards them (they already ran at the origin —
+-- re-forwarding would ping-pong forever). Carrying the tag on the action itself
+-- (rather than a sideband) keeps provenance aligned even when 'dequeue' batches
+-- consecutive same-'ComponentId' actions of mixed origin.
+data Envelope action
+  = Local action
+  | Forwarded action
+  deriving (Show, Eq)
+-----------------------------------------------------------------------------
+-- | The @action@ carried by an 'Envelope', discarding its provenance.
+envelopeAction :: Envelope action -> action
+envelopeAction = \case
+  Local a     -> a
+  Forwarded a -> a
+-----------------------------------------------------------------------------
 data Queue action
   = Queue
-  { _queue :: IntMap (Seq action)
+  { _queue :: IntMap (Seq (Envelope action))
   , _queueSchedule :: Seq ComponentId
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
@@ -554,13 +582,13 @@ instance Semigroup (Queue action) where
 instance Monoid (Queue action) where
   mempty = Queue mempty mempty
 -----------------------------------------------------------------------------
-queue :: Lens (Queue action) (IntMap (Seq action))
+queue :: Lens (Queue action) (IntMap (Seq (Envelope action)))
 queue = lens _queue $ \r f -> r { _queue = f }
 -----------------------------------------------------------------------------
 queueSchedule :: Lens (Queue action) (Seq ComponentId)
 queueSchedule = lens _queueSchedule $ \r f -> r { _queueSchedule = f }
 -----------------------------------------------------------------------------
-enqueue :: ComponentId -> action -> Queue action -> Queue action
+enqueue :: ComponentId -> Envelope action -> Queue action -> Queue action
 enqueue vcompId action q =
   q & queue %~ IM.insertWith (flip (<>)) vcompId (S.singleton action)
     & queueSchedule %~ (S.|> vcompId)
@@ -598,7 +626,7 @@ contextHydrateStaticKey = Fingerprint 0 0
 dequeue
   :: forall action
    . Queue action
-  -> Maybe (ComponentId, Seq action, Queue action)
+  -> Maybe (ComponentId, Seq (Envelope action), Queue action)
 dequeue q =
   case q ^. queueSchedule of
     S.Empty -> Nothing
@@ -623,7 +651,7 @@ dequeueAt
   :: forall action
    . ComponentId
   -> Queue action
-  -> (Queue action, Seq action)
+  -> (Queue action, Seq (Envelope action))
 dequeueAt vcompId q =
   case q ^. queue . at vcompId of
     Nothing -> (q, S.empty)
@@ -767,17 +795,18 @@ data ComponentState context props model action
   , _componentModelDirty :: model -> model -> Bool
   -- ^ Model diffing
   , _componentApplyActions
-      :: Seq action
+      :: Seq (Envelope action)
       -> model
       -> props
       -> context
-      -> (model, [(action, Schedule context action)])
+      -> (model, [(Envelope action, Schedule context action)])
   -- ^ t'Miso.Types.Component' actions application. Given the pending actions,
   --   current @model@ and @props@, returns the updated @model@ and the
   --   'Schedule's to run (async \/ sync IO, cross-thread effects, and
-  --   'ContextModify's). Each 'Schedule' is paired with the @action@ whose
-  --   'update' produced it, so cross-thread effects can be forwarded (via
-  --   'postEffect') to run on the opposite Lynx thread.
+  --   'ContextModify's). Each 'Schedule' is paired with the 'Envelope' of the
+  --   @action@ whose 'update' produced it, so cross-thread effects can be
+  --   forwarded (via 'postEffect') to run on the opposite Lynx thread when the
+  --   originating action was 'Local', or discarded when it was 'Forwarded'.
   , _componentTopics :: Map MisoString (Value -> IO ())
   -- ^ t'Miso.Types.Component' topics using for Pub Sub async communication.
   , _componentChildren :: ComponentIds
@@ -1070,9 +1099,13 @@ drain ComponentState {..} = do
              -- dmj: process all actions synchronously during unmount. Respect
              -- thread affinity: an effect tagged for the opposite Lynx thread is
              -- forwarded via 'postEffect' (re-run of 'update' on the peer thread)
-             -- rather than evaluated here on the wrong thread.
-             (originating, Schedule mThread _ effect)
-               | crossThread mThread -> _componentPostEffect originating
+             -- rather than evaluated here on the wrong thread — unless the action
+             -- was itself 'Forwarded', in which case its cross-thread schedules
+             -- are discarded to avoid bouncing back (see 'commit').
+             (env, Schedule mThread _ effect)
+               | crossThread mThread -> case env of
+                   Local originating -> _componentPostEffect originating
+                   Forwarded _       -> pure ()
                | otherwise ->
                    effect _componentSink
                      `catch` exception
@@ -2166,37 +2199,20 @@ effectListener Proxy jsval = void $ do
                         Nothing ->
                           FFI.consoleError $ ms $
                             "[effectListener]: ComponentId NOT registered:" <> ms effectComponentId
-                        Just ComponentState {..} -> do
+                        Just _ -> do
                           FFI.consoleLog "[effectListener]: Sinking action into Component"
-                          -- dmj: replay 'update' directly rather than going through
-                          -- '_componentSink' \/ the normal scheduler queue. Re-running
-                          -- 'update' here is required (it reconstructs the effect
-                          -- closure locally and keeps this thread's own model copy in
-                          -- sync with the thread the action originated on), but unlike
-                          -- an ordinary local dispatch, a schedule tagged for the
-                          -- /other/ thread must be discarded, not forwarded again: it
-                          -- already ran once, at the origin, before this action was
-                          -- forwarded to us. Replaying 'update' reproduces every
-                          -- schedule the origin saw — not just the one that caused
-                          -- this specific hop — so routing every 'crossThread' one
-                          -- through '_componentPostEffect' (as the scheduler's
-                          -- 'commit' does for a fresh dispatch) would bounce it
-                          -- straight back, and each hop re-executes both effects,
-                          -- forever.
-                          currentContext <- readIORef @context globalContext
-                          let (updatedModel, schedules) =
-                                _componentApplyActions (S.singleton action)
-                                  _componentModel _componentProps currentContext
-                          forM_ schedules $ \(_, sched) -> case sched of
-                            ContextModify f ->
-                              atomicModifyIORef' globalContext $ \c -> (f c, ())
-                            Schedule mThread synch effect ->
-                              unless (crossThread mThread) (evalScheduled synch (effect _componentSink))
-                          updatedContext <- readIORef globalContext
-                          when (not mts && currentContext /= updatedContext) enqueueContextPropagation
-                          when (_componentModelDirty _componentModel updatedModel) $ do
-                            modifyComponent _componentId (componentModel .= updatedModel)
-                            when (not mts) (renderComponent _componentId)
+                          -- dmj: enqueue the forwarded action onto the ordinary
+                          -- 'globalQueue' as 'Forwarded' rather than replaying
+                          -- 'update' inline here. This keeps the scheduler the sole
+                          -- writer of every model (no read-modify-write race with the
+                          -- scheduler's own 'commit') and preserves ordering relative
+                          -- to any 'Local' actions already queued for this component.
+                          -- The 'Forwarded' tag tells 'commit' to discard the action's
+                          -- cross-thread schedules instead of forwarding them back —
+                          -- they already ran at the origin — so it does not ping-pong.
+                          atomicModifyIORef' globalQueue $ \q ->
+                            (enqueue effectComponentId (Forwarded action) q, ())
+                          notify globalWaiter
                     Error e ->
                       FFI.consoleError ("[effectListener]: action decode error: " <> ms e)
 #endif
