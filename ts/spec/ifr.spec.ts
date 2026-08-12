@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import type { PATCH } from '../miso/types';
 import {
+  MAX_DEFERRED_INITIAL_FRAME_EVENTS,
   InitialFrameRecorder,
   InitialFrameReconciler,
   compareInitialFrames,
@@ -119,6 +120,7 @@ describe('initial-frame reconciliation state machine', () => {
 
     main.receive(mainMessages.shift()!);
     expect(main.state).toBe('adopted');
+    expect(main.status().session).toBe('session-1');
     expect(adopted).toEqual([
       [
         [0, 0],
@@ -147,13 +149,15 @@ describe('initial-frame reconciliation state machine', () => {
       { adoptNodeIds: () => order.push('adopt') },
     );
 
-    expect(main.deferEventUntilAdopted(() => order.push('event'))).toBe(true);
+    expect(main.deferEventUntilAdopted(() => order.push('event'), 'tap:bubble')).toBe(true);
+    expect(main.status().deferredEventTypes).toEqual({ 'tap:bubble': 1 });
     main.receive({ type: 'manifest', manifest: backgroundRecorder.snapshot('session-1') });
     main.finalize('main-local');
 
     expect(order).toEqual(['adopt', 'event']);
     expect(outgoing[0]).toEqual({ type: 'ack', version: 1, session: 'session-1' });
     expect(main.deferEventUntilAdopted(() => order.push('unexpected'))).toBe(false);
+    expect(main.status().deferredEventTypes).toEqual({});
   });
 
   test('fails closed on mismatch and sends a diagnostic NACK', () => {
@@ -177,6 +181,51 @@ describe('initial-frame reconciliation state machine', () => {
     expect(outgoing[0]?.type).toBe('nack');
     expect((outgoing[0] as any).reason).toContain('operation 0 differs');
     expect(errors[0]).toContain('operation 0 differs');
+
+    main.receive({ type: 'manifest', manifest: backgroundRecorder.snapshot('session-2') });
+    expect(main.state).toBe('rejected');
+    expect(outgoing[1]).toEqual({
+      type: 'nack',
+      version: 1,
+      session: 'session-2',
+      reason: expect.stringContaining('operation 0 differs'),
+    });
+  });
+
+  test('bounds early events and remains rejected when a manifest later arrives', () => {
+    const mainRecorder = new InitialFrameRecorder();
+    const backgroundRecorder = new InitialFrameRecorder();
+    recordFrame(mainRecorder, 1);
+    recordFrame(backgroundRecorder, 1);
+    const outgoing: Array<InitialFrameMessage> = [];
+    const errors: Array<string> = [];
+    const main = new InitialFrameReconciler(
+      'main',
+      mainRecorder,
+      {
+        send: (message) => outgoing.push(message),
+      },
+      {
+        reportError: (error) => errors.push(error),
+      },
+    );
+
+    for (let index = 0; index <= MAX_DEFERRED_INITIAL_FRAME_EVENTS; index++) {
+      expect(main.deferEventUntilAdopted(() => {}, `tap-${index}`)).toBe(true);
+    }
+    expect(main.state).toBe('rejected');
+    expect(main.status().deferredEvents).toBe(0);
+    expect(errors[0]).toContain('deferred event queue exceeded 256 entries');
+
+    main.finalize('main-local');
+    main.receive({ type: 'manifest', manifest: backgroundRecorder.snapshot('session-1') });
+    expect(main.state).toBe('rejected');
+    expect(outgoing.at(-1)).toEqual({
+      type: 'nack',
+      version: 1,
+      session: 'session-1',
+      reason: 'deferred event queue exceeded 256 entries',
+    });
   });
 
   test('ACKs a duplicate manifest but rejects a competing session', () => {

@@ -2,6 +2,7 @@ import type { PATCH } from '../types';
 
 export const INITIAL_FRAME_PROTOCOL_VERSION = 1;
 export const INITIAL_FRAME_CHANNEL = 'Miso.initial-frame';
+export const MAX_DEFERRED_INITIAL_FRAME_EVENTS = 256;
 
 export type InitialFrameThread = 'background' | 'main';
 export type InitialFrameState = 'recording' | 'awaiting-peer' | 'adopted' | 'rejected';
@@ -263,7 +264,7 @@ export class InitialFrameReconciler<PatchBatch = Array<PATCH>> {
   private retryCount = 0;
   private rejectionReason?: string;
   private readonly pendingPatches: Array<PatchBatch> = [];
-  private readonly deferredEvents: Array<() => void> = [];
+  private readonly deferredEvents: Array<{ label: string; replay: () => void }> = [];
 
   constructor(
     readonly thread: InitialFrameThread,
@@ -273,7 +274,7 @@ export class InitialFrameReconciler<PatchBatch = Array<PATCH>> {
   ) {}
 
   finalize(session = this.makeSession()): void {
-    if (this.localManifest) return;
+    if (this.localManifest || this.state === 'adopted' || this.state === 'rejected') return;
     this.session = session;
     this.localManifest = this.recorder.snapshot(session);
     this.state = 'awaiting-peer';
@@ -303,6 +304,13 @@ export class InitialFrameReconciler<PatchBatch = Array<PATCH>> {
         if (message.manifest.session === this.peerManifest?.session)
           this.sendAck(message.manifest.session);
         else this.sendNack(message.manifest.session, 'stale manifest after adoption');
+        return;
+      }
+      if (this.state === 'rejected') {
+        this.sendNack(
+          message.manifest.session,
+          this.rejectionReason ?? 'initial frame was already rejected',
+        );
         return;
       }
       if (this.peerManifest && this.peerManifest.session !== message.manifest.session) {
@@ -339,7 +347,11 @@ export class InitialFrameReconciler<PatchBatch = Array<PATCH>> {
     if (this.state === 'adopted') this.drainPatches();
   }
 
-  status(): Record<string, string | number | undefined> {
+  status(): Record<string, unknown> {
+    const deferredEventTypes: Record<string, number> = {};
+    for (const { label } of this.deferredEvents) {
+      deferredEventTypes[label] = (deferredEventTypes[label] ?? 0) + 1;
+    }
     return {
       thread: this.thread,
       state: this.state,
@@ -353,20 +365,37 @@ export class InitialFrameReconciler<PatchBatch = Array<PATCH>> {
       peerOperations: this.peerManifest?.operations.length,
       queuedPatchBatches: this.pendingPatches.length,
       deferredEvents: this.deferredEvents.length,
+      deferredEventTypes,
       retries: this.retryCount,
       rejectionReason: this.rejectionReason,
     };
   }
 
   /** Returns true when the caller must stop; the callback will replay after adoption. */
-  deferEventUntilAdopted(callback: () => void): boolean {
+  deferEventUntilAdopted(callback: () => void, label = 'unknown'): boolean {
     if (this.state === 'adopted') return false;
-    if (this.state !== 'rejected') this.deferredEvents.push(callback);
+    if (this.state !== 'rejected') {
+      if (this.deferredEvents.length >= MAX_DEFERRED_INITIAL_FRAME_EVENTS) {
+        this.reject(
+          `deferred event queue exceeded ${MAX_DEFERRED_INITIAL_FRAME_EVENTS} entries`,
+          this.peerManifest?.session ?? this.session ?? 'unknown',
+        );
+      } else {
+        this.deferredEvents.push({ label, replay: callback });
+      }
+    }
     return true;
   }
 
   private tryAdopt(): void {
-    if (this.thread !== 'main' || !this.localManifest || !this.peerManifest) return;
+    if (
+      this.thread !== 'main' ||
+      this.state === 'adopted' ||
+      this.state === 'rejected' ||
+      !this.localManifest ||
+      !this.peerManifest
+    )
+      return;
     const result = compareInitialFrames(this.localManifest, this.peerManifest);
     if (result.ok === false) {
       this.reject(result.reason, this.peerManifest.session);
@@ -378,11 +407,15 @@ export class InitialFrameReconciler<PatchBatch = Array<PATCH>> {
       this.reject(`node-id adoption threw: ${String(error)}`, this.peerManifest.session);
       return;
     }
+    // Once the manifests agree, the BTS session is authoritative for both
+    // threads. Keeping the MTS-local nonce here made diagnostics look like two
+    // different reconciliations even though adoption had succeeded.
+    this.session = this.peerManifest.session;
     this.state = 'adopted';
     this.sendAck(this.peerManifest.session);
     this.drainPatches();
     const events = this.deferredEvents.splice(0);
-    for (const replay of events) replay();
+    for (const { replay } of events) replay();
   }
 
   private publishManifest(): void {

@@ -206,7 +206,12 @@ function commitListInfo(st: ListState): void {
 // per-element bindings used for non-bubbling input events.
 export function routeEvent(e: Event, name: string, capture: boolean, mount: ElementRef, ctx: EventContext<ElementRef>): void {
   const ifr = globalThis['native']?.['ifr'] as InitialFrameReconciler<Array<PATCH>> | undefined;
-  if (ifr?.deferEventUntilAdopted(() => routeEvent(e, name, capture, mount, ctx))) return;
+  if (
+    ifr?.deferEventUntilAdopted(
+      () => routeEvent(e, name, capture, mount, ctx),
+      `${name}:${capture ? 'capture' : 'bubble'}`,
+    )
+  ) return;
   const target = ctx.getTarget(e);
   const phase = capture ? 'captures' : 'bubbles';
   const chain : Array<ElementRef> = [];
