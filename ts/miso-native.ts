@@ -160,6 +160,11 @@ globalThis['invokeExec'] = function
     success: (result: any) => void,
     fail: (result: string) => void
   ) {
+   // SelectorQuery is a background-thread API; on the main thread it's absent.
+   // A BTS `update`'s effect can fire on both threads, so no-op here rather than
+   // throw `lynx.createSelectorQuery is not a function` — the background-thread
+   // copy performs the actual UI-method invoke.
+   if (typeof (lynx as any).createSelectorQuery !== 'function') return;
    const args = { params, method, success, fail };
    return lynx.createSelectorQuery()
        .select(selector)
