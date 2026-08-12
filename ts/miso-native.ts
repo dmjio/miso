@@ -90,8 +90,8 @@ import { drawingContext as mtsDC, eventContext as mtsEC } from './miso/native/mt
 globalThis['nodeId'] = 1;
 globalThis['initialDraw'] = true;
 
-const drawingContext = __BACKGROUND__ ? btsDC : mtsDC;
-const eventContext  = __BACKGROUND__ ? btsEC  : mtsEC;
+const drawingContext = onBTS() ? btsDC : mtsDC;
+const eventContext  = onBTS() ? btsEC  : mtsEC;
 
 /* Named rendering engine looked up by `renderApp events "native"` (see
    Miso.Native.native) via `setDrawingContext`, and holds `currentPageId`
@@ -172,7 +172,7 @@ globalThis['invokeExec'] = function
        .exec();
 };
 
-if (__BACKGROUND__) {
+if (onBTS()) {
   globalThis['lynx'] = lynx;
   globalThis['patches'] = [];
   bts();
@@ -181,7 +181,11 @@ if (__BACKGROUND__) {
   globalThis['runWorklet'] = (worklet, params) => worklet(params);
 }
 
-/* Polyfills global rAF w/ lynx */
-globalThis['requestAnimationFrame'] = lynx['requestAnimationFrame'];
-globalThis['cancelAnimationFrame'] = lynx['cancelAnimationFrame'];
+/* Polyfills global rAF w/ lynx. Guarded on `typeof lynx` so this module can be
+   loaded off-device (e.g. the GHC-JS Template Haskell interpreter in Node, where
+   the Lynx `lynx` global is undefined) without throwing at import time. */
+if (typeof lynx !== 'undefined') {
+  globalThis['requestAnimationFrame'] = lynx['requestAnimationFrame'];
+  globalThis['cancelAnimationFrame'] = lynx['cancelAnimationFrame'];
+}
 globalThis['processData'] = () => {};
