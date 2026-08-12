@@ -448,7 +448,12 @@ scheduler Proxy =
             then _componentPostEffect originating
             else evalScheduled synch (effect _componentSink)
       updatedContext <- readIORef globalContext
-      when (currentContext /= updatedContext) enqueueContextPropagation
+      -- 'not mts': the sentinel this enqueues is a no-op there (see the
+      -- 'minBound' scheduler case) — MTS never draws context-driven changes
+      -- itself (BTS ships DOM patches) and never posts CONTEXT_HYDRATE
+      -- (that's BTS -> MTS only), so enqueueing from MTS would just be
+      -- dequeued and discarded a moment later.
+      when (not mts && currentContext /= updatedContext) enqueueContextPropagation
       if _componentModelDirty _componentModel updatedModel
         then do
           modifyComponent _componentId (componentModel .= updatedModel)
@@ -1074,7 +1079,7 @@ drain ComponentState {..} = do
              (_, ContextModify f) ->
                atomicModifyIORef' globalContext $ \ctx -> (f ctx, ())
            newContext <- readIORef globalContext
-           when (currentContext /= newContext) enqueueContextPropagation
+           when (not mts && currentContext /= newContext) enqueueContextPropagation
            -- dmj: One last context propagation before aborting.
            -- Don't recurse on drain, we only fire-off the last set
            -- of events for 'onBeforeUnmounted' hooks. The queue will
@@ -2188,7 +2193,7 @@ effectListener Proxy jsval = void $ do
                             Schedule mThread synch effect ->
                               unless (crossThread mThread) (evalScheduled synch (effect _componentSink))
                           updatedContext <- readIORef globalContext
-                          when (currentContext /= updatedContext) enqueueContextPropagation
+                          when (not mts && currentContext /= updatedContext) enqueueContextPropagation
                           when (_componentModelDirty _componentModel updatedModel) $ do
                             modifyComponent _componentId (componentModel .= updatedModel)
                             when (not mts) (renderComponent _componentId)
