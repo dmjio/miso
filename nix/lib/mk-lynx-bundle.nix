@@ -91,5 +91,7 @@ pkgs.stdenv.mkDerivation {
   installPhase = ''
     mkdir -p $out
     cp -r dist/. $out/
+    cd $out
+    ${pkgs.coreutils}/bin/sha256sum main.lynx.bundle > main.lynx.bundle.sha256
   '';
 }

@@ -6,9 +6,9 @@ host. Modeled on the official
 `KotlinEmptyProject`. **Host-only — no native modules** (add a `LynxModule` +
 `SharedPreferences` later if you want the `Miso.Storage` bridge).
 
-> Status: hand-authored integration files. This is **not verified to build** in
-> this repo's CI — it needs the Android toolchain. Generate the Gradle wrapper
-> and open in Android Studio to complete/run it.
+The Nix Android build and CI both inject the generated bundle; the repository
+does not carry a prebuilt binary. A direct Gradle build verifies the generated
+SHA-256 sidecar and fails before packaging if the bundle is missing or stale.
 
 ## What's here
 ```
@@ -22,19 +22,16 @@ app/src/main/java/io/dmj/miso/
   MisoApplication.kt                        # LynxEnv.init + service registration
   MainActivity.kt                           # LynxView + renderTemplateUrl
   MisoTemplateProvider.kt                   # loads bundle from assets/
-app/src/main/assets/main.lynx.bundle        # <-- copy the built bundle here
+app/src/main/assets/main.lynx.bundle        # generated, ignored by Git
+app/src/main/assets/main.lynx.bundle.sha256 # generated provenance sidecar
 ```
 
-## Still needed (one-time, IDE-generated)
-- **Gradle wrapper jar + scripts** (`gradle/wrapper/gradle-wrapper.jar`,
-  `gradlew`, `gradlew.bat`) — binary, not checked in here. Android Studio
-  generates them on first sync, or run `gradle wrapper --gradle-version 8.7`.
-- an app icon / theme if you want more than a bare activity.
-
 ## Build & run
-1. Build the bundle: `bun run js && nix-build -A sample-app-native-bundle`
-2. Copy it into **assets/** (not the module root):
-   `mkdir -p app/src/main/assets && cp result/main.lynx.bundle app/src/main/assets/`
+1. Preferred reproducible build: `nix-build -A sample-app-native-android`.
+2. For a direct Gradle/Android Studio build, first run
+   `nix-build -A sample-app-native-bundle`, then copy both
+   `result/main.lynx.bundle` and `result/main.lynx.bundle.sha256` into
+   `app/src/main/assets/`.
 3. Open `sample-app-native/android` in Android Studio → **Sync** (it downloads
    Gradle 8.7 and the `com.android.application` plugin from the repos in
    `settings.gradle.kts`) → run on a device/emulator (minSdk 24).

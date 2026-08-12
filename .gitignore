@@ -38,3 +38,5 @@ haddocks/
 /sample-app/public/
 
 .gradle
+sample-app-native/android/app/src/main/assets/main.lynx.bundle
+sample-app-native/android/app/src/main/assets/main.lynx.bundle.sha256

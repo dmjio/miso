@@ -131,6 +131,7 @@ jobs:
          nix-build -A sample-app-native-bundle
          mkdir -p bundle-artifact
          cp result/main.lynx.bundle bundle-artifact/main.lynx.bundle
+         cp result/main.lynx.bundle.sha256 bundle-artifact/main.lynx.bundle.sha256
 
      - name: Upload Lynx bundle
        uses: actions/upload-artifact@v4
@@ -268,6 +269,7 @@ jobs:
        run: |
          mkdir -p sample-app-native/android/app/src/main/assets
          cp bundle-artifact/main.lynx.bundle sample-app-native/android/app/src/main/assets/main.lynx.bundle
+         cp bundle-artifact/main.lynx.bundle.sha256 sample-app-native/android/app/src/main/assets/main.lynx.bundle.sha256
 
      - name: (Android) assemble debug APK
        working-directory: sample-app-native/android

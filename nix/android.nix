@@ -37,6 +37,7 @@ let
     chmod -R u+w $out
     mkdir -p $out/app/src/main/assets
     cp ${bundle}/main.lynx.bundle $out/app/src/main/assets/main.lynx.bundle
+    cp ${bundle}/main.lynx.bundle.sha256 $out/app/src/main/assets/main.lynx.bundle.sha256
     # SDK location comes from ANDROID_HOME, not a checked-in local.properties.
     rm -f $out/local.properties
   '';

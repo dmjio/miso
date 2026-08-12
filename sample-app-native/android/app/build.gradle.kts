@@ -1,3 +1,5 @@
+import java.security.MessageDigest
+
 // Android host for the miso-native Lynx bundle. Versions/artifacts mirror the
 // official lynx-family integrating-lynx-demo-projects KotlinEmptyProject
 // (Lynx SDK 3.8.0). Native modules are intentionally omitted — this host only
@@ -61,4 +63,26 @@ dependencies {
   implementation("org.lynxsdk.lynx:xelement-svg:3.8.0")
   implementation("org.lynxsdk.lynx:servalsvg:0.0.1-alpha.3")
   implementation("org.lynxsdk.lynx:xelement-refresh:3.8.0")
+}
+
+val lynxBundle = layout.projectDirectory.file("src/main/assets/main.lynx.bundle").asFile
+val lynxBundleChecksum =
+  layout.projectDirectory.file("src/main/assets/main.lynx.bundle.sha256").asFile
+
+tasks.named("preBuild").configure {
+  doFirst {
+    check(lynxBundle.isFile && lynxBundleChecksum.isFile) {
+      "Missing generated Lynx bundle/checksum. Build with " +
+        "`nix-build -A sample-app-native-android`, or copy both files from " +
+        "`nix-build -A sample-app-native-bundle`."
+    }
+    val expected = lynxBundleChecksum.readText().trim().substringBefore(' ')
+    val actual = MessageDigest.getInstance("SHA-256")
+      .digest(lynxBundle.readBytes())
+      .joinToString("") { "%02x".format(it) }
+    check(expected == actual) {
+      "Stale main.lynx.bundle: expected SHA-256 $expected, got $actual. " +
+        "Copy the bundle and checksum from the same generated artifact."
+    }
+  }
 }
