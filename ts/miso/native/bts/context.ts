@@ -254,10 +254,11 @@ const drawingContext : DrawingContext<NodeId> = {
         mount completes (Miso.Runtime.initComponent) — NOT here — because the initial
         draw performs one flush per mounted component; flipping it per-flush tripped
         on the first nested child and leaked the rest of the frame as duplicate nodes. */
-     if (!globalThis['initialDraw']) {
+     const patches = globalThis['patches'] as Array<PATCH>;
+     if (!globalThis['initialDraw'] && patches.length > 0) {
        const context = lynx.getCoreContext();
        if (context)
-         context.dispatchEvent({ type: 'Miso.patches', data: globalThis['patches'] as Array<PATCH> });
+         context.dispatchEvent({ type: 'Miso.patches', data: patches });
      }
      globalThis['patches'] = [];
   },

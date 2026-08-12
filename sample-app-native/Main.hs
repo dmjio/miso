@@ -827,6 +827,6 @@ mountedComponentSection theme eventCount = section "vcomp \8212 statically-mount
     ]
     [ text_ [ CSS.style_ [ CSS.color CSS.white, txtLine ] ]
         [ text (ms ("tap to toggle theme (currently " <> show theme <> ")")) ] ]
-  , vcomp (BadgeProps eventCount) (static (mountStaticWithProps_ "gallery-badge" badgeComponent))
+  , vcomp (BadgeProps eventCount) (static (mountStaticWithProps badgeComponent))
   ]
 -----------------------------------------------------------------------------

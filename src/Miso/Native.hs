@@ -241,7 +241,7 @@ module Miso.Native
      -- * 'Miso.Types.Component' mounting
    , mountStatic_
    , mountStaticWithProps
-   , mountStaticWithProps_
+   , mountStaticUseContext
      -- * Element
    , module Miso.Native.Element
      -- * FFI
@@ -252,7 +252,7 @@ module Miso.Native
 -----------------------------------------------------------------------------
 import Miso.Runtime (initComponent)
 import Miso.Types (Events, SomeStaticComponent(..), SomeComponent(..), Hydrate(..))
-import Miso.Types (mountStatic_, mountStaticWithProps_, mountStaticWithProps)
+import Miso.Types (mountStatic_, mountStaticWithProps, mountStaticUseContext)
 import Miso.JSON (ToJSON, FromJSON)
 -----------------------------------------------------------------------------
 import Miso.Native.Element

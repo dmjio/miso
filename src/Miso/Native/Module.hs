@@ -120,10 +120,6 @@ callNativeModuleWith name method args k = do
   let deliver jval = do
         already <- modifyMVar fired (\f -> pure (True, f))
         if already then pure () else do
-          rawNull  <- isNull jval
-          rawUndef <- isUndefined jval
-          consoleError ("callNativeModuleWith: " <> name <> "." <> method
-            <> " delivered null=" <> ms (show rawNull) <> " undef=" <> ms (show rawUndef))
           result <- fromJSVal_Value jval
           case fromJSON <$> result of
             Just (Success x) -> k (Right x)
