@@ -7,7 +7,7 @@ self: super:
 {
   /* miso */
   miso = self.callCabal2nix "miso" source.miso {};
-  miso-native = self.callCabal2nixWithOptions "miso" source.miso "-fnative" {};
+  miso-native = self.callCabal2nixWithOptions "miso" source.miso "-fnative -ftemplate-haskell" {};
 
   /* examples */
   sample-app-native =
