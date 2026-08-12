@@ -247,4 +247,38 @@ describe('initial-frame reconciliation state machine', () => {
     expect(outgoing.map((message) => message.type)).toEqual(['ack', 'ack', 'nack']);
     expect((outgoing[2] as any).reason).toBe('stale manifest after adoption');
   });
+
+  test('keeps BTS adopted and rejected states terminal under reordered replies', () => {
+    const rejectedRecorder = new InitialFrameRecorder();
+    recordFrame(rejectedRecorder, 1);
+    const rejected = new InitialFrameReconciler('background', rejectedRecorder, {
+      send: () => {},
+    });
+    rejected.finalize('rejected-session');
+    rejected.receive({
+      type: 'nack',
+      version: 1,
+      session: 'rejected-session',
+      reason: 'main rejected',
+    });
+    expect(rejected.state).toBe('rejected');
+    rejected.receive({ type: 'ack', version: 1, session: 'rejected-session' });
+    expect(rejected.state).toBe('rejected');
+
+    const adoptedRecorder = new InitialFrameRecorder();
+    recordFrame(adoptedRecorder, 1);
+    const adopted = new InitialFrameReconciler('background', adoptedRecorder, {
+      send: () => {},
+    });
+    adopted.finalize('adopted-session');
+    adopted.receive({ type: 'ack', version: 1, session: 'adopted-session' });
+    expect(adopted.state).toBe('adopted');
+    adopted.receive({
+      type: 'nack',
+      version: 1,
+      session: 'adopted-session',
+      reason: 'late nack',
+    });
+    expect(adopted.state).toBe('adopted');
+  });
 });

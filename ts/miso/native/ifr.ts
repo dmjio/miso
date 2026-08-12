@@ -286,6 +286,21 @@ export class InitialFrameReconciler<PatchBatch = Array<PATCH>> {
   }
 
   receive(message: InitialFrameMessage): void {
+    // Adoption/rejection are terminal. A delayed ACK/NACK must not resurrect a
+    // rejected BTS or roll an adopted BTS back after messages are reordered.
+    // A rejected MTS still answers a retried manifest with its original NACK
+    // so the BTS can converge on the same terminal result.
+    if (this.state === 'rejected') {
+      if (message.type === 'manifest' && this.thread === 'main') {
+        this.sendNack(
+          message.manifest.session,
+          this.rejectionReason ?? 'initial frame was already rejected',
+        );
+      }
+      return;
+    }
+    if (this.state === 'adopted' && message.type !== 'manifest') return;
+
     if (message.type !== 'manifest' && message.version !== INITIAL_FRAME_PROTOCOL_VERSION) {
       this.reject(`unsupported peer protocol version ${message.version}`, message.session);
       return;
@@ -304,13 +319,6 @@ export class InitialFrameReconciler<PatchBatch = Array<PATCH>> {
         if (message.manifest.session === this.peerManifest?.session)
           this.sendAck(message.manifest.session);
         else this.sendNack(message.manifest.session, 'stale manifest after adoption');
-        return;
-      }
-      if (this.state === 'rejected') {
-        this.sendNack(
-          message.manifest.session,
-          this.rejectionReason ?? 'initial frame was already rejected',
-        );
         return;
       }
       if (this.peerManifest && this.peerManifest.session !== message.manifest.session) {
