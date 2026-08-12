@@ -257,7 +257,7 @@ action_ :: MisoString -> Attribute model action
 action_  = textProp "action"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes/autocomplete>
-autocomplete_ :: MisoString -> Attribute action
+autocomplete_ :: MisoString -> Attribute model action
 autocomplete_ = textProp "autocomplete"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/autosave>
@@ -265,11 +265,11 @@ autosave_ :: MisoString -> Attribute model action
 autosave_ = textProp "autosave"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/autocorrect>
-autocorrect_ :: Bool -> Attribute action
+autocorrect_ :: Bool -> Attribute model action
 autocorrect_ b = textProp "autocorrect" (if b then "on" else "off")
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/spellcheck>
-spellcheck_ :: Bool -> Attribute action
+spellcheck_ :: Bool -> Attribute model action
 spellcheck_ b = textProp "spellcheck" (if b then "true" else "false")
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/role>
