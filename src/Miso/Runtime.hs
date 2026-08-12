@@ -2136,7 +2136,7 @@ propsTypeOnly :: props
 propsTypeOnly = error "Miso.Runtime: props forced during type-only Props application"
 -----------------------------------------------------------------------------
 -- | Used for bidirectional cross-thread communication.
-effectListener :: forall context jsval . ToJSVal jsval => Proxy context -> jsval -> IO ()
+effectListener :: forall context jsval . (Eq context, ToJSVal jsval) => Proxy context -> jsval -> IO ()
 effectListener Proxy jsval = void $ do
   ctx <- toJSVal jsval
   FFI.addEventListener ctx "Miso.effects" $ \msgEvent ->
@@ -2163,7 +2163,35 @@ effectListener Proxy jsval = void $ do
                             "[effectListener]: ComponentId NOT registered:" <> ms effectComponentId
                         Just ComponentState {..} -> do
                           FFI.consoleLog "[effectListener]: Sinking action into Component"
-                          _componentSink action
+                          -- dmj: replay 'update' directly rather than going through
+                          -- '_componentSink' \/ the normal scheduler queue. Re-running
+                          -- 'update' here is required (it reconstructs the effect
+                          -- closure locally and keeps this thread's own model copy in
+                          -- sync with the thread the action originated on), but unlike
+                          -- an ordinary local dispatch, a schedule tagged for the
+                          -- /other/ thread must be discarded, not forwarded again: it
+                          -- already ran once, at the origin, before this action was
+                          -- forwarded to us. Replaying 'update' reproduces every
+                          -- schedule the origin saw — not just the one that caused
+                          -- this specific hop — so routing every 'crossThread' one
+                          -- through '_componentPostEffect' (as the scheduler's
+                          -- 'commit' does for a fresh dispatch) would bounce it
+                          -- straight back, and each hop re-executes both effects,
+                          -- forever.
+                          currentContext <- readIORef @context globalContext
+                          let (updatedModel, schedules) =
+                                _componentApplyActions (S.singleton action)
+                                  _componentModel _componentProps currentContext
+                          forM_ schedules $ \(_, sched) -> case sched of
+                            ContextModify f ->
+                              atomicModifyIORef' globalContext $ \c -> (f c, ())
+                            Schedule mThread synch effect ->
+                              unless (crossThread mThread) (evalScheduled synch (effect _componentSink))
+                          updatedContext <- readIORef globalContext
+                          when (currentContext /= updatedContext) enqueueContextPropagation
+                          when (_componentModelDirty _componentModel updatedModel) $ do
+                            modifyComponent _componentId (componentModel .= updatedModel)
+                            when (not mts) (renderComponent _componentId)
                     Error e ->
                       FFI.consoleError ("[effectListener]: action decode error: " <> ms e)
 #endif
