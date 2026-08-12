@@ -91,6 +91,15 @@
             styles = ./sample-app-native/styles.css;
           };
 
+          # Core-elements-only dual-thread fixture for deterministic runtime
+          # conformance. This is intentionally separate from the gallery.
+          sample-app-native-conformance-bundle = pkgs.mkLynxBundle {
+            name = "sample-app-native-conformance-bundle";
+            jsDrv = pkgs.pkgsCross.ghcjs.haskell.packages.ghcNative.sample-app-native;
+            exeName = "app-native-conformance";
+            styles = ./sample-app-native/conformance.css;
+          };
+
           # Util
           inherit (pkgs.haskell.packages.ghc9122)
             miso-from-html;

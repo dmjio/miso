@@ -1,0 +1,4 @@
+/* Keep the native page behind the core-only fixture deterministic. */
+page {
+  background-color: #0f172a;
+}

@@ -51,7 +51,7 @@ in
   sample-app = make-src-filter { src = ../sample-app; };
   sample-app-native = make-src-filter {
     src = ../sample-app-native;
-    excludedNames = [ "android" "ios" "build" "styles.css" ];
+    excludedNames = [ "android" "ios" "build" "styles.css" "conformance.css" ];
   };
 
   # non-flakified sources
