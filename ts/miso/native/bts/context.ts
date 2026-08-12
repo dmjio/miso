@@ -1,11 +1,11 @@
-import {
+import { delegateEvent } from '../../event';
+import { getDOMRef } from '../../util';
+import type {
   NodeId,
-  getDOMRef,
   VComp,
   DrawingContext,
   EventContext,
   EventCapture,
-  delegateEvent,
   VTree,
   AddClass,
   AddEvent,
@@ -26,7 +26,8 @@ import {
   SetInlineStyle,
   RemoveAttribute,
   RemoveClass,
-} from '../../../miso';
+} from '../../types';
+import { initialFrameRecorder, type InitialFrameReconciler } from '../ifr';
 
 function nextNodeId () : number {
   'background only'
@@ -35,6 +36,7 @@ function nextNodeId () : number {
 
 function addPatch (patch : PATCH) : void {
   'background only'
+  if (globalThis['initialDraw']) initialFrameRecorder.record(patch);
   globalThis['patches'].push(patch);
 }
 
@@ -257,8 +259,9 @@ const drawingContext : DrawingContext<NodeId> = {
      const patches = globalThis['patches'] as Array<PATCH>;
      if (!globalThis['initialDraw'] && patches.length > 0) {
        const context = lynx.getCoreContext();
-       if (context)
-         context.dispatchEvent({ type: 'Miso.patches', data: patches });
+       const ifr = globalThis['native']['ifr'] as InitialFrameReconciler<Array<PATCH>>;
+       if (ifr) ifr.sendOrQueuePatches(patches);
+       else if (context) context.dispatchEvent({ type: 'Miso.patches', data: patches });
      }
      globalThis['patches'] = [];
   },

@@ -15,13 +15,14 @@
 
 */
 
-import
+import type
   { PATCH,
     Runtime,
-  } from "../../miso";
+  } from "../types";
 
 import type { ElementRef } from "@lynx-js/type-element-api";
 import { observePatchedNodeId } from './node-id';
+import type { InitialFrameReconciler } from './ifr';
 
 import
   { drawingContext
@@ -34,6 +35,7 @@ export function mts () {
   __SetCSSId([page], 0);
   globalThis['native']['currentPageId'] = pageId;
   globalThis['page'] = page;
+  __SetConfig(page, { nodeId: 0 });
 
   /* sets page as root node in document */
   globalThis['document'] = {} as any;
@@ -53,13 +55,16 @@ function initMainThreadProcessing () {
   runtime.nodes[0] = globalThis['page'];
   globalThis['runtime'] = runtime;
 
+  const ifr = globalThis['native']['ifr'] as InitialFrameReconciler<Array<PATCH>>;
+  const deliver = (patches: Array<PATCH>) => {
+    for (const patch of patches) processMessage(patch, runtime);
+    if (patches.length > 0) drawingContext.flush();
+  };
+  ifr?.setPatchDelivery(deliver);
+
   context.addEventListener("Miso.patches", (messages : MessageEvent<Array<PATCH>>) => {
-    for (const m of messages.data) {
-       processMessage(m,runtime);
-    }
-    if (messages.data.length > 0) {
-       drawingContext.flush();
-    }
+    if (ifr) ifr.receiveOrQueuePatches(messages.data);
+    else deliver(messages.data);
   });
 }
 

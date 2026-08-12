@@ -80,6 +80,7 @@
     "ts/miso/native/bts/context.ts",
     "ts/miso/native/mts.ts",
     "ts/miso/native/node-id.ts",
+    "ts/miso/native/ifr.ts",
     "ts/miso/native/mts/context.ts",
     "ts/miso.spec.ts",
     "ts/spec/dom.spec.ts",

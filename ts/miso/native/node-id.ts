@@ -5,3 +5,11 @@
 export function observePatchedNodeId (nodeId : number) {
   globalThis['nodeId'] = Math.max(globalThis['nodeId'], nodeId + 1);
 }
+
+/* IFR is the one point where BTS identity is authoritative and an MTS-local
+   allocator drift must be replaced rather than monotonically preserved. */
+export function adoptAuthoritativeNodeIds (nodeIds : Iterable<number>) {
+  let maxNodeId = 0;
+  for (const nodeId of nodeIds) maxNodeId = Math.max(maxNodeId, nodeId);
+  globalThis['nodeId'] = maxNodeId + 1;
+}

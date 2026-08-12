@@ -6,7 +6,7 @@
    build they don't exist, which is exactly why this code has no other coverage. */
 import { test, expect, describe, beforeEach, afterEach, afterAll, beforeAll } from 'bun:test';
 import { routeEvent, destroyNodeEvents, drawingContext } from '../miso/native/mts/context';
-import { observePatchedNodeId } from '../miso/native/node-id';
+import { adoptAuthoritativeNodeIds, observePatchedNodeId } from '../miso/native/node-id';
 import type { EventContext } from '../miso/types';
 
 /* silence the module's console.error diagnostics */
@@ -175,5 +175,13 @@ describe('Native MTS node id allocation', () => {
     observePatchedNodeId(17);
 
     expect(globalThis['nodeId']).toBe(42);
+  });
+
+  test('one-time IFR adoption replaces a drifted local allocator', () => {
+    globalThis['nodeId'] = 43;
+
+    adoptAuthoritativeNodeIds([0, 1, 2]);
+
+    expect(globalThis['nodeId']).toBe(3);
   });
 });
