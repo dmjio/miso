@@ -1934,7 +1934,8 @@ transition x = "transition" =: x
 -- >>> transition_ "transform" (s 0.3) (cubicBezier 0.22 1 0.36 1)
 -- ("transition","transform 0.3s cubic-bezier(0.22,1,0.36,1)")
 transition_ :: MisoString -> MisoString -> MisoString -> Style
-transition_ prop dur timing = "transition" =: (prop <> " " <> dur <> " " <> timing)
+transition_ property duration timing =
+  "transition" =: (property <> " " <> duration <> " " <> timing)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/transition-property
 --
