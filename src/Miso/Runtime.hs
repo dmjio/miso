@@ -131,8 +131,8 @@ import           Control.Monad.Reader (ask, asks)
 import           Control.Monad.State hiding (state)
 import           Miso.JSON (FromJSON, ToJSON, Result(..), Value, encode, fromJSON, jsonStringify, toJSON)
 
-#if !MIN_VERSION_base(4,20,0)
-import           Data.List (foldl')
+#if __GLASGOW_HASKELL__ < 910
+import           Data.Foldable (foldl')
 #endif
 import           Data.Maybe
 import           Data.Map.Strict (Map)
