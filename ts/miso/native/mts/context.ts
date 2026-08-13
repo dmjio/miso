@@ -80,6 +80,36 @@ const mainThreadKeys = new Map<number, MainThreadKeys>();
 // point is destruction — see `destroyNodeEvents`.
 const directBindings = new Map<number, Set<string>>();
 
+/** Drop MTS-only registries before a BTS-authoritative full-tree repaint. */
+export function resetInitialFrameRegistries(nodes: Record<number, ElementRef>): void {
+  for (const [nodeIdText, node] of Object.entries(nodes)) {
+    const nodeId = Number(nodeIdText);
+    // The root element survives, but its initial-frame event bindings do not:
+    // the authoritative patch replay will register them again.
+    destroyNodeEvents(node, nodeId);
+  }
+  mainThreadKeys.clear();
+  directBindings.clear();
+  listStates.clear();
+}
+
+/**
+ * Convert DrawingContext's `(parent, inserted, anchor)` order to the BTS patch
+ * schema, whose historical field names are `(parent, node, child)`.
+ */
+export function mtsInsertBeforePatch(
+  parentNodeId: number,
+  insertedNodeId: number,
+  anchorNodeId: number,
+): Extract<PATCH, { type: 'insertBefore' }> {
+  return {
+    type: 'insertBefore',
+    parent: parentNodeId,
+    node: insertedNodeId,
+    child: anchorNodeId,
+  };
+}
+
 function remapMap<T>(source: Map<number, T>, nodeIds: Map<number, number>): Map<number, T> {
   const adopted = new Map<number, T>();
   for (const [localId, value] of source) {
@@ -472,12 +502,16 @@ export const drawingContext : DrawingContext<ElementRef> = {
     return __RemoveElement (parent, child);
   },
   insertBefore : (parent, child, node) => {
-    recordInitialPatch({
-      type: 'insertBefore',
-      parent: requiredNodeId(parent),
-      node: requiredNodeId(child),
-      child: requiredNodeId(node),
-    });
+    // Intentional crossing: DrawingContext calls the inserted element `child`
+    // and the anchor `node`, while the BTS PATCH schema calls them `node` and
+    // `child` respectively. Keep this helper and its cross-thread spec paired.
+    recordInitialPatch(
+      mtsInsertBeforePatch(
+        requiredNodeId(parent),
+        requiredNodeId(child),
+        requiredNodeId(node),
+      ),
+    );
     const st = listStateOf(parent);
     if (st) {
       const i = st.items.indexOf(node);

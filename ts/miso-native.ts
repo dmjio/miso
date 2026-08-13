@@ -84,7 +84,7 @@ import {
 } from './miso';
 
 import { bts } from './miso/native/bts';
-import { mts } from './miso/native/mts';
+import { mts, resetInitialFrame } from './miso/native/mts';
 import { drawingContext as btsDC, eventContext as btsEC } from './miso/native/bts/context';
 import {
   adoptInitialFrameNodeIds,
@@ -129,6 +129,12 @@ function installInitialFrameReconciliation(thread: InitialFrameThread) {
       deliverPatches: thread === 'background'
         ? patches => peer?.dispatchEvent({ type: 'Miso.patches', data: patches })
         : undefined,
+      fallbackPatches:
+        thread === 'background' ? () => initialFrameRecorder.fullTreePatches() : undefined,
+      prepareFallback: thread === 'main' ? resetInitialFrame : undefined,
+      // Production exchanges a rolling digest. `debug` opts into the original
+      // full-manifest handshake for validation and per-operation diagnostics.
+      debugManifest: globalThis['debug'] === true,
       reportError: message => console.error(message),
       scheduleRetry: (callback, delayMs) => setTimeout(callback, delayMs),
       cancelRetry: token => clearTimeout(token as ReturnType<typeof setTimeout>),

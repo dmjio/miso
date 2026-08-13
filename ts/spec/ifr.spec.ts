@@ -4,9 +4,11 @@ import {
   MAX_DEFERRED_INITIAL_FRAME_EVENTS,
   InitialFrameRecorder,
   InitialFrameReconciler,
+  compareInitialFrameDigests,
   compareInitialFrames,
   type InitialFrameMessage,
 } from '../miso/native/ifr';
+import { mtsInsertBeforePatch } from '../miso/native/mts/context';
 
 function recordFrame(recorder: InitialFrameRecorder, firstNodeId: number): void {
   const secondNodeId = firstNodeId + 1;
@@ -68,6 +70,56 @@ describe('initial-frame manifest', () => {
     background.record({ type: 'createElement', nodeId: 9, tag: 'view' });
     main.record({ type: 'setAttribute', nodeId: 1, key: 'payload', value: { z: 1, a: 2 } });
     background.record({ type: 'setAttribute', nodeId: 9, key: 'payload', value: { a: 2, z: 1 } });
+
+    expect(compareInitialFrames(main.snapshot('main'), background.snapshot('background')).ok).toBe(
+      true,
+    );
+  });
+
+  test('compares compact rolling digests and preserves slot-based node-id adoption', () => {
+    const main = new InitialFrameRecorder();
+    const background = new InitialFrameRecorder();
+    recordFrame(main, 41);
+    recordFrame(background, 1);
+
+    const mainDigest = main.digest('main');
+    const backgroundDigest = background.digest('background');
+    const result = compareInitialFrameDigests(mainDigest, backgroundDigest);
+
+    expect(mainDigest.operationHash).toHaveLength(16);
+    expect(result.ok).toBe(true);
+    if (result.ok)
+      expect([...result.nodeIds.entries()]).toEqual([
+        [0, 0],
+        [41, 1],
+        [42, 2],
+      ]);
+
+    const changed = new InitialFrameRecorder();
+    recordFrame(changed, 1);
+    changed.record({ type: 'setTextContent', nodeId: 2, text: 'drift' });
+    expect(compareInitialFrameDigests(mainDigest, changed.digest('changed'))).toEqual({
+      ok: false,
+      reason: 'operation count 6 != 7',
+    });
+  });
+
+  test('normalizes MTS and BTS insertBefore argument conventions identically', () => {
+    const main = new InitialFrameRecorder();
+    const background = new InitialFrameRecorder();
+    for (const [recorder, firstNodeId] of [
+      [main, 41],
+      [background, 1],
+    ] as const) {
+      recorder.record({ type: 'createElement', nodeId: firstNodeId, tag: 'view' });
+      recorder.record({ type: 'createElement', nodeId: firstNodeId + 1, tag: 'text' });
+      recorder.record({ type: 'createElement', nodeId: firstNodeId + 2, tag: 'image' });
+    }
+
+    // MTS DrawingContext: (parent, inserted child, anchor node).
+    main.record(mtsInsertBeforePatch(41, 42, 43));
+    // BTS PATCH schema: `node` is inserted and `child` is the anchor.
+    background.record({ type: 'insertBefore', parent: 1, node: 2, child: 3 });
 
     expect(compareInitialFrames(main.snapshot('main'), background.snapshot('background')).ok).toBe(
       true,
@@ -160,36 +212,62 @@ describe('initial-frame reconciliation state machine', () => {
     expect(main.status().deferredEventTypes).toEqual({});
   });
 
-  test('fails closed on mismatch and sends a diagnostic NACK', () => {
+  test('falls back to a BTS-authoritative repaint after a mismatch', () => {
     const mainRecorder = new InitialFrameRecorder();
     const backgroundRecorder = new InitialFrameRecorder();
     mainRecorder.record({ type: 'createElement', nodeId: 1, tag: 'view' });
     backgroundRecorder.record({ type: 'createElement', nodeId: 1, tag: 'text' });
-    const outgoing: Array<InitialFrameMessage> = [];
+    const mainMessages: Array<InitialFrameMessage> = [];
+    const backgroundMessages: Array<InitialFrameMessage> = [];
     const errors: Array<string> = [];
-    const main = new InitialFrameReconciler(
+    const order: Array<string> = [];
+    const delivered: Array<Array<string>> = [];
+    const main = new InitialFrameReconciler<Array<string>>(
       'main',
       mainRecorder,
-      { send: (message) => outgoing.push(message) },
-      { reportError: (error) => errors.push(error) },
+      { send: (message) => backgroundMessages.push(message) },
+      {
+        prepareFallback: () => order.push('clear-main-tree'),
+        deliverPatches: (patches) => {
+          order.push(`deliver:${patches.join(',')}`);
+          delivered.push(patches);
+        },
+        reportError: (error) => errors.push(error),
+      },
+    );
+    const background = new InitialFrameReconciler<Array<string>>(
+      'background',
+      backgroundRecorder,
+      { send: (message) => mainMessages.push(message) },
+      {
+        fallbackPatches: () => ['full-tree'],
+        deliverPatches: (patches) => main.receiveOrQueuePatches(patches),
+        reportError: (error) => errors.push(error),
+      },
     );
 
     main.finalize('main-local');
-    main.receive({ type: 'manifest', manifest: backgroundRecorder.snapshot('session-1') });
+    background.sendOrQueuePatches(['incremental']);
+    background.finalize('session-1');
+    expect(mainMessages[0]?.type).toBe('digest');
 
-    expect(main.state).toBe('rejected');
-    expect(outgoing[0]?.type).toBe('nack');
-    expect((outgoing[0] as any).reason).toContain('operation 0 differs');
-    expect(errors[0]).toContain('operation 0 differs');
+    main.receive(mainMessages.shift()!);
+    expect(main.state).toBe('recovering');
+    expect(backgroundMessages[0]?.type).toBe('nack');
 
-    main.receive({ type: 'manifest', manifest: backgroundRecorder.snapshot('session-2') });
-    expect(main.state).toBe('rejected');
-    expect(outgoing[1]).toEqual({
-      type: 'nack',
-      version: 1,
-      session: 'session-2',
-      reason: expect.stringContaining('operation 0 differs'),
-    });
+    background.receive(backgroundMessages.shift()!);
+    expect(background.state).toBe('adopted');
+    expect(mainMessages.map(({ type }) => type)).toEqual([
+      'diagnostic',
+      'fallback-start',
+      'fallback-complete',
+    ]);
+    for (const message of mainMessages.splice(0)) main.receive(message);
+
+    expect(main.state).toBe('adopted');
+    expect(order).toEqual(['clear-main-tree', 'deliver:full-tree', 'deliver:incremental']);
+    expect(delivered).toEqual([['full-tree'], ['incremental']]);
+    expect(errors.some((error) => error.includes('operation 0 differs'))).toBe(true);
   });
 
   test('bounds early events and remains rejected when a manifest later arrives', () => {

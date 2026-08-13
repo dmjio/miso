@@ -7,6 +7,7 @@
 import { test, expect, describe, beforeEach, afterEach, afterAll, beforeAll } from 'bun:test';
 import { routeEvent, destroyNodeEvents, drawingContext } from '../miso/native/mts/context';
 import { adoptAuthoritativeNodeIds, observePatchedNodeId } from '../miso/native/node-id';
+import { resetInitialFrame } from '../miso/native/mts';
 import type { EventContext } from '../miso/types';
 
 /* silence the module's console.error diagnostics */
@@ -154,6 +155,17 @@ describe('destroyNodeEvents — registry teardown', () => {
   });
 });
 
+afterEach(() => {
+  globalThis['nodeId'] = 1;
+  delete globalThis['runtime'];
+  delete globalThis['page'];
+  delete globalThis['initialDraw'];
+  delete globalThis['__GetElementUniqueID'];
+  delete globalThis['__FirstElement'];
+  delete globalThis['__NextElement'];
+  delete globalThis['__RemoveElement'];
+});
+
 describe('Native MTS node id allocation', () => {
   afterEach(() => {
     globalThis['nodeId'] = 1;
@@ -183,5 +195,37 @@ describe('Native MTS node id allocation', () => {
     adoptAuthoritativeNodeIds([0, 1, 2]);
 
     expect(globalThis['nodeId']).toBe(3);
+  });
+
+  test('clears the MTS-painted tree but preserves the page root for fallback', () => {
+    type FakeElement = {
+      id: number;
+      parent?: FakeElement;
+      children: Array<FakeElement>;
+    };
+    const root: FakeElement = { id: 0, children: [] };
+    const first: FakeElement = { id: 41, parent: root, children: [] };
+    const second: FakeElement = { id: 42, parent: root, children: [] };
+    root.children.push(first, second);
+    globalThis['runtime'] = { nodes: { 0: root, 41: first, 42: second } };
+    globalThis['page'] = root;
+    globalThis['nodeId'] = 43;
+    globalThis['initialDraw'] = false;
+    globalThis['__GetElementUniqueID'] = ((node: FakeElement) => node.id) as any;
+    globalThis['__FirstElement'] = ((node: FakeElement) => node.children[0] ?? null) as any;
+    globalThis['__NextElement'] = ((node: FakeElement) => {
+      const siblings = node.parent?.children ?? [];
+      return siblings[siblings.indexOf(node) + 1] ?? null;
+    }) as any;
+    globalThis['__RemoveElement'] = ((parent: FakeElement, child: FakeElement) => {
+      parent.children.splice(parent.children.indexOf(child), 1);
+      return child;
+    }) as any;
+
+    resetInitialFrame();
+
+    expect(root.children).toEqual([]);
+    expect(globalThis['runtime'].nodes).toEqual({ 0: root });
+    expect(globalThis['nodeId']).toBe(1);
   });
 });

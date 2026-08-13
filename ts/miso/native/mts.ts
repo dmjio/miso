@@ -21,12 +21,13 @@ import type
   } from "../types";
 
 import type { ElementRef } from "@lynx-js/type-element-api";
-import { observePatchedNodeId } from './node-id';
+import { adoptAuthoritativeNodeIds, observePatchedNodeId } from './node-id';
 import type { InitialFrameReconciler } from './ifr';
 
 import
   { drawingContext
   , destroyNodeEvents
+  , resetInitialFrameRegistries
   } from './mts/context';
 
 export function mts () {
@@ -41,6 +42,28 @@ export function mts () {
   globalThis['document'] = {} as any;
   globalThis['document']['body'] = page as any;
   initMainThreadProcessing();
+}
+
+/**
+ * Remove the MTS-painted first frame while preserving the Lynx page root. The
+ * next patch batch can then rebuild the tree with BTS-authoritative node ids.
+ */
+export function resetInitialFrame(): void {
+  const runtime = globalThis['runtime'] as Runtime<ElementRef> | undefined;
+  const root = runtime?.nodes?.[0] ?? globalThis['page'];
+  if (!runtime?.nodes || !root) throw new Error('[miso IFR] MTS root is not initialized');
+
+  resetInitialFrameRegistries(runtime.nodes);
+  for (let child = __FirstElement(root) as ElementRef; child; ) {
+    const next = __NextElement(child) as ElementRef;
+    // The page root is never a recycler/list. Registries are already cleared,
+    // so use the primitive directly and avoid recording these recovery-only
+    // removals as part of a new initial frame.
+    __RemoveElement(root, child);
+    child = next;
+  }
+  runtime.nodes = { 0: root };
+  adoptAuthoritativeNodeIds([0]);
 }
 
 /* Method to initialize main thread event handling / processing */

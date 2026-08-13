@@ -304,18 +304,19 @@ initialize events _componentParentId hydrate isRoot initialProps maybeKey _compo
   registerComponent vcomponent
   initSubs subs _componentSubThreads _componentSink
 #ifdef NATIVE
-  -- Test-only/runtime-diagnostic hook: when present, it may deliberately drift
-  -- the MTS allocator before the initial tree is created. It receives the
-  -- current allocator and returns its replacement; production hosts omit it.
-  -- This proves structural adoption instead of accidentally testing lockstep.
+  -- TEST ONLY: @__misoTestBeforeInitialFrame@ may deliberately drift the MTS
+  -- allocator before the initial tree is created. It receives the current
+  -- allocator and returns its replacement, proving slot-normalized structural
+  -- adoption instead of accidentally testing lockstep allocation. Production
+  -- hosts must never define this global hook.
   when isRoot $ do
     nativeRuntime <- jsg ("native" :: MisoString)
-    hook <- nativeRuntime ! "beforeInitialFrame"
+    hook <- nativeRuntime ! "__misoTestBeforeInitialFrame"
     undefinedHook <- isUndefined hook
     unless undefinedHook $ do
       gt <- jsg ("globalThis" :: MisoString)
       currentNodeId <- gt ! "nodeId"
-      adoptedNodeId <- FFI.callFunction nativeRuntime "beforeInitialFrame" currentNodeId
+      adoptedNodeId <- FFI.callFunction nativeRuntime "__misoTestBeforeInitialFrame" currentNodeId
       FFI.set "nodeId" adoptedNodeId (Object gt)
 #endif
   -- Runs on every thread. On Lynx the MTS paints the initial frame directly
