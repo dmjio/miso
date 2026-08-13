@@ -78,7 +78,6 @@ function canonicalValue(value: any, seen: Array<object> = []): CanonicalValue {
   if (typeof value === 'bigint') return { '$ifr': 'bigint', value: String(value) };
   if (typeof value === 'function') return { '$ifr': 'function' };
   if (typeof value === 'symbol') return { '$ifr': 'symbol', value: String(value) };
-  if (typeof value !== 'object') return { '$ifr': typeof value, value: String(value) };
 
   if (seen.includes(value)) return { '$ifr': 'cycle' };
   seen.push(value);
