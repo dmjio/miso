@@ -461,7 +461,15 @@ scheduler Proxy =
       -- (that's BTS -> MTS only), so enqueueing from MTS would just be
       -- dequeued and discarded a moment later.
       when (not mts && currentContext /= updatedContext) enqueueContextPropagation
-      if _componentModelDirty _componentModel updatedModel
+      -- BTS is the sole owner of the shared model (mirrors ReactLynx, where
+      -- React state is background-thread-only). On MTS the model is a read-only
+      -- replica maintained purely by 'MODEL_HYDRATE' from BTS: 'commit' here
+      -- still fires the actions' 'IO' effects (e.g. main-thread event handlers
+      -- mutating a 'DOMRef'), but never writes 'componentModel'. An MTS-origin
+      -- change to shared state must instead be forwarded to BTS via a
+      -- cross-thread effect (the analog of ReactLynx's 'runOnBackground');
+      -- for MTS-local state that never belongs on BTS, use a 'MainThreadRef'.
+      if not mts && _componentModelDirty _componentModel updatedModel
         then do
           modifyComponent _componentId (componentModel .= updatedModel)
           pure (Just vcompId)

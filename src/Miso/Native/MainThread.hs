@@ -48,6 +48,7 @@ module Miso.Native.MainThread
   ( -- *** Imperative element mutation (main thread only)
     setStyleProperty
   , setStyleProperties
+  , setStylePropertyTransform
   , setAttribute
   , getAttribute
   , flushElementTree
@@ -55,11 +56,17 @@ module Miso.Native.MainThread
   , firstElementChild
   , nextElementSibling
   , parentElement
+    -- *** Frame-driven animation (main thread only)
+  , eachFrame
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad (void, forM_)
+import           Data.IORef (newIORef, readIORef, writeIORef)
 -----------------------------------------------------------------------------
-import           Miso.DSL (jsg0, jsg1, jsg2, jsg3, fromJSValUnchecked)
+import           Miso.CSS (transforms, TransformFn)
+import           Miso.DSL
+  ( jsg0, jsg1, jsg2, jsg3, fromJSValUnchecked
+  , requestAnimationFrame, syncCallback1, freeFunction, Function(..), jsNull )
 import           Miso.Effect (DOMRef)
 import           Miso.JSON (ToJSON(..), FromJSON(..), Value(Null))
 import           Miso.String (MisoString)
@@ -93,6 +100,14 @@ setStyleProperties node styles = do
     void (jsg3 "__AddInlineStyle" node name value)
   flushElementTree
 -----------------------------------------------------------------------------
+-- | Set the element's @transform@ from a list of typed t'Miso.CSS.TransformFn's
+-- (from "Miso.CSS"), then flush — a typed alternative to writing the
+-- @transform@ string by hand.
+--
+-- > setStylePropertyTransform ref [ CSS.translateX (CSS.px 20) ]
+setStylePropertyTransform :: DOMRef -> [TransformFn] -> IO ()
+setStylePropertyTransform node fns = setStyleProperties node [ transforms fns ]
+-----------------------------------------------------------------------------
 -- | Set an attribute on the element, then flush.
 setAttribute :: DOMRef -> MisoString -> MisoString -> IO ()
 setAttribute node key value = do
@@ -122,4 +137,32 @@ nextElementSibling = jsg1 "__NextElement"
 -- | Parent element of a node (Lynx @__GetParent@).
 parentElement :: DOMRef -> IO DOMRef
 parentElement = jsg1 "__GetParent"
+-----------------------------------------------------------------------------
+-- | Drive @step@ once per animation frame until it returns 'False', then release
+-- the underlying callback. @step@ receives the frame timestamp in milliseconds.
+--
+-- This is the vsync-coalesced loop primitive for main-thread, scroll-linked
+-- animation: read the latest gesture state, imperatively paint at most once per
+-- frame (via 'setStyleProperty' \/ 'setStylePropertyTransform'), and stop by
+-- returning 'False' when the gesture ends.
+--
+-- @
+-- startFollow ref = 'eachFrame' $ \\_ts -> do
+--   d <- readDrag
+--   if not (active d) then pure False else do
+--     setStylePropertyTransform ref [ CSS.translateX (CSS.px (offset d)) ]
+--     pure True
+-- @
+eachFrame :: (Double -> IO Bool) -> IO ()
+eachFrame step = do
+  cbRef <- newIORef jsNull
+  let frame tsVal = do
+        keep <- step =<< fromJSValUnchecked tsVal
+        cb   <- readIORef cbRef
+        if keep
+          then void (requestAnimationFrame cb)
+          else freeFunction (Function cb)
+  cb <- syncCallback1 frame
+  writeIORef cbRef cb
+  void (requestAnimationFrame cb)
 -----------------------------------------------------------------------------

@@ -330,6 +330,7 @@ module Miso.CSS
   , transition
   , transitionProperty
   , transitionTimingFunction
+  , cubicBezier
   , userSelect
   , verticalAlign
   , visibility
@@ -1930,6 +1931,17 @@ transitionProperty x = "transition-property" =: x
 --
 transitionTimingFunction :: MisoString -> Style
 transitionTimingFunction x = "transition-timing-function" =: x
+-----------------------------------------------------------------------------
+-- | A @cubic-bezier()@ easing value, for use with 'transition',
+-- 'transitionTimingFunction', or an animation's timing function. Unlike the
+-- @translate@\/@rotate@\/… helpers this is a /timing/ function, not a
+-- t'TransformFn', so it produces a bare 'MisoString' value.
+--
+-- >>> cubicBezier 0.22 1 0.36 1
+-- "cubic-bezier(0.22,1,0.36,1)"
+cubicBezier :: Double -> Double -> Double -> Double -> MisoString
+cubicBezier a b c d =
+  "cubic-bezier(" <> MS.intercalate "," (map MS.ms [a, b, c, d]) <> ")"
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/user-select
 --
