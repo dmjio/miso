@@ -336,13 +336,36 @@ infixl 0 <#
 (<#) m action = put m >> tell [ async $ \f -> f =<< action ]
 -----------------------------------------------------------------------------
 async :: (Sink action -> IO ()) -> Schedule context action
-async = Schedule Nothing Async
+async = Schedule Async
 -----------------------------------------------------------------------------
-runOnBG :: (Sink action -> IO ()) -> Effect context props model action
-runOnBG f = tell [ Schedule (Just BTS) Async f ]
+-- | Run @action@'s 'Miso.Types.update' on the __background__ thread (BTS).
+--
+-- On the Lynx dual-thread runtime the shared @model@ is owned solely by the
+-- background thread. A main-thread ('Miso.Event.Types.MTS') event handler that
+-- needs to change shared state cannot do so directly — it dispatches the state
+-- change here, and @action@'s 'Miso.Types.update' runs (exactly once) on the
+-- BTS, where the model write commits. Off the native runtime (or when already
+-- on the BTS) this is just an ordinary local dispatch, equivalent to 'issue'.
+--
+-- Unlike a plain 'issue', @action@ is /not/ handled on the current thread: it
+-- crosses to the BTS. It carries no other effects with it — only @action@ is
+-- sent, so sibling effects in the current 'Miso.Types.update' are unaffected.
+--
+-- @since 1.9.0.0
+runOnBG :: action -> Effect context props model action
+runOnBG action = tell [ CrossThread BTS action ]
 -----------------------------------------------------------------------------
-runOnMain :: (Sink action -> IO ()) -> Effect context props model action
-runOnMain f = tell [ Schedule (Just MTS) Async f ]
+-- | Run @action@'s 'Miso.Types.update' on the __main__ thread (MTS).
+--
+-- The dual of 'runOnBG': a background-thread ('Miso.Event.Types.MTS') effect
+-- that needs an imperative main-thread operation (see "Miso.Native.MainThread")
+-- dispatches @action@ here, and its 'Miso.Types.update' runs (exactly once) on
+-- the MTS. Off the native runtime (or when already on the MTS) this is an
+-- ordinary local dispatch, equivalent to 'issue'.
+--
+-- @since 1.9.0.0
+runOnMain :: action -> Effect context props model action
+runOnMain action = tell [ CrossThread MTS action ]
 -----------------------------------------------------------------------------
 -- | `Effect` smart constructor, flipped
 infixr 0 #>
@@ -419,9 +442,16 @@ type Effect context props model action = RWS (ComponentInfo context props) [Sche
 -- applied to the global context during the scheduler's commit phase, triggering
 -- a re-render of every 'Component' with @useContext@ enabled.
 --
+-- The 'CrossThread' constructor carries an @action@ to be handled on a specific
+-- Lynx 'Thread'. Emitted by 'runOnBG' \/ 'runOnMain', it is dispatched locally
+-- when already on the target thread, otherwise forwarded to the peer thread
+-- (where the @action@'s 'Miso.Types.update' runs). A plain 'Schedule' always
+-- runs on the thread that produced it.
+--
 -- @since 1.9.0.0
 data Schedule context action
-  = Schedule (Maybe Thread) Synchronicity (Sink action -> IO ())
+  = Schedule Synchronicity (Sink action -> IO ())
+  | CrossThread Thread action
   | ContextModify (context -> context)
 -----------------------------------------------------------------------------
 -- | Type to represent a DOM reference
@@ -455,7 +485,7 @@ sync
   :: IO action
   -- ^ 'IO' action to execute synchronously
   -> Effect context props model action
-sync action = tell [ Schedule Nothing Sync $ \f -> f =<< action ]
+sync action = tell [ Schedule Sync $ \f -> f =<< action ]
 -----------------------------------------------------------------------------
 -- | Like 'sync', except discards the result.
 --
@@ -464,7 +494,7 @@ sync_
   :: IO ()
   -- ^ 'IO' action to execute synchronously
   -> Effect context props model action
-sync_ action = tell [ Schedule Nothing Sync $ \_ -> action ]
+sync_ action = tell [ Schedule Sync $ \_ -> action ]
 -----------------------------------------------------------------------------
 -- | Schedule a single 'IO' action for later execution.
 --
@@ -550,10 +580,10 @@ modifyAllIO
   -> Effect context props model action
   -- ^ Effect whose IO actions are modified
   -> Effect context props model action
-modifyAllIO f = censor $ \actions ->
-  [ Schedule mb x (f <$> action)
-  | Schedule mb x action <- actions
-  ]
+modifyAllIO f = censor (map go)
+  where
+    go (Schedule x action) = Schedule x (f <$> action)
+    go s                   = s  -- 'CrossThread' / 'ContextModify' carry no IO
 -----------------------------------------------------------------------------
 -- | @withSink@ allows users to write to the global event queue. This is useful for introducing 'IO' into the system.
 -- A synonym for 'Control.Monad.Writer.tell', specialized to 'Effect'.

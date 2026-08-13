@@ -20,8 +20,9 @@
 --
 -- __N.B.__ Per the Lynx documentation, native modules can /only/ be used on the
 -- background thread (BTS). These are plain 'IO' actions, so the caller is
--- responsible for running them on the BTS — e.g. from within
--- 'Miso.Effect.runOnBG' or a background-thread subscription.
+-- responsible for running them on the BTS — e.g. from the 'update' of an action
+-- dispatched to the BTS with 'Miso.Effect.runOnBG', or a background-thread
+-- subscription.
 --
 ----------------------------------------------------------------------------
 module Miso.Native.Module

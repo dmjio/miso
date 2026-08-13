@@ -209,7 +209,7 @@ initialize events _componentParentId hydrate isRoot initialProps maybeKey _compo
   let
     _componentProps = initialProps
     _componentSink = \action -> do
-      atomicModifyIORef' globalQueue (\q -> (enqueue _componentId (Local action) q, ()))
+      atomicModifyIORef' globalQueue (\q -> (enqueue _componentId action q, ()))
       notify globalWaiter
 
   initializedModel <-
@@ -281,11 +281,11 @@ initialize events _componentParentId hydrate isRoot initialProps maybeKey _compo
   let _componentPostEffect = \_ -> pure ()
 #endif
 
-  let _componentApplyActions = \(actions :: Seq (Envelope action)) model_ currentProps ctx -> do
+  let _componentApplyActions = \(actions :: Seq action) model_ currentProps ctx -> do
         let info = ComponentInfo _componentId _componentParentId _componentDOMRef currentProps ctx
-        foldl' (\(m, ss) env ->
-          case runEffect (update (envelopeAction env)) info m of
-            (n, sss) -> (n, ss <> [(env, s) | s <- sss ]))
+        foldl' (\(m, ss) action ->
+          case runEffect (update action) info m of
+            (n, sss) -> (n, ss <> sss))
           (model_, []) actions
 
   let vcomponent = ComponentState
@@ -422,38 +422,33 @@ scheduler Proxy =
     -- event handlers imperatively mutating a 'DOMRef' — must fire), but the
     -- subsequent draw is suppressed: the BTS is the sole paint authority and the
     -- MTS never diffs\/patches from the scheduler.
-    run :: ComponentId -> Seq (Envelope action) -> IO ()
+    run :: ComponentId -> Seq action -> IO ()
     run vcompId actions = do
       rendered <- commit vcompId actions
       when (not mts) (mapM_ renderComponent rendered)
     -----------------------------------------------------------------------------
     -- | Apply the actions across the model, evaluate async and sync IO.
-    commit :: ComponentId -> Seq (Envelope action) -> IO (Maybe ComponentId)
+    commit :: ComponentId -> Seq action -> IO (Maybe ComponentId)
     commit vcompId events = do
       currentContext <- readIORef @context globalContext
       vcomps <- readIORef components
       let ComponentState {..} = vcomps IM.! vcompId
           (updatedModel, schedules) =
             _componentApplyActions events _componentModel _componentProps currentContext
-      -- Route each scheduled effect. When the effect is tagged for the
-      -- opposite Lynx thread, do not evaluate its 'IO' here; forward the
-      -- originating @action@ via 'postEffect' so 'update' re-runs on the other
-      -- thread, where the same effect is now same-thread and executes its 'IO'
-      -- locally. Otherwise run it locally against the component's own sink.
-      --
-      -- A 'Forwarded' action, however, already ran its 'update' at the origin
-      -- thread before being forwarded here; replaying it locally reproduces
-      -- every 'Schedule' the origin saw, so its cross-thread schedules (the
-      -- ones that were same-thread at the origin) must be discarded rather than
-      -- forwarded back — otherwise the action bounces between threads forever.
-      forM_ schedules $ \(env, sched) -> case sched of
+      -- Route each scheduled effect. A plain 'Schedule' runs its 'IO' here, on
+      -- the thread that produced it. A 'CrossThread' effect targets a specific
+      -- Lynx thread: if that's the current thread it dispatches @action@ locally
+      -- (same as 'issue'); otherwise it forwards @action@ to the peer thread via
+      -- 'postEffect', where @action@'s 'update' runs. Only the tagged @action@
+      -- crosses — sibling effects in the same 'update' stay put, so nothing is
+      -- double-executed.
+      forM_ schedules $ \case
         ContextModify f ->
           atomicModifyIORef' globalContext $ \ctx -> (f ctx, ())
-        Schedule mThread synch effect
-          | crossThread mThread -> case env of
-              Local originating -> _componentPostEffect originating
-              Forwarded _       -> pure ()
-          | otherwise -> evalScheduled synch (effect _componentSink)
+        CrossThread targetThread action
+          | crossThread targetThread -> _componentPostEffect action
+          | otherwise                -> _componentSink action
+        Schedule synch effect -> evalScheduled synch (effect _componentSink)
       updatedContext <- readIORef globalContext
       -- 'not mts': the sentinel this enqueues is a no-op there (see the
       -- 'minBound' scheduler case) — MTS never draws context-driven changes
@@ -465,10 +460,11 @@ scheduler Proxy =
       -- React state is background-thread-only). On MTS the model is a read-only
       -- replica maintained purely by 'MODEL_HYDRATE' from BTS: 'commit' here
       -- still fires the actions' 'IO' effects (e.g. main-thread event handlers
-      -- mutating a 'DOMRef'), but never writes 'componentModel'. An MTS-origin
-      -- change to shared state must instead be forwarded to BTS via a
-      -- cross-thread effect (the analog of ReactLynx's 'runOnBackground');
-      -- for MTS-local state that never belongs on BTS, use a 'MainThreadRef'.
+      -- mutating a 'DOMRef'), but never writes 'componentModel'. An MTS handler
+      -- that needs to change shared state dispatches the change to BTS with
+      -- 'Miso.Effect.runOnBG' (the analog of ReactLynx's 'runOnBackground'), so
+      -- the state action's 'update' runs on the BTS where the write commits; for
+      -- MTS-local state that never belongs on BTS, use a 'MainThreadRef'.
       if not mts && _componentModelDirty _componentModel updatedModel
         then do
           modifyComponent _componentId (componentModel .= updatedModel)
@@ -540,7 +536,7 @@ initialDraw initializedModel events hydrate isRoot Component {..} ComponentState
 -----------------------------------------------------------------------------
 -- | Pulls the next Component for processing out of the queue, along with
 -- its events.
-getBatch :: IO (Maybe (ComponentId, Seq (Envelope action)))
+getBatch :: IO (Maybe (ComponentId, Seq action))
 getBatch = do
   atomicModifyIORef' globalQueue $ \q ->
     case dequeue q of
@@ -549,35 +545,21 @@ getBatch = do
         (newQueue, Just (vcompId, actions))
 -----------------------------------------------------------------------------
 -- | Helper for event extraction at a specific 'ComponentId'
-drainQueueAt :: ComponentId -> IO (Seq (Envelope a))
+drainQueueAt :: ComponentId -> IO (Seq a)
 drainQueueAt vcompId = atomicModifyIORef' globalQueue (dequeueAt vcompId)
 -----------------------------------------------------------------------------
 -- | Data type for holding the events in the system along with
--- the schedule of what events should be processed next
--- | Provenance of a queued @action@. 'Local' actions originate on this thread
--- (via '_componentSink'); 'Forwarded' actions arrived from the opposite Lynx
--- thread over the @Miso.effects@ transport (see 'effectListener'). Both flow
--- through the same ordered 'globalQueue' so the scheduler stays the single
--- writer of every model, but the scheduler routes their cross-thread 'Schedule's
--- differently: a 'Local' action forwards its cross-thread effects to the peer,
--- whereas a 'Forwarded' action discards them (they already ran at the origin —
--- re-forwarding would ping-pong forever). Carrying the tag on the action itself
--- (rather than a sideband) keeps provenance aligned even when 'dequeue' batches
--- consecutive same-'ComponentId' actions of mixed origin.
-data Envelope action
-  = Local action
-  | Forwarded action
-  deriving (Show, Eq)
------------------------------------------------------------------------------
--- | The @action@ carried by an 'Envelope', discarding its provenance.
-envelopeAction :: Envelope action -> action
-envelopeAction = \case
-  Local a     -> a
-  Forwarded a -> a
------------------------------------------------------------------------------
+-- the schedule of what events should be processed next.
+--
+-- Actions enter here from two sources — a local '_componentSink' and the
+-- @Miso.effects@ cross-thread transport (see 'effectListener') — but the
+-- scheduler treats them identically: both are handled on /this/ thread, keeping
+-- it the single writer of every model. A cross-thread 'CrossThread' effect
+-- carries a distinct @action@, so a forwarded action never bounces back on its
+-- own (only a genuine user-authored cross-thread cycle would).
 data Queue action
   = Queue
-  { _queue :: IntMap (Seq (Envelope action))
+  { _queue :: IntMap (Seq action)
   , _queueSchedule :: Seq ComponentId
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
@@ -590,13 +572,13 @@ instance Semigroup (Queue action) where
 instance Monoid (Queue action) where
   mempty = Queue mempty mempty
 -----------------------------------------------------------------------------
-queue :: Lens (Queue action) (IntMap (Seq (Envelope action)))
+queue :: Lens (Queue action) (IntMap (Seq action))
 queue = lens _queue $ \r f -> r { _queue = f }
 -----------------------------------------------------------------------------
 queueSchedule :: Lens (Queue action) (Seq ComponentId)
 queueSchedule = lens _queueSchedule $ \r f -> r { _queueSchedule = f }
 -----------------------------------------------------------------------------
-enqueue :: ComponentId -> Envelope action -> Queue action -> Queue action
+enqueue :: ComponentId -> action -> Queue action -> Queue action
 enqueue vcompId action q =
   q & queue %~ IM.insertWith (flip (<>)) vcompId (S.singleton action)
     & queueSchedule %~ (S.|> vcompId)
@@ -634,7 +616,7 @@ contextHydrateStaticKey = Fingerprint 0 0
 dequeue
   :: forall action
    . Queue action
-  -> Maybe (ComponentId, Seq (Envelope action), Queue action)
+  -> Maybe (ComponentId, Seq action, Queue action)
 dequeue q =
   case q ^. queueSchedule of
     S.Empty -> Nothing
@@ -659,7 +641,7 @@ dequeueAt
   :: forall action
    . ComponentId
   -> Queue action
-  -> (Queue action, Seq (Envelope action))
+  -> (Queue action, Seq action)
 dequeueAt vcompId q =
   case q ^. queue . at vcompId of
     Nothing -> (q, S.empty)
@@ -775,8 +757,8 @@ data ComponentState context props model action
   , _componentPostEffect :: Sink action
   -- ^ Cross-thread (Lynx) t'Sink': serializes the @action@ and ships it to the
   -- opposite thread via 'postEffect'. Captures the t'Miso.Types.Component''s
-  -- 'ToJSON' instance at 'initialize' time. Used for effects tagged
-  -- 'Miso.Effect.runOnMain' \/ 'Miso.Effect.runOnBackground'.
+  -- 'ToJSON' instance at 'initialize' time. Used by 'CrossThread' effects
+  -- ('Miso.Effect.runOnMain' \/ 'Miso.Effect.runOnBG').
   , _componentModel :: model
   -- ^ t'Miso.Types.Component' state
   , _componentScripts :: [DOMRef]
@@ -803,18 +785,15 @@ data ComponentState context props model action
   , _componentModelDirty :: model -> model -> Bool
   -- ^ Model diffing
   , _componentApplyActions
-      :: Seq (Envelope action)
+      :: Seq action
       -> model
       -> props
       -> context
-      -> (model, [(Envelope action, Schedule context action)])
+      -> (model, [Schedule context action])
   -- ^ t'Miso.Types.Component' actions application. Given the pending actions,
   --   current @model@ and @props@, returns the updated @model@ and the
   --   'Schedule's to run (async \/ sync IO, cross-thread effects, and
-  --   'ContextModify's). Each 'Schedule' is paired with the 'Envelope' of the
-  --   @action@ whose 'update' produced it, so cross-thread effects can be
-  --   forwarded (via 'postEffect') to run on the opposite Lynx thread when the
-  --   originating action was 'Local', or discarded when it was 'Forwarded'.
+  --   'ContextModify's).
   , _componentTopics :: Map MisoString (Value -> IO ())
   -- ^ t'Miso.Types.Component' topics using for Pub Sub async communication.
   , _componentChildren :: ComponentIds
@@ -1104,20 +1083,17 @@ drain ComponentState {..} = do
        case _componentApplyActions actions _componentModel _componentProps currentContext of
          (_, schedules) -> do
            forM_ schedules $ \case
-             -- dmj: process all actions synchronously during unmount. Respect
-             -- thread affinity: an effect tagged for the opposite Lynx thread is
-             -- forwarded via 'postEffect' (re-run of 'update' on the peer thread)
-             -- rather than evaluated here on the wrong thread — unless the action
-             -- was itself 'Forwarded', in which case its cross-thread schedules
-             -- are discarded to avoid bouncing back (see 'commit').
-             (env, Schedule mThread _ effect)
-               | crossThread mThread -> case env of
-                   Local originating -> _componentPostEffect originating
-                   Forwarded _       -> pure ()
-               | otherwise ->
-                   effect _componentSink
-                     `catch` exception
-             (_, ContextModify f) ->
+             -- dmj: process all actions synchronously during unmount. A
+             -- 'CrossThread' effect targeting the peer thread is forwarded via
+             -- 'postEffect' (its @action@'s 'update' runs there); one targeting
+             -- this thread is dispatched locally. Plain 'Schedule's run here.
+             CrossThread targetThread action
+               | crossThread targetThread -> _componentPostEffect action
+               | otherwise                -> _componentSink action
+             Schedule _ effect ->
+               effect _componentSink
+                 `catch` exception
+             ContextModify f ->
                atomicModifyIORef' globalContext $ \ctx -> (f ctx, ())
            newContext <- readIORef globalContext
            when (not mts && currentContext /= newContext) enqueueContextPropagation
@@ -2209,17 +2185,16 @@ effectListener Proxy jsval = void $ do
                             "[effectListener]: ComponentId NOT registered:" <> ms effectComponentId
                         Just _ -> do
                           FFI.consoleLog "[effectListener]: Sinking action into Component"
-                          -- dmj: enqueue the forwarded action onto the ordinary
-                          -- 'globalQueue' as 'Forwarded' rather than replaying
-                          -- 'update' inline here. This keeps the scheduler the sole
-                          -- writer of every model (no read-modify-write race with the
-                          -- scheduler's own 'commit') and preserves ordering relative
-                          -- to any 'Local' actions already queued for this component.
-                          -- The 'Forwarded' tag tells 'commit' to discard the action's
-                          -- cross-thread schedules instead of forwarding them back —
-                          -- they already ran at the origin — so it does not ping-pong.
+                          -- dmj: enqueue the cross-thread action onto the ordinary
+                          -- 'globalQueue' rather than replaying 'update' inline here.
+                          -- This keeps the scheduler the sole writer of every model
+                          -- (no read-modify-write race with the scheduler's own
+                          -- 'commit') and preserves ordering relative to any actions
+                          -- already queued for this component. The action's 'update'
+                          -- runs only on this thread; it does not ping-pong back
+                          -- because only an explicit 'CrossThread' effect crosses.
                           atomicModifyIORef' globalQueue $ \q ->
-                            (enqueue effectComponentId (Forwarded action) q, ())
+                            (enqueue effectComponentId action q, ())
                           notify globalWaiter
                     Error e ->
                       FFI.consoleError ("[effectListener]: action decode error: " <> ms e)
@@ -2531,13 +2506,14 @@ mts, bts, web :: Bool
 {-# NOINLINE web #-}
 (mts, bts, web) = unsafePerformIO FFI.getThreads
 -----------------------------------------------------------------------------
--- | 'True' when a scheduled effect is tagged for the /opposite/ Lynx thread and
--- must therefore be forwarded (via 'postEffect') rather than run locally.
-crossThread :: Maybe E.Thread -> Bool
+-- | 'True' when a 'CrossThread' effect targets the /opposite/ Lynx thread and
+-- must therefore be forwarded (via 'postEffect') rather than dispatched locally.
+-- 'False' when the target is the current thread, or on a plain web build (where
+-- there is a single thread), so the action is handled here.
+crossThread :: E.Thread -> Bool
 crossThread = \case
-  Just E.BTS -> mts   -- on MTS, effect wants BTS
-  Just E.MTS -> bts   -- on BTS, effect wants MTS
-  _          -> False -- same thread / no preference / web
+  E.BTS -> mts   -- want BTS, currently on MTS
+  E.MTS -> bts   -- want MTS, currently on BTS
 -----------------------------------------------------------------------------
 instance FromJSVal Fingerprint where
   fromJSVal x = fmap (fmap fromMisoString) (fromJSVal x :: IO (Maybe MisoString))

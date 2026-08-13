@@ -141,18 +141,22 @@
 --
 -- = Effects: choosing a thread
 --
--- Since 'update' runs on the BTS, the 'IO' it schedules runs on the BTS too. Two
--- combinators let an 'Effect' pin its 'IO' to a specific thread regardless of
--- where the action was dispatched:
+-- Because an 'IO' closure can't cross the thread boundary (only JSON-serialized
+-- @action@s can), cross-thread work is expressed as /dispatching an action/ to
+-- the thread that should handle it. Two combinators do this:
 --
--- * 'Miso.Effect.runOnBG' — run the 'IO' on the __background__ thread (BTS).
--- * 'Miso.Effect.runOnMain' — run the 'IO' on the __main__ thread (MTS).
+-- * 'Miso.Effect.runOnBG' @action@ — run @action@'s 'update' on the
+--   __background__ thread (BTS). Used by a main-thread event handler that needs
+--   to change shared state, since the BTS solely owns the @model@.
+-- * 'Miso.Effect.runOnMain' @action@ — run @action@'s 'update' on the __main__
+--   thread (MTS). Used by a BTS effect that needs an imperative main-thread
+--   operation (see "Miso.Native.MainThread").
 --
--- A cross-thread schedule does not execute its 'IO' locally: it forwards the
--- /originating action/ across the boundary; the peer sinks it, re-runs 'update'
--- there, and the same effect — now same-thread — runs its 'IO' locally. So
--- 'Miso.Effect.runOnMain''s 'IO' always ends up on the MTS and
--- 'Miso.Effect.runOnBG''s on the BTS, independent of the dispatching thread.
+-- Each ships only the given @action@ to the target thread (or dispatches it
+-- locally when already there), where its 'update' runs exactly once. Sibling
+-- effects in the current 'update' are unaffected, and nothing is
+-- double-executed. Off the native runtime both are an ordinary local dispatch,
+-- equivalent to 'Miso.Effect.issue'.
 --
 -- = Main-thread events #mainthread#
 --
