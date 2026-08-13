@@ -111,7 +111,7 @@ import           Control.Monad.Reader (ask, asks)
 import           Control.Monad.State hiding (state)
 import           Miso.JSON (FromJSON, ToJSON, Result(..), Value, encode, fromJSON, jsonStringify, toJSON)
 
-#ifdef GHCJS_OLD
+#if __GLASGOW_HASKELL__ < 910
 import           Data.Foldable (foldl')
 #endif
 import           Data.Maybe
