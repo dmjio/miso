@@ -328,6 +328,7 @@ module Miso.CSS
   , transitionDelay
   , transitionDuration
   , transition
+  , transition_
   , transitionProperty
   , transitionTimingFunction
   , cubicBezier
@@ -1921,6 +1922,19 @@ transitionDuration x = "transition-duration" =: x
 --
 transition :: MisoString -> Style
 transition x = "transition" =: x
+-----------------------------------------------------------------------------
+-- | Single-property @transition@ shorthand: @property@, @duration@, and
+-- @timing-function@ combined into one @transition@ 'Style' — i.e. __one__ inline
+-- key, not the three @transition-*@ longhands.
+--
+-- Prefer this whenever the tween is also reset imperatively elsewhere (e.g.
+-- @transition: none@ on the main thread, see "Miso.Native.MainThread"): the reset
+-- lands on the @transition@ key, and separate longhands would survive it.
+--
+-- >>> transition_ "transform" (s 0.3) (cubicBezier 0.22 1 0.36 1)
+-- ("transition","transform 0.3s cubic-bezier(0.22,1,0.36,1)")
+transition_ :: MisoString -> MisoString -> MisoString -> Style
+transition_ prop dur timing = "transition" =: (prop <> " " <> dur <> " " <> timing)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/transition-property
 --
