@@ -58,10 +58,19 @@ module Miso.Native.MainThread
   , parentElement
     -- *** Frame-driven animation (main thread only)
   , eachFrame
+    -- *** Main-thread-local mutable state
+  , MainThreadRef
+  , mainThreadRef
+  , readMainThreadRef
+  , writeMainThreadRef
+  , modifyMainThreadRef
+  , modifyMainThreadRef_
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad (void, forM_)
-import           Data.IORef (newIORef, readIORef, writeIORef)
+import           Control.Monad.State (State, execState)
+import           Data.IORef (IORef, newIORef, readIORef, writeIORef, modifyIORef')
+import           System.IO.Unsafe (unsafePerformIO)
 -----------------------------------------------------------------------------
 import           Miso.CSS (transforms, TransformFn)
 import           Miso.DSL
@@ -165,4 +174,54 @@ eachFrame step = do
   cb <- syncCallback1 frame
   writeIORef cbRef cb
   void (requestAnimationFrame cb)
+-----------------------------------------------------------------------------
+-- | A thin wrapper over 'IORef' for state that lives __only__ on the main
+-- thread and must never reach the background thread's shared @model@ (which the
+-- BTS solely owns — see "Miso.Runtime"). Use it for transient, main-thread-local
+-- gesture\/animation state: the current drag offset, a fling velocity, whether a
+-- follow loop is active, etc.
+--
+-- Reads and writes are ordinary 'IORef' operations, safe here because the MTS is
+-- single-threaded; no atomics are needed.
+newtype MainThreadRef a = MainThreadRef (IORef a)
+-----------------------------------------------------------------------------
+-- | Create a top-level 'MainThreadRef' with an initial value.
+--
+-- This uses 'unsafePerformIO' to allocate the underlying 'IORef' as a CAF, so
+-- the ref is shared across all uses of the binding. __You must give every
+-- top-level 'MainThreadRef' binding a @{-\# NOINLINE \#-}@ pragma__ — otherwise
+-- GHC may inline the CAF and allocate a fresh, independent 'IORef' at each use
+-- site, silently splitting your state into multiple copies.
+--
+-- @
+-- dragRef :: 'MainThreadRef' Double
+-- dragRef = 'mainThreadRef' 0
+-- {-\# NOINLINE dragRef \#-}
+-- @
+mainThreadRef :: a -> MainThreadRef a
+mainThreadRef x = MainThreadRef (unsafePerformIO (newIORef x))
+{-# NOINLINE mainThreadRef #-}
+-----------------------------------------------------------------------------
+-- | Read the current value of a 'MainThreadRef'.
+readMainThreadRef :: MainThreadRef a -> IO a
+readMainThreadRef (MainThreadRef ref) = readIORef ref
+-----------------------------------------------------------------------------
+-- | Overwrite the value of a 'MainThreadRef'.
+writeMainThreadRef :: MainThreadRef a -> a -> IO ()
+writeMainThreadRef (MainThreadRef ref) = writeIORef ref
+-----------------------------------------------------------------------------
+-- | Strictly modify the value of a 'MainThreadRef'.
+modifyMainThreadRef :: MainThreadRef a -> (a -> a) -> IO ()
+modifyMainThreadRef (MainThreadRef ref) = modifyIORef' ref
+-----------------------------------------------------------------------------
+-- | Strictly modify a 'MainThreadRef' with a @'State' a ()@ computation, letting
+-- you drive the update with the "Miso.Lens" operators (@.=@, @%=@, @+=@, …).
+--
+-- @
+-- modifyMainThreadRef_ dragRef $ do
+--   offset '.=' newX
+--   active '.=' True
+-- @
+modifyMainThreadRef_ :: MainThreadRef a -> State a () -> IO ()
+modifyMainThreadRef_ ref go = modifyMainThreadRef ref (execState go)
 -----------------------------------------------------------------------------
