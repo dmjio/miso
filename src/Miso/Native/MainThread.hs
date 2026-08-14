@@ -1,6 +1,7 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -----------------------------------------------------------------------------
 -- |
@@ -58,6 +59,9 @@ module Miso.Native.MainThread
   , parentElement
     -- *** Frame-driven animation (main thread only)
   , eachFrame
+    -- *** Platform info (main thread only)
+  , SystemInfo(..)
+  , getSystemInfo
     -- *** Main-thread-local mutable state
   , MainThreadRef
   , mainThreadRef
@@ -74,8 +78,9 @@ import           System.IO.Unsafe (unsafePerformIO)
 -----------------------------------------------------------------------------
 import           Miso.CSS (transforms, TransformFn)
 import           Miso.DSL
-  ( jsg0, jsg1, jsg2, jsg3, fromJSValUnchecked
+  ( jsg, jsg0, jsg1, jsg2, jsg3, (!), isUndefined, FromJSVal(..)
   , requestAnimationFrame, syncCallback1, freeFunction, Function(..), jsNull )
+import           GHC.Generics (Generic)
 import           Miso.Effect (DOMRef)
 import           Miso.JSON (ToJSON(..), FromJSON(..), Value(Null))
 import           Miso.String (MisoString)
@@ -174,6 +179,45 @@ eachFrame step = do
   cb <- syncCallback1 frame
   writeIORef cbRef cb
   void (requestAnimationFrame cb)
+-----------------------------------------------------------------------------
+-- | Lynx's @lynx.SystemInfo@: device pixel geometry and platform metadata. The
+-- field names match the Lynx @SystemInfo@ object, so it decodes directly. Fields
+-- that Lynx omits on some realms are 'Maybe' — notably 'runtimeType', which is
+-- unavailable in the lepus (main-thread) runtime.
+data SystemInfo = SystemInfo
+  { pixelWidth     :: Double
+    -- ^ Physical pixel width of the device.
+  , pixelHeight    :: Double
+    -- ^ Physical pixel height of the device.
+  , pixelRatio     :: Double
+    -- ^ Physical pixel ratio (device pixels per logical pixel).
+  , osVersion      :: MisoString
+    -- ^ Operating-system version.
+  , platform       :: MisoString
+    -- ^ Device platform, e.g. @\"Android\"@, @\"iOS\"@, @\"macOS\"@.
+  , lynxSdkVersion :: Maybe MisoString
+    -- ^ Lynx SDK version (deprecated upstream; may be absent).
+  , engineVersion  :: Maybe MisoString
+    -- ^ Lynx Engine version (absent on older engines).
+  , runtimeType    :: Maybe MisoString
+    -- ^ JS engine (@\"v8\"@ \/ @\"jsc\"@ \/ @\"quickjs\"@); not available in lepus.
+  , theme          :: Maybe Value
+    -- ^ Opaque theme object, when present.
+  } deriving (Show, Eq, Generic)
+
+instance FromJSVal SystemInfo
+
+-- | Read Lynx's @lynx.SystemInfo@, decoded into 'SystemInfo'. This global is
+-- main-thread-only: present on the MTS realm and absent on the BTS realm, so
+-- this returns 'Just' on the main thread and 'Nothing' on the background thread.
+-- The @undefined@ guard makes the background-thread read a safe 'Nothing' rather
+-- than a throw; a decode failure (e.g. a required field missing) is also
+-- 'Nothing'.
+getSystemInfo :: IO (Maybe SystemInfo)
+getSystemInfo = do
+  si <- jsg "lynx" >>= (! "SystemInfo")
+  u  <- isUndefined si
+  if u then pure Nothing else fromJSVal si
 -----------------------------------------------------------------------------
 -- | A thin wrapper over 'IORef' for state that lives __only__ on the main
 -- thread and must never reach the background thread's shared @model@ (which the
