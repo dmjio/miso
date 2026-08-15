@@ -51,8 +51,8 @@ function fetchCore(url, method, body, requestHeaders, successful, errorful, resp
       for (const [key, value] of response.headers) {
         headers[key] = value;
       }
-      if (!response.ok) {
-        throw new Error(response.statusText);
+      if (response.status < 200 || response.status >= 300) {
+        throw new Error(response.statusText || "HTTP " + response.status);
       }
       if (responseType == "json") {
         return response.json();
@@ -491,8 +491,31 @@ function diffAttrs(c, n, context) {
   diffProps(c ? c.props : {}, n.props, n.domRef, n.ns === "svg", context);
   diffClass(c ? c.classList : null, n.classList, n.domRef, context);
   diffCss(c ? c.css : {}, n.css, n.domRef, context);
+  diffEvents(c, n, context);
   diffChildren(c ? c.children : [], n.children, n.domRef, context);
   drawCanvas(n);
+}
+function diffEvents(c, n, context) {
+  if (!onBTS() && !onMTS())
+    return;
+  if (c === null && n.directEvents) {
+    for (const name of n.directEvents) {
+      context.addEvent(n.domRef, name, { capture: false, direct: true });
+    }
+  }
+  for (const capture of [true, false]) {
+    const cKeys = eventEntries(c, capture);
+    const nKeys = eventEntries(n, capture);
+    for (const name in cKeys) {
+      if (!(name in nKeys))
+        context.removeEvent(n.domRef, name, capture);
+    }
+    for (const name in nKeys) {
+      const nk = nKeys[name], ck = cKeys[name];
+      if (!ck || !sameEventKey(nk, ck))
+        context.addEvent(n.domRef, name, nk);
+    }
+  }
 }
 function diffClass(c, n, domRef, context) {
   if (!c && !n) {
@@ -524,10 +547,11 @@ function diffClass(c, n, domRef, context) {
 }
 function diffProps(cProps, nProps, node, isSvg, context) {
   var newProp;
+  const native = onBTS() || onMTS();
   for (const c in cProps) {
     newProp = nProps[c];
     if (newProp === undefined) {
-      if (isSvg || !(c in node) || c === "disabled") {
+      if (isSvg || native || !(c in node) || c === "disabled") {
         context.removeAttribute(node, c);
       } else {
         context.setAttribute(node, c, "");
@@ -541,7 +565,7 @@ function diffProps(cProps, nProps, node, isSvg, context) {
         } else {
           context.setAttribute(node, c, newProp);
         }
-      } else if (c in node && !(c === "list" || c === "form")) {
+      } else if (!native && c in node && !(c === "list" || c === "form")) {
         node[c] = newProp;
       } else {
         context.setAttribute(node, c, newProp);
@@ -558,7 +582,7 @@ function diffProps(cProps, nProps, node, isSvg, context) {
       } else {
         context.setAttribute(node, n, newProp);
       }
-    } else if (n in node && !(n === "list" || n === "form")) {
+    } else if (!native && n in node && !(n === "list" || n === "form")) {
       node[n] = nProps[n];
     } else {
       context.setAttribute(node, n, newProp);
@@ -600,6 +624,22 @@ function diffChildren(cs, ns, parent, context, endAnchor = null) {
       }
     }
   }
+}
+function eventEntries(c, capture) {
+  const out = {};
+  if (!c)
+    return out;
+  const phase = capture ? c.events.captures : c.events.bubbles;
+  for (const name in phase) {
+    const { staticKey, componentId, options } = phase[name];
+    if (staticKey !== undefined && componentId !== undefined) {
+      out[name] = { capture, staticKey, componentId, options };
+    }
+  }
+  return out;
+}
+function sameEventKey(a, b) {
+  return a.staticKey === b.staticKey && a.componentId === b.componentId && a.options?.preventDefault === b.options?.preventDefault && a.options?.stopPropagation === b.options?.stopPropagation;
 }
 function populateDomRef(c, context) {
   if (c.ns === "svg") {
@@ -1078,17 +1118,6 @@ var hydrationContext = {
     return node.childNodes;
   }
 };
-var componentContext = {
-  mountComponent: function(componentId, model) {
-    return;
-  },
-  unmountComponent: function(componentId) {
-    return;
-  },
-  modelHydration: function(componentId, model) {
-    return;
-  }
-};
 var drawingContext = {
   nextSibling: (node) => {
     let sibling = node.nextSibling;
@@ -1134,6 +1163,8 @@ var drawingContext = {
     if (className)
       domRef.classList.remove(className);
   },
+  addEvent: (_node, _name, _key) => {},
+  removeEvent: (_node, _name, _capture) => {},
   insertBefore: (parent, child, node) => {
     return parent.insertBefore(child, node);
   },
@@ -1300,7 +1331,6 @@ globalThis["miso"] = {
   hydrationContext,
   eventContext,
   drawingContext,
-  componentContext,
   diff,
   hydrate,
   version,
@@ -1334,18 +1364,13 @@ globalThis["miso"] = {
   setDrawingContext: function(name) {
     const drawing = globalThis[name]["drawingContext"];
     const events = globalThis[name]["eventContext"];
-    const components = globalThis[name]["componentContext"];
     if (!drawing) {
       console.error('Custom rendering engine ("drawingContext") is not defined at globalThis[name].drawingContext', name);
     }
     if (!events) {
       console.error('Custom event delegation ("eventContext") is not defined at globalThis[name].eventContext', name);
     }
-    if (!components) {
-      console.error('Custom component context ("componentContext") is not defined at globalThis[name].componentContext', name);
-    }
     globalThis["miso"]["drawingContext"] = drawing;
     globalThis["miso"]["eventContext"] = events;
-    globalThis["miso"]["componentContext"] = components;
   }
 };

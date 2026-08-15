@@ -1,5 +1,6 @@
 {
     "extends": "./tsconfig.json",
+    "files": ["./ts/globals.d.ts", "./ts/native.d.ts"],
     "include": ["**/*.spec.ts"],
     "compilerOptions": {
         "outDir": "./out-tsc/spec",

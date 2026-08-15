@@ -73,7 +73,7 @@ import           Control.Monad
 -----------------------------------------------------------------------------
 import           Miso.DSL ((!), jsg, setField)
 import qualified Miso.FFI.Internal as FFI
-import           Miso.Types (Component(..), Events, App)
+import           Miso.Types (Component(..), Events)
 import           Miso.String (MisoString)
 import           Miso.Runtime (componentModel, initComponent, topLevelComponentId, globalContext, Hydrate(..))
 import           Miso.Runtime.Internal (components, schedulerThread)
@@ -84,6 +84,9 @@ import qualified Data.IntMap.Strict as IM
 import           Data.IORef
 import           Foreign hiding (void)
 import           Foreign.C.Types
+#ifdef NATIVE
+import           Miso.JSON
+#endif
 -----------------------------------------------------------------------------
 foreign import ccall unsafe "miso_x_store"
   x_store :: StablePtr a -> IO ()
@@ -116,10 +119,14 @@ foreign import ccall unsafe "miso_x_clear"
 --
 -- @since 1.9.0.0
 reload
-  :: Eq model
+#ifdef NATIVE
+  :: (FromJSON action, ToJSON model, ToJSON action, Eq model)
+#else
+  :: (Eq model)
+#endif
   => Events
   -- ^ Event delegation map (typically 'Miso.Event.Types.defaultEvents')
-  -> App model action
+  -> Component () () model action
   -- ^ Top-level application component to (re-)mount
   -> IO ()
 reload events = reloadWithContext events ()
@@ -132,12 +139,16 @@ reload events = reloadWithContext events ()
 --
 -- @
 -- main :: IO ()
--- main = 'reloadWithContext' 'defaultEvents' Light app
+-- main = 'reloadWithContext' 'defaultEvents' Light (static (mount_ app))
 -- @
 --
 -- @since 1.12.0.0
 reloadWithContext
-  :: forall context model action . (Eq context, Eq model)
+#ifdef NATIVE
+  :: (FromJSON action, ToJSON model, ToJSON context, FromJSON context, Eq context, Eq model, ToJSON action)
+#else
+  :: (Eq context, Eq model)
+#endif
   => Events
   -- ^ Event delegation map (typically 'Miso.Event.Types.defaultEvents')
   -> context
@@ -145,17 +156,17 @@ reloadWithContext
   -> Component context () model action
   -- ^ Top-level application component to (re-)mount
   -> IO ()
-reloadWithContext events initialContext vcomp = do
-  exists <- x_exists
-  when (exists == 1) $ do
-    (_, oldSchedulerRef, _) <- deRefStablePtr =<< x_get
-    killThread =<< readIORef oldSchedulerRef
-    x_clear
-  clearPage
-  -- 'reload' is a full reset: seed the freshly-supplied context.
-  -- ('initComponent' writes 'globalContext' with the value we pass it.)
-  void (initComponent events Draw False initialContext vcomp)
-  x_store =<< newStablePtr (components, schedulerThread, globalContext :: IORef context)
+reloadWithContext events initialContext comp = do
+   exists <- x_exists
+   when (exists == 1) $ do
+     (_, oldSchedulerRef, _) <- deRefStablePtr =<< x_get
+     killThread =<< readIORef oldSchedulerRef
+     x_clear
+   clearPage
+   -- 'reload' is a full reset: seed the freshly-supplied context.
+   -- ('initComponent' writes 'globalContext' with the value we pass it.)
+   void (initComponent events Draw False initialContext comp Nothing () Nothing)
+   x_store =<< newStablePtr (components, schedulerThread, globalContext :: IORef context)
 -----------------------------------------------------------------------------
 -- | Live reloading. Persists all t'Component' `model` between successive GHCi reloads.
 --
@@ -176,13 +187,17 @@ reloadWithContext events initialContext vcomp = do
 --
 -- @since 1.9.0.0
 live
+#ifdef NATIVE
+  :: (Eq model, ToJSON model, ToJSON action, FromJSON action)
+#else
   :: Eq model
+#endif
   => Events
   -- ^ Event delegation map (typically 'Miso.Event.Types.defaultEvents')
-  -> App model action
+  -> Component () () model action
   -- ^ Top-level application component to (re-)mount with preserved model state
   -> IO ()
-live events = liveWithContext events ()
+live events vcomp_ = liveWithContext events () vcomp_
 -----------------------------------------------------------------------------
 -- | Like 'live', but seeds the app-global React-style @context@ with an
 -- initial value (see 'Miso.startAppWithContext').
@@ -195,12 +210,16 @@ live events = liveWithContext events ()
 --
 -- @
 -- main :: IO ()
--- main = 'liveWithContext' 'defaultEvents' Light app
+-- main = 'liveWithContext' 'defaultEvents' Light (static (mount_ app))
 -- @
 --
 -- @since 1.12.0.0
 liveWithContext
-  :: forall context model action . (Eq context, Eq model)
+#ifdef NATIVE
+  :: (Eq context, Eq model, ToJSON model, ToJSON context, ToJSON action, FromJSON context, FromJSON action)
+#else
+  :: (Eq context, Eq model)
+#endif
   => Events
   -- ^ Event delegation map (typically 'Miso.Event.Types.defaultEvents')
   -> context
@@ -208,39 +227,39 @@ liveWithContext
   -> Component context () model action
   -- ^ Top-level application component to (re-)mount with preserved model state
   -> IO ()
-liveWithContext events initialContext vcomp = do
-  exists <- x_exists
-  if exists == 1
-    then do
-      -- clearBody (only clear the body)
-      clearBody
+liveWithContext events initialContext vcomp_ = do
+      exists <- x_exists
+      if exists == 1
+        then do
+          -- clearBody (only clear the body)
+          clearBody
 
-      -- Deref old state, update new state, set pointer in C heap.
-      (oldComponentsRef, oldSchedulerRef, oldContextRef) <- deRefStablePtr =<< x_get
-      oldContext <- readIORef oldContextRef
-      killThread =<< readIORef oldSchedulerRef
+          -- Deref old state, update new state, set pointer in C heap.
+          (oldComponentsRef, oldSchedulerRef, oldContextRef) <- deRefStablePtr =<< x_get
+          oldContext <- readIORef oldContextRef
+          killThread =<< readIORef oldSchedulerRef
 
-      _oldState <- readIORef oldComponentsRef
-      let oldModel = (_oldState IM.! topLevelComponentId) ^. componentModel
-          initialVComp = vcomp { model = oldModel }
+          _oldState <- readIORef oldComponentsRef
+          let oldModel = (_oldState IM.! topLevelComponentId) ^. componentModel
+              initialVComp = vcomp_ { model = oldModel }
 
-      -- Overwrite new components state with old components state.
-      atomicWriteIORef components _oldState
+          -- Overwrite new components state with old components state.
+          atomicWriteIORef components _oldState
 
-      -- Perform initial draw, recovering the old model and the old context.
-      -- ('initComponent' seeds 'globalContext' with the context we pass it.)
-      initComponent events Draw True oldContext initialVComp
+          -- Perform initial draw, recovering the old model and the old context.
+          -- ('initComponent' seeds 'globalContext' with the context we pass it.)
+          initComponent events Draw True oldContext initialVComp Nothing () Nothing
 
-      -- Don't forget to flush (native mobile needs this too)
-      FFI.flush
+          -- Don't forget to flush (native mobile needs this too)
+          FFI.flush
 
-      -- Clear and set static ptr to use new state (new CAF state)
-      x_clear
-      x_store =<< newStablePtr (components, schedulerThread, globalContext :: IORef context)
-    else do
-      -- This means it is initial load, just store the pointer.
-      void (initComponent events Draw False initialContext vcomp)
-      x_store =<< newStablePtr (components, schedulerThread, globalContext :: IORef context)
+          -- Clear and set static ptr to use new state (new CAF state)
+          x_clear
+          x_store =<< newStablePtr (components, schedulerThread, globalContext :: IORef context)
+        else do
+          -- This means it is initial load, just store the pointer.
+          void (initComponent events Draw False initialContext vcomp_ Nothing () Nothing)
+          x_store =<< newStablePtr (components, schedulerThread, globalContext :: IORef context)
 -----------------------------------------------------------------------------
 clearPage, clearBody, clearHead :: IO ()
 clearPage = clearBody >> clearHead

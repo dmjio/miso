@@ -208,6 +208,11 @@ defaultOptions
   }
 -----------------------------------------------------------------------------
 -- | Convenience type for Events
+--
+-- The map declares which DOM events are delegated and at which 'Phase'. Whether
+-- an individual handler runs on the Lynx main thread ('MTS') or background
+-- thread ('BTS') is decided __per handler__ (see @Miso.Event.mainThread@), not
+-- per event name — mirroring Lynx's @main-thread:bind@ vs @bind@ prefix.
 type Events = M.Map MisoString Phase
 -----------------------------------------------------------------------------
 -- | Default delegated events

@@ -201,19 +201,19 @@ import           Data.Bool (bool)
 -----------------------------------------------------------------------------
 import           Miso.Event
 import           Miso.Media (Media(..))
-import           Miso.Types (Attribute, DOMRef)
+import           Miso.Types (DOMRef, Attribute)
 import           Miso.String (MisoString)
 -----------------------------------------------------------------------------
 -- | blur event defined with custom options
 --
 -- <https://developer.mozilla.org/en-US/docs/Web/Events/blur>
 --
-onBlur :: action -> Attribute action
-onBlur action = on "blur" emptyDecoder $ \() _ -> action
+onBlur :: action -> Attribute model action
+onBlur action = on "blur" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/change
-onChecked :: (Checked -> action) -> Attribute action
-onChecked f = on "change" checkedDecoder (\action _ -> f action)
+onChecked :: (Checked -> action) -> Attribute model action
+onChecked f = on "change" checkedDecoder (\action _ _ -> f action)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/contextmenu
 --
@@ -229,22 +229,22 @@ onContextMenuWithOptions
   -- ^ Propagation options (@preventDefault@, @stopPropagation@)
   -> action
   -- ^ Action to dispatch when the context menu event fires
-  -> Attribute action
+  -> Attribute model action
 onContextMenuWithOptions opts action =
-  onWithOptions BUBBLE opts "contextmenu" emptyDecoder $ \() _ -> action
+  onWithOptions BUBBLE opts "contextmenu" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/click
-onClick :: action -> Attribute action
-onClick action = on "click" emptyDecoder $ \() _ -> action
+onClick :: action -> Attribute model action
+onClick action = on "click" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/click
-onClickCapture :: action -> Attribute action
-onClickCapture action = onCapture "click" emptyDecoder $ \() _ -> action
+onClickCapture :: action -> Attribute model action
+onClickCapture action = onCapture "click" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/click
 -- Like 'onClick', but passes the DOM reference along (akin to @getElementById@).
-onClickWith :: (DOMRef -> action) -> Attribute action
-onClickWith action = on "click" emptyDecoder $ \() domRef -> action domRef
+onClickWith :: (DOMRef -> action) -> Attribute model action
+onClickWith action = on "click" emptyDecoder $ \() _ domRef -> action domRef
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/click
 onClickWithOptions
@@ -252,24 +252,24 @@ onClickWithOptions
   -- ^ Propagation options (@preventDefault@, @stopPropagation@)
   -> action
   -- ^ Action to dispatch on click
-  -> Attribute action
-onClickWithOptions options action = onWithOptions BUBBLE options "click" emptyDecoder $ \() _ -> action
+  -> Attribute model action
+onClickWithOptions options action = onWithOptions BUBBLE options "click" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/click
-onClickPrevent :: action -> Attribute action
+onClickPrevent :: action -> Attribute model action
 onClickPrevent = onClickWithOptions preventDefault
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/focus
-onFocus :: action -> Attribute action
-onFocus action = on "focus" emptyDecoder $ \() _ -> action
+onFocus :: action -> Attribute model action
+onFocus action = on "focus" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dblclick
-onDoubleClick :: action -> Attribute action
-onDoubleClick action = on "dblclick" emptyDecoder $ \() _ -> action
+onDoubleClick :: action -> Attribute model action
+onDoubleClick action = on "dblclick" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dblclick
-onDoubleClickWith :: (DOMRef -> action) -> Attribute action
-onDoubleClickWith f = on "dblclick" emptyDecoder $ \() domRef -> f domRef
+onDoubleClickWith :: (DOMRef -> action) -> Attribute model action
+onDoubleClickWith f = on "dblclick" emptyDecoder $ \() _ domRef -> f domRef
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dblclick
 onDoubleClickWithOptions
@@ -277,58 +277,58 @@ onDoubleClickWithOptions
   -- ^ Propagation options (@preventDefault@, @stopPropagation@)
   -> action
   -- ^ Action to dispatch on double-click
-  -> Attribute action
+  -> Attribute model action
 onDoubleClickWithOptions options action =
-  onWithOptions BUBBLE options "dblclick" emptyDecoder $ \() _ -> action
+  onWithOptions BUBBLE options "dblclick" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/input
 onInput
   :: (MisoString -> action)
   -- ^ Callback receiving @event.target.value@
-  -> Attribute action
-onInput f = on "input" valueDecoder (\action _ -> f action)
+  -> Attribute model action
+onInput f = on "input" valueDecoder (\action _ _ -> f action)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/input
 onInputWith
   :: (MisoString -> DOMRef -> action)
   -- ^ Callback receiving @event.target.value@ and the element's 'DOMRef'
-  -> Attribute action
-onInputWith = on "input" valueDecoder
+  -> Attribute model action
+onInputWith f = on "input" valueDecoder $ \val _ domRef -> f val domRef
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/change
 onChange
   :: (MisoString -> action)
   -- ^ Callback receiving @event.target.value@
-  -> Attribute action
-onChange f = on "change" valueDecoder (\action _ -> f action)
+  -> Attribute model action
+onChange f = on "change" valueDecoder (\action _ _ -> f action)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/change
 onChangeWith
   :: (MisoString -> DOMRef -> action)
   -- ^ Callback receiving @event.target.value@ and the element's 'DOMRef'
-  -> Attribute action
-onChangeWith = on "change" valueDecoder
+  -> Attribute model action
+onChangeWith f = on "change" valueDecoder $ \val _ domRef -> f val domRef
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/select
 onSelect
   :: (MisoString -> action)
   -- ^ Callback receiving @event.target.value@ of the selected text
-  -> Attribute action
-onSelect f = on "select" valueDecoder (\action _ -> f action)
+  -> Attribute model action
+onSelect f = on "select" valueDecoder (\action _ _ -> f action)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/keydown
 onKeyDownWithInfo
   :: (KeyInfo -> action)
   -- ^ Callback receiving the key code and modifier key state
-  -> Attribute action
-onKeyDownWithInfo f = on "keydown" keyInfoDecoder (\action _ -> f action)
+  -> Attribute model action
+onKeyDownWithInfo f = on "keydown" keyInfoDecoder (\action _ _ -> f action)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/keydown
 onKeyDown
   :: (KeyCode -> action)
   -- ^ Callback receiving the numeric key code of the pressed key
-  -> Attribute action
-onKeyDown f = on "keydown" keycodeDecoder (\action _ -> f action)
+  -> Attribute model action
+onKeyDown f = on "keydown" keycodeDecoder (\action _ _ -> f action)
 -----------------------------------------------------------------------------
 -- | 'onEnter'
 --
@@ -350,50 +350,50 @@ onEnter
   -- ^ The action to call when the keydown *is not* 13 (typically @NoOp@ or @Id@)
   -> action
   -- ^ The action to call when keydown *is* 13.
-  -> Attribute action
+  -> Attribute model action
 onEnter nothing action = onKeyDown $ bool nothing action . (==13)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/keypress
 onKeyPress
   :: (KeyCode -> action)
   -- ^ Callback receiving the numeric key code of the pressed key
-  -> Attribute action
-onKeyPress f = on "keypress" keycodeDecoder (\action _ -> f action)
+  -> Attribute model action
+onKeyPress f = on "keypress" keycodeDecoder (\action _ _ -> f action)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/keyup
 onKeyUp
   :: (KeyCode -> action)
   -- ^ Callback receiving the numeric key code of the released key
-  -> Attribute action
-onKeyUp f = on "keyup" keycodeDecoder (\action _ -> f action)
+  -> Attribute model action
+onKeyUp f = on "keyup" keycodeDecoder (\action _ _ -> f action)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/mouseup
-onMouseUp :: action -> Attribute action
-onMouseUp action = on "mouseup" emptyDecoder $ \() _ -> action
+onMouseUp :: action -> Attribute model action
+onMouseUp action = on "mouseup" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/mousedown
-onMouseDown :: action -> Attribute action
-onMouseDown action = on "mousedown" emptyDecoder $ \() _ -> action
+onMouseDown :: action -> Attribute model action
+onMouseDown action = on "mousedown" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/mouseenter
-onMouseEnter :: action -> Attribute action
-onMouseEnter action = on "mouseenter" emptyDecoder $ \() _ -> action
+onMouseEnter :: action -> Attribute model action
+onMouseEnter action = on "mouseenter" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/mouseleave
-onMouseLeave :: action -> Attribute action
-onMouseLeave action = on "mouseleave" emptyDecoder $ \() _ -> action
+onMouseLeave :: action -> Attribute model action
+onMouseLeave action = on "mouseleave" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/mouseover
-onMouseOver :: action -> Attribute action
-onMouseOver action = on "mouseover" emptyDecoder $ \() _ -> action
+onMouseOver :: action -> Attribute model action
+onMouseOver action = on "mouseover" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/mouseout
-onMouseOut :: action -> Attribute action
-onMouseOut action = on "mouseout" emptyDecoder $ \() _ -> action
+onMouseOut :: action -> Attribute model action
+onMouseOut action = on "mouseout" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragstart
-onDragStart :: action -> Attribute action
-onDragStart action = on "dragstart" emptyDecoder $ \() _ -> action
+onDragStart :: action -> Attribute model action
+onDragStart action = on "dragstart" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragstart
 onDragStartWithOptions
@@ -401,13 +401,13 @@ onDragStartWithOptions
   -- ^ Propagation options (@preventDefault@, @stopPropagation@)
   -> action
   -- ^ Action to dispatch when the drag starts
-  -> Attribute action
+  -> Attribute model action
 onDragStartWithOptions options action =
-  onWithOptions BUBBLE options "dragstart" emptyDecoder $ \() _ -> action
+  onWithOptions BUBBLE options "dragstart" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragover
-onDragOver :: action -> Attribute action
-onDragOver action = on "dragover" emptyDecoder $ \() _ -> action
+onDragOver :: action -> Attribute model action
+onDragOver action = on "dragover" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragover
 onDragOverWithOptions
@@ -415,13 +415,13 @@ onDragOverWithOptions
   -- ^ Propagation options (@preventDefault@, @stopPropagation@)
   -> action
   -- ^ Action to dispatch while the dragged element is over this target
-  -> Attribute action
+  -> Attribute model action
 onDragOverWithOptions options action =
-  onWithOptions BUBBLE options "dragover" emptyDecoder $ \() _ -> action
+  onWithOptions BUBBLE options "dragover" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragend
-onDragEnd :: action -> Attribute action
-onDragEnd action = on "dragend" emptyDecoder $ \() _ -> action
+onDragEnd :: action -> Attribute model action
+onDragEnd action = on "dragend" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragend
 onDragEndWithOptions
@@ -429,13 +429,13 @@ onDragEndWithOptions
   -- ^ Propagation options (@preventDefault@, @stopPropagation@)
   -> action
   -- ^ Action to dispatch when the drag operation ends
-  -> Attribute action
+  -> Attribute model action
 onDragEndWithOptions options action =
-  onWithOptions BUBBLE options "dragend" emptyDecoder $ \() _ -> action
+  onWithOptions BUBBLE options "dragend" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragenter
-onDragEnter :: action -> Attribute action
-onDragEnter action = on "dragenter" emptyDecoder $ \() _ -> action
+onDragEnter :: action -> Attribute model action
+onDragEnter action = on "dragenter" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragenter
 onDragEnterWithOptions
@@ -443,13 +443,13 @@ onDragEnterWithOptions
   -- ^ Propagation options (@preventDefault@, @stopPropagation@)
   -> action
   -- ^ Action to dispatch when a dragged element enters this target
-  -> Attribute action
+  -> Attribute model action
 onDragEnterWithOptions options action =
-  onWithOptions BUBBLE options "dragenter" emptyDecoder $ \() _ -> action
+  onWithOptions BUBBLE options "dragenter" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragleave
-onDragLeave :: action -> Attribute action
-onDragLeave action = on "dragleave" emptyDecoder $ \() _ -> action
+onDragLeave :: action -> Attribute model action
+onDragLeave action = on "dragleave" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragleave
 onDragLeaveWithOptions
@@ -457,13 +457,13 @@ onDragLeaveWithOptions
   -- ^ Propagation options (@preventDefault@, @stopPropagation@)
   -> action
   -- ^ Action to dispatch when a dragged element leaves this target
-  -> Attribute action
+  -> Attribute model action
 onDragLeaveWithOptions options action =
-  onWithOptions BUBBLE options "dragleave" emptyDecoder $ \() _ -> action
+  onWithOptions BUBBLE options "dragleave" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/drag
-onDrag :: action -> Attribute action
-onDrag action = on "drag" emptyDecoder $ \() _ -> action
+onDrag :: action -> Attribute model action
+onDrag action = on "drag" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/drag
 onDragWithOptions
@@ -471,9 +471,9 @@ onDragWithOptions
   -- ^ Propagation options (@preventDefault@, @stopPropagation@)
   -> action
   -- ^ Action to dispatch while the element is being dragged
-  -> Attribute action
+  -> Attribute model action
 onDragWithOptions options action =
-  onWithOptions BUBBLE options "drag" emptyDecoder $ \() _ -> action
+  onWithOptions BUBBLE options "drag" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/drop
 onDrop
@@ -481,9 +481,9 @@ onDrop
   -- ^ Propagation options — typically include @preventDefault@ to allow the drop
   -> action
   -- ^ Action to dispatch when a dragged element is dropped on this target
-  -> Attribute action
+  -> Attribute model action
 onDrop options action =
-  onWithOptions BUBBLE options "drop" emptyDecoder (\() _ -> action)
+  onWithOptions BUBBLE options "drop" emptyDecoder (\() _ _ -> action)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/drop
 onDropWithOptions
@@ -491,262 +491,262 @@ onDropWithOptions
   -- ^ Propagation options (@preventDefault@, @stopPropagation@)
   -> action
   -- ^ Action to dispatch on drop
-  -> Attribute action
+  -> Attribute model action
 onDropWithOptions options action =
-  onWithOptions BUBBLE options "drop" emptyDecoder (\() _ -> action)
+  onWithOptions BUBBLE options "drop" emptyDecoder (\() _ _ -> action)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/submit
 --
 -- Note: This has `preventDefault` enabled by default.
 --
-onSubmit :: action -> Attribute action
+onSubmit :: action -> Attribute model action
 onSubmit action =
   onWithOptions BUBBLE preventDefault
-    "submit" emptyDecoder $ \() _ -> action
+    "submit" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/pointerup
 onPointerUp
   :: (PointerEvent -> action)
   -- ^ Callback receiving the full 'PointerEvent'
-  -> Attribute action
-onPointerUp f = on "pointerup" pointerDecoder (\action _ -> f action)
+  -> Attribute model action
+onPointerUp f = on "pointerup" pointerDecoder (\action _ _ -> f action)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/pointerdown
 onPointerDown
   :: (PointerEvent -> action)
   -- ^ Callback receiving the full 'PointerEvent'
-  -> Attribute action
-onPointerDown f = on "pointerdown" pointerDecoder (\action _ -> f action)
+  -> Attribute model action
+onPointerDown f = on "pointerdown" pointerDecoder (\action _ _ -> f action)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/pointerenter
 onPointerEnter
   :: (PointerEvent -> action)
   -- ^ Callback receiving the full 'PointerEvent'
-  -> Attribute action
-onPointerEnter f = on "pointerenter" pointerDecoder (\action _ -> f action)
+  -> Attribute model action
+onPointerEnter f = on "pointerenter" pointerDecoder (\action _ _ -> f action)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/pointerleave
 onPointerLeave
   :: (PointerEvent -> action)
   -- ^ Callback receiving the full 'PointerEvent'
-  -> Attribute action
-onPointerLeave f = on "pointerleave" pointerDecoder (\action _ -> f action)
+  -> Attribute model action
+onPointerLeave f = on "pointerleave" pointerDecoder (\action _ _ -> f action)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/pointerover
 onPointerOver
   :: (PointerEvent -> action)
   -- ^ Callback receiving the full 'PointerEvent'
-  -> Attribute action
-onPointerOver f = on "pointerover" pointerDecoder (\action _ -> f action)
+  -> Attribute model action
+onPointerOver f = on "pointerover" pointerDecoder (\action _ _ -> f action)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/pointerout
 onPointerOut
   :: (PointerEvent -> action)
   -- ^ Callback receiving the full 'PointerEvent'
-  -> Attribute action
-onPointerOut f = on "pointerout" pointerDecoder (\action _ -> f action)
+  -> Attribute model action
+onPointerOut f = on "pointerout" pointerDecoder (\action _ _ -> f action)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/pointercancel
 onPointerCancel
   :: (PointerEvent -> action)
   -- ^ Callback receiving the full 'PointerEvent'
-  -> Attribute action
-onPointerCancel f = on "pointercancel" pointerDecoder (\action _ -> f action)
+  -> Attribute model action
+onPointerCancel f = on "pointercancel" pointerDecoder (\action _ _ -> f action)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/pointermove
 onPointerMove
   :: (PointerEvent -> action)
   -- ^ Callback receiving the full 'PointerEvent'
-  -> Attribute action
-onPointerMove f = on "pointermove" pointerDecoder (\action _ -> f action)
+  -> Attribute model action
+onPointerMove f = on "pointermove" pointerDecoder (\action _ _ -> f action)
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_abort.asp
-onAbort :: action -> Attribute action
-onAbort action = on "abort" emptyDecoder $ \() _ -> action
+onAbort :: action -> Attribute model action
+onAbort action = on "abort" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_abort.asp
-onAbortWith :: (Media -> action) -> Attribute action
-onAbortWith action = on "abort" emptyDecoder $ \() -> action . Media
+onAbortWith :: (Media -> action) -> Attribute model action
+onAbortWith action = on "abort" emptyDecoder $ \() _ -> action . Media
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_canplay.asp
-onCanPlay :: action -> Attribute action
-onCanPlay action = on "canplay" emptyDecoder $ \() _ -> action
+onCanPlay :: action -> Attribute model action
+onCanPlay action = on "canplay" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_canplay.asp
-onCanPlayWith :: (Media -> action) -> Attribute action
-onCanPlayWith action = on "canplay" emptyDecoder $ \() -> action . Media
+onCanPlayWith :: (Media -> action) -> Attribute model action
+onCanPlayWith action = on "canplay" emptyDecoder $ \() _ -> action . Media
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_canplaythrough.asp
-onCanPlayThrough :: action -> Attribute action
-onCanPlayThrough action = on "canplaythrough" emptyDecoder $ \() _ -> action
+onCanPlayThrough :: action -> Attribute model action
+onCanPlayThrough action = on "canplaythrough" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_canplaythrough.asp
-onCanPlayThroughWith :: (Media -> action) -> Attribute action
-onCanPlayThroughWith action = on "canplaythrough" emptyDecoder $ \() -> action . Media
+onCanPlayThroughWith :: (Media -> action) -> Attribute model action
+onCanPlayThroughWith action = on "canplaythrough" emptyDecoder $ \() _ -> action . Media
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_durationchange.asp
-onDurationChange :: action -> Attribute action
-onDurationChange action = on "durationchange" emptyDecoder $ \() _ -> action
+onDurationChange :: action -> Attribute model action
+onDurationChange action = on "durationchange" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_durationchange.asp
-onDurationChangeWith :: (Media -> action) -> Attribute action
-onDurationChangeWith action = on "durationchange" emptyDecoder $ \() -> action . Media
+onDurationChangeWith :: (Media -> action) -> Attribute model action
+onDurationChangeWith action = on "durationchange" emptyDecoder $ \() _ -> action . Media
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/jsref/event_onemptied.asp
-onEmptied :: action -> Attribute action
-onEmptied action = on "emptied" emptyDecoder $ \() _ -> action
+onEmptied :: action -> Attribute model action
+onEmptied action = on "emptied" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/jsref/event_onemptied.asp
-onEmptiedWith :: (Media -> action) -> Attribute action
-onEmptiedWith action = on "emptied" emptyDecoder $ \() -> action . Media
+onEmptiedWith :: (Media -> action) -> Attribute model action
+onEmptiedWith action = on "emptied" emptyDecoder $ \() _ -> action . Media
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_ended.asp
-onEnded :: action -> Attribute action
-onEnded action = on "ended" emptyDecoder $ \() _ -> action
+onEnded :: action -> Attribute model action
+onEnded action = on "ended" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_ended.asp
-onEndedWith :: (Media -> action) -> Attribute action
-onEndedWith action = on "ended" emptyDecoder $ \() -> action . Media
+onEndedWith :: (Media -> action) -> Attribute model action
+onEndedWith action = on "ended" emptyDecoder $ \() _ -> action . Media
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_error.asp
-onError :: action -> Attribute action
-onError action = on "error" emptyDecoder $ \() _ -> action
+onError :: action -> Attribute model action
+onError action = on "error" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_error.asp
-onErrorWith :: (Media -> action) -> Attribute action
-onErrorWith action = on "error" emptyDecoder $ \() -> action . Media
+onErrorWith :: (Media -> action) -> Attribute model action
+onErrorWith action = on "error" emptyDecoder $ \() _ -> action . Media
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/jsref/event_onload.asp
-onLoad :: action -> Attribute action
-onLoad action = on "load" emptyDecoder $ \() _ -> action
+onLoad :: action -> Attribute model action
+onLoad action = on "load" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | onUnload event
-onUnload :: action -> Attribute action
-onUnload action = on "unload" emptyDecoder $ \() _ -> action
+onUnload :: action -> Attribute model action
+onUnload action = on "unload" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_loadeddata.asp
-onLoadedData :: action -> Attribute action
-onLoadedData action = on "loadeddata" emptyDecoder $ \() _ -> action
+onLoadedData :: action -> Attribute model action
+onLoadedData action = on "loadeddata" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_loadeddata.asp
-onLoadedDataWith :: (Media -> action) -> Attribute action
-onLoadedDataWith action = on "loadeddata" emptyDecoder $ \() -> action . Media
+onLoadedDataWith :: (Media -> action) -> Attribute model action
+onLoadedDataWith action = on "loadeddata" emptyDecoder $ \() _ -> action . Media
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_loadedmetadata.asp
-onLoadedMetadata :: action -> Attribute action
-onLoadedMetadata action = on "loadedmetadata" emptyDecoder $ \() _ -> action
+onLoadedMetadata :: action -> Attribute model action
+onLoadedMetadata action = on "loadedmetadata" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_loadedmetadata.asp
-onLoadedMetadataWith :: (Media -> action) -> Attribute action
-onLoadedMetadataWith action = on "loadedmetadata" emptyDecoder $ \() -> action . Media
+onLoadedMetadataWith :: (Media -> action) -> Attribute model action
+onLoadedMetadataWith action = on "loadedmetadata" emptyDecoder $ \() _ -> action . Media
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_loadstart.asp
-onLoadStart :: action -> Attribute action
-onLoadStart action = on "loadstart" emptyDecoder $ \() _ -> action
+onLoadStart :: action -> Attribute model action
+onLoadStart action = on "loadstart" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_loadstart.asp
-onLoadStartWith :: (Media -> action) -> Attribute action
-onLoadStartWith action = on "loadstart" emptyDecoder $ \() -> action . Media
+onLoadStartWith :: (Media -> action) -> Attribute model action
+onLoadStartWith action = on "loadstart" emptyDecoder $ \() _ -> action . Media
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_pause.asp
-onPause :: action -> Attribute action
-onPause action = on "pause" emptyDecoder $ \() _ -> action
+onPause :: action -> Attribute model action
+onPause action = on "pause" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_pause.asp
-onPauseWith :: (Media -> action) -> Attribute action
-onPauseWith action = on "pause" emptyDecoder $ \() -> action . Media
+onPauseWith :: (Media -> action) -> Attribute model action
+onPauseWith action = on "pause" emptyDecoder $ \() _ -> action . Media
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_play.asp
-onPlay :: action -> Attribute action
-onPlay action = on "play" emptyDecoder $ \() _ -> action
+onPlay :: action -> Attribute model action
+onPlay action = on "play" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_play.asp
-onPlayWith :: (Media -> action) -> Attribute action
-onPlayWith action = on "play" emptyDecoder $ \() -> action . Media
+onPlayWith :: (Media -> action) -> Attribute model action
+onPlayWith action = on "play" emptyDecoder $ \() _ -> action . Media
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_playing.asp
-onPlaying :: action -> Attribute action
-onPlaying action = on "playing" emptyDecoder $ \() _ -> action
+onPlaying :: action -> Attribute model action
+onPlaying action = on "playing" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_playing.asp
-onPlayingWith :: (Media -> action) -> Attribute action
-onPlayingWith action = on "playing" emptyDecoder $ \() -> action . Media
+onPlayingWith :: (Media -> action) -> Attribute model action
+onPlayingWith action = on "playing" emptyDecoder $ \() _ -> action . Media
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_progress.asp
-onProgress :: action -> Attribute action
-onProgress action = on "progress" emptyDecoder $ \() _ -> action
+onProgress :: action -> Attribute model action
+onProgress action = on "progress" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_progress.asp
-onProgressWith :: (Media -> action) -> Attribute action
-onProgressWith action = on "progress" emptyDecoder $ \() -> action . Media
+onProgressWith :: (Media -> action) -> Attribute model action
+onProgressWith action = on "progress" emptyDecoder $ \() _ -> action . Media
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_ratechange.asp
-onRateChange :: action -> Attribute action
-onRateChange action = on "ratechange" emptyDecoder $ \() _ -> action
+onRateChange :: action -> Attribute model action
+onRateChange action = on "ratechange" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_ratechange.asp
-onRateChangeWith :: (Media -> action) -> Attribute action
-onRateChangeWith action = on "ratechange" emptyDecoder $ \() -> action . Media
+onRateChangeWith :: (Media -> action) -> Attribute model action
+onRateChangeWith action = on "ratechange" emptyDecoder $ \() _ -> action . Media
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_seeked.asp
-onSeeked :: action -> Attribute action
-onSeeked action = on "seeked" emptyDecoder $ \() _ -> action
+onSeeked :: action -> Attribute model action
+onSeeked action = on "seeked" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_seeked.asp
-onSeekedWith :: (Media -> action) -> Attribute action
-onSeekedWith action = on "seeked" emptyDecoder $ \() -> action . Media
+onSeekedWith :: (Media -> action) -> Attribute model action
+onSeekedWith action = on "seeked" emptyDecoder $ \() _ -> action . Media
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_seeking.asp
-onSeeking :: action -> Attribute action
-onSeeking action = on "seeking" emptyDecoder $ \() _ -> action
+onSeeking :: action -> Attribute model action
+onSeeking action = on "seeking" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_seeking.asp
-onSeekingWith :: (Media -> action) -> Attribute action
-onSeekingWith action = on "seeking" emptyDecoder $ \() -> action . Media
+onSeekingWith :: (Media -> action) -> Attribute model action
+onSeekingWith action = on "seeking" emptyDecoder $ \() _ -> action . Media
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_stalled.asp
-onStalled :: action -> Attribute action
-onStalled action = on "stalled" emptyDecoder $ \() _ -> action
+onStalled :: action -> Attribute model action
+onStalled action = on "stalled" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_stalled.asp
-onStalledWith :: (Media -> action) -> Attribute action
-onStalledWith action = on "stalled" emptyDecoder $ \() -> action . Media
+onStalledWith :: (Media -> action) -> Attribute model action
+onStalledWith action = on "stalled" emptyDecoder $ \() _ -> action . Media
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_suspend.asp
-onSuspend :: action -> Attribute action
-onSuspend action = on "suspend" emptyDecoder $ \() _ -> action
+onSuspend :: action -> Attribute model action
+onSuspend action = on "suspend" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_suspend.asp
-onSuspendWith :: (Media -> action) -> Attribute action
-onSuspendWith action = on "suspend" emptyDecoder $ \() -> action . Media
+onSuspendWith :: (Media -> action) -> Attribute model action
+onSuspendWith action = on "suspend" emptyDecoder $ \() _ -> action . Media
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_timeupdate.asp
-onTimeUpdate :: action -> Attribute action
-onTimeUpdate action = on "timeupdate" emptyDecoder $ \() _ -> action
+onTimeUpdate :: action -> Attribute model action
+onTimeUpdate action = on "timeupdate" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_timeupdate.asp
-onTimeUpdateWith :: (Media -> action) -> Attribute action
-onTimeUpdateWith action = on "timeupdate" emptyDecoder $ \() -> action . Media
+onTimeUpdateWith :: (Media -> action) -> Attribute model action
+onTimeUpdateWith action = on "timeupdate" emptyDecoder $ \() _ -> action . Media
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_volumechange.asp
-onVolumeChange :: action -> Attribute action
-onVolumeChange action = on "volumechange" emptyDecoder $ \() _ -> action
+onVolumeChange :: action -> Attribute model action
+onVolumeChange action = on "volumechange" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_volumechange.asp
-onVolumeChangeWith :: (Media -> action) -> Attribute action
-onVolumeChangeWith action = on "volumechange" emptyDecoder $ \() -> action . Media
+onVolumeChangeWith :: (Media -> action) -> Attribute model action
+onVolumeChangeWith action = on "volumechange" emptyDecoder $ \() _ -> action . Media
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_waiting.asp
-onWaiting :: action -> Attribute action
-onWaiting action = on "waiting" emptyDecoder $ \() _ -> action
+onWaiting :: action -> Attribute model action
+onWaiting action = on "waiting" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_waiting.asp
-onWaitingWith :: (Media -> action) -> Attribute action
-onWaitingWith action = on "waiting" emptyDecoder $ \() -> action . Media
+onWaitingWith :: (Media -> action) -> Attribute model action
+onWaitingWith action = on "waiting" emptyDecoder $ \() _ -> action . Media
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/touchstart
-onTouchStart :: action -> Attribute action
-onTouchStart action = on "touchstart" emptyDecoder $ \() _ -> action
+onTouchStart :: action -> Attribute model action
+onTouchStart action = on "touchstart" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/touchstart
 onTouchStartWithOptions
@@ -754,12 +754,12 @@ onTouchStartWithOptions
   -- ^ Propagation options (@preventDefault@, @stopPropagation@)
   -> action
   -- ^ Action to dispatch on touch start
-  -> Attribute action
-onTouchStartWithOptions options action = onWithOptions BUBBLE options "touchstart" emptyDecoder $ \() _ -> action
+  -> Attribute model action
+onTouchStartWithOptions options action = onWithOptions BUBBLE options "touchstart" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/touchend
-onTouchEnd :: action -> Attribute action
-onTouchEnd action = on "touchend" emptyDecoder $ \() _ -> action
+onTouchEnd :: action -> Attribute model action
+onTouchEnd action = on "touchend" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/touchend
 onTouchEndWithOptions
@@ -767,12 +767,12 @@ onTouchEndWithOptions
   -- ^ Propagation options (@preventDefault@, @stopPropagation@)
   -> action
   -- ^ Action to dispatch on touch end
-  -> Attribute action
-onTouchEndWithOptions options action = onWithOptions BUBBLE options "touchend" emptyDecoder $ \() _ -> action
+  -> Attribute model action
+onTouchEndWithOptions options action = onWithOptions BUBBLE options "touchend" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/touchmove
-onTouchMove :: action -> Attribute action
-onTouchMove action = on "touchmove" emptyDecoder $ \() _ -> action
+onTouchMove :: action -> Attribute model action
+onTouchMove action = on "touchmove" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/touchmove
 onTouchMoveWithOptions
@@ -780,12 +780,12 @@ onTouchMoveWithOptions
   -- ^ Propagation options (@preventDefault@, @stopPropagation@)
   -> action
   -- ^ Action to dispatch while a touch point is moving
-  -> Attribute action
-onTouchMoveWithOptions options action = onWithOptions BUBBLE options "touchmove" emptyDecoder $ \() _ -> action
+  -> Attribute model action
+onTouchMoveWithOptions options action = onWithOptions BUBBLE options "touchmove" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/touchcancel
-onTouchCancel :: action -> Attribute action
-onTouchCancel action = on "touchcancel" emptyDecoder $ \() _ -> action
+onTouchCancel :: action -> Attribute model action
+onTouchCancel action = on "touchcancel" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/touchcancel
 onTouchCancelWithOptions
@@ -793,6 +793,6 @@ onTouchCancelWithOptions
   -- ^ Propagation options (@preventDefault@, @stopPropagation@)
   -> action
   -- ^ Action to dispatch when a touch point is cancelled
-  -> Attribute action
-onTouchCancelWithOptions options action = onWithOptions BUBBLE options "touchcancel" emptyDecoder $ \() _ -> action
+  -> Attribute model action
+onTouchCancelWithOptions options action = onWithOptions BUBBLE options "touchcancel" emptyDecoder $ \() _ _ -> action
 -----------------------------------------------------------------------------

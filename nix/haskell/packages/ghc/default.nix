@@ -7,6 +7,7 @@ self: super:
 {
   /* miso */
   miso = self.callCabal2nixWithOptions "miso" source.miso "-ftemplate-haskell -fssr" {};
+  miso-native = self.callCabal2nixWithOptions "miso" source.miso "-ftemplate-haskell -fssr -fnative" {};
   miso-tests = self.callCabal2nix "miso-tests" source.miso-tests {};
 
   /* miso utils */

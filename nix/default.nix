@@ -7,6 +7,7 @@ let
   };
   config.allowUnfree = true;
   config.allowBroken = false;
+  config.android_sdk.accept_license = true;
   overlays = [ (import ./wasm)
                (import ./overlay.nix)
              ] ++ options.overlays;

@@ -34,6 +34,7 @@ in
   miso             = make-src-filter ../.;
   miso-tests       = make-src-filter ../tests;
   sample-app       = make-src-filter ../sample-app;
+  sample-app-native = make-src-filter ../sample-app-native;
 
   # non-flakified sources
   miso-from-html = fetchFromGitHub {

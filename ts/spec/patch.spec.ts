@@ -21,9 +21,11 @@ import {
     RemoveAttribute,
     AddClass,
     RemoveClass,
+    AddEvent,
+    RemoveEvent,
     Runtime,
 } from '../miso/types';
-import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
+import { test, expect, describe, afterEach, beforeEach, beforeAll } from 'bun:test';
 // import { context } from '../miso/context/dom';
 import {
     patch,
@@ -76,7 +78,6 @@ describe ('Patch tests', () => {
         expect(getPatches()).toEqual([expected, appendOperation]);
         let runtime : Runtime<DOMRef> = {
           nodes : { 0: document.body },
-          components : {}
         };
         patch (domContext, expected, runtime);
         // patch (domContext, appendOperation, runtimes);
@@ -112,7 +113,6 @@ describe ('Patch tests', () => {
         expect(getPatches()).toEqual([expected, appendOperation]);
         let runtime : Runtime<DOMRef> = {
           nodes : { 0: document.body },
-          components : {}
         };
         patch (domContext, expected, runtime);
         // dmj: check the DOM and runtime env. to see if the patch applied, and env updated
@@ -147,7 +147,6 @@ describe ('Patch tests', () => {
         expect(getPatches()).toEqual([expected, appendOperation]);
         let runtime : Runtime<DOMRef> = {
           nodes : { 0: document.body },
-          components : {}
         };
         patch (domContext, expected, runtime);
         // dmj: check the DOM and runtime env. to see if the patch applied, and env updated
@@ -187,7 +186,6 @@ describe ('Patch tests', () => {
         expect(getPatches()).toEqual([expectedCreateElement, expectedSetAttribute, appendOperation]);
         let runtime : Runtime<DOMRef> = {
           nodes : { 0: document.body },
-          components : {}
         };
         patch (domContext, expectedCreateElement, runtime);
         patch (domContext, appendOperation, runtime);
@@ -228,7 +226,6 @@ describe ('Patch tests', () => {
         expect(getPatches()).toEqual([expectedCreateElement, expectedSetAttribute, appendOperation ]);
         let runtime : Runtime<DOMRef> = {
           nodes : { 0: document.body },
-          components : {}
         };
         patch (domContext, expectedCreateElement, runtime);
         patch (domContext, appendOperation, runtime);
@@ -268,7 +265,6 @@ describe ('Patch tests', () => {
         expect(getPatches()).toEqual([expectedCreateElement, expectedSetAttribute, appendOperation ]);
         let runtime : Runtime<DOMRef> = {
           nodes : { 0: document.body },
-          components : {}
         };
         patch (domContext, expectedCreateElement, runtime);
         patch (domContext, appendOperation, runtime);
@@ -317,7 +313,6 @@ describe ('Patch tests', () => {
         expect(getPatches()).toEqual([expected, appendOperation, expectedSetTextContent ]);
         let runtime : Runtime<DOMRef> = {
           nodes : { 0: document.body },
-          components : {}
         };
         patch (domContext, expected, runtime);
         // dmj: check the DOM and runtime env. to see if the patch applied, and env updated
@@ -366,7 +361,6 @@ describe ('Patch tests', () => {
         expect(getPatches()).toEqual([expected, expectedChild, appendOperation2, appendOperation1 ]);
         let runtime : Runtime<DOMRef> = {
           nodes : { 0: document.body },
-          components : {}
         };
         patch (domContext, expected, runtime);
         patch (domContext, appendOperation1, runtime);
@@ -408,7 +402,6 @@ describe ('Patch tests', () => {
         expect(getPatches()).toEqual([expected, expectedStyle, appendOperation ]);
         let runtime : Runtime<DOMRef> = {
           nodes : { 0: document.body },
-          components : {}
         };
         patch (domContext, expected, runtime);
         patch (domContext, appendOperation, runtime);
@@ -493,7 +486,6 @@ describe ('Patch tests', () => {
         expect(getPatches()).toEqual([expected, expectedChild, appendOperation2, appendOperation1, newNode, replaceOp ]);
         let runtime : Runtime<DOMRef> = {
           nodes : { 0: document.body },
-          components : {}
         };
         patch (domContext, expected, runtime);
         patch (domContext, appendOperation1, runtime);
@@ -557,7 +549,6 @@ describe ('Patch tests', () => {
         expect(getPatches()).toEqual([expected, expectedChild, appendOperation2, appendOperation1, removeOp ]);
         let runtime : Runtime<DOMRef> = {
           nodes : { 0: document.body },
-          components : {}
         };
         patch (domContext, expected, runtime);
         patch (domContext, appendOperation1, runtime);
@@ -631,7 +622,6 @@ describe ('Patch tests', () => {
       expect(getPatches()).toEqual([expected, expectedChild1, appendOperation2, appendOperation1, expectedChild2, insertBeforeOp, removeChildOp ]);
         let runtime : Runtime<DOMRef> = {
           nodes : { 0: document.body },
-          components : {}
         };
         patch (domContext, expected, runtime);
         patch (domContext, appendOperation1, runtime);
@@ -689,7 +679,6 @@ describe ('Patch tests', () => {
         expect(getPatches()).toEqual([child, patch1, patch2, appendPatch]);
         let runtime : Runtime<DOMRef> = {
           nodes : { 0: document.body },
-          components : {}
         };
         patch (domContext, child, runtime);
         patch (domContext, patch1, runtime);
@@ -741,7 +730,6 @@ describe ('Patch tests', () => {
         expect(getPatches()).toEqual([child, patch1, patch2, appendPatch, patch3]);
         let runtime : Runtime<DOMRef> = {
           nodes : { 0: document.body },
-          components : {}
         };
         patch (domContext, child, runtime);
         patch (domContext, patch1, runtime);
@@ -753,5 +741,206 @@ describe ('Patch tests', () => {
         expect(runtime.nodes[nodeId].nodeName).toEqual('DIV');
     });
 
+});
+
+/* Main-thread event keys only exist on handlers that carry a staticKey +
+   componentId (native 'mainThread' handlers), and only the Lynx dual-thread
+   runtime diffs them into addEvent/removeEvent patches. Simulate that runtime by
+   defining __BACKGROUND__; in a web build these globals are undefined and
+   diffEvents is skipped entirely. */
+describe ('Event key patch tests', () => {
+    beforeEach(() => { (globalThis as any).__BACKGROUND__ = true; });
+    afterEach(() => { delete (globalThis as any).__BACKGROUND__; });
+
+    const noOpts = { preventDefault : false, stopPropagation : false };
+    const mkEvt = (staticKey : string, componentId : number, options = noOpts) => ({
+        options,
+        runEvent : () => {},
+        staticKey,
+        componentId,
+    });
+    const addEvt = (nodeId : number, name : string, staticKey : string, componentId : number,
+                    capture = false, options = noOpts) : AddEvent =>
+        ({ type : "addEvent", nodeId, name, capture, staticKey, componentId, options });
+    const rmEvt = (nodeId : number, name : string, capture = false) : RemoveEvent =>
+        ({ type : "removeEvent", nodeId, name, capture });
+
+    test('Should emit addEvent on creation of a node carrying a handler', () => {
+        const parentNodeId : number = 0;
+        const nodeId : number = 1;
+        let vtree = vnode<NodeId>({ events : { captures : {}, bubbles : { click : mkEvt('ab', 3) } } });
+        let parent : NodeId = { nodeId : parentNodeId };
+        diff (null, vtree, parent, patchDrawingContext);
+        let create : CreateElement = { type : "createElement", tag : 'div', nodeId };
+        let append : AppendChild = { type : "appendChild", parent : parentNodeId, child : nodeId };
+        expect(getPatches()).toEqual([create, addEvt(nodeId, 'click', 'ab', 3), append]);
+    });
+
+    test('Should emit addEvent when a handler is added to a persistent node', () => {
+        const parentNodeId : number = 0;
+        const nodeId : number = 1;
+        let vtree1 = vnode<NodeId>({});
+        let vtree2 = vnode<NodeId>({ events : { captures : {}, bubbles : { click : mkEvt('ab', 3) } } });
+        let parent : NodeId = { nodeId : parentNodeId };
+        diff (null, vtree1, parent, patchDrawingContext);
+        diff (vtree1, vtree2, parent, patchDrawingContext);
+        let create : CreateElement = { type : "createElement", tag : 'div', nodeId };
+        let append : AppendChild = { type : "appendChild", parent : parentNodeId, child : nodeId };
+        expect(getPatches()).toEqual([create, append, addEvt(nodeId, 'click', 'ab', 3)]);
+    });
+
+    test('Should emit removeEvent when a handler is removed from a persistent node', () => {
+        const parentNodeId : number = 0;
+        const nodeId : number = 1;
+        let vtree1 = vnode<NodeId>({ events : { captures : {}, bubbles : { click : mkEvt('ab', 3) } } });
+        let vtree2 = vnode<NodeId>({});
+        let parent : NodeId = { nodeId : parentNodeId };
+        diff (null, vtree1, parent, patchDrawingContext);
+        diff (vtree1, vtree2, parent, patchDrawingContext);
+        let create : CreateElement = { type : "createElement", tag : 'div', nodeId };
+        let append : AppendChild = { type : "appendChild", parent : parentNodeId, child : nodeId };
+        expect(getPatches()).toEqual([create, addEvt(nodeId, 'click', 'ab', 3), append, rmEvt(nodeId, 'click')]);
+    });
+
+    test('Should emit addEvent when a handler staticKey changes', () => {
+        const parentNodeId : number = 0;
+        const nodeId : number = 1;
+        let vtree1 = vnode<NodeId>({ events : { captures : {}, bubbles : { click : mkEvt('ab', 3) } } });
+        let vtree2 = vnode<NodeId>({ events : { captures : {}, bubbles : { click : mkEvt('cd', 3) } } });
+        let parent : NodeId = { nodeId : parentNodeId };
+        diff (null, vtree1, parent, patchDrawingContext);
+        diff (vtree1, vtree2, parent, patchDrawingContext);
+        expect(getPatches().slice(-1)).toEqual([addEvt(nodeId, 'click', 'cd', 3)]);
+    });
+
+    test('Should preserve the capture phase in the emitted patch', () => {
+        const parentNodeId : number = 0;
+        const nodeId : number = 1;
+        let vtree = vnode<NodeId>({ events : { captures : { click : mkEvt('ab', 3) }, bubbles : {} } });
+        let parent : NodeId = { nodeId : parentNodeId };
+        diff (null, vtree, parent, patchDrawingContext);
+        let create : CreateElement = { type : "createElement", tag : 'div', nodeId };
+        let append : AppendChild = { type : "appendChild", parent : parentNodeId, child : nodeId };
+        expect(getPatches()).toEqual([create, addEvt(nodeId, 'click', 'ab', 3, true), append]);
+    });
+
+    test('Should carry the handler options in the emitted patch', () => {
+        const parentNodeId : number = 0;
+        const nodeId : number = 1;
+        const opts = { preventDefault : true, stopPropagation : true };
+        let vtree = vnode<NodeId>({ events : { captures : {}, bubbles : { click : mkEvt('ab', 3, opts) } } });
+        let parent : NodeId = { nodeId : parentNodeId };
+        diff (null, vtree, parent, patchDrawingContext);
+        let create : CreateElement = { type : "createElement", tag : 'div', nodeId };
+        let append : AppendChild = { type : "appendChild", parent : parentNodeId, child : nodeId };
+        expect(getPatches()).toEqual([create, addEvt(nodeId, 'click', 'ab', 3, false, opts), append]);
+    });
+
+    test('Should distinguish same-name handlers in capture and bubble phases', () => {
+        const parentNodeId : number = 0;
+        const nodeId : number = 1;
+        let vtree = vnode<NodeId>({ events : { captures : { click : mkEvt('cap', 3) }, bubbles : { click : mkEvt('bub', 3) } } });
+        let parent : NodeId = { nodeId : parentNodeId };
+        diff (null, vtree, parent, patchDrawingContext);
+        const events = getPatches().filter(p => p.type === 'addEvent');
+        expect(events).toEqual([addEvt(nodeId, 'click', 'cap', 3, true), addEvt(nodeId, 'click', 'bub', 3, false)]);
+    });
+
+    test('Should emit no event patch on update when handlers are unchanged', () => {
+        const parentNodeId : number = 0;
+        let vtree1 = vnode<NodeId>({ events : { captures : {}, bubbles : { click : mkEvt('ab', 3) } } });
+        let vtree2 = vnode<NodeId>({ events : { captures : {}, bubbles : { click : mkEvt('ab', 3) } } });
+        let parent : NodeId = { nodeId : parentNodeId };
+        diff (null, vtree1, parent, patchDrawingContext);
+        globalThis['patches'] = []; /* isolate the update from creation */
+        diff (vtree1, vtree2, parent, patchDrawingContext);
+        expect(getPatches()).toEqual([]);
+    });
+
+    test('Should emit no event patches in a web build (no thread globals)', () => {
+        delete (globalThis as any).__BACKGROUND__; /* undo the beforeEach */
+        const parentNodeId : number = 0;
+        const nodeId : number = 1;
+        let vtree1 = vnode<NodeId>({ events : { captures : {}, bubbles : { click : mkEvt('ab', 3) } } });
+        let vtree2 = vnode<NodeId>({});
+        let parent : NodeId = { nodeId : parentNodeId };
+        diff (null, vtree1, parent, patchDrawingContext);
+        diff (vtree1, vtree2, parent, patchDrawingContext);
+        let create : CreateElement = { type : "createElement", tag : 'div', nodeId };
+        let append : AppendChild = { type : "appendChild", parent : parentNodeId, child : nodeId };
+        expect(getPatches()).toEqual([create, append]);
+    });
+
+});
+
+/* Direct-bind events are Lynx native component events (input/scroll/…) that
+   don't bubble to the delegated mount listener, so they're bound on the element
+   itself. A node declares its capability set in `directEvents`, and diffEvents
+   emits one `direct` addEvent per name at create (never removed — the set is
+   immutable for the element's lifetime). Same __BACKGROUND__ gating as above. */
+describe ('Direct-bind event patch tests', () => {
+    beforeEach(() => { (globalThis as any).__BACKGROUND__ = true; });
+    afterEach(() => { delete (globalThis as any).__BACKGROUND__; });
+
+    const noOpts = { preventDefault : false, stopPropagation : false };
+    const mkEvt = (staticKey : string, componentId : number, options = noOpts) => ({
+        options, runEvent : () => {}, staticKey, componentId,
+    });
+    const directEvt = (nodeId : number, name : string) : AddEvent =>
+        ({ type : "addEvent", nodeId, name, capture : false,
+           staticKey : undefined, componentId : undefined, options : undefined, direct : true });
+    const mainEvt = (nodeId : number, name : string, staticKey : string, componentId : number) : AddEvent =>
+        ({ type : "addEvent", nodeId, name, capture : false, staticKey, componentId, options : noOpts });
+
+    test('Should emit a direct addEvent per name in directEvents on create', () => {
+        const parentNodeId : number = 0;
+        const nodeId : number = 1;
+        let vtree = vnode<NodeId>({ tag : 'input', directEvents : ['input', 'blur'] });
+        let parent : NodeId = { nodeId : parentNodeId };
+        diff (null, vtree, parent, patchDrawingContext);
+        let create : CreateElement = { type : "createElement", tag : 'input', nodeId };
+        let append : AppendChild = { type : "appendChild", parent : parentNodeId, child : nodeId };
+        expect(getPatches()).toEqual([create, directEvt(nodeId, 'input'), directEvt(nodeId, 'blur'), append]);
+    });
+
+    test('Should emit direct addEvents even with no handlers attached', () => {
+        const nodeId : number = 1;
+        let vtree = vnode<NodeId>({ tag : 'input', directEvents : ['input'] });
+        diff (null, vtree, { nodeId : 0 }, patchDrawingContext);
+        const events = getPatches().filter(p => p.type === 'addEvent');
+        expect(events).toEqual([directEvt(nodeId, 'input')]);
+    });
+
+    test('Should emit both a direct and a main-thread addEvent for the same name', () => {
+        const nodeId : number = 1;
+        let vtree = vnode<NodeId>({
+            tag : 'input',
+            directEvents : ['input'],
+            events : { captures : {}, bubbles : { input : mkEvt('ab', 3) } },
+        });
+        diff (null, vtree, { nodeId : 0 }, patchDrawingContext);
+        const events = getPatches().filter(p => p.type === 'addEvent');
+        expect(events).toEqual([directEvt(nodeId, 'input'), mainEvt(nodeId, 'input', 'ab', 3)]);
+    });
+
+    test('Should not re-emit direct addEvents on update (bind once at create)', () => {
+        let vtree1 = vnode<NodeId>({ tag : 'input', directEvents : ['input'] });
+        let vtree2 = vnode<NodeId>({ tag : 'input', directEvents : ['input'] });
+        let parent : NodeId = { nodeId : 0 };
+        diff (null, vtree1, parent, patchDrawingContext);
+        globalThis['patches'] = []; /* isolate the update from creation */
+        diff (vtree1, vtree2, parent, patchDrawingContext);
+        expect(getPatches()).toEqual([]);
+    });
+
+    test('Should emit no direct addEvents in a web build (no thread globals)', () => {
+        delete (globalThis as any).__BACKGROUND__; /* undo the beforeEach */
+        const nodeId : number = 1;
+        let vtree = vnode<NodeId>({ tag : 'input', directEvents : ['input'] });
+        diff (null, vtree, { nodeId : 0 }, patchDrawingContext);
+        let create : CreateElement = { type : "createElement", tag : 'input', nodeId };
+        let append : AppendChild = { type : "appendChild", parent : 0, child : nodeId };
+        expect(getPatches()).toEqual([create, append]);
+    });
 
 });

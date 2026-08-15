@@ -1,0 +1,461 @@
+-----------------------------------------------------------------------------
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP #-}
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Miso.Native
+-- Copyright   :  (C) 2016-2026 David M. Johnson
+-- License     :  BSD3-style (see the file LICENSE)
+-- Maintainer  :  David M. Johnson <code@dmj.io>
+-- Stability   :  experimental
+-- Portability :  non-portable
+--
+-- = miso native 📱
+--
+-- "Miso.Native" targets __native mobile devices__ by driving the
+-- [Lynx](https://lynxjs.org) runtime instead of the browser DOM. The same
+-- [MVU](https://elm-lang.org) programming model, 'Component' API, event
+-- delegation and virtual-DOM diffing you use on the web ("Miso") carry over
+-- unchanged — only the element vocabulary differs ('Miso.Native.Element.view_',
+-- 'Miso.Native.Element.text_', … instead of 'Miso.Html.Element.div_' \/
+-- 'Miso.Html.Element.span_') and rendering is performed by Lynx's
+-- [element PAPI](https://lynxjs.org/api/engine/element-api) rather than by
+-- mutating a browser DOM.
+--
+-- This module is the native analog of the 'Miso.miso' \/ 'Miso.startApp'
+-- entrypoints: 'native' (and 'nativeWithContext') boot a root 'Component' onto
+-- the Lynx runtime.
+--
+-- == Enabling native
+--
+-- The native backend is gated behind the @native@ /cabal flag/. It must be
+-- enabled to bring "Miso.Native" and the @Miso.Native.*@ element \/ event \/ FFI
+-- modules into scope (build with @-fnative@). Web \/ WASM builds are unaffected —
+-- all cross-thread machinery lives behind the @NATIVE@ CPP guard.
+--
+-- = The dual-thread architecture
+--
+-- Lynx runs your application across __two threads__, and miso maps onto both:
+--
+-- * __BTS__ — the /background thread/ (\"background thread script\"). This is
+--   where your application /logic/ lives. Everything runs here __by default__:
+--   the 'Miso.Types.update' function, event handling, 'Effect' scheduling and
+--   /all/ virtual-DOM diffing.
+--
+-- * __MTS__ — the /main thread/ (\"main thread script\"). This thread owns the
+--   actual element tree and /rendering/. It is where the pixels land. It is also
+--   available as a low-latency escape hatch for performance-critical event
+--   handling (see [Main-thread events](#g:mainthread) below).
+--
+-- The __same Haskell bundle runs on both threads__; the native runtime
+-- (@ts\/miso-native.ts@) selects the BTS or MTS drawing context per-thread from a
+-- global flag, so there is no renderer to register — 'native' starts the app
+-- directly.
+--
+-- The guiding principle: __everything originates on the BTS__. The MTS is a
+-- rendering surface that the BTS drives across the thread boundary.
+--
+-- == Knowing which thread you are on
+--
+-- Lynx builds the bundle with [rspeedy](https://lynxjs.org) — its Rust-based
+-- tooling — which compiles the sources /twice/, once per thread, inlining a
+-- __compile-time constant__ (@__BACKGROUND__@) that distinguishes the two. That
+-- constant surfaces in Haskell as three top-level 'Bool's in "Miso.Runtime":
+--
+-- * @mts@ — 'True' when this execution context is the Lynx /main/ thread.
+-- * @bts@ — 'True' when this context is the Lynx /background/ thread.
+-- * @web@ — 'True' for a plain web \/ WASM build (neither Lynx thread).
+--
+-- Exactly one is 'True', and the value is invariant for the lifetime of a JS
+-- context, so the runtime computes it once and caches it. Runtime code branches
+-- on @mts@ \/ @bts@ to decide where work runs (e.g. the scheduler suppresses the
+-- paint step on the MTS, which keeps only a read-only @model@ replica).
+--
+-- == What crosses the thread boundary, and how
+--
+-- Because logic (BTS) and rendering (MTS) live on different threads, miso
+-- synchronizes them by shipping messages across the boundary. This is largely
+-- invisible, but understanding it explains the API constraints below.
+--
+-- * __Initial draw__ — The very first 'Draw' happens __on the MTS itself__, and
+--   it does __not__ rely on the BTS diffing a tree and transferring patches
+--   across the boundary. The root 'Component' is booted from a 'StaticPtr' (via
+--   'native' \/ 'nativeWithContext'), so the MTS reconstructs it from the
+--   pointer's 'GHC.StaticPtr.StaticKey' alone and renders the first frame
+--   locally (Lynx's instant first frame). Only /after/ this initial draw does the
+--   cross-thread patch protocol take over: __every subsequent diff runs on the
+--   BTS and ships patches to the MTS__ to apply.
+--
+-- * __Subsequent component mounts__ — When the BTS 'view' mounts a child
+--   'Component', that mount is synchronized to the MTS __asynchronously__ using
+--   /static mounting/: the child is wrapped in a @static@ pointer
+--   (@-XStaticPointers@) so only its 'GHC.StaticPtr.StaticKey' — not a closure —
+--   needs to cross the boundary. The MTS dereferences the key to rebuild the
+--   component locally. See 'Miso.Types.vcomp' \/ 'Miso.Types.mountStatic_'.
+--
+-- * __State synchronization__ — The BTS owns the shared @model@ and ships it to
+--   the MTS as it changes (JSON-serialized, hence the @ToJSON@ \/ @FromJSON@
+--   constraints on native mounting combinators), so main-thread @*MainWith@
+--   handlers observe an eventually-consistent copy. A child's initial @props@ ride
+--   the /static mount/ payload — the @static@ pointer carries the /constructor/
+--   and the @props@ value is shipped separately, so it may depend on the parent
+--   @model@. But @props@ and the global @context@ are __not__ re-synced on later
+--   changes: after the first frame they stay background-thread-only (matching
+--   ReactLynx — see [Main-thread events](#g:mainthread)).
+--
+-- * __Events__ — Events raised on the MTS are, by default, forwarded to the BTS
+--   where 'update' runs (see below). Cross-thread handlers are carried as an
+--   'Miso.Types.EventHandler', embedded with 'Miso.Types.event' @. static (…)@ so
+--   the peer thread can rebuild the handler from its 'GHC.StaticPtr.StaticKey'.
+--
+-- == First-frame rendering (instant first frame)
+--
+-- The MTS painting frame one itself (the __Initial draw__ above) is Lynx's
+-- /instant first frame/: the user sees UI without waiting for a background render
+-- and patch round-trip. Meanwhile the BTS boots the /same/ root and builds the
+-- identical virtual-DOM tree in lockstep — with __deterministic @nodeId@
+-- parity__, so both threads address the same elements — but __suppresses its own
+-- create-patches__ for that first frame, since the MTS already painted them. A
+-- single global @initialDraw@ latch governs this on both threads; 'native' \/
+-- 'nativeWithContext' clears it once the whole root mount has finished.
+--
+-- After that handover the responsibilities are fixed, mirroring ReactLynx: the
+-- __BTS is the sole diff \/ paint authority__ — it runs 'update', diffs, and ships
+-- patches — while the __MTS only applies those patches__ (and runs main-thread
+-- scripts \/ handlers). The MTS never diffs or repaints from the scheduler again;
+-- this is why the shared @model@ is BTS-owned and why nothing you do on the MTS
+-- should try to redraw declaratively.
+--
+-- = Static mounting
+--
+-- Because component constructors, event handlers and effects may need to be
+-- reconstructed on the /other/ thread, native miso threads them across the
+-- boundary as @static@ pointers rather than closures. This requires the
+-- @-XStaticPointers@ language extension.
+--
+-- The root component is mounted with 'Miso.Types.mountStatic_' wrapped in
+-- @static@:
+--
+-- @
+-- {-# LANGUAGE StaticPointers #-}
+-- -----------------------------------------------------------------------------
+-- module Main where
+-- -----------------------------------------------------------------------------
+-- import "Miso"
+-- import "Miso.Native"
+-- -----------------------------------------------------------------------------
+-- main :: 'IO' ()
+-- main = 'native' 'nativeEvents' (static ('Miso.Types.mountStatic_' app))
+-- @
+--
+-- Child components are embedded in a 'view' the same way, with 'Miso.Types.vcomp':
+--
+-- @
+-- view _ _ _ = view_ [] [ 'Miso.Types.vcomp' () (static ('Miso.Types.mountStatic_' childComponent)) ]
+-- @
+--
+-- __Static-pointer limitation.__ A @static@ form may only close over
+-- /top-level, closed/ bindings — it cannot capture local variables. This is why
+-- component constructors and main-thread handlers are supplied as references to
+-- top-level definitions, with any runtime data (props, decoded event payloads)
+-- shipped separately as serialized values rather than captured in a closure.
+--
+-- = Effects: choosing a thread
+--
+-- Because an 'IO' closure can't cross the thread boundary (only JSON-serialized
+-- @action@s can), cross-thread work is expressed as /dispatching an action/ to
+-- the thread that should handle it. Two combinators do this:
+--
+-- * 'Miso.Effect.runOnBG' @action@ — run @action@'s 'update' on the
+--   __background__ thread (BTS). Used by a main-thread event handler that needs
+--   to change shared state, since the BTS solely owns the @model@.
+-- * 'Miso.Effect.runOnMain' @action@ — run @action@'s 'update' on the __main__
+--   thread (MTS). Used by a BTS effect that needs an imperative main-thread
+--   operation (see "Miso.Native.MainThread").
+--
+-- Each ships only the given @action@ to the target thread (or dispatches it
+-- locally when already there), where its 'update' runs exactly once. Sibling
+-- effects in the current 'update' are unaffected, and nothing is
+-- double-executed. Off the native runtime both are an ordinary local dispatch,
+-- equivalent to 'Miso.Effect.issue'.
+--
+-- = Subscriptions and threads
+--
+-- A t'Miso.Effect.Sub' is dynamic — it is just a @'Miso.Effect.Sink' action ->
+-- IO ()@ run in a forked thread — and a component's subs are started on __every
+-- thread it mounts on__. So a 'Miso.Effect.Sub' runs on __both the BTS and the
+-- MTS__ (once each), and each copy dispatches into its own thread's scheduler.
+--
+-- Because a 'Miso.Effect.Sub' is ordinary runtime IO — unlike a @static@ event
+-- handler, whose thread is fixed at compile time — it selects its own thread at
+-- runtime with the @mts@ \/ @bts@ 'Bool's. This is the dynamic analog of a
+-- handler's @*Main@ variant:
+--
+-- @
+-- -- background-only: open the socket once, feed the model
+-- wsSub sink = when bts (websocketConnect \"wss:\/\/…\" sink)
+--
+-- -- main-thread-only: drive an imperative animation
+-- animSub _ = when mts ('Miso.Native.MainThread.eachFrame' step)
+-- @
+--
+-- __Guard anything that must be single-owned.__ Without a @bts@ \/ @mts@ gate a
+-- stateful sub double-runs — two websocket connections, a timer ticking on both
+-- threads — so pin such subs to one thread. The no-op fork on the other thread
+-- returns immediately.
+--
+-- = Main-thread events #mainthread#
+--
+-- __Thread affinity is per-handler, not per-event-name.__ Any given event can be
+-- handled on /either/ thread; the choice is made at each handler, so the same
+-- event (say @tap@) may run on the BTS for one element and the MTS for another.
+-- The __default is the BTS__ — a plain 'Miso.Native.Element.View.Event.onTap'
+-- handler runs on the background thread. Opting a handler into the MTS is
+-- explicit (the @*Main@ variants below); nothing runs on the main thread unless
+-- you ask for it.
+--
+-- By default an event handler runs on the __BTS__: the event is forwarded from
+-- the MTS, 'update' runs on the BTS, the model changes, and the resulting diff is
+-- shipped back to the MTS to paint. That round-trip is fine for most
+-- interactions but adds latency for gesture- and scroll-linked animation.
+--
+-- For those cases, handlers have __@*Main@-suffixed variants__ (e.g.
+-- 'Miso.Native.Element.View.Event.onTapMain',
+-- 'Miso.Native.Element.View.Event.onTouchMoveMain') that run __synchronously on
+-- the MTS__ — no VDOM diff, no patches, no BTS round-trip. Such a handler is
+-- /imperative/: it mutates the target element directly through the helpers in
+-- "Miso.Native.MainThread" (e.g. 'Miso.Native.MainThread.setStyleProperty'). The
+-- @*MainWith@ variants additionally hand the handler the current @model@ and the
+-- target 'Miso.Types.DOMRef' (@\\event model domRef -> action@).
+--
+-- Because a main-thread handler must be reconstructed on the MTS, it is an
+-- 'Miso.Types.EventHandler' embedded with 'Miso.Types.event' @. static@ — so
+-- __main-thread event handlers require @-XStaticPointers@__ (the @static@ keyword
+-- is how the handler crosses to the MTS by 'GHC.StaticPtr.StaticKey'):
+--
+-- @
+-- {-# LANGUAGE StaticPointers #-}
+--
+-- view _ _ _ =
+--   'view_' [ 'Miso.Types.event' (static ('Miso.Native.Element.View.Event.onTapMain' HandleTap)) ] []
+-- @
+--
+-- The same @static@ capture limitation applies: an @onTapMain@ handler refers to
+-- a top-level action \/ function; runtime data reaches the handler via the
+-- decoded event payload, not a captured closure.
+--
+-- __The generic primitives ('Miso.Event.on' \/ 'Miso.Event.onMain').__ The
+-- per-element @on*@ \/ @on*Main@ helpers are sugar over two combinators, and the
+-- /same/ @(eventName, decoder, toAction)@ works with either — that is how one
+-- event is captured on whichever thread you choose, per handler:
+--
+-- * 'Miso.Event.on' @name decoder toAction@ → a plain 'Miso.Types.Attribute'
+--   that runs on the __BTS__. No @static@: a background handler is reconstructed
+--   nowhere else, so it may close over the enclosing 'view'.
+-- * 'Miso.Event.onMain' @name decoder toAction@ → an 'Miso.Types.EventHandler'
+--   that runs on the __MTS__, embedded with 'Miso.Types.event' @. static@.
+--
+-- @
+-- -- same @tap@ event, one handler per thread:
+-- view_ [ 'Miso.Event.on' \"tap\" emptyDecoder (\\_ _ _ -> Grow) ] children                     -- BTS
+-- view_ [ 'Miso.Types.event' (static ('Miso.Event.onMain' \"tap\" emptyDecoder onTapMain)) ] children  -- MTS
+-- @
+--
+-- The @Attribute@-versus-@EventHandler@+@static@ split /is/ the mechanism: only
+-- the main-thread handler has to cross to the MTS by 'GHC.StaticPtr.StaticKey',
+-- which is why 'Miso.Event.onMain' (and every @*Main@ helper) needs
+-- @-XStaticPointers@ while 'Miso.Event.on' does not. ('Miso.Event.onMainWithOptions'
+-- exposes 'Miso.Event.Types.Phase' \/ 'Miso.Event.Types.Options' for the MTS
+-- variant, mirroring 'Miso.Event.onWithOptions'.)
+--
+-- __Reaching the @model@ (and why it is passed, not captured).__ A static
+-- main-thread handler /cannot/ close over the @model@, @props@ or @context@ from
+-- the enclosing 'view' — those are local bindings, which @static@ forbids. So
+-- rather than capture them, the @*MainWith@ variants __pass the @model@ as an
+-- argument__ to the handler, giving imperative MTS code the state it needs to
+-- integrate without a BTS round-trip. Note this is the __main-thread's own copy__
+-- of the model: it is populated on the MTS __eventually consistently__ from the
+-- BTS (the authoritative model still lives on the background thread), so a
+-- handler may observe a value slightly behind the latest BTS state.
+--
+-- __Props and context are not on the main thread.__ Unlike the @model@, a
+-- component's @props@ and the app-global @context@ are __not__ mirrored to the
+-- MTS at all (matching ReactLynx, where React state — and therefore props and
+-- context — is background-thread-only). They live solely on the BTS; the MTS
+-- keeps only its boot values, so 'Miso.Effect.getProps' \/
+-- 'Miso.Effect.getContext' inside a main-thread handler would read stale data.
+-- Only the @model@ is hydrated to the MTS (eventually consistently, as above).
+-- If a main-thread handler needs a prop or context value, fold it into the
+-- @model@ or carry it in the dispatched action payload — do not read @props@ or
+-- @context@ on the main thread. This also means less cross-thread traffic: the
+-- BTS ships a @props@\/@context@ change to the MTS only via the initial 'MOUNT'
+-- (for @props@), never on every subsequent change.
+--
+-- __Ownership caveat.__ A property you drive imperatively from the MTS must not
+-- /also/ be written declaratively by the BTS @view@ for the same element: both
+-- threads write the shared element tree through the same PAPI with no
+-- arbitration, so one will clobber the other. Keep a single owner per
+-- @(element, property)@ — typically compositor properties like @transform@ \/
+-- @opacity@ that the @view@ leaves alone.
+--
+-- = Main-thread-local state: 'Miso.Native.MainThread.MainThreadRef'
+--
+-- A main-thread handler is imperative and must not write the BTS-owned @model@:
+-- shared state changes belong on the background thread, so dispatch them with
+-- 'Miso.Effect.runOnBG'. But gestures and scroll-linked animation often need
+-- mutable state that lives /only/ on the MTS — the current drag offset, a fling
+-- velocity, whether a follow loop is active. For that, use a
+-- 'Miso.Native.MainThread.MainThreadRef', a thin 'Data.IORef.IORef' wrapper for
+-- main-thread-only state (the analog of ReactLynx's @MainThreadRef@):
+--
+-- @
+-- dragRef :: 'Miso.Native.MainThread.MainThreadRef' Double
+-- dragRef = 'Miso.Native.MainThread.mainThreadRef' 0
+-- {-\# NOINLINE dragRef \#-}
+-- @
+--
+-- 'Miso.Native.MainThread.mainThreadRef' allocates the underlying cell as a CAF
+-- via 'System.IO.Unsafe.unsafePerformIO', so __every top-level binding needs its
+-- own @{-\# NOINLINE \#-}@ pragma__ — otherwise GHC may inline the CAF and split
+-- the state into independent copies. Reads and writes
+-- ('Miso.Native.MainThread.readMainThreadRef' \/
+-- 'Miso.Native.MainThread.writeMainThreadRef' \/
+-- 'Miso.Native.MainThread.modifyMainThreadRef') are ordinary 'Data.IORef.IORef'
+-- operations — safe without atomics because the MTS is single-threaded —
+-- and 'Miso.Native.MainThread.modifyMainThreadRef_' takes a
+-- @'Control.Monad.State.State' a ()@ so you can drive updates with the
+-- "Miso.Lens" operators (@.=@, @%=@, @+=@, …).
+--
+-- It pairs with 'Miso.Native.MainThread.eachFrame' for a vsync-coalesced
+-- animation loop: read the latest gesture state from the ref, imperatively paint
+-- at most once per frame (via 'Miso.Native.MainThread.setStyleProperty' \/
+-- 'Miso.Native.MainThread.setStylePropertyTransform'), and stop by returning
+-- 'False' when the gesture ends.
+--
+-- = Platform APIs and thread restrictions
+--
+-- Mirroring Lynx (/\"not all APIs exist on both threads\"/), miso's native APIs
+-- are split by thread, and calling one from the wrong thread fails at runtime —
+-- the type system does not catch it, so guard with @mts@ \/ @bts@ when code may
+-- run on either thread. Neither module is re-exported here; import it directly.
+--
+-- * __Native modules (BTS-only)__ — "Miso.Native.Module" wraps Lynx's global
+--   @NativeModules@ (platform capabilities: storage, clipboard, device info, …).
+--   'Miso.Native.Module.callNativeModule' invokes a void-returning method and
+--   'Miso.Native.Module.callNativeModuleWith' a callback method whose result is
+--   decoded via 'Miso.JSON.FromJSON'. @NativeModules@ exists __only on the BTS__:
+--
+--     @
+--     'Miso.Native.Module.callNativeModule' \"NativeLocalStorageModule\" \"setStorageItem\"
+--       [ 'Miso.JSON.String' \"key\", 'Miso.JSON.String' \"value\" ]
+--     @
+--
+--   'update' runs on the BTS by default, so this just works there; from a
+--   main-thread handler, hop to the BTS first with 'Miso.Effect.runOnBG'. On the
+--   MTS the module is @undefined@ and the call logs a @consoleError@.
+--
+-- * __Main-thread element ops (MTS-only)__ — the imperative helpers in
+--   "Miso.Native.MainThread" ('Miso.Native.MainThread.setStyleProperty' etc.) and
+--   the element PAPI they call exist __only on the MTS__; on the BTS they no-op.
+--   Drive them from a @*Main@ handler or via 'Miso.Effect.runOnMain'.
+--
+-- = A minimal native component
+--
+-- @
+-- -----------------------------------------------------------------------------
+-- {-# LANGUAGE StaticPointers #-}
+-- -----------------------------------------------------------------------------
+-- import "Miso"
+-- import "Miso.Native"
+-- -----------------------------------------------------------------------------
+-- view :: context -> props -> Model -> 'Miso.Types.View' context Action
+-- view _ _ m =
+--   'vfrag_'
+--   [ 'view_' [ 'Miso.Native.Element.View.Event.onTap' Increment ] [ 'text_' [] [ \"+\" ] ]
+--   , 'text_' [] [ 'text' $ 'Miso.String.ms' ('show' m) ]
+--   , 'view_' [ 'Miso.Native.Element.View.Event.onTap' Decrement ] [ 'text_' [] [ \"-\" ] ]
+--   ]
+-- @
+--
+-- More information on how to use miso is available on GitHub
+--
+-- <http://github.com/dmjio/miso>
+--
+----------------------------------------------------------------------------
+module Miso.Native
+   ( -- * Entrypoint
+     native
+   , nativeWithContext
+     -- * 'Miso.Types.Component' mounting
+   , mountStatic_
+   , mountStaticWithProps
+   , mountStaticUseContext
+     -- * Element
+   , module Miso.Native.Element
+     -- * FFI
+   , module Miso.Native.FFI
+     -- * Event
+   , module Miso.Native.Event
+   ) where
+-----------------------------------------------------------------------------
+import Miso.Runtime (initComponent)
+import Miso.Types (Events, SomeStaticComponent(..), SomeComponent(..), Hydrate(..))
+import Miso.Types (mountStatic_, mountStaticWithProps, mountStaticUseContext)
+import Miso.JSON (ToJSON, FromJSON)
+-----------------------------------------------------------------------------
+import Miso.Native.Element
+import Miso.Native.FFI
+import Miso.Native.Event
+-----------------------------------------------------------------------------
+import GHC.StaticPtr (StaticPtr, deRefStaticPtr, staticKey)
+-----------------------------------------------------------------------------
+-- | The native drawing context is already selected per-thread by the runtime
+-- (@ts\/miso-native.ts@ picks @bts@ or @mts@ from @__BACKGROUND__@), so there
+-- is no renderer to register — we start the app directly.
+--
+-- @
+-- {-# LANGUAGE StaticPointers #-}
+--
+-- import Miso
+-- import Miso.Native
+--
+-- main :: IO ()
+-- main = native nativeEvents (static (mountStatic_ app))
+-- @
+--
+native
+  :: Events
+  -> StaticPtr (SomeStaticComponent () ())
+  -> IO ()
+native events ptr =
+  case deRefStaticPtr ptr of
+    SomeStaticComponent mk -> case mk () of
+      SomeComponent key props_ vcomp_ ->
+        initComponent events Draw False () vcomp_
+          key props_ (Just (staticKey ptr))
+-----------------------------------------------------------------------------
+-- | Like 'native', but the user can specify a global 'context' object.
+--
+-- @
+-- {-# LANGUAGE StaticPointers #-}
+--
+-- import "Miso"
+-- import "Miso.Native"
+--
+-- main :: IO ()
+-- main = 'nativeWithContext' 'nativeEvents' () (static ('mountStatic_' app))
+-- @
+--
+nativeWithContext
+  :: (ToJSON context, FromJSON context, Eq context)
+  => Events
+  -> context
+  -> StaticPtr (SomeStaticComponent () context)
+  -> IO ()
+nativeWithContext events context ptr =
+  case deRefStaticPtr ptr of
+    SomeStaticComponent mk -> case mk () of
+      SomeComponent key props_ vcomp_ ->
+        initComponent events Draw False context vcomp_
+          key props_ (Just (staticKey ptr))
+-----------------------------------------------------------------------------

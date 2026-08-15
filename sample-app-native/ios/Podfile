@@ -1,0 +1,37 @@
+platform :ios, '13.0'
+
+target 'MisoLynx' do
+  # Lynx core + JS engine.
+  pod 'Lynx', '4.0.0', :subspecs => ['Framework']
+  pod 'PrimJS', '4.0.0', :subspecs => ['quickjs', 'napi']
+  # Extended (X) elements: <input>, <textarea>, <overlay>, <svg>, <refresh>,
+  # <viewpager>, <webview>, <scroll-coordinator>, <blur-view>, … These live in a
+  # separate pod from Lynx core; without it the elements aren't linked and don't
+  # render (the `-ObjC` flag below only keeps *linked* registrations alive).
+  # Pulls the default subspecs, which include Input.
+  pod 'XElement', '4.0.0'
+  # Image / Log / Http services.
+  pod 'LynxService', '4.0.0', :subspecs => ['Image', 'Log', 'Http']
+  pod 'SDWebImage', '5.15.5'
+  pod 'SDWebImageWebPCoder', '0.11.0'
+end
+
+# Lynx's XElements (e.g. <input>, <textarea>) self-register via ObjC +load in the
+# static Lynx libs. On device builds the linker dead-strips those unreferenced
+# classes (they render in the simulator, not on device). `-ObjC` forces every
+# ObjC class/category from the static libraries to be loaded, keeping the
+# registrations alive. Applied to the app target(s), which link the pods.
+post_install do |installer|
+  installer.aggregate_targets.each do |aggregate|
+    next unless aggregate.user_project
+    aggregate.user_project.native_targets.each do |native_target|
+      native_target.build_configurations.each do |config|
+        flags = config.build_settings['OTHER_LDFLAGS'] || ['$(inherited)']
+        flags = [flags] unless flags.is_a?(Array)
+        flags << '-ObjC' unless flags.include?('-ObjC')
+        config.build_settings['OTHER_LDFLAGS'] = flags
+      end
+    end
+    aggregate.user_project.save
+  end
+end

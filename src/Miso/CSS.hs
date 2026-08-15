@@ -328,8 +328,10 @@ module Miso.CSS
   , transitionDelay
   , transitionDuration
   , transition
+  , transition_
   , transitionProperty
   , transitionTimingFunction
+  , cubicBezier
   , userSelect
   , verticalAlign
   , visibility
@@ -638,7 +640,7 @@ sheet_ = StyleSheet
 --
 -- <https://developer.mozilla.org/en-US/docs/Web/CSS>
 --
-style_ :: [Style] -> Attribute action
+style_ :: [Style] -> Attribute model action
 style_ = MT.Styles . M.fromList
 -----------------------------------------------------------------------------
 -- | Sets the @style@ attribute to a raw CSS string.
@@ -653,7 +655,7 @@ style_ = MT.Styles . M.fromList
 --
 -- <https://developer.mozilla.org/en-US/docs/Web/CSS>
 --
-styleInline_ ::  MisoString -> Attribute action
+styleInline_ ::  MisoString -> Attribute model action
 styleInline_ = textProp "style"
 -----------------------------------------------------------------------------
 -- | Renders a t'Styles' to a t'MisoString'
@@ -1921,6 +1923,20 @@ transitionDuration x = "transition-duration" =: x
 transition :: MisoString -> Style
 transition x = "transition" =: x
 -----------------------------------------------------------------------------
+-- | Single-property @transition@ shorthand: @property@, @duration@, and
+-- @timing-function@ combined into one @transition@ 'Style' — i.e. __one__ inline
+-- key, not the three @transition-*@ longhands.
+--
+-- Prefer this whenever the tween is also reset imperatively elsewhere (e.g.
+-- @transition: none@ on the main thread, see "Miso.Native.MainThread"): the reset
+-- lands on the @transition@ key, and separate longhands would survive it.
+--
+-- >>> transition_ "transform" (s 0.3) (cubicBezier 0.22 1 0.36 1)
+-- ("transition","transform 0.3s cubic-bezier(0.22,1,0.36,1)")
+transition_ :: MisoString -> MisoString -> MisoString -> Style
+transition_ property duration timing =
+  "transition" =: (property <> " " <> duration <> " " <> timing)
+-----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/transition-property
 --
 transitionProperty :: MisoString -> Style
@@ -1930,6 +1946,17 @@ transitionProperty x = "transition-property" =: x
 --
 transitionTimingFunction :: MisoString -> Style
 transitionTimingFunction x = "transition-timing-function" =: x
+-----------------------------------------------------------------------------
+-- | A @cubic-bezier()@ easing value, for use with 'transition',
+-- 'transitionTimingFunction', or an animation's timing function. Unlike the
+-- @translate@\/@rotate@\/… helpers this is a /timing/ function, not a
+-- t'TransformFn', so it produces a bare 'MisoString' value.
+--
+-- >>> cubicBezier 0.22 1 0.36 1
+-- "cubic-bezier(0.22,1,0.36,1)"
+cubicBezier :: Double -> Double -> Double -> Double -> MisoString
+cubicBezier a b c d =
+  "cubic-bezier(" <> MS.intercalate "," (map MS.ms [a, b, c, d]) <> ")"
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/user-select
 --

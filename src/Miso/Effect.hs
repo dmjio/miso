@@ -104,6 +104,7 @@ module Miso.Effect
   , DOMRef
   , ComponentInfo (..)
   , ComponentId
+  , Thread (..)
   , mkComponentInfo
   -- ** 'IO'
   , Schedule (..)
@@ -142,6 +143,9 @@ module Miso.Effect
   , componentInfoContext
   , context
   , getContext
+  -- *** Dual-thread
+  , runOnBG
+  , runOnMain
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad (void)
@@ -334,6 +338,35 @@ infixl 0 <#
 async :: (Sink action -> IO ()) -> Schedule context action
 async = Schedule Async
 -----------------------------------------------------------------------------
+-- | Run @action@'s 'Miso.Types.update' on the __background__ thread (BTS).
+--
+-- On the Lynx dual-thread runtime the shared @model@ is owned solely by the
+-- background thread. A main-thread ('Miso.Event.Types.MTS') event handler that
+-- needs to change shared state cannot do so directly — it dispatches the state
+-- change here, and @action@'s 'Miso.Types.update' runs (exactly once) on the
+-- BTS, where the model write commits. Off the native runtime (or when already
+-- on the BTS) this is just an ordinary local dispatch, equivalent to 'issue'.
+--
+-- Unlike a plain 'issue', @action@ is /not/ handled on the current thread: it
+-- crosses to the BTS. It carries no other effects with it — only @action@ is
+-- sent, so sibling effects in the current 'Miso.Types.update' are unaffected.
+--
+-- @since 1.9.0.0
+runOnBG :: action -> Effect context props model action
+runOnBG action = tell [ CrossThread BTS action ]
+-----------------------------------------------------------------------------
+-- | Run @action@'s 'Miso.Types.update' on the __main__ thread (MTS).
+--
+-- The dual of 'runOnBG': a background-thread ('Miso.Event.Types.MTS') effect
+-- that needs an imperative main-thread operation (see "Miso.Native.MainThread")
+-- dispatches @action@ here, and its 'Miso.Types.update' runs (exactly once) on
+-- the MTS. Off the native runtime (or when already on the MTS) this is an
+-- ordinary local dispatch, equivalent to 'issue'.
+--
+-- @since 1.9.0.0
+runOnMain :: action -> Effect context props model action
+runOnMain action = tell [ CrossThread MTS action ]
+-----------------------------------------------------------------------------
 -- | `Effect` smart constructor, flipped
 infixr 0 #>
 (#>) :: IO action -> model -> Effect context props model action
@@ -409,9 +442,16 @@ type Effect context props model action = RWS (ComponentInfo context props) [Sche
 -- applied to the global context during the scheduler's commit phase, triggering
 -- a re-render of every 'Component' with @useContext@ enabled.
 --
+-- The 'CrossThread' constructor carries an @action@ to be handled on a specific
+-- Lynx 'Thread'. Emitted by 'runOnBG' \/ 'runOnMain', it is dispatched locally
+-- when already on the target thread, otherwise forwarded to the peer thread
+-- (where the @action@'s 'Miso.Types.update' runs). A plain 'Schedule' always
+-- runs on the thread that produced it.
+--
 -- @since 1.9.0.0
 data Schedule context action
   = Schedule Synchronicity (Sink action -> IO ())
+  | CrossThread Thread action
   | ContextModify (context -> context)
 -----------------------------------------------------------------------------
 -- | Type to represent a DOM reference
@@ -540,10 +580,10 @@ modifyAllIO
   -> Effect context props model action
   -- ^ Effect whose IO actions are modified
   -> Effect context props model action
-modifyAllIO f = censor $ \actions ->
-  [ Schedule x (f <$> action)
-  | Schedule x action <- actions
-  ]
+modifyAllIO f = censor (map go)
+  where
+    go (Schedule x action) = Schedule x (f <$> action)
+    go s                   = s  -- 'CrossThread' / 'ContextModify' carry no IO
 -----------------------------------------------------------------------------
 -- | @withSink@ allows users to write to the global event queue. This is useful for introducing 'IO' into the system.
 -- A synonym for 'Control.Monad.Writer.tell', specialized to 'Effect'.
@@ -646,5 +686,12 @@ noop = const (pure ())
 data Synchronicity
   = Async
   | Sync
+  deriving (Show, Eq)
+-----------------------------------------------------------------------------
+-- | Type to indicate where the 'Effect' should execute.
+--
+data Thread
+  = MTS
+  | BTS
   deriving (Show, Eq)
 -----------------------------------------------------------------------------

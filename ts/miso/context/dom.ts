@@ -3,10 +3,9 @@ import
   , DrawingContext
   , EventContext
   , EventCapture
-  , ComponentId
+  , EventKey
   , HydrationContext
   , DOMRef
-  , ComponentContext
   , VTree
   , VTreeType
   } from '../types';
@@ -55,7 +54,7 @@ export const hydrationContext : HydrationContext<DOMRef> = {
     if (key === 'class') return node.className;
     if (key in node) return node[key];
     return node.getAttribute(key);
-  },
+   },
   getTag: (node: DOMRef) => {
     return node.nodeName;
   },
@@ -65,18 +64,6 @@ export const hydrationContext : HydrationContext<DOMRef> = {
   children: (node: DOMRef) => {
     return node.childNodes as any;
   },
-};
-
-export const componentContext : ComponentContext = {
-    mountComponent : function (componentId: ComponentId, model: Object) : void {
-        return;
-    },
-    unmountComponent : function (componentId: ComponentId) : void {
-        return;
-    },
-    modelHydration : function (componentId: ComponentId, model: Object) : void {
-        return;
-    }
 };
 
 export const drawingContext : DrawingContext<DOMRef> = {
@@ -121,6 +108,10 @@ export const drawingContext : DrawingContext<DOMRef> = {
   removeClass : (className: string, domRef: DOMRef) => {
     if (className) domRef.classList.remove(className);
   },
+  /* The browser DOM runtime dispatches events through closures captured in the
+     VDOM, not by key, so there is no per-node event registry to update. */
+  addEvent : (_node: DOMRef, _name: string, _key: EventKey) => {},
+  removeEvent : (_node: DOMRef, _name: string, _capture: boolean) => {},
   insertBefore : (parent: DOMRef, child: DOMRef, node: DOMRef) => {
     return parent.insertBefore(child, node);
   },

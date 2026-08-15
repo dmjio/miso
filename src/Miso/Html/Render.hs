@@ -86,6 +86,8 @@ import           Control.Exception (SomeException, catch)
 #endif
 ----------------------------------------------------------------------------
 import           Data.IORef (readIORef)
+import           GHC.StaticPtr
+----------------------------------------------------------------------------
 import           Miso.JSON
 import           Miso.Runtime (globalContext)
 import           Miso.String hiding (intercalate)
@@ -97,14 +99,14 @@ class ToHtml a where
   toHtml :: a -> L.ByteString
 ----------------------------------------------------------------------------
 -- | Render a @Miso.Types.View@ to a @L.ByteString@
-instance ToHtml (Miso.Types.View m a) where
+instance ToHtml (View context model action) where
   toHtml = renderView
 ----------------------------------------------------------------------------
 -- | Render a @[Miso.Types.View]@ to a @L.ByteString@
-instance ToHtml [Miso.Types.View m a] where
+instance ToHtml [View context model action] where
   toHtml = foldMap renderView
 ----------------------------------------------------------------------------
-renderView :: View m a -> L.ByteString
+renderView :: View context model action -> L.ByteString
 renderView = toLazyByteString . renderBuilder
 ----------------------------------------------------------------------------
 intercalate :: Builder -> [Builder] -> Builder
@@ -150,11 +152,11 @@ booleanProperties = S.fromList
   , "truespeed"
   ]
 ----------------------------------------------------------------------------
-renderBuilder :: forall m a . Miso.Types.View m a -> Builder
+renderBuilder :: View context model action -> Builder
 renderBuilder (VText _ "")    = fromMisoString " "
 renderBuilder (VText _ s)     = fromMisoString s
-renderBuilder (VNode _ "doctype" [] []) = "<!doctype html>"
-renderBuilder (VNode ns tag attrs children) = mconcat
+renderBuilder (VNode _ "doctype" [] [] _) = "<!doctype html>"
+renderBuilder (VNode ns tag attrs children _) = mconcat
   [ "<"
   , fromMisoString tag
   , mconcat [ " " <> intercalate " " (renderAttrs <$> attrs)
@@ -183,24 +185,38 @@ renderBuilder (VNode ns tag attrs children) = mconcat
               | ns == MATHML
               , x <- ["mglyph", "mprescripts", "none", "maligngroup", "malignmark" ]
               ]
-
-renderBuilder (VComp _ (SomeComponent props vcomp_)) =
-  foldMap renderBuilder vkids
-    where
+renderBuilder (VComp someComp) =
+  case someComp of
+    SomeComponent _key props comp_ ->
       -- The app-global @context@ is read from 'globalContext'. For the common
       -- @context ~ ()@ case the 'view' ignores it, so the initial @undefined@ is
       -- never forced. But if a 'view' here inspects a non-trivial @context@,
       -- SSR must seed the cell with 'Miso.setContext' before serializing, or
       -- forcing @ctx@ raises an exception. See 'Miso.setContext' for details.
-      ctx = unsafePerformIO (readIORef globalContext)
+      let ctx = unsafePerformIO (readIORef globalContext) in
 #ifdef SSR
-      vkids = [ view vcomp_ ctx props (getInitialComponentModel vcomp_) ]
+      renderBuilder (view comp_ ctx props (getInitialComponentModel comp_))
 #else
-      vkids = [ view vcomp_ ctx props (model vcomp_) ]
+      renderBuilder (view comp_ ctx props (model comp_))
+#endif
+renderBuilder (VCompStatic ptr props0) =
+  case deRefStaticPtr ptr of
+   SomeStaticComponent mk -> case mk props0 of
+    SomeComponent _key props comp_ ->
+      -- The app-global @context@ is read from 'globalContext'. For the common
+      -- @context ~ ()@ case the 'view' ignores it, so the initial @undefined@ is
+      -- never forced. But if a 'view' here inspects a non-trivial @context@,
+      -- SSR must seed the cell with 'Miso.setContext' before serializing, or
+      -- forcing @ctx@ raises an exception. See 'Miso.setContext' for details.
+      let ctx = unsafePerformIO (readIORef globalContext) in
+#ifdef SSR
+      renderBuilder (view comp_ ctx props (getInitialComponentModel comp_))
+#else
+      renderBuilder (view comp_ ctx props (model comp_))
 #endif
 renderBuilder (VFrag _ kids) = foldMap renderBuilder kids
 ----------------------------------------------------------------------------
-renderAttrs :: Attribute action -> Builder
+renderAttrs :: Attribute model action -> Builder
 renderAttrs (ClassList classes) =
   mconcat
   [ "class"
@@ -226,6 +242,7 @@ renderAttrs (Property key value) =
   , stringUtf8 "\""
   ]
 renderAttrs (On _) = mempty
+renderAttrs (OnStatic _) = mempty
 renderAttrs (Styles styles_) =
   mconcat
   [ "style"
@@ -245,7 +262,7 @@ renderAttrs (Styles styles_) =
 -- | The browser can't distinguish between multiple text nodes
 -- and a single text node. So it will always parse a single text node
 -- this means we must collapse adjacent text nodes during hydration.
-collapseSiblingTextNodes :: [View m a] -> [View m a]
+collapseSiblingTextNodes :: [View context model action] -> [View context model action]
 collapseSiblingTextNodes [] = []
 collapseSiblingTextNodes (VText _ x : VText k y : xs) =
   collapseSiblingTextNodes (VText k (x <> y) : xs)

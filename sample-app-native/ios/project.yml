@@ -1,0 +1,27 @@
+# XcodeGen spec — run `xcodegen generate` to produce MisoLynx.xcodeproj, then
+# `pod install` to get MisoLynx.xcworkspace. See README.md.
+name: MisoLynx
+options:
+  bundleIdPrefix: io.dmj
+  deploymentTarget:
+    iOS: "13.0"
+  createIntermediateGroups: true
+targets:
+  MisoLynx:
+    type: application
+    platform: iOS
+    sources:
+      - path: App
+      # Folder reference (blue): copied verbatim, so main.lynx.bundle keeps its
+      # `Resource/` path in the app bundle (see TemplateProvider inDirectory:).
+      - path: Resource
+        type: folder
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.dmj.MisoLynx
+        INFOPLIST_FILE: App/Info.plist
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        TARGETED_DEVICE_FAMILY: "1"
+        ENABLE_BITCODE: NO
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon

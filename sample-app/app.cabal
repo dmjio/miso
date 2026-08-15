@@ -33,6 +33,13 @@ common options
        ld-options:
          -sWASM=0
 
+  -- Native (non-wasm/non-js) GHC hits a StaticPointers SPT link error at -O
+  -- (undefined reference to 'r..._closure' in Main_init__spt). Building this
+  -- module at -O0 avoids it; WASM/JS, the primary targets, keep full -O.
+  if !arch(wasm32) && !arch(javascript)
+    ghc-options:
+      -O0
+
 executable app
   import:
     options

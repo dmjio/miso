@@ -191,28 +191,26 @@ import           Miso.CSS (Color, renderColor)
 -- useful when building applications with three.js, or other libraries where
 -- explicit context is not necessary.
 canvas_
-  :: forall context action canvasState
+  :: forall context model action canvasState
    . (FromJSVal canvasState, ToJSVal canvasState)
-  => [ Attribute action ]
+  => [ Attribute model action ]
   -> (DOMRef -> IO canvasState)
   -- ^ Init function, takes 'DOMRef' as arg, returns canvas init. state.
   -> (canvasState -> IO ())
   -- ^ Callback to render graphics using this canvas' context, takes init state as arg.
-  -> View context action
+  -> View context model action
 canvas_ attributes initialize_ draw_ = node HTML "canvas" attrs []
   where
-    attrs :: [ Attribute action ]
-    attrs = initCallback : drawCallack : attributes
+    attrs :: [ Attribute model action ]
+    attrs = On initCallback : On drawCallack : attributes
 
-    initCallback :: Attribute action
-    initCallback = On $ \_ (VTree vtree) _ _ -> do
+    initCallback _ _ (VTree vtree) _ _ =
       flip (FFI.set "onCreated") vtree =<< do
         FFI.syncCallback1 $ \domRef -> do
           initialState <- initialize_ domRef
           FFI.set "state" initialState (Object domRef)
 
-    drawCallack :: Attribute action
-    drawCallack = On $ \_ (VTree vtree) _ _ -> do
+    drawCallack _ _ (VTree vtree) _ _ =
       flip (FFI.set "draw") vtree =<< do
         FFI.syncCallback1 $ \domRef -> do
           state <- fromJSValUnchecked =<< domRef ! ("state" :: MisoString)
@@ -222,29 +220,27 @@ canvas_ attributes initialize_ draw_ = node HTML "canvas" attrs []
 -- This function abstracts over the context and interpret callback,
 -- including dimension ("2d" or "3d") canvas.
 canvas
-  :: forall context action canvasState
+  :: forall context model action canvasState
    . (FromJSVal canvasState, ToJSVal canvasState)
-  => [ Attribute action ]
+  => [ Attribute model action ]
   -> (DOMRef -> Canvas canvasState)
   -- ^ Init function, takes 'DOMRef' as arg, returns canvas init. state.
   -> (canvasState -> Canvas ())
   -- ^ Callback to render graphics using this canvas' context, takes init state as arg.
-  -> View context action
+  -> View context model action
 canvas attributes initialize draw = node HTML "canvas" attrs []
   where
-    attrs :: [ Attribute action ]
-    attrs = initCallback : drawCallack : attributes
+    attrs :: [ Attribute model action ]
+    attrs = On initCallback : On drawCallack : attributes
 
-    initCallback :: Attribute action
-    initCallback = On $ \_ (VTree vtree) _ _ -> do
+    initCallback _ _ (VTree vtree) _ _ =
       flip (FFI.set "onCreated") vtree =<< do
         FFI.syncCallback1 $ \domRef -> do
           ctx <- domRef # ("getContext" :: MisoString) $ ["2d" :: MisoString]
           initialState <- runReaderT (initialize domRef) ctx
           FFI.set "state" initialState (Object domRef)
 
-    drawCallack :: Attribute action
-    drawCallack = On $ \_ (VTree vtree) _ _ -> do
+    drawCallack _ _ (VTree vtree) _ _ =
       flip (FFI.set "draw") vtree =<< do
         FFI.syncCallback1 $ \domRef -> do
           jval <- domRef ! ("state" :: MisoString)

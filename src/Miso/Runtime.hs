@@ -2,13 +2,17 @@
 {-# LANGUAGE CPP                        #-}
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE LambdaCase                 #-}
+{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE DeriveAnyClass             #-}
 {-# LANGUAGE KindSignatures             #-}
 {-# LANGUAGE BlockArguments             #-}
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE RecordWildCards            #-}
 {-# LANGUAGE TypeApplications           #-}
 {-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE DerivingStrategies         #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE DuplicateRecordFields      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -----------------------------------------------------------------------------
 {-# OPTIONS_GHC -fno-warn-orphans       #-}
@@ -98,14 +102,30 @@ module Miso.Runtime
   , topLevelComponentId
   , initComponent
   , withJS
+  -- * Lynx cross-thread
+  , MTS (..)
+  , BTS (..)
+  , getMTSContext
+  , getBTSContext
+  , dispatchEvent
+  , mts
+  , bts
+  , web
+  -- ** Protocol types
+  , ComponentType (..)
+  , COMPONENT (..)
+  , EFFECT (..)
   ) where
 -----------------------------------------------------------------------------
 import qualified Data.IntSet as IS
 import           Data.IntSet (IntSet)
+#ifdef NATIVE
+import qualified Data.Set as Set
+#endif
 import           Data.Proxy (Proxy(Proxy))
 import           Control.Category ((.))
 import           Control.Concurrent
-import           Control.Exception (SomeException, catch, evaluate)
+import           Control.Exception (SomeException, catch)
 import           Control.Monad (forM, forM_, when, void, (<=<), zipWithM_, forever, foldM, unless)
 import           Control.Monad.Reader (ask, asks)
 import           Control.Monad.State hiding (state)
@@ -123,6 +143,13 @@ import           Data.IORef (IORef, newIORef, atomicModifyIORef', readIORef, ato
 import qualified Data.Sequence as S
 import           Data.Sequence (Seq)
 import           GHC.Conc (ThreadStatus(ThreadDied, ThreadFinished), threadStatus)
+import           Data.Word (Word64)
+import           GHC.Fingerprint (Fingerprint(..))
+import           Numeric (readHex)
+import           GHC.StaticPtr (StaticKey, staticKey, deRefStaticPtr)
+#ifdef NATIVE
+import           GHC.StaticPtr (unsafeLookupStaticPtr)
+#endif
 import           Prelude hiding ((.))
 import           System.IO.Unsafe (unsafePerformIO)
 import           System.Mem.StableName (makeStableName)
@@ -132,6 +159,9 @@ import           Text.Printf
 #endif
 -----------------------------------------------------------------------------
 import           Miso.Concurrent (Waiter(..), waiter)
+#ifdef NATIVE
+import           Miso.Concurrent (oneshot)
+#endif
 import           Miso.CSS (renderStyleSheet)
 import           Miso.Delegate (delegator)
 import qualified Miso.Diff as Diff
@@ -143,17 +173,22 @@ import           Miso.Effect
   ( ComponentInfo(..), Sub, Sink, Effect, Schedule(..), runEffect
   , io_, withSink, Synchronicity(..)
   )
+import qualified Miso.Effect as E (Thread(..))
 import qualified Miso.FFI.Internal as FFI
 import           Miso.FFI.Internal (Blob(..), ArrayBuffer(..))
 import qualified Miso.Hydrate as Hydrate
 import           Miso.Lens hiding (view)
-import           Miso.String (ToMisoString(..))
+import           Miso.String (ToMisoString(..), FromMisoString(..))
 import           Miso.Types
 import           Miso.Util
 -----------------------------------------------------------------------------
 -- | Helper function to abstract out initialization of t'Miso.Types.Component' between top-level API functions.
 initialize
+#ifdef NATIVE
+  :: (Eq context, Eq model, Eq props, ToJSON model, ToJSON props, ToJSON action, FromJSON action)
+#else
   :: (Eq context, Eq model, Eq props)
+#endif
   => Events
   -> ComponentId
   -> Hydrate
@@ -163,11 +198,13 @@ initialize
   -- ^ Initial props for this component
   -> Maybe Key
   -- ^ Optional key for stable hot-reload model recovery
+  -> Maybe StaticKey
+  -- ^ 'StaticPtr' key for cross-thread (Lynx) child component lifecycle
   -> Component context props model action
   -> IO DOMRef
   -- ^ Callback function is used for obtaining the t'Miso.Types.Component' 'DOMRef'.
   -> IO (ComponentState context props model action)
-initialize events _componentParentId hydrate isRoot initialProps maybeKey comp@Component {..} getComponentMountPoint = do
+initialize events _componentParentId hydrate isRoot initialProps maybeKey _componentStaticKey comp@Component {..} getComponentMountPoint = do
   _componentId <- freshComponentId
   let
     _componentProps = initialProps
@@ -213,7 +250,7 @@ initialize events _componentParentId hydrate isRoot initialProps maybeKey comp@C
         currentContext <- readIORef globalContext
         newVTree <-
           buildVTree events _componentParentId _componentId Draw
-            _componentSink logLevel (view currentContext currentProps newModel)
+            _componentSink logLevel newModel (view currentContext currentProps newModel)
         oldVTree <- readIORef _componentVTree
         _frame <- requestAnimationFrame rAFCallback
         _timestamp :: Double <- takeMVar frame
@@ -222,12 +259,29 @@ initialize events _componentParentId hydrate isRoot initialProps maybeKey comp@C
         atomicWriteIORef _componentVTree newVTree
         FFI.flush
 
+#ifdef NATIVE
+  -- N.B. all three cross-thread dispatch functions below wrap their FFI call
+  -- in 'catch' / 'exception': the underlying 'postComponent' \/ 'postEffect'
+  -- calls do a raw 'getMTSContext' \/ 'getBTSContext' round-trip, and an
+  -- uncaught exception there (e.g. a transient bridge hiccup) would otherwise
+  -- propagate out of the scheduler's 'forever' loop and silently kill it.
+  let _componentHydrate = \newModel -> do
+        when bts $ (postComponent MODEL_HYDRATE _componentStaticKey _componentId _componentParentId
+          (Just (toJSON newModel)) Nothing) `catch` exception
+
+  let _componentPostEffect = \action ->
+        postEffect _componentStaticKey _componentId (toJSON action) `catch` exception
+#else
+  let _componentHydrate = \_ -> pure ()
+  let _componentPostEffect = \_ -> pure ()
+#endif
+
   let _componentApplyActions = \(actions :: Seq action) model_ currentProps ctx -> do
         let info = ComponentInfo _componentId _componentParentId _componentDOMRef currentProps ctx
-        foldl'
-          (\(m, ss) a ->
-              case runEffect (update a) info m of
-                (n, sss) -> (n, ss <> sss)) (model_, []) actions
+        foldl' (\(m, ss) action ->
+          case runEffect (update action) info m of
+            (n, sss) -> (n, ss <> sss))
+          (model_, []) actions
 
   let vcomponent = ComponentState
         { _componentEvents = events
@@ -248,11 +302,38 @@ initialize events _componentParentId hydrate isRoot initialProps maybeKey comp@C
 
   when isRoot (delegator _componentDOMRef _componentVTree events (logLevel `elem` [DebugEvents, DebugAll]))
   registerComponent vcomponent
-
   initSubs subs _componentSubThreads _componentSink
+  -- Runs on every thread. On Lynx the MTS paints the initial frame directly
+  -- (fast first frame) while the BTS builds the same VTree but suppresses its
+  -- create-patches (deterministic nodeId parity keeps both trees addressable) —
+  -- both governed by the global 'initialDraw' latch in the drawing contexts,
+  -- which 'initComponent' clears ONCE the whole root mount finishes (see the note
+  -- there). Flipping it per 'flush' tripped on the first nested child mount and
+  -- leaked the rest of the initial frame as patches, doubling the MTS's paint.
   initialDraw initializedModel events hydrate isRoot comp vcomponent
   forM_ mount _componentSink
-  when bts (FFI.mountComponent _componentId =<< toObject jsNull)
+#ifdef NATIVE
+  -- Ship the child's initial @props@ so the MTS can rebuild the mirror
+  -- component by applying the 'Props' constructor recovered from the
+  -- 'StaticKey'. The no-props case serializes @()@ (JSON @null@).
+  when (bts && not isRoot) $ do
+    -- 'mount()' runs synchronously mid-diff (see @ts/miso/dom.ts@
+    -- 'mountComponent'), so this fires before the enclosing 'Diff.diff'
+    -- call's own end-of-render 'FFI.flush' — meaning, without shipping
+    -- what's accumulated so far right here, MOUNT (dispatched immediately
+    -- below) can reach MTS before the "Miso.patches" batch containing the
+    -- 'createElement' patch for @_componentDOMRef@ itself, this component's
+    -- own mount point. MTS's 'resolveNodeRef' would then miss
+    -- @runtime.nodes[nodeId]@ (a silent JS property-read failure, not an
+    -- exception) and mount this child against a bogus parent. Flushing here
+    -- guarantees the patch creating this mount point is already applied on
+    -- MTS by the time MOUNT arrives (both travel the same cross-thread
+    -- queue, so send-order is preserved) — cheap since it only fires on an
+    -- actual new mount, not on every render.
+    FFI.flush
+    postComponent MOUNT _componentStaticKey _componentId _componentParentId
+      (Just (toJSON initialProps)) (Just _componentDOMRef)
+#endif
   pure vcomponent
 -----------------------------------------------------------------------------
 initSubs :: [Sub action] -> IORef (Map MisoString ThreadId) -> Sink action -> IO ()
@@ -278,9 +359,13 @@ isMounted vcompId = isJust . IM.lookup vcompId <$> readIORef components
 -- for propagating changes across model states both asynchronously
 -- and synchronously. It also is responsible for
 -- top-down rendering of the UI Component tree.
-scheduler :: forall context . Eq context => Proxy context -> IO ()
+scheduler
+  :: forall context . Eq context => Proxy context -> IO ()
 scheduler Proxy =
   forever $ do
+#ifdef NATIVE
+    when mts (wait btsReady)
+#endif
     getBatch >>= \case
       Nothing -> wait globalWaiter
       Just (vcompId, S.Empty)
@@ -291,12 +376,18 @@ scheduler Proxy =
             -- 'ComponentId' nor a negated one, so it never collides.
             vcomps <- readIORef components
             forM_ (IM.elems vcomps) $ \ComponentState {..} ->
-              when _componentUseContext (_componentDraw _componentModel)
+              -- On the MTS, context-driven redraws are suppressed: the BTS ships
+              -- DOM patches via the JS patch protocol, so drawing here would be a
+              -- redundant second paint.
+              when (_componentUseContext && not mts) (_componentDraw _componentModel)
         | vcompId < 0 -> do
             -- props propagation, negated 'ComponentId' indicates render-phase only.
             vcomps <- readIORef components
             forM_ (IM.lookup (negate vcompId) vcomps) $ \ComponentState {..} -> do
-              _componentDraw _componentModel
+              -- The MTS never paints from the scheduler: props (and context) are
+              -- read-only there and the BTS drives all drawing via DOM patches.
+              -- Suppress the redraw.
+              when (not mts) $ _componentDraw _componentModel
               _componentPropsPhase _prevComponentProps _componentProps
 
       Just (vcompId, actions) -> do
@@ -306,8 +397,15 @@ scheduler Proxy =
     -----------------------------------------------------------------------------
     -- | Execute the commit phase against the model, perform top-down render
     -- of the entire Component tree.
+    --
+    -- On the MTS the commit phase still runs (its 'IO' effects — e.g. main-thread
+    -- event handlers imperatively mutating a 'DOMRef' — must fire), but the
+    -- subsequent draw is suppressed: the BTS is the sole paint authority and the
+    -- MTS never diffs\/patches from the scheduler.
     run :: ComponentId -> Seq action -> IO ()
-    run vcompId = mapM_ renderComponent <=< commit vcompId
+    run vcompId actions = do
+      rendered <- commit vcompId actions
+      when (not mts) (mapM_ renderComponent rendered)
     -----------------------------------------------------------------------------
     -- | Apply the actions across the model, evaluate async and sync IO.
     commit :: ComponentId -> Seq action -> IO (Maybe ComponentId)
@@ -317,16 +415,36 @@ scheduler Proxy =
       let ComponentState {..} = vcomps IM.! vcompId
           (updatedModel, schedules) =
             _componentApplyActions events _componentModel _componentProps currentContext
+      -- Route each scheduled effect. A plain 'Schedule' runs its 'IO' here, on
+      -- the thread that produced it. A 'CrossThread' effect targets a specific
+      -- Lynx thread: if that's the current thread it dispatches @action@ locally
+      -- (same as 'issue'); otherwise it forwards @action@ to the peer thread via
+      -- 'postEffect', where @action@'s 'update' runs. Only the tagged @action@
+      -- crosses — sibling effects in the same 'update' stay put, so nothing is
+      -- double-executed.
       forM_ schedules $ \case
-        Schedule Async action ->
-          evalScheduled Async (action _componentSink)
-        Schedule Sync action ->
-          evalScheduled Sync (action _componentSink)
         ContextModify f ->
           atomicModifyIORef' globalContext $ \ctx -> (f ctx, ())
+        CrossThread targetThread action
+          | crossThread targetThread -> _componentPostEffect action
+          | otherwise                -> _componentSink action
+        Schedule synch effect -> evalScheduled synch (effect _componentSink)
       updatedContext <- readIORef globalContext
-      when (currentContext /= updatedContext) enqueueContextPropagation
-      if _componentModelDirty _componentModel updatedModel
+      -- 'not mts': the sentinel this enqueues is a no-op there (see the
+      -- 'minBound' scheduler case) — MTS never draws context-driven changes
+      -- itself (BTS ships DOM patches), so enqueueing from MTS would just be
+      -- dequeued and discarded a moment later.
+      when (not mts && currentContext /= updatedContext) enqueueContextPropagation
+      -- BTS is the sole owner of the shared model (mirrors ReactLynx, where
+      -- React state is background-thread-only). On MTS the model is a read-only
+      -- replica maintained purely by 'MODEL_HYDRATE' from BTS: 'commit' here
+      -- still fires the actions' 'IO' effects (e.g. main-thread event handlers
+      -- mutating a 'DOMRef'), but never writes 'componentModel'. An MTS handler
+      -- that needs to change shared state dispatches the change to BTS with
+      -- 'Miso.Effect.runOnBG' (the analog of ReactLynx's 'runOnBackground'), so
+      -- the state action's 'update' runs on the BTS where the write commits; for
+      -- MTS-local state that never belongs on BTS, use a 'MainThreadRef'.
+      if not mts && _componentModelDirty _componentModel updatedModel
         then do
           modifyComponent _componentId (componentModel .= updatedModel)
           pure (Just vcompId)
@@ -340,7 +458,7 @@ scheduler Proxy =
 renderComponent :: ComponentId -> IO ()
 renderComponent vcompId = IM.lookup vcompId <$> readIORef components >>= mapM_ \ComponentState {..} -> do
   _componentDraw _componentModel
-  FFI.modelHydration _componentId =<< toObject jsNull
+  _componentHydrate _componentModel
 -----------------------------------------------------------------------------
 -- | Modify a single t'Component p m a' at a t'ComponentId'.
 --
@@ -352,7 +470,7 @@ modifyComponent
 modifyComponent vcompId go =
   atomicModifyIORef' components $ \vcomps ->
     (IM.adjust (execState go) vcompId vcomps, ())
-----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
 type ComponentIds = IntSet
 -----------------------------------------------------------------------------
 initialDraw
@@ -370,7 +488,7 @@ initialDraw initializedModel events hydrate isRoot Component {..} ComponentState
 #endif
   currentContext <- readIORef globalContext
   vtree <- buildVTree events _componentParentId _componentId hydrate _componentSink logLevel
-    (view currentContext _componentProps initializedModel)
+    initializedModel (view currentContext _componentProps initializedModel)
 #ifdef BENCH
   end <- FFI.now
   when isRoot $ FFI.consoleLog $ ms (printf "buildVTree: %.3f ms" (end - start) :: String)
@@ -389,7 +507,7 @@ initialDraw initializedModel events hydrate isRoot Component {..} ComponentState
             else do
               newTree <-
                 buildVTree events _componentParentId _componentId Draw
-                  _componentSink logLevel (view currentContext _componentProps initializedModel)
+                  _componentSink logLevel initializedModel (view currentContext _componentProps initializedModel)
               Diff.diff Nothing (Just newTree) _componentDOMRef
               atomicWriteIORef _componentVTree newTree
         else
@@ -410,7 +528,14 @@ drainQueueAt :: ComponentId -> IO (Seq a)
 drainQueueAt vcompId = atomicModifyIORef' globalQueue (dequeueAt vcompId)
 -----------------------------------------------------------------------------
 -- | Data type for holding the events in the system along with
--- the schedule of what events should be processed next
+-- the schedule of what events should be processed next.
+--
+-- Actions enter here from two sources — a local '_componentSink' and the
+-- @Miso.effects@ cross-thread transport (see 'effectListener') — but the
+-- scheduler treats them identically: both are handled on /this/ thread, keeping
+-- it the single writer of every model. A cross-thread 'CrossThread' effect
+-- carries a distinct @action@, so a forwarded action never bounces back on its
+-- own (only a genuine user-authored cross-thread cycle would).
 data Queue action
   = Queue
   { _queue :: IntMap (Seq action)
@@ -501,6 +626,33 @@ globalWaiter :: Waiter
 {-# NOINLINE globalWaiter #-}
 globalWaiter = unsafePerformIO waiter
 -----------------------------------------------------------------------------
+#ifdef NATIVE
+btsReady :: Waiter
+{-# NOINLINE btsReady #-}
+btsReady = unsafePerformIO oneshot
+-----------------------------------------------------------------------------
+-- | __MTS-side.__ Read \/ written only from 'componentListener', which only
+-- ever runs on MTS. Set once 'READY' has been handled at least once, so a
+-- retried 'READY' (BTS resends until acked — see 'sendReadyUntilAcked') only
+-- ever 'notify's 'btsReady' a single time. 'notify' on a 'oneshot' 'Waiter'
+-- is a blocking @putMVar@ on an already-full 'MVar' the second time around,
+-- so without this guard a retried 'READY' would deadlock the MTS listener
+-- callback instead of being the harmless no-op it should be.
+readyReceived :: IORef Bool
+{-# NOINLINE readyReceived #-}
+readyReceived = unsafePerformIO (newIORef False)
+-----------------------------------------------------------------------------
+-- | __BTS-side.__ Read \/ written only from 'sendReadyUntilAcked' and
+-- 'readyAckListener', which only ever run on BTS. Set once MTS's
+-- 'READY_ACK' arrives, stopping 'sendReadyUntilAcked' from resending
+-- 'READY' any further — otherwise BTS would blast the full retry budget on
+-- every boot, even in the common case where the very first 'READY' lands
+-- immediately.
+readyAcked :: IORef Bool
+{-# NOINLINE readyAcked #-}
+readyAcked = unsafePerformIO (newIORef False)
+#endif
+-----------------------------------------------------------------------------
 globalQueue :: IORef (Queue action)
 {-# NOINLINE globalQueue #-}
 globalQueue = unsafePerformIO (newIORef emptyQueue)
@@ -548,13 +700,6 @@ componentProps = lens _componentProps $ \record field -> record { _componentProp
 prevComponentProps :: Lens (ComponentState context props model action) props
 prevComponentProps = lens _prevComponentProps $ \record field -> record { _prevComponentProps = field }
 -----------------------------------------------------------------------------
--- | Hydrate avoids calling @diff@, and instead calls @hydrate@
--- 'Draw' invokes 'Miso.Diff.diff'
-data Hydrate
-  = Draw
-  | Hydrate
-  deriving (Show, Eq)
------------------------------------------------------------------------------
 -- | t'Miso.Types.Component' state, data associated with the lifetime of a t'Miso.Types.Component'
 data ComponentState context props model action
   = ComponentState
@@ -562,6 +707,10 @@ data ComponentState context props model action
   -- ^ The ID of the current t'Miso.Types.Component'
   , _componentKey :: Maybe Key
   -- ^ Optional key for stable hot-reload model recovery
+  , _componentStaticKey :: Maybe StaticKey
+  -- ^ 'StaticPtr' key of the originating t'VComp', used to instruct the MTS
+  -- to mount, hydrate, or unmount this child across the Lynx thread boundary.
+  -- 'Nothing' for the root (each thread mounts the root locally).
   , _componentParentId :: ComponentId
   -- ^ The ID of the t'Miso.Types.Component''s parent
   , _componentProps :: props
@@ -576,6 +725,11 @@ data ComponentState context props model action
   -- ^ A reference to the current virtual DOM (i.e. t'VTree')
   , _componentSink :: action -> IO ()
   -- ^ t'Miso.Types.Component' t'Sink' used to enter events into the system
+  , _componentPostEffect :: Sink action
+  -- ^ Cross-thread (Lynx) t'Sink': serializes the @action@ and ships it to the
+  -- opposite thread via 'postEffect'. Captures the t'Miso.Types.Component''s
+  -- 'ToJSON' instance at 'initialize' time. Used by 'CrossThread' effects
+  -- ('Miso.Effect.runOnMain' \/ 'Miso.Effect.runOnBG').
   , _componentModel :: model
   -- ^ t'Miso.Types.Component' state
   , _componentScripts :: [DOMRef]
@@ -589,6 +743,10 @@ data ComponentState context props model action
   -- ^ Mailbox for asynchronous t'Miso.Types.Component' communication
   , _componentDraw :: model -> IO ()
   -- ^ Helper function for t'Miso.Types.Component' rendering
+  , _componentHydrate :: model -> IO ()
+  -- ^ Posts the model to the MTS for cross-thread (Lynx) hydration via
+  -- 'MODEL_HYDRATE'. Captures the t'Miso.Types.Component''s 'ToJSON' instance at
+  -- 'initialize' time; a no-op unless running on the background thread ('bts').
   , _componentPropsPhase :: props -> props -> IO ()
   -- ^ Helper function for t'Miso.Types.Component' props changed phase.
   , _componentModelDirty :: model -> model -> Bool
@@ -601,7 +759,8 @@ data ComponentState context props model action
       -> (model, [Schedule context action])
   -- ^ t'Miso.Types.Component' actions application. Given the pending actions,
   --   current @model@ and @props@, returns the updated @model@ and the
-  --   'Schedule's to run (async \/ sync IO and 'ContextModify's).
+  --   'Schedule's to run (async \/ sync IO, cross-thread effects, and
+  --   'ContextModify's).
   , _componentTopics :: Map MisoString (Value -> IO ())
   -- ^ t'Miso.Types.Component' topics using for Pub Sub async communication.
   , _componentChildren :: ComponentIds
@@ -624,7 +783,10 @@ data ComponentState context props model action
 --
 -- @since 1.9.0.0
 newtype Topic a = Topic MisoString
-  deriving (Ord, Eq, Show, ToMisoString)
+  deriving stock (Ord, Eq, Show)
+-----------------------------------------------------------------------------
+instance ToMisoString (Topic a) where
+  toMisoString (Topic x) = x
 -----------------------------------------------------------------------------
 -- | Smart constructor for creating a @Topic message@ to write to
 --
@@ -847,8 +1009,8 @@ cleanup Proxy live domRef = do
           freeLifecycleHooks cs
       else do
         -- We can do a full unmount if we're not doing hot reload
-        forM_ (IM.toDescList vcomps) $ \(_, vcomp_) ->
-          unmountComponent @context vcomp_
+        forM_ (IM.toDescList vcomps) $ \(_, _vcomp_) ->
+          unmountComponent @context _vcomp_
     atomicWriteIORef componentIds topLevelComponentId
     atomicWriteIORef globalQueue mempty
     unless live (atomicWriteIORef components mempty)
@@ -888,15 +1050,24 @@ drain ComponentState {..} = do
        case _componentApplyActions actions _componentModel _componentProps currentContext of
          (_, schedules) -> do
            forM_ schedules $ \case
-             -- dmj: process all actions synchronously during unmount
-             Schedule _ action ->
-               action _componentSink
-                 `catch` (\(e :: SomeException) -> void (evaluate e))
-             ContextModify f -> do
+             -- dmj: process all actions synchronously during unmount. A
+             -- 'CrossThread' effect targeting the peer thread is forwarded via
+             -- 'postEffect' (its @action@'s 'update' runs there); one targeting
+             -- this thread is dispatched locally. Plain 'Schedule's run here.
+             CrossThread targetThread action
+               | crossThread targetThread -> _componentPostEffect action
+               | otherwise                -> _componentSink action
+             Schedule _ effect ->
+               effect _componentSink
+                 `catch` exception
+             ContextModify f ->
                atomicModifyIORef' globalContext $ \ctx -> (f ctx, ())
            newContext <- readIORef globalContext
-           when (currentContext /= newContext) enqueueContextPropagation
-           -- dmj: One last context propagation before aborting
+           when (not mts && currentContext /= newContext) enqueueContextPropagation
+           -- dmj: One last context propagation before aborting.
+           -- Don't recurse on drain, we only fire-off the last set
+           -- of events for 'onBeforeUnmounted' hooks. The queue will
+           -- ignore the rest of these.
 -----------------------------------------------------------------------------
 -- | Post unmount call to drop the <style> and <script> in <head>
 unloadScripts :: ComponentState context props model action -> IO ()
@@ -928,7 +1099,10 @@ unmountComponent cs@ComponentState {..} = do
   modifyComponent _componentParentId $ do
     children.at _componentId .= Nothing
   atomicModifyIORef' components $ \m -> (IM.delete _componentId m, ())
-  FFI.unmountComponent _componentId
+#ifdef NATIVE
+  when bts $ do
+    postComponent UNMOUNT _componentStaticKey _componentId _componentParentId Nothing Nothing
+#endif
 -----------------------------------------------------------------------------
 -- | Internal function for construction of a Virtual DOM.
 --
@@ -938,63 +1112,30 @@ unmountComponent cs@ComponentState {..} = do
 -- infrastructure for each sub-component. During this
 -- process we go between the Haskell heap and the JS heap.
 buildVTree
-  :: forall context action . Eq context
+  :: forall context model action . Eq context
   => Events
   -> ComponentId
   -> ComponentId
   -> Hydrate
   -> Sink action
   -> LogLevel
-  -> View context action
+  -> model
+  -> View context model action
   -> IO VTree
-buildVTree events_ parentId_ vcompId hydrate snk logLevel_ = \case
-  VComp maybeKey (SomeComponent newProps app) -> do
-    vcomp_ <- create
+buildVTree events_ parentId_ vcompId hydrate snk logLevel_ model_ = \case
+  VComp someComp -> buildComp Nothing someComp
 
-    mountCallback <- do
-      syncCallback1' $ \parent_ -> do
-        ComponentState {..} <- initialize events_ vcompId hydrate False newProps maybeKey app (pure parent_)
-        modifyComponent vcompId (children %= IS.insert _componentId)
-        vtree <- toJSVal =<< readIORef _componentVTree
-        FFI.set "parent" vcomp_ (Object vtree)
-        obj <- create
-        setProp "componentId" _componentId obj
-        setProp "componentTree" vtree obj
-        toJSVal obj
+  VCompStatic ptr props -> case deRefStaticPtr ptr of
+    SomeStaticComponent mk -> buildComp (Just (staticKey ptr)) (mk props)
 
-    unmountCallback <- toJSVal =<< do
-      FFI.syncCallback1 $ \vcompId_ -> do
-        componentId_ <- fromJSValUnchecked vcompId_
-        IM.lookup componentId_ <$> readIORef components >>= \case
-          Nothing -> pure ()
-          Just componentState -> do
-            forM_ (unmount app) (_componentSink componentState)
-            unmountComponent @context componentState
-
-    -- When props are present, install a diffProps callback.
-    -- Comparison happens in Haskell against _componentLastProps — no round-trip.
-    -- TypeScript calls diffProps() unconditionally; Haskell decides whether to dispatch.
-    diffPropsCallback <- toJSVal =<< do
-      syncCallback $ do
-        componentId_ <- fromJSValUnchecked =<< vcomp_ ! ("componentId" :: MisoString)
-        currentProps <- _componentProps . (IM.! componentId_) <$> readIORef components
-        when (currentProps /= newProps) $ do
-          modifyComponent componentId_ $ do
-            componentProps .= newProps
-            prevComponentProps .= currentProps
-          enqueueSchedule componentId_
-
-    FFI.set "diffProps" diffPropsCallback vcomp_
-    FFI.set "child" jsNull vcomp_
-    forM_ maybeKey (\key -> FFI.set "key" key vcomp_)
-    FFI.set "mount" mountCallback vcomp_
-    FFI.set "unmount" unmountCallback vcomp_
-    FFI.set "eventPropagation" (eventPropagation app) vcomp_
-    FFI.set "type" VCompType vcomp_
-    pure (VTree vcomp_)
-  VNode ns tag attrs kids -> do
+  VNode ns tag attrs kids _directEvents -> do
     vnode_ <- createNode "vnode" ns tag
-    setAttrs vnode_ attrs snk logLevel_ events_
+    setAttrs vnode_ attrs snk vcompId logLevel_ events_ model_
+#ifdef NATIVE
+    -- Only the Lynx native runtime consumes directEvents; the web/WASM diff
+    -- never reads it (all HTML/SVG/MathML nodes carry an empty set anyway).
+    FFI.set "directEvents" (Set.toList _directEvents) vnode_
+#endif
     vchildren <- toJSVal =<< procreate vnode_
     FFI.set "children" vchildren vnode_
     flip (FFI.set "type") vnode_ =<< toJSVal VNodeType
@@ -1011,7 +1152,7 @@ buildVTree events_ parentId_ vcompId hydrate snk logLevel_ = \case
                   xs (drop 1 xs)
               buildKid _ acc (VFrag _ []) = pure acc
               buildKid p acc kid = do
-                VTree child <- buildVTree events_ parentId_ vcompId hydrate snk logLevel_ kid
+                VTree child <- buildVTree events_ parentId_ vcompId hydrate snk logLevel_ model_ kid
                 FFI.set "parent" p child
                 pure (child : acc)
   VText key t -> do
@@ -1037,9 +1178,54 @@ buildVTree events_ parentId_ vcompId hydrate snk logLevel_ = \case
             where
               buildKid acc (VFrag _ []) = pure acc
               buildKid acc kid = do
-                VTree child <- buildVTree events_ parentId_ vcompId hydrate snk logLevel_ kid
+                VTree child <- buildVTree events_ parentId_ vcompId hydrate snk logLevel_ model_ kid
                 FFI.set "parent" parentVTree child
                 pure (child : acc)
+  where
+    -- Shared construction for 'VComp' and 'VCompStatic'. The only difference is
+    -- the 'StaticKey' passed to 'initialize': 'Nothing' for dynamic components,
+    -- @Just (staticKey ptr)@ for statically-referenced ones.
+    buildComp :: Maybe StaticKey -> SomeComponent context -> IO VTree
+    buildComp maybeStaticKey (SomeComponent maybeKey newProps app) = do
+      comp <- create
+      mountCallback <- do
+        syncCallback1' $ \parent_ -> do
+          ComponentState {..} <- initialize events_ vcompId hydrate False newProps maybeKey maybeStaticKey app (pure parent_)
+          modifyComponent vcompId (children %= IS.insert _componentId)
+          vtree <- toJSVal =<< readIORef _componentVTree
+          FFI.set "parent" comp (Object vtree)
+          obj <- create
+          setProp "componentId" _componentId obj
+          setProp "componentTree" vtree obj
+          toJSVal obj
+      unmountCallback <- toJSVal =<< do
+        FFI.syncCallback1 $ \vcompId_ -> do
+          componentId_ <- fromJSValUnchecked vcompId_
+          IM.lookup componentId_ <$> readIORef components >>= \case
+            Nothing -> pure ()
+            Just componentState -> do
+              forM_ (unmount app) (_componentSink componentState)
+              unmountComponent @context componentState
+      -- When props are present, install a diffProps callback.
+      -- Comparison happens in Haskell against _componentLastProps — no round-trip.
+      -- TypeScript calls diffProps() unconditionally; Haskell decides whether to dispatch.
+      diffPropsCallback <- toJSVal =<< do
+        syncCallback $ do
+          componentId_ <- fromJSValUnchecked =<< comp ! ("componentId" :: MisoString)
+          currentProps <- _componentProps . (IM.! componentId_) <$> readIORef components
+          when (currentProps /= newProps) $ do
+            modifyComponent componentId_ $ do
+              componentProps .= newProps
+              prevComponentProps .= currentProps
+            enqueueSchedule componentId_
+      FFI.set "diffProps" diffPropsCallback comp
+      FFI.set "child" jsNull comp
+      forM_ maybeKey (\key -> FFI.set "key" key comp)
+      FFI.set "mount" mountCallback comp
+      FFI.set "unmount" unmountCallback comp
+      FFI.set "eventPropagation" (eventPropagation app) comp
+      FFI.set "type" VCompType comp
+      pure (VTree comp)
 -----------------------------------------------------------------------------
 -- | @createNode@
 -- A helper function for constructing a vtree (used for @vcomp@ and @vnode@)
@@ -1066,12 +1252,14 @@ createNode typ ns tag = do
 -- DOM node
 setAttrs
   :: Object
-  -> [Attribute action]
+  -> [Attribute model action]
   -> Sink action
+  -> ComponentId
   -> LogLevel
   -> Events
+  -> model
   -> IO ()
-setAttrs vnode_@(Object jval) attrs snk logLevel events =
+setAttrs vnode_@(Object jval) attrs snk vcompId logLevel events model_ = do
   forM_ attrs $ \case
     Property "key" v -> do
       value <- toJSVal v
@@ -1082,8 +1270,22 @@ setAttrs vnode_@(Object jval) attrs snk logLevel events =
       value <- toJSVal v
       o <- getProp "props" vnode_
       FFI.set k value (Object o)
-    On callback ->
-      callback snk (VTree vnode_) logLevel events
+    On callback -> do
+      FFI.set "pendingComponentId" vcompId vnode_
+      callback model_ snk (VTree vnode_) logLevel events
+    OnStatic ptr ->
+      -- Stash the handler's 'StaticKey' and owning 'ComponentId' on the node
+      -- so 'onWithOptions' can attach them to the per-event object; the native
+      -- PATCH protocol ships them to the MTS for main-thread ('MTS') dispatch.
+      -- Browser\/WASM never dereferences them. 'pendingMainThread' starts
+      -- 'False'; 'Miso.Event.mainThread' (part of @callback@) flips it 'True'
+      -- so only marked handlers opt in.
+      case deRefStaticPtr ptr of
+        EventHandler callback -> do
+          FFI.set "pendingStaticKey" (staticKey ptr) vnode_
+          FFI.set "pendingComponentId" vcompId vnode_
+          FFI.set "pendingMainThread" False vnode_
+          callback model_ snk (VTree vnode_) logLevel events
     Styles styles -> do
       cssObj <- getProp "css" vnode_
       forM_ (M.toList styles) $ \(k,v) -> do
@@ -1697,7 +1899,8 @@ data CloseCode
 -----------------------------------------------------------------------------
 -- | Type for holding a t'WebSocket' file descriptor.
 newtype WebSocket = WebSocket Int
-  deriving (ToJSVal, Eq, Num)
+  deriving stock Eq
+  deriving newtype (ToJSVal, Num)
 -----------------------------------------------------------------------------
 -- | A null t'WebSocket' is one with a negative descriptor.
 emptyWebSocket :: WebSocket
@@ -1705,7 +1908,8 @@ emptyWebSocket = -1
 -----------------------------------------------------------------------------
 -- | A type for holding an t'EventSource' descriptor.
 newtype EventSource = EventSource Int
-  deriving (ToJSVal, Eq, Num)
+  deriving stock Eq
+  deriving newtype (Num, ToJSVal)
 -----------------------------------------------------------------------------
 -- | A null t'EventSource' is one with a negative descriptor.
 emptyEventSource :: EventSource
@@ -1858,30 +2062,374 @@ loadedJS = unsafePerformIO (newIORef False)
 #endif
 -----------------------------------------------------------------------------
 initComponent
-  :: forall context model action . (Eq context, Eq model)
+#ifdef NATIVE
+  :: forall context props model action . (Eq context, Eq model, Eq props, ToJSON model, ToJSON props, ToJSON action, FromJSON action)
+#else
+  :: forall context props model action . (Eq context, Eq model, Eq props)
+#endif
   => Events
   -> Hydrate
   -> Bool
   -> context
   -- ^ Initial global @context@
-  -> Component context () model action
+  -> Component context props model action
+  -> Maybe Key
+  -> props
+  -> Maybe StaticKey
   -> IO ()
-initComponent events hydrate live initialContext vcomp_@Component {..} = do
+initComponent events hydrate live initialContext comp_@Component {..} key props sk = do
 #ifdef WASM
-  $(evalFile MISO_JS_PATH)
-  atomicWriteIORef loadedJS True
+      $(evalFile MISO_JS_PATH)
+      atomicWriteIORef loadedJS True
 #endif
-  withJS $ do
-    root <- Diff.mountElement (getMountPoint mountPoint)
-    let proxy = Proxy :: Proxy context
-    when web (cleanup proxy live root)
-    atomicWriteIORef globalContext initialContext
-    -- dmj: top-level Component always responsive to Context changes
-    let vcomp_' = vcomp_ { useContext = True }
-    void $ initialize events rootComponentId hydrate True () Nothing vcomp_' (pure root)
-    -- dmj: only the BTS (Lynx background) or plain web context drives the
-    -- scheduler; the Lynx main thread (MTS) is render-only and must not fork one.
-    when (bts || web) (atomicWriteIORef schedulerThread =<< forkIO (scheduler proxy))
+      withJS $ do
+        let proxy = Proxy :: Proxy context
+#ifdef NATIVE
+        when bts $ do
+          effectListener proxy =<< getMTSContext
+          readyAckListener =<< getMTSContext
+          void $ forkIO (sendReadyUntilAcked sk)
+        when mts $ do
+          effectListener proxy =<< getBTSContext
+          componentListener proxy =<< getBTSContext
+          registerMainThreadDispatch
+#endif
+        root <- Diff.mountElement (getMountPoint mountPoint)
+        when web (cleanup proxy live root)
+        atomicWriteIORef globalContext initialContext
+        -- dmj: top-level Component always responsive to Context changes
+        let comp_' = comp_ { useContext = True }
+        void $ initialize events rootComponentId hydrate True props key sk comp_' (pure root)
+#ifdef NATIVE
+        -- The root mount (root + every nested component drawn synchronously above)
+        -- is now complete on this thread, so clear the global 'initialDraw' latch
+        -- exactly ONCE. This flips the drawing contexts out of initial-frame mode:
+        -- the MTS stops self-assigning nodeIds (later nodes arrive via update
+        -- patches carrying their id) and the BTS stops suppressing patch emission
+        -- and starts shipping updates. Doing this here — rather than inside the
+        -- contexts' 'flush' — is the fix for the doubled render: the initial draw
+        -- performs one 'flush' per mounted component, so a per-'flush' flip tripped
+        -- on the first nested child and leaked the rest of the frame as patches.
+        do gt <- jsg ("globalThis" :: MisoString)
+           FFI.set "initialDraw" False (Object gt)
+#endif
+        atomicWriteIORef schedulerThread =<< forkIO (scheduler proxy)
+----------------------------------------------------------------------------
+-- | Placeholder passed to a 'Props' constructor when only the resulting
+-- 'SomeComponent'\'s /types/ (@model@ \/ @props@ \/ @action@) are needed, not a
+-- real @props@ value — e.g. to recover the @action@ type for decoding. Safe
+-- because every 'Props' built by @mount_@ \/ @mountWithProps@ \/ @(+>)@ is lazy
+-- in its @props@ argument, so applying it never forces this.
+#ifdef NATIVE
+propsTypeOnly :: props
+propsTypeOnly = error "Miso.Runtime: props forced during type-only Props application"
+-----------------------------------------------------------------------------
+-- | Used for bidirectional cross-thread communication.
+effectListener :: forall context jsval . (Eq context, ToJSVal jsval) => Proxy context -> jsval -> IO ()
+effectListener Proxy jsval = void $ do
+  ctx <- toJSVal jsval
+  FFI.addEventListener ctx "Miso.effects" $ \msgEvent ->
+    flip catch (\(e :: SomeException) ->
+        FFI.consoleError ("[effectListener]: exception in callback: " <> ms (show e))) $ do
+      msg <- Object msgEvent ! "data"
+      EFFECT {..} <- fromJSValUnchecked msg :: IO EFFECT
+      case effectStaticKey of
+        Nothing -> FFI.consoleError "[effectListener]: must use 'static' keyword when mounting Component w/ native"
+        Just key_ -> do
+          unsafeLookupStaticPtr key_ >>= \case
+            Nothing ->
+              FFI.consoleError "[effectListener]: staticPtr NOT found for effectStaticKey"
+            Just ptr ->
+              case deRefStaticPtr ptr of
+               SomeStaticComponent mk -> case mk propsTypeOnly of
+                SomeComponent _key _props (_ :: Component context props model action) ->
+                  case fromJSON effectAction :: Result action of
+                    Success action -> do
+                      comps <- readIORef components
+                      case IM.lookup effectComponentId comps of
+                        Nothing ->
+                          FFI.consoleError $ ms $
+                            "[effectListener]: ComponentId NOT registered:" <> ms effectComponentId
+                        Just _ -> do
+                          FFI.consoleLog "[effectListener]: Sinking action into Component"
+                          -- dmj: enqueue the cross-thread action onto the ordinary
+                          -- 'globalQueue' rather than replaying 'update' inline here.
+                          -- This keeps the scheduler the sole writer of every model
+                          -- (no read-modify-write race with the scheduler's own
+                          -- 'commit') and preserves ordering relative to any actions
+                          -- already queued for this component. The action's 'update'
+                          -- runs only on this thread; it does not ping-pong back
+                          -- because only an explicit 'CrossThread' effect crosses.
+                          atomicModifyIORef' globalQueue $ \q ->
+                            (enqueue effectComponentId action q, ())
+                          notify globalWaiter
+                    Error e ->
+                      FFI.consoleError ("[effectListener]: action decode error: " <> ms e)
+#endif
+----------------------------------------------------------------------------
+#ifdef NATIVE
+-- | BTS -> MTS 'READY' dispatch is fire-and-forget over an async cross-thread
+-- transport, and BTS's bootstrap (which sends 'READY') and MTS's bootstrap
+-- (which registers the listener that receives it) run on independently
+-- scheduled threads with no ordering guarantee between them — a genuine race
+-- where 'READY' can arrive before anything on MTS is listening, in which case
+-- it is lost for good (no re-delivery to a listener that registers later).
+-- Since MTS's scheduler blocks on 'wait btsReady' until 'READY' arrives, a
+-- lost message hangs the MTS scheduler forever.
+--
+-- Retried here on a short interval, capped, until MTS's 'READY_ACK' (sent
+-- from 'componentListener''s 'READY' case) sets 'readyAcked' — so the common
+-- case, where MTS's listener is already up, costs one round-trip and stops,
+-- not the full retry budget. Runs on its own forked thread so it never
+-- blocks 'initComponent''s own startup, and that thread exits as soon as
+-- acked rather than lingering for the whole retry window.
+sendReadyUntilAcked :: Maybe StaticKey -> IO ()
+sendReadyUntilAcked sk = go (0 :: Int)
+  where
+    maxAttempts = 20    -- ~1s of retrying at 50ms intervals
+    intervalMicros = 50000
+    go attempts = do
+      postComponent READY sk topLevelComponentId rootComponentId Nothing Nothing
+      threadDelay intervalMicros
+      acked <- readIORef readyAcked -- BTS-side flag, set by 'readyAckListener'
+      if acked
+        then pure ()
+        else if attempts < maxAttempts
+          then go (attempts + 1)
+          -- Budget exhausted without an ack. Under the current boot profile this
+          -- should never happen (MTS registers its listener well under the ~1s
+          -- window), so treat it as a diagnosable fault rather than a silent
+          -- hang: the MTS scheduler is now blocked on 'wait btsReady' forever
+          -- with no re-delivery. Surface it so a boot regression (larger bundle,
+          -- slower device) is obvious in the log instead of a mystery freeze.
+          else FFI.consoleError $ ms $
+            "[sendReadyUntilAcked]: MTS never acked READY after "
+              <> ms (show maxAttempts) <> " attempts (~1s); MTS scheduler is "
+              <> "likely blocked on 'wait btsReady'. MTS boot exceeded the retry budget."
+-----------------------------------------------------------------------------
+-- | Registered on BTS to receive MTS's 'READY_ACK'. The only message BTS
+-- ever receives via the 'postComponent' \/ 'componentListener' machinery,
+-- since that protocol is otherwise BTS -> MTS only; every other
+-- 'ComponentType' is ignored here.
+readyAckListener :: MTS -> IO ()
+readyAckListener (MTS ctx) = void $ do
+  FFI.addEventListener ctx "Miso.components" $ \msgEvent -> do
+    msg <- Object msgEvent ! "data"
+    COMPONENT {..} <- fromJSValUnchecked msg :: IO COMPONENT
+    case componentComponentType of
+      READY_ACK -> atomicWriteIORef readyAcked True
+      _ -> pure ()
+#endif
+----------------------------------------------------------------------------
+-- | Used for unidirectional BTS -> MTS communication
+--
+-- dmj: This only runs on the MTS.
+--
+#ifdef NATIVE
+-- | Resolves a BTS-supplied @{ nodeId }@ 'DOMRef' to the live MTS element
+-- registered at @globalThis.runtime.nodes[nodeId]@ (see @ts/miso/native/mts.ts@).
+resolveNodeRef :: DOMRef -> IO DOMRef
+resolveNodeRef domRef = do
+  nodeId <- fromJSValUnchecked =<< domRef ! "nodeId" :: IO Int
+  nodes  <- jsg "runtime" >>= (! "nodes")
+  nodes ! ms nodeId
+-----------------------------------------------------------------------------
+componentListener :: forall context . Eq context => Proxy context -> BTS -> IO ()
+componentListener Proxy (BTS ctx) = void $ do
+  FFI.addEventListener ctx "Miso.components" $ \msgEvent -> do
+    msg <- Object msgEvent ! "data"
+    COMPONENT {..} <- fromJSValUnchecked msg :: IO COMPONENT
+    case componentComponentStaticKey of
+      Nothing -> FFI.consoleError "[COMPONENT]: must use 'static' keyword for Component mounting"
+      Just key_ ->
+        -- 'READY' never needs the 'StaticPtr' and must be handled BEFORE the
+        -- lookup: it only unblocks the MTS scheduler and rides no component
+        -- 'StaticKey', so it can't (and mustn't) do the deref the other
+        -- messages require.
+        case componentComponentType of
+          READY -> do
+            -- dmj: BTS retries 'READY' until acked (see 'sendReadyUntilAcked'),
+            -- so this can fire more than once. Guard 'notify' — a second
+            -- 'putMVar' on the already-full 'oneshot' 'btsReady' would block
+            -- this listener callback forever instead of being a no-op — and
+            -- always ack in response, even on a repeat, since BTS can't know
+            -- whether an earlier ack of ours reached it.
+            already <- atomicModifyIORef' readyReceived (\r -> (True, r)) -- MTS-side flag
+            unless already (notify btsReady) -- dmj: unblocks main thread scheduler
+            dispatchEvent ctx "Miso.components"
+              (COMPONENT READY_ACK Nothing minBound minBound Nothing Nothing)
+          _ ->
+            unsafeLookupStaticPtr key_ >>= \case
+              Nothing ->
+                FFI.consoleError "[COMPONENT]: staticPtr NOT found for componentStaticKey"
+              Just ptr ->
+                case deRefStaticPtr ptr of
+                 SomeStaticComponent mk -> case mk propsTypeOnly of
+                  SomeComponent _key _props (comp_ :: Component context props model action) ->
+                    case componentComponentType of
+                      MOUNT ->
+                        -- The MTS paints the initial frame itself, so any child that is part
+                        -- of that frame is already mounted+registered here by the root
+                        -- 'initialDraw' (nodeIds in lockstep with the BTS, so updates land on
+                        -- it). The BTS still posts 'MOUNT' for every non-root child; re-running
+                        -- 'initialize' for one we already have would paint a SECOND, orphaned
+                        -- copy — the doubled 'vcomp'. So mount only children we don't yet know:
+                        -- that is exactly the components created later, during a BTS update,
+                        -- which the MTS learns about solely through this message.
+                        IM.member componentComponentId <$> readIORef components >>= \case
+                          True -> pure ()
+                          False -> do
+                            -- The BTS ships its @{ nodeId }@ 'DOMRef'; resolve it to the real
+                            -- native element via @globalThis.runtime.nodes[nodeId]@ so the MTS
+                            -- 'ComponentInfo' Reader ('componentInfoDOMRef') holds a live ref.
+                            parent_ <- maybe (unObject <$> create) resolveNodeRef componentComponentDOMRef
+                            -- Recover the child's initial @props@ from the wire (the BTS ships
+                            -- them on 'MOUNT'), decoded at the @props@ type recovered above.
+                            case componentComponentPayload of
+                              Just pv | Success initProps <- (fromJSON pv :: Result props) ->
+                                void $ initialize mempty componentComponentId Draw False initProps
+                                  Nothing (Just (staticKey ptr)) comp_ (pure parent_)
+                              _ ->
+                                FFI.consoleError "[COMPONENT]: MOUNT missing/invalid props payload"
+                      UNMOUNT ->
+                        IM.lookup componentComponentId <$> readIORef components >>= \case
+                          Nothing ->
+                            FFI.consoleError $ "[COMPONENT]: Couldn't find Component to unmount " <>
+                              ms (show componentComponentId)
+                          Just c -> unmountComponent @context c
+                      MODEL_HYDRATE -> do
+                        case componentComponentPayload of
+                          Nothing ->
+                            FFI.consoleError "[COMPONENT]: No model to hydrate"
+                          Just m ->
+                            case fromJSON m :: Result model of
+                              Success newModel ->
+                                modifyComponent componentComponentId $ do
+                                  componentModel .= newModel
+                              Error e ->
+                                FFI.consoleError ("[COMPONENT]: Could not decode model: " <> e)
+                      -- 'READY' handled above (no deref), so GHC's long-distance
+                      -- info knows it can't reach here — no catch-all needed.
+                      -- 'READY_ACK' flows MTS -> BTS only (see 'readyAckListener');
+                      -- 'componentListener' only runs on MTS, so this never
+                      -- actually fires — kept as a no-op so the match stays total.
+                      READY_ACK -> pure ()
+#endif
+----------------------------------------------------------------------------
+-- | Dispatch a main-thread ('MTS') event on the Haskell layer.
+--
+-- Invoked synchronously by the MTS delegator (see @ts\/miso\/native\/mts\/context.ts@)
+-- with a @{ componentId, staticKey, event, target }@ object. Recovers the event
+-- handler by its 'StaticKey', runs it against the owning component's 'Sink' to
+-- install its decode+dispatch closure on a scratch node, then invokes that
+-- closure with the live event and target 'DOMRef'. No BTS round-trip — the
+-- handler runs entirely on the main thread, and its 'update'\/effects run there
+-- (the scheduler suppresses the redraw; see 'scheduler').
+--
+-- N.B. 'unsafeLookupStaticPtr' recovers the handler at the component's @action@
+-- type. This is sound because the @(componentId, staticKey)@ pair is emitted
+-- together from the same component's 'setAttrs'; the handler's @action@ unifies
+-- with the sink's via the quantified 'components' CAF (no @unsafeCoerce@).
+#ifdef NATIVE
+dispatchMainThreadEvent :: JSVal -> IO ()
+dispatchMainThreadEvent arg =
+  flip catch (\(e :: SomeException) ->
+      FFI.consoleError ("[MTS dispatch] exception: " <> ms (show e))) $ do
+    let o = Object arg
+    compId    <- fromJSValUnchecked =<< o ! "componentId" :: IO ComponentId
+    skHex     <- fromJSValUnchecked =<< o ! "staticKey"   :: IO MisoString
+    eventVal  <- o ! "event"
+    targetVal <- o ! "target"
+    eventName <- fromJSValUnchecked =<< Object eventVal ! "type" :: IO MisoString
+    unsafeLookupStaticPtr (fromMisoString skHex) >>= \case
+      Nothing ->
+        FFI.consoleError ("[MTS dispatch] no handler for staticKey " <> skHex)
+      -- Fully-applied 'On' handlers resolve to a runnable 'EventHandler', so the
+      -- MTS rebuilds them from the 'StaticKey' alone. An 'OnWith' handler's key
+      -- resolves to a @payload -> EventHandler@ constructor; running it on the
+      -- MTS additionally requires the forwarded @pendingPayload@ decoded at the
+      -- @payload@ type — see note below (not yet wired end-to-end).
+      Just ehPtr -> case deRefStaticPtr ehPtr of
+        EventHandler cb -> do
+          comps <- readIORef components
+          case IM.lookup compId comps of
+            Nothing ->
+              FFI.consoleError ("[MTS dispatch] no component " <> ms (show compId))
+            Just ComponentState {..} -> do
+              -- Run the handler with this component's sink to install its
+              -- 'runEvent' (decoder + sink) on a throwaway node, then fire it.
+              scratch <- createNode "vnode" HTML "div"
+              -- 'runEvent' re-reads the live model at fire time via
+              -- @pendingComponentId@ on its node (see 'onWithOptions'); stamp it on
+              -- the scratch node so that lookup resolves instead of throwing.
+              FFI.set "pendingComponentId" compId scratch
+              cb _componentModel _componentSink (VTree scratch) Off mempty
+              runner <- lookupEventRunner scratch eventName
+              forM_ runner $ \fn ->
+                void (call (Object fn) global [eventVal, targetVal])
+  where
+    -- Pull the installed 'runEvent' for @name@ out of the scratch node,
+    -- checking the capture phase then the bubble phase.
+    lookupEventRunner :: Object -> MisoString -> IO (Maybe JSVal)
+    lookupEventRunner scratch name = do
+      evs  <- getProp "events" scratch
+      caps <- getProp "captures" (Object evs)
+      capE <- Object caps ! name
+      capU <- isUndefined capE
+      entry <-
+        if not capU
+          then pure (Just capE)
+          else do
+            bubs <- getProp "bubbles" (Object evs)
+            bubE <- Object bubs ! name
+            bubU <- isUndefined bubE
+            pure (if bubU then Nothing else Just bubE)
+      traverse (\e -> Object e ! "runEvent") entry
+-----------------------------------------------------------------------------
+-- | Register 'dispatchMainThreadEvent' on @globalThis.runtime@ so the MTS
+-- delegator can invoke it synchronously. MTS only.
+registerMainThreadDispatch :: IO ()
+registerMainThreadDispatch = do
+  cb <- FFI.syncCallback1 dispatchMainThreadEvent
+  runtimeObj <- jsg "runtime"
+  FFI.set "dispatchMainThreadEvent" cb (Object runtimeObj)
+#endif
+----------------------------------------------------------------------------
+-- | Dispatches a 'COMPONENT' lifecycle message (BTS → MTS) on the
+-- @\"Miso.components\"@ channel. No-op for components without a 'StaticKey'
+-- (e.g. the root), since the MTS locates the component via 'unsafeLookupStaticPtr'.
+#ifdef NATIVE
+postComponent
+  :: ComponentType
+  -> Maybe StaticKey
+  -> ComponentId
+  -> ComponentId
+  -> Maybe Value
+  -> Maybe DOMRef
+  -> IO ()
+postComponent componentType_ sk componentId_ parentId_ model_ domRef_ = do
+  ctx <- getMTSContext
+  dispatchEvent ctx "Miso.components"
+    (COMPONENT componentType_ sk componentId_ parentId_ model_ domRef_)
+#endif
+----------------------------------------------------------------------------
+-- | Dispatches an 'EFFECT' message carrying a serialized @action@ across the
+-- Lynx thread boundary on the @\"Miso.effects\"@ channel:
+--
+--   * MTS → BTS when called on the main thread ('mts').
+--   * BTS → MTS when called on the background thread ('bts').
+--
+-- A no-op on plain web builds (neither 'mts' nor 'bts').
+#ifdef NATIVE
+postEffect :: Maybe StaticKey -> ComponentId -> Value -> IO ()
+postEffect sk componentId_ action_ = do
+  when mts $ do
+    ctx <- getBTSContext
+    dispatchEvent ctx "Miso.effects" (EFFECT componentId_ action_ sk)
+  when bts $ do
+    ctx <- getMTSContext
+    dispatchEvent ctx "Miso.effects" (EFFECT componentId_ action_ sk)
+#endif
 ----------------------------------------------------------------------------
 -- | Global variable to hold the scheduler thread
 --
@@ -1901,11 +2449,188 @@ schedulerThread = unsafePerformIO (newIORef undefined)
 -- safe to compute once and cache via 'unsafePerformIO' rather than making
 -- an FFI call on every 'initialize' \/ 'initComponent'.
 --
-_mts, bts, web :: Bool
-{-# NOINLINE _mts #-}
+mts, bts, web :: Bool
+{-# NOINLINE mts #-}
 {-# NOINLINE bts #-}
 {-# NOINLINE web #-}
-(_mts, bts, web) = unsafePerformIO FFI.getThreads
+(mts, bts, web) = unsafePerformIO FFI.getThreads
+-----------------------------------------------------------------------------
+-- | 'True' when a 'CrossThread' effect targets the /opposite/ Lynx thread and
+-- must therefore be forwarded (via 'postEffect') rather than dispatched locally.
+-- 'False' when the target is the current thread, or on a plain web build (where
+-- there is a single thread), so the action is handled here.
+crossThread :: E.Thread -> Bool
+crossThread = \case
+  E.BTS -> mts   -- want BTS, currently on MTS
+  E.MTS -> bts   -- want MTS, currently on BTS
+-----------------------------------------------------------------------------
+instance FromJSVal Fingerprint where
+  fromJSVal x = fmap (fmap fromMisoString) (fromJSVal x :: IO (Maybe MisoString))
+  {-# INLINE fromJSVal #-}
+-----------------------------------------------------------------------------
+-- | Serializes a 'StaticKey' as a 32-character hex string (two zero-padded 'Word64' values).
+instance ToMisoString Fingerprint where
+  toMisoString fp = ms (show fp)
+  {-# INLINE toMisoString #-}
+-----------------------------------------------------------------------------
+-- | Parses a 'StaticKey' from its 32-character hex 'MisoString' representation.
+instance FromMisoString Fingerprint where
+  fromMisoStringEither s =
+    let str      = fromMisoString s :: String
+        (h1, h2) = splitAt 16 str
+        parseHex h = case (readHex h :: [(Word64, String)]) of
+          [(w, "")] -> Right w
+          _         -> Left ("fromMisoString StaticKey: invalid hex chunk " <> h)
+    in Fingerprint <$> parseHex h1 <*> parseHex h2
+  {-# INLINE fromMisoStringEither #-}
+-----------------------------------------------------------------------------
+-- | Serializes a 'Fingerprint' ('StaticKey') to its 'Show' representation.
+instance ToJSVal Fingerprint where
+  toJSVal fp = toJSVal (ms fp :: MisoString)
+  {-# INLINE toJSVal #-}
+-----------------------------------------------------------------------------
+-- | The operation carried by a 'COMPONENT' message.
+data ComponentType
+  = MOUNT | UNMOUNT | MODEL_HYDRATE | READY | READY_ACK
+  deriving (Show, Eq)
+-----------------------------------------------------------------------------
+instance ToJSVal ComponentType where
+  toJSVal = \case
+    MOUNT -> toJSVal ("mount"   :: MisoString)
+    UNMOUNT -> toJSVal ("unmount" :: MisoString)
+    MODEL_HYDRATE -> toJSVal ("model_hydrate" :: MisoString)
+    READY -> toJSVal ("ready" :: MisoString)
+    READY_ACK -> toJSVal ("ready_ack" :: MisoString)
+  {-# INLINE toJSVal #-}
+-----------------------------------------------------------------------------
+instance FromJSVal ComponentType where
+  fromJSVal x = do
+    fromJSVal x >>= \case
+      Just ("mount" :: MisoString) -> pure (Just MOUNT)
+      Just "unmount" -> pure (Just UNMOUNT)
+      Just "model_hydrate" -> pure (Just MODEL_HYDRATE)
+      Just "ready" -> pure (Just READY)
+      Just "ready_ack" -> pure (Just READY_ACK)
+      _ -> pure Nothing
+  {-# INLINE fromJSVal #-}
+-----------------------------------------------------------------------------
+-- | Cross-thread component lifecycle message (BTS → MTS).
+data COMPONENT = COMPONENT
+  { componentComponentType :: ComponentType
+  , componentComponentStaticKey :: Maybe StaticKey
+  , componentComponentId :: ComponentId
+  , componentComponentParentId :: ComponentId
+  , componentComponentPayload :: Maybe Value
+  -- ^ Serialized payload carried by hydrate messages: the @model@ for
+  -- 'MODEL_HYDRATE', and the initial @props@ for 'MOUNT'. 'Nothing' for
+  -- 'UNMOUNT' \/ 'READY'.
+  , componentComponentDOMRef :: Maybe DOMRef
+  -- ^ Mount point for the mirrored MTS component, carried by 'MOUNT'. In Lynx
+  -- a 'DOMRef' is a JS object holding a single @nodeId@ field, so it serializes
+  -- across the thread boundary. 'Nothing' for every other message.
+  } deriving Eq
+-----------------------------------------------------------------------------
+instance ToJSVal COMPONENT where
+  toJSVal COMPONENT {..} = do
+    o <- create
+    setField o "componentType" componentComponentType
+    setField o "staticKey" componentComponentStaticKey
+    setField o "compId" componentComponentId
+    setField o "compParentId" componentComponentParentId
+    setField o "payload" componentComponentPayload
+    setField o "domRef" componentComponentDOMRef
+    toJSVal o
+  {-# INLINE toJSVal #-}
+-----------------------------------------------------------------------------
+instance FromJSVal COMPONENT where
+  fromJSVal x = do
+    let o = Object x
+    mct  <- fromJSVal =<< getProp "componentType" o
+    msk  <- fromJSVal =<< getProp "staticKey" o
+    let key = fmap fromMisoString <$> msk
+    mcid <- fromJSVal =<< getProp "compId" o
+    mcpid <- fromJSVal =<< getProp "compParentId" o
+    mp   <- fromJSVal =<< getProp "payload" o
+    mdr  <- fromJSVal =<< getProp "domRef" o
+    pure (COMPONENT <$> mct <*> key <*> mcid <*> mcpid <*> mp <*> mdr)
+  {-# INLINE fromJSVal #-}
+-----------------------------------------------------------------------------
+-- | Cross-thread effect message (MTS → BTS or BTS → MTS).
+data EFFECT = EFFECT
+  { effectComponentId :: ComponentId
+  , effectAction :: Value
+  , effectStaticKey :: Maybe StaticKey
+  } deriving (Show, Eq)
+-----------------------------------------------------------------------------
+instance ToJSVal EFFECT where
+  toJSVal EFFECT {..} = do
+    o <- create
+    setField o "componentId" effectComponentId
+    setField o "action" effectAction
+    setField o "staticKey" effectStaticKey
+    toJSVal o
+  {-# INLINE toJSVal #-}
+-----------------------------------------------------------------------------
+instance FromJSVal EFFECT where
+  fromJSVal x = do
+    let o = Object x
+    mcid <- fromJSVal =<< getProp "componentId" o
+    maction <- fromJSVal =<< getProp "action" o
+    mk <- fromJSVal =<< getProp "staticKey" o
+    pure (EFFECT <$> mcid <*> maction <*> mk)
+  {-# INLINE fromJSVal #-}
+-----------------------------------------------------------------------------
+-- | Opaque handle to the Lynx Main Thread (MTS) context proxy.
+-- Obtained via 'getMTSContext' on the background thread.
+newtype MTS = MTS JSVal
+  deriving stock Eq
+  deriving newtype ToJSVal
+-----------------------------------------------------------------------------
+-- | Opaque handle to the Lynx Background Thread (BTS) context proxy.
+-- Obtained via 'getBTSContext' on the main thread.
+newtype BTS = BTS JSVal
+  deriving stock Eq
+  deriving newtype ToJSVal
+-----------------------------------------------------------------------------
+-- | The MTS context proxy (@lynx.getCoreContext()@), cached.
+--
+-- N.B. Lynx hands back a handle to the same underlying 'ContextProxy' on
+-- every call for the lifetime of a given JS context (one instance per
+-- origin\/target pair), so — like 'mts' \/ 'bts' \/ 'web' above — it's safe
+-- to compute once via 'unsafePerformIO' rather than round-tripping the FFI
+-- on every 'postComponent' \/ 'postEffect'.
+mtsContext :: MTS
+{-# NOINLINE mtsContext #-}
+mtsContext = unsafePerformIO (MTS <$> (jsg "lynx" # "getCoreContext" $ ()))
+-----------------------------------------------------------------------------
+-- | The BTS context proxy (@lynx.getJSContext()@), cached. See 'mtsContext'.
+btsContext :: BTS
+{-# NOINLINE btsContext #-}
+btsContext = unsafePerformIO (BTS <$> (jsg "lynx" # "getJSContext" $ ()))
+-----------------------------------------------------------------------------
+-- | Returns the MTS context proxy. Call from the background thread to
+-- dispatch messages to the main thread.
+getMTSContext :: IO MTS
+{-# INLINABLE getMTSContext #-}
+getMTSContext = pure mtsContext
+-----------------------------------------------------------------------------
+-- | Returns the BTS context proxy. Call from the main thread to dispatch
+-- messages to the background thread.
+getBTSContext :: IO BTS
+{-# INLINABLE getBTSContext #-}
+getBTSContext = pure btsContext
+-----------------------------------------------------------------------------
+-- | Dispatches a cross-thread message to the BTS via @context.dispatchEvent@.
+-- The @protocol@ string names the channel (e.g. @\"Miso.patches\"@).
+dispatchEvent :: (ToJSVal ctx, ToJSVal a) => ctx -> MisoString -> a -> IO ()
+{-# INLINABLE dispatchEvent #-}
+dispatchEvent ctx protocol payload = do
+  ctx_ <- toJSVal ctx
+  o <- create
+  setField o "type" protocol
+  setField o "data" =<< toJSVal payload
+  _ <- Object ctx_ # "dispatchEvent" $ [o]
+  pure ()
 ----------------------------------------------------------------------------
 -- | Loads miso's JavaScript (if not already loaded) and runs an 'IO' action.
 --

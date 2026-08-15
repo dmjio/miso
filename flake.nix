@@ -43,11 +43,21 @@
       let
         pkgs = import nixpkgs {
           inherit system;
-          # Miso's overlays
+          # Miso's overlays (provides rspeedy, ghcNative, mkLynxBundle, ...)
           overlays = [ (import ./nix/overlay.nix) ];
         };
       in
       {
+        # Reusable helpers for downstream flakes:
+        #   miso.lib.${system}.ghcNative      -- the GHC-JS (LynxJS) package set,
+        #                                        with miso-native, ready to
+        #                                        callCabal2nix your own app
+        #   miso.lib.${system}.mkLynxBundle   -- build a .lynx.bundle from it
+        lib = {
+          inherit (pkgs) mkLynxBundle;
+          ghcNative = pkgs.pkgsCross.ghcjs.haskell.packages.ghcNative;
+        };
+
         # Miso's packages
         packages = rec {
           # Default package is vanilla GHC 9.12.2 miso
@@ -57,9 +67,29 @@
           miso-ghcjs-9122 =
             pkgs.pkgsCross.ghcjs.haskell.packages.ghc9122.miso;
 
+          # miso with -fnative (LynxJS dual-thread arch)
+          miso-native-ghcjs-9122 =
+            pkgs.pkgsCross.ghcjs.haskell.packages.ghcNative.miso-native;
+
           # GHC
           miso-ghc-9122 =
             pkgs.haskell.packages.ghc9122.miso;
+
+          # Sample app (native / LynxJS)
+          sample-app-native-ghcjs-9122 =
+            pkgs.pkgsCross.ghcjs.haskell.packages.ghcNative.sample-app-native;
+
+          # rspeedy (LynxJS bundle builder, wraps rspack)
+          inherit (pkgs) rspeedy;
+
+          # Lynx bundle for sample-app-native (built with the shared mkLynxBundle).
+          # The showcase uses remote image URLs, so it only needs styles.css.
+          sample-app-native-bundle = pkgs.mkLynxBundle {
+            name = "sample-app-native-bundle";
+            jsDrv = pkgs.pkgsCross.ghcjs.haskell.packages.ghcNative.sample-app-native;
+            exeName = "app-native";
+            styles = ./sample-app-native/styles.css;
+          };
 
           # Util
           inherit (pkgs.haskell.packages.ghc9122)
@@ -218,6 +248,10 @@
                  cabal-install
                  emscripten
                  tailwindcss_4
+                 rspeedy
+                 bun
+                 watchexec
+                 just
               ];
             };
           };

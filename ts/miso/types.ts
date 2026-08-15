@@ -54,6 +54,9 @@ export type VNode<T> = {
   css: CSS;
   classList: Class;
   events: Events<T>;
+  /** Names of events this element dispatches directly on itself (Lynx native
+   *  component events that don't bubble). Absent on browser/WASM. */
+  directEvents?: Array<string>;
   children: Array<VTree<T>>;
   onDestroyed: () => void;
   onBeforeDestroyed: () => void;
@@ -93,6 +96,11 @@ export type VTree<T> = VComp<T> | VNode<T> | VText<T> | VFrag<T>;
 export type EventObject<T> = {
    options: Options;
    runEvent: (e: Event, node: T) => void;
+   /** Hex 'StaticKey' of the Haskell event handler. Populated on the native
+    * (Lynx) runtime so main-thread events can be dispatched by key. */
+   staticKey?: string;
+   /** Owning component id. Paired with staticKey to locate the sink on the MTS. */
+   componentId?: number;
 };
 
 export type Options = {
@@ -134,12 +142,6 @@ export type HydrationContext<T> = {
 
 export type PRNG = (() => (number));
 
-export type ComponentContext = {
-  mountComponent : (componentId: ComponentId, model: Object) => void,
-  modelHydration : (componentId: ComponentId, model: Object) => void
-  unmountComponent : (componentId: ComponentId) => void,
-}
-
 export type DrawingContext<T> = {
   nextSibling : (node: VTree<T>) => T | null;
   createTextNode : (s: string) => T;
@@ -157,6 +159,11 @@ export type DrawingContext<T> = {
   setInlineStyle : (cCss: CSS, nCss: CSS, node : T) => void;
   addClass : (c: string, domRef: T) => void;
   removeClass : (c: string, domRef: T) => void;
+  /** Register/replace the main-thread handler for event `name` on `node`,
+   * keyed by phase, so the delegator can route it in JS. No-op on runtimes that
+   * dispatch by closure. */
+  addEvent : (node: T, name: string, key: EventKey) => void;
+  removeEvent : (node: T, name: string, capture: boolean) => void;
   flush : () => void;
   /** @since 1.9.0.0 */
   getHead : () => T;
@@ -183,13 +190,12 @@ export type Component = {
 
 export type Runtime<T> = {
   nodes : Record <number, T>,
-  components : Record <ComponentId, Component>
 };
 
 /* Convenience table to allow O(1) application of DOM references */
 export type NodeMap<T> = Record <number, T>;
 
-/* Message protocol for bidirectional synchronization between MTS / BTS */
+/* DOM mutation protocol: BTS → MTS */
 export type PATCH
   = InsertBefore
   | SwapDOMRefs
@@ -204,42 +210,17 @@ export type PATCH
   | RemoveAttribute
   | SetTextContent
   | SetInlineStyle
-  | MountComponent
-  | UnmountComponent
-  | ModelHydration
   | AddClass
   | RemoveClass
-  | ProcessEvent
-  | AddEventListeners
+  | AddEvent
+  | RemoveEvent
   | Flush;
 
-export type AddEventListeners = {
-  events: Array<EventCapture>,
-  type: "addEventListeners"
-};
-
+/* Event protocol: MTS → BTS */
 export type ProcessEvent = {
   stack: Array<number>,
   event: Object, /* Event object, will be JSON'ified */
   type: "processEvent"
-};
-
-export type ModelHydration = {
-  componentId: ComponentId,
-  model: Object,
-  type: "modelHydration"
-};
-
-export type MountComponent = {
-  type: "mount",
-  componentId: ComponentId,
-  model: Object,
-  mountPoint: number
-};
-
-export type UnmountComponent = {
-  type: "unmount",
-  componentId: ComponentId,
 };
 
 export type InsertBefore = {
@@ -325,6 +306,43 @@ export type AddClass = {
   type: "addClass",
   nodeId: number,
   key: string,
+};
+
+/* Serializable subset of an EventObject, carried across the BTS -> MTS boundary
+   so the MTS delegator can route a main-thread event in JS: pick the handler by
+   phase (capture/bubble) and apply preventDefault/stopPropagation itself. The
+   runEvent closure cannot cross the boundary; the staticKey stands in for it. */
+export type EventKey = {
+  /** capture phase (true) vs bubble phase (false) */
+  capture: boolean,
+  /** hex 'StaticKey' of the handler, for main-thread dispatch. Absent for a
+   *  direct-bind-only entry (a background handler on a native element). */
+  staticKey?: string,
+  /** owning component id, to locate the sink / unify the action */
+  componentId?: number,
+  options?: Options,
+  /** bind an element-level listener (Lynx native events that don't bubble) */
+  direct?: boolean,
+};
+
+export type AddEvent = {
+  type: "addEvent",
+  nodeId: number,
+  /** event name, e.g. "click" */
+  name: string,
+  capture: boolean,
+  staticKey?: string,
+  componentId?: number,
+  options?: Options,
+  /** bind an element-level listener (Lynx native events that don't bubble) */
+  direct?: boolean,
+};
+
+export type RemoveEvent = {
+  type: "removeEvent",
+  nodeId: number,
+  name: string,
+  capture: boolean,
 };
 
 export type SetTextContent = {

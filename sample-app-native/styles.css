@@ -1,0 +1,101 @@
+/* Global stylesheet compiled into the Lynx bundle by the `bundle-lynx` justfile
+   recipe (imported via the rspeedy wrapper entry). Rules here are compiled under
+   the global cssId 0 that the runtime scopes the page to (ts/miso/native/mts.ts
+   `__SetCSSId([page], 0)`), so `className "foo"` in Haskell resolves against them
+   on device. This is the Lynx way to do class-based CSS — runtime `document`
+   style injection (Sheet/Href/Style) does not work on Lynx. */
+
+.foo {
+  color: crimson;
+  background-color: #fff0f0;
+  padding: 16px;
+  border-radius: 10px;
+}
+
+/* ------------------------------------------------------------------------- *
+ * LynxGallery.hs — port of https://lynxjs.org/learn/gallery                  *
+ * Keyframe animations (ripple, flow) and the tutorial's class rules. Where   *
+ * the tutorial combined two classes on one node (scrollbar-effect+glow,      *
+ * circle+circleAfter), we fold them into a single self-contained class,      *
+ * since native className resolves one token per node.                        *
+ * ------------------------------------------------------------------------- */
+
+/* The Lynx root page sits behind our wrapper; 100vh doesn't cover the
+   status-bar / home-indicator safe areas, so paint the page black too to kill
+   the white bands at the very top and bottom. */
+page {
+  background-color: black;
+}
+
+.gallery-wrapper {
+  height: 100vh;
+  background-color: black;
+  position: relative;
+}
+
+.list {
+  width: 100vw;
+  padding-bottom: 20px;
+  padding-left: 20px;
+  padding-right: 20px;
+  height: 100%;
+  background-color: black;
+  list-main-axis-gap: 10px;
+  list-cross-axis-gap: 10px;
+}
+
+.picture-wrapper {
+  border-radius: 10px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.like-icon {
+  position: absolute;
+  display: grid;
+  justify-items: center;
+  align-items: center;
+  top: 0px;
+  right: 0px;
+  width: 64px;
+  height: 64px;
+}
+
+.circle {
+  position: absolute;
+  top: calc(50% - 14px);
+  left: calc(50% - 14px);
+  height: 28px;
+  width: 28px;
+  border: 2px solid red;
+  border-radius: 50%;
+  transform: scale(0);
+  opacity: 1;
+  animation: ripple 1s 1 ease-out;
+}
+
+/* tutorial's `.circle.circleAfter` — same as .circle, but delayed */
+.circle-after {
+  position: absolute;
+  top: calc(50% - 14px);
+  left: calc(50% - 14px);
+  height: 28px;
+  width: 28px;
+  border: 2px solid red;
+  border-radius: 50%;
+  transform: scale(0);
+  opacity: 1;
+  animation: ripple 1s 1 ease-out;
+  animation-delay: 0.5s;
+}
+
+@keyframes ripple {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(3.4);
+    opacity: 0;
+  }
+}

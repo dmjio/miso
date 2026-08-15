@@ -216,347 +216,347 @@ import           Miso.Svg.Element (svg_)
 -----------------------------------------------------------------------------
 -- | Low-level helper used to construct 'HTML' 'node' in 'Miso.Types.View'.
 -- Almost all functions in this module, like 'div_', 'table_' etc. are defined in terms of it.
-nodeHtml :: MisoString -> [Attribute action] -> [View context action] -> View context action
+nodeHtml :: MisoString -> [Attribute model action] -> [View context model action] -> View context model action
 nodeHtml nodeName = node HTML nodeName
 -----------------------------------------------------------------------------
 -- | [\<div\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/div)
-div_ :: [Attribute action] -> [View context action] -> View context action
+div_ :: [Attribute model action] -> [View context model action] -> View context model action
 div_ = nodeHtml "div"
 -----------------------------------------------------------------------------
 -- | [\<table\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/table)
-table_ :: [Attribute action] -> [View context action] -> View context action
+table_ :: [Attribute model action] -> [View context model action] -> View context model action
 table_ = nodeHtml "table"
 -----------------------------------------------------------------------------
 -- | [\<thead\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/thead)
-thead_ :: [Attribute action] -> [View context action] -> View context action
+thead_ :: [Attribute model action] -> [View context model action] -> View context model action
 thead_ = nodeHtml "thead"
 -----------------------------------------------------------------------------
 -- | [\<tbody\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/tbody)
-tbody_ :: [Attribute action] -> [View context action] -> View context action
+tbody_ :: [Attribute model action] -> [View context model action] -> View context model action
 tbody_ = nodeHtml "tbody"
 -----------------------------------------------------------------------------
 -- | [\<tr\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/tr)
-tr_ :: [Attribute action] -> [View context action] -> View context action
+tr_ :: [Attribute model action] -> [View context model action] -> View context model action
 tr_ = nodeHtml "tr"
 -----------------------------------------------------------------------------
 -- | [\<th\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/th)
-th_ :: [Attribute action] -> [View context action] -> View context action
+th_ :: [Attribute model action] -> [View context model action] -> View context model action
 th_ = nodeHtml "th"
 -----------------------------------------------------------------------------
 -- | [\<td\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/td)
-td_ :: [Attribute action] -> [View context action] -> View context action
+td_ :: [Attribute model action] -> [View context model action] -> View context model action
 td_ = nodeHtml "td"
 -----------------------------------------------------------------------------
 -- | [\<tfoot\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/tfoot)
-tfoot_ :: [Attribute action] -> [View context action] -> View context action
+tfoot_ :: [Attribute model action] -> [View context model action] -> View context model action
 tfoot_ = nodeHtml "tfoot"
 -----------------------------------------------------------------------------
 -- | [\<section\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/section)
-section_ :: [Attribute action] -> [View context action] -> View context action
+section_ :: [Attribute model action] -> [View context model action] -> View context model action
 section_ = nodeHtml "section"
 -----------------------------------------------------------------------------
 -- | [\<header\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/header)
-header_ :: [Attribute action] -> [View context action] -> View context action
+header_ :: [Attribute model action] -> [View context model action] -> View context model action
 header_ = nodeHtml "header"
 -----------------------------------------------------------------------------
 -- | [\<footer\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/footer)
-footer_ :: [Attribute action] -> [View context action] -> View context action
+footer_ :: [Attribute model action] -> [View context model action] -> View context model action
 footer_ = nodeHtml "footer"
 -----------------------------------------------------------------------------
 -- | [\<button\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/button)
-button_ :: [Attribute action] -> [View context action] -> View context action
+button_ :: [Attribute model action] -> [View context model action] -> View context model action
 button_ = nodeHtml "button"
 -----------------------------------------------------------------------------
 -- | [\<form\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/form)
 --
 -- For usage in a real-world application with the @onSubmit@ event.
 --
--- > view :: Model -> View context action
+-- > view :: Model -> View context model action
 -- > view model = form_ [ onSubmit NoOp ] [ input [ type_ "submit" ] ]
 --
 -- Note: @onSubmit@ will use @preventDefault = True@. This will keep
 -- the form from submitting to the server.
 --
-form_ :: [Attribute action] -> [View context action] -> View context action
+form_ :: [Attribute model action] -> [View context model action] -> View context model action
 form_ = nodeHtml "form"
 -----------------------------------------------------------------------------
 -- | [\<p\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/p)
-p_ :: [Attribute action] -> [View context action] -> View context action
+p_ :: [Attribute model action] -> [View context model action] -> View context model action
 p_ = nodeHtml "p"
 -----------------------------------------------------------------------------
 -- | [\<s\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/s)
-s_ :: [Attribute action] -> [View context action] -> View context action
+s_ :: [Attribute model action] -> [View context model action] -> View context model action
 s_ = nodeHtml "s"
 -----------------------------------------------------------------------------
 -- | [\<ul\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/ul)
-ul_ :: [Attribute action] -> [View context action] -> View context action
+ul_ :: [Attribute model action] -> [View context model action] -> View context model action
 ul_ = nodeHtml "ul"
 -----------------------------------------------------------------------------
 -- | [\<span\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/span)
-span_ :: [Attribute action] -> [View context action] -> View context action
+span_ :: [Attribute model action] -> [View context model action] -> View context model action
 span_ = nodeHtml "span"
 -----------------------------------------------------------------------------
 -- | [\<strong\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/strong)
-strong_ :: [Attribute action] -> [View context action] -> View context action
+strong_ :: [Attribute model action] -> [View context model action] -> View context model action
 strong_ = nodeHtml "strong"
 -----------------------------------------------------------------------------
 -- | [\<li\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/li)
-li_ :: [Attribute action] -> [View context action] -> View context action
+li_ :: [Attribute model action] -> [View context model action] -> View context model action
 li_ = nodeHtml "li"
 -----------------------------------------------------------------------------
 -- | [\<h1\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/Heading_Elements)
-h1_ :: [Attribute action] -> [View context action] -> View context action
+h1_ :: [Attribute model action] -> [View context model action] -> View context model action
 h1_ = nodeHtml "h1"
 -----------------------------------------------------------------------------
 -- | [\<h2\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/Heading_Elements)
-h2_ :: [Attribute action] -> [View context action] -> View context action
+h2_ :: [Attribute model action] -> [View context model action] -> View context model action
 h2_ = nodeHtml "h2"
 -----------------------------------------------------------------------------
 -- | [\<h3\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/Heading_Elements)
-h3_ :: [Attribute action] -> [View context action] -> View context action
+h3_ :: [Attribute model action] -> [View context model action] -> View context model action
 h3_ = nodeHtml "h3"
 -----------------------------------------------------------------------------
 -- | [\<h4\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/Heading_Elements)
-h4_ :: [Attribute action] -> [View context action] -> View context action
+h4_ :: [Attribute model action] -> [View context model action] -> View context model action
 h4_ = nodeHtml "h4"
 -----------------------------------------------------------------------------
 -- | [\<h5\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/Heading_Elements)
-h5_ :: [Attribute action] -> [View context action] -> View context action
+h5_ :: [Attribute model action] -> [View context model action] -> View context model action
 h5_ = nodeHtml "h5"
 -----------------------------------------------------------------------------
 -- | [\<h6\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/Heading_Elements)
-h6_ :: [Attribute action] -> [View context action] -> View context action
+h6_ :: [Attribute model action] -> [View context model action] -> View context model action
 h6_ = nodeHtml "h6"
 -----------------------------------------------------------------------------
 -- | [\<hr\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/hr)
-hr_ :: [Attribute action] -> View context action
+hr_ :: [Attribute model action] -> View context model action
 hr_ = flip (nodeHtml "hr") []
 -----------------------------------------------------------------------------
 -- | [\<pre\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/pre)
-pre_ :: [Attribute action] -> [View context action] -> View context action
+pre_ :: [Attribute model action] -> [View context model action] -> View context model action
 pre_ = nodeHtml "pre"
 -----------------------------------------------------------------------------
 -- | [\<input\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/input)
-input_ :: [Attribute action] -> View context action
+input_ :: [Attribute model action] -> View context model action
 input_ = flip (nodeHtml "input") []
 -----------------------------------------------------------------------------
 -- | [\<label\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/label)
-label_ :: [Attribute action] -> [View context action] -> View context action
+label_ :: [Attribute model action] -> [View context model action] -> View context model action
 label_ = nodeHtml "label"
 -----------------------------------------------------------------------------
 -- | [\<a\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/a)
-a_ :: [Attribute action] -> [View context action] -> View context action
+a_ :: [Attribute model action] -> [View context model action] -> View context model action
 a_ = nodeHtml "a"
 -----------------------------------------------------------------------------
 -- | [\<mark\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/mark)
-mark_ :: [Attribute action] -> [View context action] -> View context action
+mark_ :: [Attribute model action] -> [View context model action] -> View context model action
 mark_ = nodeHtml "mark"
 -----------------------------------------------------------------------------
 -- | [\<ruby\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/ruby)
-ruby_ :: [Attribute action] -> [View context action] -> View context action
+ruby_ :: [Attribute model action] -> [View context model action] -> View context model action
 ruby_ = nodeHtml "ruby"
 -----------------------------------------------------------------------------
 -- | [\<rt\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/rt)
-rt_ :: [Attribute action] -> [View context action] -> View context action
+rt_ :: [Attribute model action] -> [View context model action] -> View context model action
 rt_ = nodeHtml "rt"
 -----------------------------------------------------------------------------
 -- | [\<rp\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/rp)
-rp_ :: [Attribute action] -> [View context action] -> View context action
+rp_ :: [Attribute model action] -> [View context model action] -> View context model action
 rp_ = nodeHtml "rp"
 -----------------------------------------------------------------------------
 -- | [\<bdi\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/bdi)
-bdi_ :: [Attribute action] -> [View context action] -> View context action
+bdi_ :: [Attribute model action] -> [View context model action] -> View context model action
 bdi_ = nodeHtml "bdi"
 -----------------------------------------------------------------------------
 -- | [\<bdo\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/bdo)
-bdo_ :: [Attribute action] -> [View context action] -> View context action
+bdo_ :: [Attribute model action] -> [View context model action] -> View context model action
 bdo_ = nodeHtml "bdo"
 -----------------------------------------------------------------------------
 -- | [\<wbr\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/wbr)
-wbr_ :: [Attribute action] -> View context action
+wbr_ :: [Attribute model action] -> View context model action
 wbr_ = flip (nodeHtml "wbr") []
 -----------------------------------------------------------------------------
 -- | [\<details\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/details)
-details_ :: [Attribute action] -> [View context action] -> View context action
+details_ :: [Attribute model action] -> [View context model action] -> View context model action
 details_ = nodeHtml "details"
 -----------------------------------------------------------------------------
 -- | [\<summary\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/summary)
-summary_ :: [Attribute action] -> [View context action] -> View context action
+summary_ :: [Attribute model action] -> [View context model action] -> View context model action
 summary_ = nodeHtml "summary"
 -----------------------------------------------------------------------------
 -- | [\<menu\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/menu)
-menu_ :: [Attribute action] -> [View context action] -> View context action
+menu_ :: [Attribute model action] -> [View context model action] -> View context model action
 menu_ = nodeHtml "menu"
 -----------------------------------------------------------------------------
 -- | [\<fieldset\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/fieldset)
-fieldset_ :: [Attribute action] -> [View context action] -> View context action
+fieldset_ :: [Attribute model action] -> [View context model action] -> View context model action
 fieldset_ = nodeHtml "fieldset"
 -----------------------------------------------------------------------------
 -- | [\<legend\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/legend)
-legend_ :: [Attribute action] -> [View context action] -> View context action
+legend_ :: [Attribute model action] -> [View context model action] -> View context model action
 legend_ = nodeHtml "legend"
 -----------------------------------------------------------------------------
 -- | [\<datalist\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/datalist)
-datalist_ :: [Attribute action] -> [View context action] -> View context action
+datalist_ :: [Attribute model action] -> [View context model action] -> View context model action
 datalist_ = nodeHtml "datalist"
 -----------------------------------------------------------------------------
 -- | [\<optgroup\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/optgroup)
-optgroup_ :: [Attribute action] -> [View context action] -> View context action
+optgroup_ :: [Attribute model action] -> [View context model action] -> View context model action
 optgroup_ = nodeHtml "optgroup"
 -----------------------------------------------------------------------------
 -- | [\<output\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/output)
-output_ :: [Attribute action] -> [View context action] -> View context action
+output_ :: [Attribute model action] -> [View context model action] -> View context model action
 output_ = nodeHtml "output"
 -----------------------------------------------------------------------------
 -- | [\<progress\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/progress)
-progress_ :: [Attribute action] -> [View context action] -> View context action
+progress_ :: [Attribute model action] -> [View context model action] -> View context model action
 progress_ = nodeHtml "progress"
 -----------------------------------------------------------------------------
 -- | [\<meter\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/meter)
-meter_ :: [Attribute action] -> [View context action] -> View context action
+meter_ :: [Attribute model action] -> [View context model action] -> View context model action
 meter_ = nodeHtml "meter"
 -----------------------------------------------------------------------------
 -- | [\<audio\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/audio)
-audio_ :: [Attribute action] -> [View context action] -> View context action
+audio_ :: [Attribute model action] -> [View context model action] -> View context model action
 audio_ = nodeHtml "audio"
 -----------------------------------------------------------------------------
 -- | [\<video\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/video)
-video_ :: [Attribute action] -> [View context action] -> View context action
+video_ :: [Attribute model action] -> [View context model action] -> View context model action
 video_ = nodeHtml "video"
 -----------------------------------------------------------------------------
 -- | [\<source\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/source)
-source_ :: [Attribute action] -> View context action
+source_ :: [Attribute model action] -> View context model action
 source_ = flip (nodeHtml "source") []
 -----------------------------------------------------------------------------
 -- | [\<track\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/track)
-track_ :: [Attribute action] -> View context action
+track_ :: [Attribute model action] -> View context model action
 track_ = flip (nodeHtml "track") []
 -----------------------------------------------------------------------------
 -- | [\<embed\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/embed)
-embed_ :: [Attribute action] -> View context action
+embed_ :: [Attribute model action] -> View context model action
 embed_ = flip (nodeHtml "embed") []
 -----------------------------------------------------------------------------
 -- | [\<object\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/object)
-object_ :: [Attribute action] -> [View context action] -> View context action
+object_ :: [Attribute model action] -> [View context model action] -> View context model action
 object_ = nodeHtml "object"
 -----------------------------------------------------------------------------
 -- | [\<ins\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/ins)
-ins_ :: [Attribute action] -> [View context action] -> View context action
+ins_ :: [Attribute model action] -> [View context model action] -> View context model action
 ins_ = nodeHtml "ins"
 -----------------------------------------------------------------------------
 -- | [\<del\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/del)
-del_ :: [Attribute action] -> [View context action] -> View context action
+del_ :: [Attribute model action] -> [View context model action] -> View context model action
 del_ = nodeHtml "del"
 -----------------------------------------------------------------------------
 -- | [\<small\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/small)
-small_ :: [Attribute action] -> [View context action] -> View context action
+small_ :: [Attribute model action] -> [View context model action] -> View context model action
 small_ = nodeHtml "small"
 -----------------------------------------------------------------------------
 -- | [\<cite\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/cite)
-cite_ :: [Attribute action] -> [View context action] -> View context action
+cite_ :: [Attribute model action] -> [View context model action] -> View context model action
 cite_ = nodeHtml "cite"
 -----------------------------------------------------------------------------
 -- | [\<dfn\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/dfn)
-dfn_ :: [Attribute action] -> [View context action] -> View context action
+dfn_ :: [Attribute model action] -> [View context model action] -> View context model action
 dfn_ = nodeHtml "dfn"
 -----------------------------------------------------------------------------
 -- | [\<abbr\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/abbr)
-abbr_ :: [Attribute action] -> [View context action] -> View context action
+abbr_ :: [Attribute model action] -> [View context model action] -> View context model action
 abbr_ = nodeHtml "abbr"
 -----------------------------------------------------------------------------
 -- | [\<time\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/time)
-time_ :: [Attribute action] -> [View context action] -> View context action
+time_ :: [Attribute model action] -> [View context model action] -> View context model action
 time_ = nodeHtml "time"
 -----------------------------------------------------------------------------
 -- | [\<var\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/var)
-var_ :: [Attribute action] -> [View context action] -> View context action
+var_ :: [Attribute model action] -> [View context model action] -> View context model action
 var_ = nodeHtml "var"
 -----------------------------------------------------------------------------
 -- | [\<samp\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/samp)
-samp_ :: [Attribute action] -> [View context action] -> View context action
+samp_ :: [Attribute model action] -> [View context model action] -> View context model action
 samp_ = nodeHtml "samp"
 -----------------------------------------------------------------------------
 -- | [\<kbd\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/kbd)
-kbd_ :: [Attribute action] -> [View context action] -> View context action
+kbd_ :: [Attribute model action] -> [View context model action] -> View context model action
 kbd_ = nodeHtml "kbd"
 -----------------------------------------------------------------------------
 -- | [\<caption\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/caption)
-caption_ :: [Attribute action] -> [View context action] -> View context action
+caption_ :: [Attribute model action] -> [View context model action] -> View context model action
 caption_ = nodeHtml "caption"
 -----------------------------------------------------------------------------
 -- | [\<colgroup\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/colgroup)
-colgroup_ :: [Attribute action] -> [View context action] -> View context action
+colgroup_ :: [Attribute model action] -> [View context model action] -> View context model action
 colgroup_ = nodeHtml "colgroup"
 -----------------------------------------------------------------------------
 -- | [\<col\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/col)
-col_ :: [Attribute action] -> View context action
+col_ :: [Attribute model action] -> View context model action
 col_ = flip (nodeHtml "col") []
 -----------------------------------------------------------------------------
 -- | [\<nav\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/nav)
-nav_ :: [Attribute action] -> [View context action] -> View context action
+nav_ :: [Attribute model action] -> [View context model action] -> View context model action
 nav_ = nodeHtml "nav"
 -----------------------------------------------------------------------------
 -- | [\<article\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/article)
-article_ :: [Attribute action] -> [View context action] -> View context action
+article_ :: [Attribute model action] -> [View context model action] -> View context model action
 article_ = nodeHtml "article"
 -----------------------------------------------------------------------------
 -- | [\<aside\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/aside)
-aside_ :: [Attribute action] -> [View context action] -> View context action
+aside_ :: [Attribute model action] -> [View context model action] -> View context model action
 aside_ = nodeHtml "aside"
 -----------------------------------------------------------------------------
 -- | [\<address\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/address)
-address_ :: [Attribute action] -> [View context action] -> View context action
+address_ :: [Attribute model action] -> [View context model action] -> View context model action
 address_ = nodeHtml "address"
 -----------------------------------------------------------------------------
 -- | [\<main\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/main)
-main_ :: [Attribute action] -> [View context action] -> View context action
+main_ :: [Attribute model action] -> [View context model action] -> View context model action
 main_ = nodeHtml "main"
 -----------------------------------------------------------------------------
 -- | [\<body\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/body)
-body_ :: [Attribute action] -> [View context action] -> View context action
+body_ :: [Attribute model action] -> [View context model action] -> View context model action
 body_ = nodeHtml "body"
 -----------------------------------------------------------------------------
 -- | [\<figure\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/figure)
-figure_ :: [Attribute action] -> [View context action] -> View context action
+figure_ :: [Attribute model action] -> [View context model action] -> View context model action
 figure_ = nodeHtml "figure"
 -----------------------------------------------------------------------------
 -- | [\<figcaption\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/figcaption)
-figcaption_ :: [Attribute action] -> [View context action] -> View context action
+figcaption_ :: [Attribute model action] -> [View context model action] -> View context model action
 figcaption_ = nodeHtml "figcaption"
 -----------------------------------------------------------------------------
 -- | [\<dl\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/dl)
-dl_ :: [Attribute action] -> [View context action] -> View context action
+dl_ :: [Attribute model action] -> [View context model action] -> View context model action
 dl_ = nodeHtml "dl"
 -----------------------------------------------------------------------------
 -- | [\<dt\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/dt)
-dt_ :: [Attribute action] -> [View context action] -> View context action
+dt_ :: [Attribute model action] -> [View context model action] -> View context model action
 dt_ = nodeHtml "dt"
 -----------------------------------------------------------------------------
 -- | [\<dd\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/dd)
-dd_ :: [Attribute action] -> [View context action] -> View context action
+dd_ :: [Attribute model action] -> [View context model action] -> View context model action
 dd_ = nodeHtml "dd"
 -----------------------------------------------------------------------------
 -- | [\<img\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/img)
-img_ :: [Attribute action] -> View context action
+img_ :: [Attribute model action] -> View context model action
 img_ = flip (nodeHtml "img") []
 -----------------------------------------------------------------------------
 -- | [\<iframe\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/iframe)
-iframe_ :: [Attribute action] -> [View context action] -> View context action
+iframe_ :: [Attribute model action] -> [View context model action] -> View context model action
 iframe_ = nodeHtml "iframe"
 -----------------------------------------------------------------------------
 -- | [\<canvas\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/canvas)
 --
 -- Note this just renders a canvas element.
 -- See also 'Miso.Canvas.canvas_' which supports canvas drawing DSL.
-canvas_ :: [Attribute action] -> [View context action] -> View context action
+canvas_ :: [Attribute model action] -> [View context model action] -> View context model action
 canvas_ = nodeHtml "canvas"
 -----------------------------------------------------------------------------
 -- | [\<select\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/select)
-select_ :: [Attribute action] -> [View context action] -> View context action
+select_ :: [Attribute model action] -> [View context model action] -> View context model action
 select_ = nodeHtml "select"
 -----------------------------------------------------------------------------
 -- | [\<option\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/option)
-option_ :: [Attribute action] -> [View context action] -> View context action
+option_ :: [Attribute model action] -> [View context model action] -> View context model action
 option_ = nodeHtml "option"
 -----------------------------------------------------------------------------
 -- | [\<textarea\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/textarea)
@@ -568,7 +568,7 @@ option_ = nodeHtml "option"
 -- When compiling on the server, this combinator will render HTML as \<textarea\>text\<\/textarea\>.
 --
 -- @since 1.9.0.0
-textarea_ :: [Attribute action] -> View context action
+textarea_ :: [Attribute model action] -> View context model action
 #ifdef VANILLA
 textarea_ attrs = nodeHtml "textarea" newAttrs
   [ text x
@@ -582,51 +582,51 @@ textarea_ = flip (nodeHtml "textarea") []
 #endif
 -----------------------------------------------------------------------------
 -- | [\<sub\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/sub)
-sub_ :: [Attribute action] -> [View context action] -> View context action
+sub_ :: [Attribute model action] -> [View context model action] -> View context model action
 sub_ = nodeHtml "sub"
 -----------------------------------------------------------------------------
 -- | [\<sup\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/sup)
-sup_ :: [Attribute action] -> [View context action] -> View context action
+sup_ :: [Attribute model action] -> [View context model action] -> View context model action
 sup_ = nodeHtml "sup"
 -----------------------------------------------------------------------------
 -- | [\<br\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/br)
-br_ :: [Attribute action] -> View context action
+br_ :: [Attribute model action] -> View context model action
 br_ = flip (nodeHtml "br") []
 -----------------------------------------------------------------------------
 -- | [\<ol\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/ol)
-ol_ :: [Attribute action] -> [View context action] -> View context action
+ol_ :: [Attribute model action] -> [View context model action] -> View context model action
 ol_ = nodeHtml "ol"
 -----------------------------------------------------------------------------
 -- | [\<blockquote\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/blockquote)
-blockquote_ :: [Attribute action] -> [View context action] -> View context action
+blockquote_ :: [Attribute model action] -> [View context model action] -> View context model action
 blockquote_ = nodeHtml "blockquote"
 -----------------------------------------------------------------------------
 -- | [\<code\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/code)
-code_ :: [Attribute action] -> [View context action] -> View context action
+code_ :: [Attribute model action] -> [View context model action] -> View context model action
 code_ = nodeHtml "code"
 -----------------------------------------------------------------------------
 -- | [\<em\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/em)
-em_ :: [Attribute action] -> [View context action] -> View context action
+em_ :: [Attribute model action] -> [View context model action] -> View context model action
 em_ = nodeHtml "em"
 -----------------------------------------------------------------------------
 -- | [\<i\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/i)
-i_ :: [Attribute action] -> [View context action] -> View context action
+i_ :: [Attribute model action] -> [View context model action] -> View context model action
 i_ = nodeHtml "i"
 -----------------------------------------------------------------------------
 -- | [\<b\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/b)
-b_ :: [Attribute action] -> [View context action] -> View context action
+b_ :: [Attribute model action] -> [View context model action] -> View context model action
 b_ = nodeHtml "b"
 -----------------------------------------------------------------------------
 -- | [\<u\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/u)
-u_ :: [Attribute action] -> [View context action] -> View context action
+u_ :: [Attribute model action] -> [View context model action] -> View context model action
 u_ = nodeHtml "u"
 -----------------------------------------------------------------------------
 -- | [\<q\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/q)
-q_ :: [Attribute action] -> [View context action] -> View context action
+q_ :: [Attribute model action] -> [View context model action] -> View context model action
 q_ = nodeHtml "q"
 -----------------------------------------------------------------------------
 -- | [\<link\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/link)
-link_ :: [Attribute action] -> View context action
+link_ :: [Attribute model action] -> View context model action
 link_ = flip (nodeHtml "link") []
 -----------------------------------------------------------------------------
 -- | [\<style\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/style)
@@ -643,7 +643,7 @@ link_ = flip (nodeHtml "link") []
 -- @
 --
 -- You can use 'Miso.CSS.style_' as a safer anternative.
-style_ :: [Attribute action] -> MisoString -> View context action
+style_ :: [Attribute model action] -> MisoString -> View context model action
 style_ attrs rawText = node HTML "style" attrs [text rawText]
 -----------------------------------------------------------------------------
 -- | [\<script\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/script)
@@ -657,100 +657,100 @@ style_ attrs rawText = node HTML "style" attrs [text rawText]
 -- You can also easily shoot yourself in the foot with something like:
 --
 -- @'script_' [] "\</script\>"@
-script_ :: [Attribute action] -> MisoString -> View context action
+script_ :: [Attribute model action] -> MisoString -> View context model action
 script_ attrs rawText = node HTML "script" attrs [textRaw rawText]
 -----------------------------------------------------------------------------
 -- | [\<doctype\>](https://developer.mozilla.org/en-US/docs/Glossary/Doctype)
-doctype_ :: View context action
+doctype_ :: View context model action
 doctype_ = nodeHtml "doctype" [] []
 -----------------------------------------------------------------------------
 -- | [\<html\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/html)
-html_ :: [Attribute action] -> [View context action] -> View context action
+html_ :: [Attribute model action] -> [View context model action] -> View context model action
 html_ = nodeHtml "html"
 -----------------------------------------------------------------------------
 -- | [\<head\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/head)
-head_ :: [Attribute action] -> [View context action] -> View context action
+head_ :: [Attribute model action] -> [View context model action] -> View context model action
 head_ = nodeHtml "head"
 -----------------------------------------------------------------------------
 -- | [\<meta\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/meta)
-meta_ :: [Attribute action] -> View context action
+meta_ :: [Attribute model action] -> View context model action
 meta_ = flip (nodeHtml "meta") []
 -----------------------------------------------------------------------------
 -- | [\<area\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/area)
 --
 -- @since 1.9.0.0
-area_ :: [Attribute action] -> View context action
+area_ :: [Attribute model action] -> View context model action
 area_ = flip (nodeHtml "area") []
 -----------------------------------------------------------------------------
 -- | [\<base\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/base)
 --
 -- @since 1.9.0.0
-base_ :: [Attribute action] -> View context action
+base_ :: [Attribute model action] -> View context model action
 base_ = flip (nodeHtml "base") []
 -----------------------------------------------------------------------------
 -- | [\<data\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/data)
 --
 -- @since 1.9.0.0
-data_ :: [Attribute action] -> [View context action] -> View context action
+data_ :: [Attribute model action] -> [View context model action] -> View context model action
 data_ = nodeHtml "data"
 -----------------------------------------------------------------------------
 -- | [\<dialog\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/dialog)
 --
 -- @since 1.9.0.0
-dialog_ :: [Attribute action] -> [View context action] -> View context action
+dialog_ :: [Attribute model action] -> [View context model action] -> View context model action
 dialog_ = nodeHtml "dialog"
 -----------------------------------------------------------------------------
 -- | [\<fencedframe\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/fencedframe)
 --
 -- @since 1.9.0.0
-fencedframe_ :: [Attribute action] -> [View context action] -> View context action
+fencedframe_ :: [Attribute model action] -> [View context model action] -> View context model action
 fencedframe_ = nodeHtml "fencedframe"
 -----------------------------------------------------------------------------
 -- | [\<hgroup\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/hgroup)
 --
 -- @since 1.9.0.0
-hgroup_ :: [Attribute action] -> [View context action] -> View context action
+hgroup_ :: [Attribute model action] -> [View context model action] -> View context model action
 hgroup_ = nodeHtml "hgroup"
 -----------------------------------------------------------------------------
 -- | [\<map\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/map)
 --
 -- @since 1.9.0.0
-map_ :: [Attribute action] -> [View context action] -> View context action
+map_ :: [Attribute model action] -> [View context model action] -> View context model action
 map_ = nodeHtml "map"
 -----------------------------------------------------------------------------
 -- | [\<noscript\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/noscript)
 --
 -- @since 1.9.0.0
-noscript_ :: [Attribute action] -> [View context action] -> View context action
+noscript_ :: [Attribute model action] -> [View context model action] -> View context model action
 noscript_ = nodeHtml "noscript"
 -----------------------------------------------------------------------------
 -- | [\<picture\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/picture)
 --
 -- @since 1.9.0.0
-picture_ :: [Attribute action] -> [View context action] -> View context action
+picture_ :: [Attribute model action] -> [View context model action] -> View context model action
 picture_ = nodeHtml "picture"
 -----------------------------------------------------------------------------
 -- | [\<search\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/search)
 --
 -- @since 1.9.0.0
-search_ :: [Attribute action] -> [View context action] -> View context action
+search_ :: [Attribute model action] -> [View context model action] -> View context model action
 search_ = nodeHtml "search"
 -----------------------------------------------------------------------------
 -- | [\<slot\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/slot)
 --
 -- @since 1.9.0.0
-slot_ :: [Attribute action] -> [View context action] -> View context action
+slot_ :: [Attribute model action] -> [View context model action] -> View context model action
 slot_ = nodeHtml "slot"
 -----------------------------------------------------------------------------
 -- | [\<template\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/template)
 --
 -- @since 1.9.0.0
-template_ :: [Attribute action] -> [View context action] -> View context action
+template_ :: [Attribute model action] -> [View context model action] -> View context model action
 template_ = nodeHtml "template"
 -----------------------------------------------------------------------------
 -- | [\<title\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/title)
 --
 -- @since 1.9.0.0
-title_ :: [Attribute action] -> [View context action] -> View context action
+title_ :: [Attribute model action] -> [View context model action] -> View context model action
 title_ = nodeHtml "title"
 -----------------------------------------------------------------------------

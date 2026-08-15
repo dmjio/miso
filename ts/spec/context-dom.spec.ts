@@ -1,5 +1,5 @@
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
-import { eventContext, hydrationContext, componentContext, drawingContext } from '../miso/context/dom';
+import { eventContext, hydrationContext, drawingContext } from '../miso/context/dom';
 import { vnode, vcomp } from '../miso/smart';
 import { VNode, DOMRef } from '../miso/types';
 import { diff } from '../miso/dom';
@@ -150,26 +150,6 @@ describe('HydrationContext tests', () => {
     expect(children.length).toBe(2);
     expect(children[0]).toBe(child1);
     expect(children[1]).toBe(child2);
-  });
-});
-
-describe('ComponentContext tests', () => {
-  test('Should call mountComponent without errors', () => {
-    expect(() => {
-      componentContext.mountComponent(1, {});
-    }).not.toThrow();
-  });
-
-  test('Should call unmountComponent without errors', () => {
-    expect(() => {
-      componentContext.unmountComponent(1);
-    }).not.toThrow();
-  });
-
-  test('Should call modelHydration without errors', () => {
-    expect(() => {
-      componentContext.modelHydration(0, {});
-    }).not.toThrow();
   });
 });
 

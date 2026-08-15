@@ -1,21 +1,26 @@
 ----------------------------------------------------------------------------
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE LambdaCase        #-}
-{-# LANGUAGE CPP               #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE OverloadedStrings  #-}
+{-# LANGUAGE StaticPointers     #-}
+{-# LANGUAGE DeriveAnyClass     #-}
+{-# LANGUAGE DeriveGeneric      #-}
+{-# LANGUAGE LambdaCase         #-}
+{-# LANGUAGE CPP                #-}
 ----------------------------------------------------------------------------
 module Main where
 ----------------------------------------------------------------------------
 import           Miso
 import qualified Miso.Html as H
-import qualified Miso.Html.Property as P
 import           Miso.Lens
-import           Miso.Reload
+import           Miso.JSON
+import           GHC.Generics (Generic)
 ----------------------------------------------------------------------------
 -- | Component model state
 data Model
   = Model
   { _counter :: Int
-  } deriving (Show, Eq)
+  } deriving stock (Show, Eq, Generic)
+    deriving anyclass (ToJSON, FromJSON)
 ----------------------------------------------------------------------------
 counter :: Lens Model Int
 counter = lens _counter $ \record field -> record { _counter = field }
@@ -25,7 +30,8 @@ data Action
   = AddOne
   | SubtractOne
   | SayHelloWorld
-  deriving (Show, Eq)
+  deriving stock (Show, Eq, Generic)
+  deriving anyclass (ToJSON, FromJSON)
 ----------------------------------------------------------------------------
 -- | Entry point for a miso application
 main :: IO ()
@@ -58,13 +64,11 @@ updateModel = \case
   SayHelloWorld -> io_ (consoleLog "Hello world")
 ----------------------------------------------------------------------------
 -- | Constructs a virtual DOM from a model
-viewModel :: context -> props -> Model -> View context Action
-viewModel _ _ x =
+viewModel :: () -> () -> Model -> View () Model Action
+viewModel _ _ (Model x) =
   vfrag
-    [ H.button_ [ H.onClick AddOne ] [ text "+" ]
-    , text $ ms (x ^. counter)
-    , H.button_ [ H.onClick SubtractOne ] [ text "-" ]
-    , H.br_ []
-    , H.button_ [ H.onClick SayHelloWorld ] [ text "Alert Hello World!" ]
-    ]
+  [ H.button_ [ H.onClick AddOne ] [ "+" ]
+  , text (ms x)
+  , H.button_ [ H.onClick SubtractOne ] [ "-" ]
+  ]
 ----------------------------------------------------------------------------

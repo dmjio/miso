@@ -1,4 +1,14 @@
-self: super: {
+self: super:
+let
+  js = import ./js super;
+in
+{
+  # JS tooling
+  inherit (js) rspeedy;
+
+  # Reusable Lynx bundler (GHC-JS app -> .lynx.bundle). `self` is the final
+  # overlayed pkgs, so it already has rspeedy/bun. See nix/lib/mk-lynx-bundle.nix.
+  mkLynxBundle = import ./lib/mk-lynx-bundle.nix self;
 
   # haskell stuff
   haskell = super.haskell // {

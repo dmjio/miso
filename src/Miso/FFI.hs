@@ -21,7 +21,6 @@
 -- * __Canvas\/Drawing__: 'flush', 'setDrawingContext'
 -- * __Browser APIs__: 'fetch', 'addEventListener', 'dispatchEvent', …
 -- * __JS types__: 'ArrayBuffer', 'Blob', 'FormData', 'Uint8Array', 'File', …
--- * __Component lifecycle__: 'mountComponent', 'unmountComponent', 'modelHydration'
 --
 -- For inline JavaScript via quasi-quotation, see "Miso.FFI.QQ".
 --
@@ -127,10 +126,6 @@ module Miso.FFI
   , splitmix32
     -- ** Math.random()
   , mathRandom
-    -- ** Model
-  , mountComponent
-  , unmountComponent
-  , modelHydration
   ) where
 -----------------------------------------------------------------------------
 import           Miso.FFI.Internal

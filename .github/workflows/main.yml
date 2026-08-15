@@ -79,7 +79,7 @@ jobs:
      - name: Nix garbage collection
        run: cabal clean && nix-collect-garbage -d
 
-     - name: (x86) Miso sample app jsaddle (GHC 8.6.5)
+     - name: (x86) Miso sample app (GHC 8.6.5)
        run: nix-build -A sample-app
 
      - name: Nix garbage collection
@@ -100,8 +100,48 @@ jobs:
      - name: (GHCJS) Miso integration tests
        run: nix-build -A playwright-ghcjs && ./result/bin/playwright
 
+  build-bundle:
+    runs-on: ubuntu-latest
+    steps:
+     - uses: actions/checkout@v3.5.3
+     - name: Cancel Previous Runs
+       uses: styfle/cancel-workflow-action@0.9.1
+       with:
+         access_token: ${{ github.token }}
+     - uses: cachix/install-nix-action@v31
+       with:
+         extra_nix_config: |
+           experimental-features = nix-command flakes
+     - uses: cachix/cachix-action@v16
+       with:
+         name: haskell-miso-cachix
+         authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+
+     - name: Nix channel update
+       run: nix-channel --update
+
+     - name: Bun install
+       run: nix-env -iA bun -f . && bun install
+
+     - name: Bun build js
+       run: bun run js
+
+     - name: Sample app native bundle
+       run: |
+         nix-build -A sample-app-native-bundle
+         mkdir -p bundle-artifact
+         cp result/main.lynx.bundle bundle-artifact/main.lynx.bundle
+
+     - name: Upload Lynx bundle
+       uses: actions/upload-artifact@v4
+       with:
+         name: lynx-bundle
+         path: bundle-artifact/main.lynx.bundle
+         if-no-files-found: error
+
   build-macos:
     runs-on: macos-latest
+    needs: build-bundle
     steps:
      - uses: actions/checkout@v3.5.3
      - name: Cancel Previous Runs
@@ -132,21 +172,11 @@ jobs:
      - name: Bun build prod
        run: bun run build && bun run prod
 
-     # dmj: JS backend not working on Darwin (wasm-ld issue)
-     # - name: (JS) Miso GHCJS (GHC 9.12.2)
-     #   run: nix-build -A miso-ghcjs-9122
-
      - name: (x86) Miso GHC (GHC 9.12.2)
        run: nix-build -A miso-ghc-9122
 
      - name: Nix garbage collection
        run: cabal clean && nix-collect-garbage -d
-
-     # - name: (JS) Miso sample app (GHC 9.12.2)
-     #   run: nix-build -A sample-app-js-9122
-
-     # - name: (JS) Miso integration tests
-     #   run: nix-build -A playwright-js && ./result/bin/playwright
 
      - name: (WASM) Miso integration tests
        run: nix-build -A playwright-wasm && ./result/bin/playwright
@@ -154,5 +184,91 @@ jobs:
      - name: (x86) Miso GHC (GHC 9.12.2) test suite
        run: nix develop --command bash -c 'cabal build exe:component-tests'
 
-     - name: (JS) Miso GHC Native (GHC 9.12.2)
-       run: nix-build -A pkgs.pkgsCross.ghcjs.haskell.packages.ghcNative.ghc
+  build-ios:
+    runs-on: macos-latest
+    needs: build-bundle
+    steps:
+     - uses: actions/checkout@v3.5.3
+     - name: Cancel Previous Runs
+       uses: styfle/cancel-workflow-action@0.9.1
+       with:
+         access_token: ${{ github.token }}
+
+     - name: Download Lynx bundle
+       uses: actions/download-artifact@v4
+       with:
+         name: lynx-bundle
+         path: bundle-artifact
+
+     - name: Embed bundle into iOS host
+       run: |
+         mkdir -p sample-app-native/ios/Resource
+         cp bundle-artifact/main.lynx.bundle sample-app-native/ios/Resource/main.lynx.bundle
+
+     - name: iOS project + pods
+       working-directory: sample-app-native/ios
+       run: |
+         brew install xcodegen
+         xcodegen generate
+         pod install
+
+     - name: (iOS) xcodebuild MisoLynx (simulator, no signing)
+       working-directory: sample-app-native/ios
+       run: |
+         xcodebuild \
+           -workspace MisoLynx.xcworkspace \
+           -scheme MisoLynx \
+           -configuration Debug \
+           -sdk iphonesimulator \
+           -destination 'generic/platform=iOS Simulator' \
+           CODE_SIGNING_ALLOWED=NO \
+           build
+
+  build-android:
+    runs-on: ubuntu-latest
+    needs: build-bundle
+    steps:
+     - uses: actions/checkout@v3.5.3
+     - name: Cancel Previous Runs
+       uses: styfle/cancel-workflow-action@0.9.1
+       with:
+         access_token: ${{ github.token }}
+     - uses: actions/setup-java@v4
+       with:
+         distribution: temurin
+         java-version: '17'
+     - uses: cachix/install-nix-action@v31
+       with:
+         extra_nix_config: |
+           experimental-features = nix-command flakes
+     - uses: cachix/cachix-action@v16
+       with:
+         name: haskell-miso-cachix
+         authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+
+     - name: Nix channel update
+       run: nix-channel --update
+
+     - name: Bun install
+       run: nix-env -iA bun -f . && bun install
+
+     - name: Bun build js
+       run: bun run js
+
+     - name: (Android) Miso sample-app-native APK (nix)
+       run: nix-build -A sample-app-native-android
+
+     - name: Download Lynx bundle
+       uses: actions/download-artifact@v4
+       with:
+         name: lynx-bundle
+         path: bundle-artifact
+
+     - name: Embed bundle into Android host
+       run: |
+         mkdir -p sample-app-native/android/app/src/main/assets
+         cp bundle-artifact/main.lynx.bundle sample-app-native/android/app/src/main/assets/main.lynx.bundle
+
+     - name: (Android) assemble debug APK
+       working-directory: sample-app-native/android
+       run: ./gradlew :app:assembleDebug --no-daemon
