@@ -269,15 +269,10 @@ initialize events _componentParentId hydrate isRoot initialProps maybeKey _compo
         when bts $ (postComponent MODEL_HYDRATE _componentStaticKey _componentId _componentParentId
           (Just (toJSON newModel)) Nothing) `catch` exception
 
-  let _componentPropsHydrate = \newProps -> do
-        when bts $ (postComponent PROPS_HYDRATE _componentStaticKey _componentId _componentParentId
-          (Just (toJSON newProps)) Nothing) `catch` exception
-
   let _componentPostEffect = \action ->
         postEffect _componentStaticKey _componentId (toJSON action) `catch` exception
 #else
   let _componentHydrate = \_ -> pure ()
-  let _componentPropsHydrate = \_ -> pure ()
   let _componentPostEffect = \_ -> pure ()
 #endif
 
@@ -365,11 +360,7 @@ isMounted vcompId = isJust . IM.lookup vcompId <$> readIORef components
 -- and synchronously. It also is responsible for
 -- top-down rendering of the UI Component tree.
 scheduler
-#ifdef NATIVE
-  :: forall context . (Eq context, ToJSON context) => Proxy context -> IO ()
-#else
   :: forall context . Eq context => Proxy context -> IO ()
-#endif
 scheduler Proxy =
   forever $ do
 #ifdef NATIVE
@@ -387,28 +378,17 @@ scheduler Proxy =
             forM_ (IM.elems vcomps) $ \ComponentState {..} ->
               -- On the MTS, context-driven redraws are suppressed: the BTS ships
               -- DOM patches via the JS patch protocol, so drawing here would be a
-              -- redundant second paint. (CONTEXT_HYDRATE only lands on the MTS.)
+              -- redundant second paint.
               when (_componentUseContext && not mts) (_componentDraw _componentModel)
-#ifdef NATIVE
-            -- Ship the updated global context to the MTS (BTS -> MTS). The MTS
-            -- recovers the @context@ type from its 'Proxy', so no 'StaticKey' is
-            -- needed here; the sentinel key is never dereferenced on the far side.
-            when bts $ do
-              currentContext <- readIORef @context globalContext
-              postComponent CONTEXT_HYDRATE (Just contextHydrateStaticKey) minBound minBound
-                (Just (toJSON currentContext)) Nothing
-#endif
         | vcompId < 0 -> do
             -- props propagation, negated 'ComponentId' indicates render-phase only.
             vcomps <- readIORef components
             forM_ (IM.lookup (negate vcompId) vcomps) $ \ComponentState {..} -> do
               -- The MTS never paints from the scheduler: props (and context) are
-              -- read-only there, hydrated over the COMPONENT protocol, and the
-              -- BTS drives all drawing via DOM patches. Suppress the redraw.
+              -- read-only there and the BTS drives all drawing via DOM patches.
+              -- Suppress the redraw.
               when (not mts) $ _componentDraw _componentModel
               _componentPropsPhase _prevComponentProps _componentProps
-              -- Ship the updated @props@ to the MTS (BTS -> MTS); a no-op off 'bts'.
-              _componentPropsHydrate _componentProps
 
       Just (vcompId, actions) -> do
         mounted <- isMounted vcompId
@@ -452,8 +432,7 @@ scheduler Proxy =
       updatedContext <- readIORef globalContext
       -- 'not mts': the sentinel this enqueues is a no-op there (see the
       -- 'minBound' scheduler case) — MTS never draws context-driven changes
-      -- itself (BTS ships DOM patches) and never posts CONTEXT_HYDRATE
-      -- (that's BTS -> MTS only), so enqueueing from MTS would just be
+      -- itself (BTS ships DOM patches), so enqueueing from MTS would just be
       -- dequeued and discarded a moment later.
       when (not mts && currentContext /= updatedContext) enqueueContextPropagation
       -- BTS is the sole owner of the shared model (mirrors ReactLynx, where
@@ -598,14 +577,6 @@ enqueueContextPropagation :: IO ()
 enqueueContextPropagation =
   atomicModifyIORef' globalQueue $ \q ->
      (q & queueSchedule %~ (S.|> minBound), ())
------------------------------------------------------------------------------
-#ifdef NATIVE
--- | Sentinel 'StaticKey' used for 'CONTEXT_HYDRATE' messages. Context is global
--- and not tied to any component, and the MTS recovers the @context@ type from
--- its 'Proxy' rather than dereferencing this key, so the value is arbitrary.
-contextHydrateStaticKey :: StaticKey
-contextHydrateStaticKey = Fingerprint 0 0
-#endif
 -----------------------------------------------------------------------------
 -- | Case on queue schedule, get first item, span on the rest of queueSchedule, get length.
 -- set schedule with whatever remains.
@@ -775,10 +746,6 @@ data ComponentState context props model action
   , _componentHydrate :: model -> IO ()
   -- ^ Posts the model to the MTS for cross-thread (Lynx) hydration via
   -- 'MODEL_HYDRATE'. Captures the t'Miso.Types.Component''s 'ToJSON' instance at
-  -- 'initialize' time; a no-op unless running on the background thread ('bts').
-  , _componentPropsHydrate :: props -> IO ()
-  -- ^ Posts the @props@ to the MTS for cross-thread (Lynx) hydration via
-  -- 'PROPS_HYDRATE'. Captures the t'Miso.Types.Component''s 'ToJSON' instance at
   -- 'initialize' time; a no-op unless running on the background thread ('bts').
   , _componentPropsPhase :: props -> props -> IO ()
   -- ^ Helper function for t'Miso.Types.Component' props changed phase.
@@ -2096,7 +2063,7 @@ loadedJS = unsafePerformIO (newIORef False)
 -----------------------------------------------------------------------------
 initComponent
 #ifdef NATIVE
-  :: forall context props model action . (Eq context, Eq model, Eq props, ToJSON model, ToJSON props, ToJSON context, FromJSON context, ToJSON action, FromJSON action)
+  :: forall context props model action . (Eq context, Eq model, Eq props, ToJSON model, ToJSON props, ToJSON action, FromJSON action)
 #else
   :: forall context props model action . (Eq context, Eq model, Eq props)
 #endif
@@ -2254,7 +2221,7 @@ resolveNodeRef domRef = do
   nodes  <- jsg "runtime" >>= (! "nodes")
   nodes ! ms nodeId
 -----------------------------------------------------------------------------
-componentListener :: forall context . (Eq context, FromJSON context) => Proxy context -> BTS -> IO ()
+componentListener :: forall context . Eq context => Proxy context -> BTS -> IO ()
 componentListener Proxy (BTS ctx) = void $ do
   FFI.addEventListener ctx "Miso.components" $ \msgEvent -> do
     msg <- Object msgEvent ! "data"
@@ -2262,13 +2229,10 @@ componentListener Proxy (BTS ctx) = void $ do
     case componentComponentStaticKey of
       Nothing -> FFI.consoleError "[COMPONENT]: must use 'static' keyword for Component mounting"
       Just key_ ->
-        -- 'READY' and 'CONTEXT_HYDRATE' never need the 'StaticPtr' and must be
-        -- handled BEFORE the lookup: READY only unblocks the MTS scheduler, and
-        -- CONTEXT_HYDRATE recovers @context@ from 'Proxy' and deliberately rides a
-        -- sentinel 'StaticKey' ('contextHydrateStaticKey' = @Fingerprint 0 0@) that
-        -- is never registered. Dereferencing that sentinel (as the other message
-        -- types must) throws and tears down the MTS lepus context on the first
-        -- context change, so only the type-recovering messages do the lookup.
+        -- 'READY' never needs the 'StaticPtr' and must be handled BEFORE the
+        -- lookup: it only unblocks the MTS scheduler and rides no component
+        -- 'StaticKey', so it can't (and mustn't) do the deref the other
+        -- messages require.
         case componentComponentType of
           READY -> do
             -- dmj: BTS retries 'READY' until acked (see 'sendReadyUntilAcked'),
@@ -2281,18 +2245,6 @@ componentListener Proxy (BTS ctx) = void $ do
             unless already (notify btsReady) -- dmj: unblocks main thread scheduler
             dispatchEvent ctx "Miso.components"
               (COMPONENT READY_ACK Nothing minBound minBound Nothing Nothing)
-          CONTEXT_HYDRATE ->
-            case componentComponentPayload of
-              Nothing ->
-                FFI.consoleError "[COMPONENT]: No context to hydrate"
-              Just c ->
-                case fromJSON c :: Result context of
-                  -- State-only sync: the MTS never paints from context (the BTS ships
-                  -- DOM patches via the JS patch protocol), so no redraw is enqueued.
-                  Success newContext ->
-                    atomicWriteIORef globalContext newContext
-                  Error e ->
-                    FFI.consoleError ("[COMPONENT]: Could not decode context: " <> e)
           _ ->
             unsafeLookupStaticPtr key_ >>= \case
               Nothing ->
@@ -2343,27 +2295,11 @@ componentListener Proxy (BTS ctx) = void $ do
                                   componentModel .= newModel
                               Error e ->
                                 FFI.consoleError ("[COMPONENT]: Could not decode model: " <> e)
-                      -- State-only: drawing on the MTS is driven by the JS patch
-                      -- protocol, so props hydration syncs state without redrawing.
-                      PROPS_HYDRATE -> do
-                        case componentComponentPayload of
-                          Nothing ->
-                            FFI.consoleError "[COMPONENT]: No props to hydrate"
-                          Just props ->
-                            case fromJSON props :: Result props of
-                              Success newProps -> do
-                                modifyComponent componentComponentId $ do
-                                  currentProps <- use componentProps
-                                  prevComponentProps .= currentProps
-                                  componentProps .= newProps
-                              Error e ->
-                                FFI.consoleError ("[COMPONENT]: Could not decode props: " <> e)
-                      -- 'READY' \/ 'CONTEXT_HYDRATE' handled above (no deref), so
-                      -- GHC knows they can't reach here — no catch-all needed for
-                      -- those two. 'READY_ACK' flows MTS -> BTS only (see
-                      -- 'readyAckListener'); 'componentListener' only runs on MTS,
-                      -- so this never actually fires — kept as a no-op so the
-                      -- match stays total.
+                      -- 'READY' handled above (no deref), so GHC's long-distance
+                      -- info knows it can't reach here — no catch-all needed.
+                      -- 'READY_ACK' flows MTS -> BTS only (see 'readyAckListener');
+                      -- 'componentListener' only runs on MTS, so this never
+                      -- actually fires — kept as a no-op so the match stays total.
                       READY_ACK -> pure ()
 #endif
 ----------------------------------------------------------------------------
@@ -2542,7 +2478,7 @@ instance ToJSVal Fingerprint where
 -----------------------------------------------------------------------------
 -- | The operation carried by a 'COMPONENT' message.
 data ComponentType
-  = MOUNT | UNMOUNT | MODEL_HYDRATE | CONTEXT_HYDRATE | PROPS_HYDRATE | READY | READY_ACK
+  = MOUNT | UNMOUNT | MODEL_HYDRATE | READY | READY_ACK
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 instance ToJSVal ComponentType where
@@ -2550,8 +2486,6 @@ instance ToJSVal ComponentType where
     MOUNT -> toJSVal ("mount"   :: MisoString)
     UNMOUNT -> toJSVal ("unmount" :: MisoString)
     MODEL_HYDRATE -> toJSVal ("model_hydrate" :: MisoString)
-    CONTEXT_HYDRATE -> toJSVal ("context_hydrate" :: MisoString)
-    PROPS_HYDRATE -> toJSVal ("props_hydrate" :: MisoString)
     READY -> toJSVal ("ready" :: MisoString)
     READY_ACK -> toJSVal ("ready_ack" :: MisoString)
   {-# INLINE toJSVal #-}
@@ -2562,8 +2496,6 @@ instance FromJSVal ComponentType where
       Just ("mount" :: MisoString) -> pure (Just MOUNT)
       Just "unmount" -> pure (Just UNMOUNT)
       Just "model_hydrate" -> pure (Just MODEL_HYDRATE)
-      Just "context_hydrate" -> pure (Just CONTEXT_HYDRATE)
-      Just "props_hydrate" -> pure (Just PROPS_HYDRATE)
       Just "ready" -> pure (Just READY)
       Just "ready_ack" -> pure (Just READY_ACK)
       _ -> pure Nothing
@@ -2577,8 +2509,8 @@ data COMPONENT = COMPONENT
   , componentComponentParentId :: ComponentId
   , componentComponentPayload :: Maybe Value
   -- ^ Serialized payload carried by hydrate messages: the @model@ for
-  -- 'MODEL_HYDRATE', the @context@ for 'CONTEXT_HYDRATE', and the @props@ for
-  -- 'PROPS_HYDRATE'. 'Nothing' for 'MOUNT' \/ 'UNMOUNT' \/ 'READY'.
+  -- 'MODEL_HYDRATE', and the initial @props@ for 'MOUNT'. 'Nothing' for
+  -- 'UNMOUNT' \/ 'READY'.
   , componentComponentDOMRef :: Maybe DOMRef
   -- ^ Mount point for the mirrored MTS component, carried by 'MOUNT'. In Lynx
   -- a 'DOMRef' is a JS object holding a single @nodeId@ field, so it serializes
