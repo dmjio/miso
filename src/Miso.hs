@@ -72,6 +72,20 @@
 --
 -- * __Elm__: miso also implements the [Elm](https://elm-lang.org) architecture (MVU) and the 'mailbox' communication pattern.
 --
+-- = Native (mobile)
+--
+-- Beyond the browser, miso targets __native mobile devices__ by driving the
+-- [Lynx](https://lynxjs.org) runtime instead of the DOM. The same MVU model,
+-- 'Component' API, event delegation and virtual-DOM diffing carry over
+-- unchanged — only the element vocabulary differs (@view_@, @text_@, @list_@, …
+-- from "Miso.Native.Element" in place of "Miso.Html.Element"). The "Miso.Native"
+-- module is the entry point (@native@ \/ @nativeWithContext@) and documents the
+-- Lynx dual-thread (BTS \/ MTS) architecture in full. The native backend is
+-- gated behind the @native@ cabal flag (@-fnative@); web \/ WASM builds are
+-- unaffected.
+--
+-- See "Miso.Native" for details.
+--
 -- = The Model-View-Update pattern
 --
 -- The core type of miso is 'Component'. The 'Component' API adheres to the [Elm](https://elm-lang.org)
@@ -127,7 +141,7 @@
 --          * - The type of the global @context@
 --          |     * - The type of the @props@ inherited from the parent 'Component'
 --          |     |      * - The type of the current 'Component' 'model'
---          |     |      |           * - The global @context@ threaded into the 'View' (@'View' context action@)
+--          |     |      |           * - The global @context@ threaded into the 'View' (@'View' context model action@)
 --          |     |      |           |  * - The type of the action that updates 'Component' 'model'
 --          |     |      |           |  |
 --     v :: () -> () -> 'Int' -> 'View' () Action
@@ -199,11 +213,12 @@
 -- of nodes mutually recursive with 'Component' via the 'view' function.
 --
 -- @
--- data 'View' context action
---   = 'VNode' 'Namespace' 'Tag' ['Attribute' action] ['View' context action]
+-- data 'View' context model action
+--   = 'VNode' 'Namespace' 'Tag' ['Attribute' model action] ['View' context model action] 'DirectEvents'
 --   | 'VText' (Maybe 'Key') 'MisoString'
---   | 'VComp' (Maybe 'Key') ('SomeComponent' context)
---   | 'VFrag' (Maybe 'Key') ['View' context action]
+--   | 'VComp' ('SomeComponent' context)
+--   | forall props . 'VCompStatic' ('StaticPtr' ('SomeStaticComponent' props context)) props
+--   | 'VFrag' (Maybe 'Key') ['View' context model action]
 -- @
 --
 -- 'VNode' and 'VText' have a one-to-one mapping from the virtual DOM to the physical DOM. The 'VComp' and 'VFrag' constructors are abstract (live only on the virtual DOM) and do not contain a reference to the physical DOM. The existential 'SomeComponent' is what allows embedding polymorphic 'Component' within a 'View'.
@@ -211,7 +226,7 @@
 -- @
 -- data 'SomeComponent' context
 --   = forall model action props . ('Eq' context, 'Eq' model, 'Eq' props)
---   => 'SomeComponent' props ('Component' context props model action)
+--   => 'SomeComponent' (Maybe 'Key') props ('Component' context props model action)
 -- @
 --
 -- The smart constructors:
@@ -237,7 +252,7 @@
 -- * __@context@__ — global; the same value is visible to the whole tree.
 --
 -- This is why @context@ is a type parameter on both t'Component' and 'View'
--- (@'Component' context props model action@, @'View' context action@): the
+-- (@'Component' context props model action@, @'View' context model action@): the
 -- parameter is threaded through the entire view tree so that every nested
 -- t'Component' — reachable via 'SomeComponent' — is statically guaranteed to
 -- agree on __one__ @context@ type. There is exactly one live @context@ value per
@@ -260,7 +275,7 @@
 -- nested — can read it synchronously during render:
 --
 -- @
--- view :: context -> props -> model -> 'View' context action
+-- view :: context -> props -> model -> 'View' context model action
 -- view ctx _props _model = ...
 -- @
 --
@@ -315,17 +330,17 @@
 --
 -- @
 -- ('+>')
---   :: forall context model action a . ('Eq' context, 'Eq' model)
+--   :: ('Eq' context, 'Eq' model)
 --   => 'MisoString'
 --   -> 'Component' context () model action
---   -> 'View' context a
--- key '+>' comp = 'VComp' (Just ('toKey' key)) ('SomeComponent' () comp)
+--   -> 'View' context model action
+-- key '+>' comp = 'VComp' ('SomeComponent' (Just ('toKey' key)) () comp)
 -- @
 --
 -- Practically, using this combinator looks like:
 --
 -- @
--- viewModel :: context -> props -> Int -> 'View' context action
+-- viewModel :: context -> props -> Int -> 'View' context model action
 -- viewModel _ _ _ = 'Miso.Html.Element.div_' [ 'Miso.Html.Property.id_' "container" ] [ "counter" '+>' counter ]
 -- @
 --
@@ -487,7 +502,7 @@
 -- by a string literal or 'text':
 --
 -- @
--- 'keyed' "greeting" ("Hello!" :: 'View' context action)
+-- 'keyed' "greeting" ("Hello!" :: 'View' context model action)
 -- @
 --
 -- The smart constructors for 'VText' are:
@@ -589,7 +604,7 @@
 -- Users can define their own event handlers using the 'Miso.Event.on' combinator. By default this will define an event in the 'Miso.Event.Types.BUBBLE' phase. See 'Miso.Event.onCapture' for handling events during the 'Miso.Event.Types.CAPTURE' phase. See the module "Miso.Html.Event" for many predefined events.
 --
 -- @
--- 'onChangeWith' :: ('MisoString' -> 'DOMRef' -> action) -> 'Attribute' action
+-- 'onChangeWith' :: ('MisoString' -> 'DOMRef' -> action) -> 'Attribute' model action
 -- 'onChangeWith' = 'on' "change" 'valueDecoder'
 -- @
 --
@@ -619,10 +634,11 @@
 -- The 'Attribute' type carries everything that can be attached to a DOM element:
 --
 -- @
--- data 'Attribute' action
+-- data 'Attribute' model action
 --   = 'Property' 'MisoString' 'Miso.JSON.Value'          -- ^ DOM property (key/value)
 --   | 'ClassList' ['MisoString']             -- ^ 'CSS' class list
---   | 'On' ('Sink' action -> ...)            -- ^ Event handler
+--   | 'On' (model -> 'Sink' action -> ...)   -- ^ Fully-applied event handler
+--   | 'OnStatic' ('StaticPtr' ('EventHandler' model action)) -- ^ @static@ handler, rebuilt on the main thread (dual-thread)
 --   | 'Styles' ('Data.Map.Strict.Map' 'MisoString' 'MisoString') -- ^ Inline style map
 -- @
 --
@@ -1160,8 +1176,8 @@
 -- import Servant.Miso.Html (HTML)
 --
 -- type Home    = \"home\"    :\> Get '[HTML] ('Component' context props model action)
--- type About   = \"about\"   :\> Get '[HTML] ('View' context action)
--- type Contact = \"contact\" :\> Get '[HTML] ['View' context action]
+-- type About   = \"about\"   :\> Get '[HTML] ('View' context model action)
+-- type Contact = \"contact\" :\> Get '[HTML] ['View' context model action]
 -- type API = Home :\<|\> About :\<|\> Contact
 -- @
 --

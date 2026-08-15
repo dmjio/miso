@@ -2192,7 +2192,20 @@ sendReadyUntilAcked sk = go (0 :: Int)
       postComponent READY sk topLevelComponentId rootComponentId Nothing Nothing
       threadDelay intervalMicros
       acked <- readIORef readyAcked -- BTS-side flag, set by 'readyAckListener'
-      when (not acked && attempts < maxAttempts) (go (attempts + 1))
+      if acked
+        then pure ()
+        else if attempts < maxAttempts
+          then go (attempts + 1)
+          -- Budget exhausted without an ack. Under the current boot profile this
+          -- should never happen (MTS registers its listener well under the ~1s
+          -- window), so treat it as a diagnosable fault rather than a silent
+          -- hang: the MTS scheduler is now blocked on 'wait btsReady' forever
+          -- with no re-delivery. Surface it so a boot regression (larger bundle,
+          -- slower device) is obvious in the log instead of a mystery freeze.
+          else FFI.consoleError $ ms $
+            "[sendReadyUntilAcked]: MTS never acked READY after "
+              <> ms (show maxAttempts) <> " attempts (~1s); MTS scheduler is "
+              <> "likely blocked on 'wait btsReady'. MTS boot exceeded the retry budget."
 -----------------------------------------------------------------------------
 -- | Registered on BTS to receive MTS's 'READY_ACK'. The only message BTS
 -- ever receives via the 'postComponent' \/ 'componentListener' machinery,

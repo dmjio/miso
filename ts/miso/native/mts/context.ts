@@ -1,10 +1,19 @@
-import { NodeId, getDOMRef, VComp, DrawingContext, EventContext, EventCapture, EventKey, ProcessEvent } from '../../../miso';
+// Import the one runtime value (getDOMRef) from its leaf module and the rest as
+// types, rather than through the `../../../miso` barrel: the barrel re-exports
+// several `type`s as values, which the bun test runtime can't resolve (see
+// ts/spec/native-mts.spec.ts). This also drops an unnecessary coupling.
+import { getDOMRef } from '../../../miso/util';
+import type { NodeId, VComp, DrawingContext, EventContext, EventCapture, EventKey, ProcessEvent } from '../../../miso/types';
 import type { ElementRef } from '@lynx-js/type-element-api';
 
 function buildStack(root: ElementRef, target: ElementRef, ctx: EventContext<ElementRef>): Array<number> {
   const stack: Array<number> = [];
   while (!ctx.isEqual(root, target)) {
-    stack.unshift(__GetConfig(target).nodeId as number);
+    // Guard the config read like `nodeIdOf` does elsewhere: an element on the
+    // target -> mount chain created outside the initial-draw/patch path has no
+    // `nodeId` in its config, and an unguarded `.nodeId` would throw mid-route.
+    const nid = (__GetConfig(target) as any)?.nodeId as number | undefined;
+    if (nid !== undefined) stack.unshift(nid);
     const parent = ctx.parentNode(target);
     if (parent) {
       target = parent;
@@ -108,7 +117,7 @@ function commitListInfo(st: ListState): void {
 // the delegation stack to the BTS which runs its own delegateEvent over the
 // real VTree. Shared by the mount delegator (bubbling events) and the direct
 // per-element bindings used for non-bubbling input events.
-function routeEvent(e: Event, name: string, capture: boolean, mount: ElementRef, ctx: EventContext<ElementRef>): void {
+export function routeEvent(e: Event, name: string, capture: boolean, mount: ElementRef, ctx: EventContext<ElementRef>): void {
   const target = ctx.getTarget(e);
   const phase = capture ? 'captures' : 'bubbles';
   const chain : Array<ElementRef> = [];
