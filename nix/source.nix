@@ -2,12 +2,23 @@
 with lib;
 with (builtins.fromJSON (builtins.readFile ../flake.lock));
 let
-  make-src-filter = src: with lib;
+  make-src-filter =
+    { src
+    , excludedNames ? []
+    }: with lib;
     cleanSourceWith {
       inherit src;
       filter =
-        name: type: let baseName = baseNameOf (toString name); in
-         ((type == "regular" && hasSuffix ".hs" baseName) ||
+        name: type:
+        let
+          baseName = baseNameOf (toString name);
+          excluded =
+            [ ".git" ".github" ".gradle" ".stack-work" "coverage"
+              "dist" "dist-newstyle" "node_modules" "result"
+            ] ++ excludedNames;
+        in
+         (!elem baseName excluded && (
+         (type == "regular" && hasSuffix ".hs" baseName) ||
          (hasSuffix ".yaml" baseName) ||
          (hasSuffix ".cabal" baseName) ||
          (hasSuffix ".css" baseName) ||
@@ -17,8 +28,7 @@ let
          (hasSuffix ".js" baseName) ||
          (baseName == "README.md") ||
          (baseName == "LICENSE") ||
-         (type == "directory" && baseName != "tests") ||
-         (type == "directory" && baseName != "dist"));
+         (type == "directory")));
     };
 
   # fetch from flake
@@ -31,10 +41,18 @@ let
 in
 {
   # local sources
-  miso             = make-src-filter ../.;
-  miso-tests       = make-src-filter ../tests;
-  sample-app       = make-src-filter ../sample-app;
-  sample-app-native = make-src-filter ../sample-app-native;
+  # Keep package sources independent: changing a sample or native host must not
+  # invalidate the Miso library derivation.
+  miso = make-src-filter {
+    src = ../.;
+    excludedNames = [ "sample-app" "sample-app-native" "tests" ];
+  };
+  miso-tests = make-src-filter { src = ../tests; };
+  sample-app = make-src-filter { src = ../sample-app; };
+  sample-app-native = make-src-filter {
+    src = ../sample-app-native;
+    excludedNames = [ "android" "ios" "build" "styles.css" "conformance.css" ];
+  };
 
   # non-flakified sources
   miso-from-html = fetchFromGitHub {

@@ -22,3 +22,15 @@ executable app-native
     base, miso
   default-language:
     Haskell2010
+
+-- Core-elements-only dual-thread conformance fixture. Keep this separate from
+-- the gallery so optional host behaviors cannot hide runtime regressions.
+executable app-native-conformance
+  import:
+    options
+  main-is:
+    Conformance.hs
+  build-depends:
+    base, miso
+  default-language:
+    Haskell2010

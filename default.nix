@@ -31,6 +31,16 @@ rec {
       styles = ./sample-app-native/styles.css;
     };
 
+  # Core-elements-only dual-thread conformance fixture. It is a separate
+  # executable so gallery feature coverage remains intact.
+  sample-app-native-conformance-bundle =
+    pkgs.mkLynxBundle {
+      name = "sample-app-native-conformance-bundle";
+      jsDrv = pkgs.pkgsCross.ghcjs.haskell.packages.ghcNative.sample-app-native;
+      exeName = "app-native-conformance";
+      styles = ./sample-app-native/conformance.css;
+    };
+
   # Android host APK (Kotlin + Lynx SDK), built reproducibly via nixpkgs
   # androidenv + the gradle mitm-cache dep fetcher. Embeds the freshly built
   # sample-app-native-bundle in assets. See nix/android.nix.
