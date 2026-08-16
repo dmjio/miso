@@ -163,7 +163,7 @@ dynamicSection visible =
         , CSS.marginBottom "10px"
         ]
       ]
-      (if visible then [dynamicChild] else [])
+      [ dynamicChild | visible ]
     ]
 
 dynamicChild :: View context Model Action

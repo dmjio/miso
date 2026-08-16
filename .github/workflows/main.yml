@@ -137,7 +137,9 @@ jobs:
        uses: actions/upload-artifact@v4
        with:
          name: lynx-bundle
-         path: bundle-artifact/main.lynx.bundle
+         path: |
+           bundle-artifact/main.lynx.bundle
+           bundle-artifact/main.lynx.bundle.sha256
          if-no-files-found: error
 
   build-macos:
