@@ -401,7 +401,6 @@ module Miso.Native
 import Miso.Runtime (initComponent)
 import Miso.Types (Events, SomeStaticComponent(..), SomeComponent(..), Hydrate(..))
 import Miso.Types (mountStatic_, mountStaticWithProps, mountStaticUseContext)
-import Miso.JSON (ToJSON, FromJSON)
 -----------------------------------------------------------------------------
 import Miso.Native.Element
 import Miso.Native.FFI
@@ -447,7 +446,7 @@ native events ptr =
 -- @
 --
 nativeWithContext
-  :: (ToJSON context, FromJSON context, Eq context)
+  :: Eq context
   => Events
   -> context
   -> StaticPtr (SomeStaticComponent () context)
