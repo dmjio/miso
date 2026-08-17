@@ -1686,8 +1686,9 @@ main = withJS $ do
               []
         ComponentState {..} <- liftIO $ (IM.! 1) <$> readIORef components
         VTree (Object ref) <- liftIO (readIORef _componentVTree)
-        childRef <- liftIO (ref ! "children" !! 0)
-        eventsObj <- liftIO (childRef ! "events")
+        -- Both handlers live on the root 'div_', which has no children, so
+        -- inspect the root node's events directly.
+        eventsObj <- liftIO (ref ! "events")
         bubbles <- liftIO (eventsObj ! "bubbles")
         mouseoverHandler <- liftIO (bubbles ! "mouseover")
         mouseoverStaticKey <- liftIO (mouseoverHandler ! "staticKey")
