@@ -216,14 +216,16 @@ initialize events _componentParentId hydrate isRoot initialProps maybeKey _compo
     case (hydrate, hydrateModel) of
       (Hydrate, Just m) -> m
       (Draw, _) -> do
-        vcomps <- readIORef components
-        case maybeKey of
-          Just k  -> pure $ fromMaybe model $ listToMaybe
-            [ cs ^. componentModel
-            | cs <- IM.elems vcomps
-            , cs ^. componentKey == Just k
-            ]
-          Nothing -> pure model
+        live <- readIORef liveMode
+        case (live, maybeKey) of
+          (True, Just k) -> do
+            vcomps <- readIORef components
+            pure $ fromMaybe model $ listToMaybe
+              [ cs ^. componentModel
+              | cs <- IM.elems vcomps
+              , cs ^. componentKey == Just k
+              ]
+          _ -> pure model
       _ -> pure model
   _componentScripts <-
     if web
@@ -1028,6 +1030,14 @@ cleanup Proxy live domRef = do
 components :: IORef (IntMap (ComponentState context props model action))
 {-# NOINLINE components #-}
 components = unsafePerformIO (newIORef mempty)
+-----------------------------------------------------------------------------
+-- | Set once in 'initComponent' from its @live@ argument. Gates key-based
+-- model recovery in 'initialize' — outside hot reload, a keyed component
+-- must never inherit a previous (possibly unrelated) component's model just
+-- because it shares a 'Key'.
+liveMode :: IORef Bool
+{-# NOINLINE liveMode #-}
+liveMode = unsafePerformIO (newIORef False)
 -----------------------------------------------------------------------------
 -- | This function evaluates effects according to 'Synchronicity'.
 evalScheduled :: Synchronicity -> IO () -> IO ()
@@ -2100,6 +2110,7 @@ initComponent events hydrate live initialContext comp_@Component {..} key props 
           componentListener proxy =<< getBTSContext
           registerMainThreadDispatch
 #endif
+        atomicWriteIORef liveMode live
         root <- Diff.mountElement (getMountPoint mountPoint)
         when web (cleanup proxy live root)
         atomicWriteIORef globalContext initialContext
