@@ -1667,7 +1667,7 @@ main = withJS $ do
       it "Should mount 1000 components" $ do
         liftIO $ startApp mempty $
           ((component (0 :: Int) noop $ \_ _ _ ->
-            div_ [] (replicate 999 (mount_ testComponent))))
+            div_ [] (replicate 999 (mount_ testComponent))) :: Component () () Int ())
         mountedComponents >>= (`shouldBe` 1000)
 
     describe "Miso.DSL `await` tests" $ do

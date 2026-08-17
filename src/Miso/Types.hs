@@ -11,7 +11,6 @@
 {-# LANGUAGE StaticPointers             #-}
 {-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE DeriveFunctor              #-}
-{-# LANGUAGE RankNTypes                 #-}
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE CPP                        #-}
@@ -121,11 +120,10 @@
 -- error and no runtime crash. GHC emits a warning at every use site of the
 -- non-static combinators when built with @NATIVE@ as a reminder.
 --
--- = Fragment and keyed combinators
+-- = Fragment combinators
 --
 -- * 'fragment' / 'vfrag' — group siblings without a wrapper element
 -- * 'fragment_' / 'vfrag_' — keyed fragment
--- * 'keyed' — attach a reconciliation key to any 'View'
 --
 -- = Conditional view utilities
 --
@@ -536,14 +534,15 @@ fragment_ key = VFrag (Just (Key key))
 --
 -- @since 1.9.0.0
 (+>)
+  :: forall context childModel childAction model action .
 #ifdef NATIVE
-  :: (Eq context, Eq model, FromJSON model, ToJSON model, FromJSON action, ToJSON action, FromJSON context, ToJSON context)
+     (Eq context, Eq childModel, FromJSON childModel, ToJSON childModel, FromJSON childAction, ToJSON childAction, FromJSON context, ToJSON context)
 #else
-  :: (Eq context, Eq model)
+     (Eq context, Eq childModel)
 #endif
   => MisoString
   -- ^ 'VComp' 'key_'
-  -> Component context () model action
+  -> Component context () childModel childAction
   -- ^ 'Component'
   -> View context model action
 infixr 0 +>
@@ -591,13 +590,14 @@ mountStaticWithProps child = SomeStaticComponent (\props -> SomeComponent Nothin
 -- @OnStatic@ handlers inside them. Use 'vcomp' with 'mountStaticWithProps'
 -- instead for anything that may mount dynamically under @NATIVE@.
 mountWithProps
+  :: forall context props childModel childAction model action .
 #ifdef NATIVE
-  :: (Eq context, Eq props, Eq model, FromJSON model, ToJSON model, FromJSON action, ToJSON action, FromJSON props, ToJSON props, FromJSON context, ToJSON context)
+     (Eq context, Eq props, Eq childModel, FromJSON childModel, ToJSON childModel, FromJSON childAction, ToJSON childAction, FromJSON props, ToJSON props, FromJSON context, ToJSON context)
 #else
-  :: (Eq context, Eq props, Eq model)
+     (Eq context, Eq props, Eq childModel)
 #endif
   => props
-  -> Component context props model action
+  -> Component context props childModel childAction
   -- ^ 'Component' to mount
   -> View context model action
 #ifdef NATIVE
@@ -616,14 +616,15 @@ mountWithProps props comp = VComp (SomeComponent Nothing props comp)
 -- under @NATIVE@ — the compile-time 'GHC.StaticPtr.StaticKey' already
 -- supplies the identity a manual key would, no explicit key needed.
 mountWithProps_
+  :: forall context props childModel childAction model action .
 #ifdef NATIVE
-  :: (Eq context, Eq props, Eq model, FromJSON action, FromJSON model, ToJSON model, ToJSON action, FromJSON props, ToJSON props, FromJSON context, ToJSON context)
+     (Eq context, Eq props, Eq childModel, FromJSON childAction, FromJSON childModel, ToJSON childModel, ToJSON childAction, FromJSON props, ToJSON props, FromJSON context, ToJSON context)
 #else
-  :: (Eq context, Eq model, Eq props)
+     (Eq context, Eq childModel, Eq props)
 #endif
   => MisoString
   -> props
-  -> Component context props model action
+  -> Component context props childModel childAction
   -- ^ 'Component' to mount
   -> View context model action
 #ifdef NATIVE
@@ -674,12 +675,13 @@ mountStatic_ child = SomeStaticComponent (const (SomeComponent Nothing () child)
 --
 -- @since 1.9.0.0
 mount_
+  :: forall context childModel childAction model action .
 #ifdef NATIVE
-  :: (Eq context, Eq model, FromJSON model, ToJSON model, FromJSON action, ToJSON action, FromJSON context, ToJSON context)
+     (Eq context, Eq childModel, FromJSON childModel, ToJSON childModel, FromJSON childAction, ToJSON childAction, FromJSON context, ToJSON context)
 #else
-  :: (Eq context, Eq model)
+     (Eq context, Eq childModel)
 #endif
-  => Component context () model action
+  => Component context () childModel childAction
   -- ^ 'Component' to mount
   -> View context model action
 #ifdef NATIVE
@@ -765,12 +767,13 @@ mountStaticUseContext child =
 --
 -- @since 1.9.0.0
 mountUseContext
+  :: forall context childModel childAction model action .
 #ifdef NATIVE
-  :: (Eq context, Eq model, FromJSON model, ToJSON model, FromJSON action, ToJSON action, FromJSON context, ToJSON context)
+     (Eq context, Eq childModel, FromJSON childModel, ToJSON childModel, FromJSON childAction, ToJSON childAction, FromJSON context, ToJSON context)
 #else
-  :: (Eq context, Eq model)
+     (Eq context, Eq childModel)
 #endif
-  => Component context () model action
+  => Component context () childModel childAction
   -- ^ 'Component' to mount
   -> View context model action
 #ifdef NATIVE
