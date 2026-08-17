@@ -1271,7 +1271,13 @@ setAttrs vnode_@(Object jval) attrs snk vcompId logLevel events model_ = do
       o <- getProp "props" vnode_
       FFI.set k value (Object o)
     On callback -> do
+      -- Reset any 'pendingStaticKey' \/ 'pendingMainThread' left behind by an
+      -- earlier 'OnStatic' attribute on this same node — otherwise a plain
+      -- 'On' handler processed after an 'OnStatic' one would inherit its
+      -- sibling's stale main-thread flag and staticKey (see 'onWithOptions').
       FFI.set "pendingComponentId" vcompId vnode_
+      FFI.set "pendingStaticKey" jsNull vnode_
+      FFI.set "pendingMainThread" False vnode_
       callback model_ snk (VTree vnode_) logLevel events
     OnStatic ptr ->
       -- Stash the handler's 'StaticKey' and owning 'ComponentId' on the node

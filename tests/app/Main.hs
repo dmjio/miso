@@ -1670,6 +1670,34 @@ main = withJS $ do
             div_ [] (replicate 999 (mount_ testComponent))) :: Component () () Int ())
         mountedComponents >>= (`shouldBe` 1000)
 
+      it "On after OnStatic on the same node must not inherit a stale staticKey" $ do
+        -- Regression for: an 'OnStatic' handler stashes 'pendingStaticKey' /
+        -- 'pendingMainThread' on the shared vnode object so 'onWithOptions'
+        -- can read them back; a later plain 'On' handler on the *same* node
+        -- used to inherit those leftovers instead of getting its own fresh
+        -- (unset) values.
+        liftIO $ startApp mempty $
+          component (0 :: Int) noop $ \_ _ _ ->
+            div_
+              [ event (static (onMain "click" emptyDecoder (\() _ _ -> AddOne)))
+              , on "mouseover" emptyDecoder (\() _ _ -> AddOne)
+              ]
+              []
+        ComponentState {..} <- liftIO $ (IM.! 1) <$> readIORef components
+        VTree (Object ref) <- liftIO (readIORef _componentVTree)
+        -- Both handlers live on the root 'div_', which has no children, so
+        -- inspect the root node's events directly.
+        eventsObj <- liftIO (ref ! "events")
+        bubbles <- liftIO (eventsObj ! "bubbles")
+        mouseoverHandler <- liftIO (bubbles ! "mouseover")
+        mouseoverStaticKey <- liftIO (mouseoverHandler ! "staticKey")
+        mouseoverStaticKeyUndefined <- liftIO (isUndefined mouseoverStaticKey)
+        mouseoverStaticKeyUndefined `shouldBe` True
+        clickHandler <- liftIO (bubbles ! "click")
+        clickStaticKey <- liftIO (clickHandler ! "staticKey")
+        clickStaticKeyUndefined <- liftIO (isUndefined clickStaticKey)
+        clickStaticKeyUndefined `shouldBe` False
+
     describe "Miso.DSL `await` tests" $ do
       it "Successful Promise resolution should result in a value" $ do
         -- Create a Promise and immediately resolve it with `42`
