@@ -239,6 +239,29 @@
 --
 -- A full list of element smart constructors built on 'node' (e.g. 'Miso.Html.Element.Miso.Html.Element.div_') can be found in "Miso.Html.Element".
 --
+-- = t'VCompStatic'
+--
+-- 'VCompStatic' is for building native mobile apps with [LynxJS](https://lynxjs.org),
+-- via miso's dual-thread (main-thread \/ background-thread) runtime. Unlike
+-- 'VComp', it carries a 'StaticPtr' to its t'Miso.Types.Component' constructor,
+-- giving the mount a stable, cross-thread-resolvable identity (a
+-- 'GHC.StaticPtr.StaticKey') instead of relying on a manually-supplied 'Key'.
+-- This is what lets the main thread (MTS) independently reconstruct a mirror
+-- of a t'Miso.Types.Component' mounted on the background thread (BTS), including
+-- ones mounted after the initial frame, and is also how @action@s dispatched
+-- from a main-thread (@OnStatic@) handler get routed back to the correct
+-- t'Miso.Types.Component' on the background thread.
+--
+-- The 'GHC.StaticPtr.StaticKey' itself serves as the mount's identity, so
+-- there's no need for ('+>') or a manually-supplied 'Key' — use 'vcomp' \/
+-- 'vcomp_' together with 'Miso.Types.mountStatic_' (or
+-- 'Miso.Types.mountStaticWithProps' \/ 'Miso.Types.mountStaticUseContext') to
+-- build a 'VCompStatic'.
+--
+-- See "Miso.Native" for the entry points ('Miso.Native.native',
+-- 'Miso.Native.nativeWithContext') and full documentation of the dual-thread
+-- architecture.
+--
 -- = The global @context@
 --
 -- @context@ is miso's analogue of [React Context](https://react.dev/learn/passing-data-deeply-with-context):
