@@ -110,7 +110,11 @@ export function delegateEvent <T> (
       else if (obj.type === VTreeType.VNode) {
         if (context.isEqual(obj.domRef, stack[0])) {
           const eventObj: EventObject<T> = obj.events.captures[event.type];
-          if (eventObj) {
+          // A staticKey means this handler is main-thread-owned: it was
+          // already run (or will be) via dispatchMainThreadEvent on MTS, so
+          // BTS must not run it again — but propagation still proceeds as
+          // normal so ancestor background handlers still fire.
+          if (eventObj && eventObj.staticKey === undefined) {
             const options: Options = eventObj.options;
             if (options.preventDefault) event.preventDefault();
             if (!event['captureStopped']) {
@@ -149,7 +153,11 @@ export function delegateEvent <T> (
     } else if (obj.type === VTreeType.VNode) {
     /* captures run first */
       const eventCaptureObj: EventObject<T> = obj.events.captures[event.type];
-      if (eventCaptureObj && !event['captureStopped']) {
+      // staticKey handlers are main-thread-owned; skip re-running them here
+      // (see note above) but still let stopPropagation/capture bookkeeping
+      // below fall through untouched since a forwarded event never carries
+      // a stopping staticKey handler (MTS already gated that at the source).
+      if (eventCaptureObj && eventCaptureObj.staticKey === undefined && !event['captureStopped']) {
         const options: Options = eventCaptureObj.options;
         /* dmj: stack[0] represents the domRef that raised the event, this is the found case */
         if (context.isEqual(stack[0], obj.domRef)) {
@@ -160,7 +168,8 @@ export function delegateEvent <T> (
       }
       /* bubble runs second, and propagates */
       const eventObj: EventObject<T> = obj.events.bubbles[event.type];
-      if (eventObj && !event['captureStopped']) {
+      const eventObjIsStatic = eventObj && eventObj.staticKey !== undefined;
+      if (eventObj && !eventObjIsStatic && !event['captureStopped']) {
         const options: Options = eventObj.options;
         /* dmj: stack[0] represents the domRef that raised the event, this is the found case */
         if (context.isEqual(stack[0], obj.domRef)) {
@@ -171,7 +180,8 @@ export function delegateEvent <T> (
           }
         }
       } else {
-         /* still propagate to parent handlers even if event not defined */
+         /* still propagate to parent handlers even if event not defined
+            (or the only handler here is main-thread-owned and already ran) */
           if (!event['captureStopped']) {
             propagateWhileAble(obj.parent, event);
           }
@@ -192,7 +202,8 @@ function propagateWhileAble<T>(vtree: VTree<T>, event: Event): void {
         break;
       case VTreeType.VNode:
         const eventObj = vtree.events.bubbles[event.type];
-        if (eventObj) {
+        // Skip main-thread-owned handlers here too — they already ran on MTS.
+        if (eventObj && eventObj.staticKey === undefined) {
           const options = eventObj.options;
           if (options.preventDefault) event.preventDefault();
           eventObj.runEvent(event, vtree.domRef);

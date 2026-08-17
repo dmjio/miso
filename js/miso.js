@@ -923,7 +923,7 @@ function delegateEvent(event, obj, stack, debug, context) {
     } else if (obj.type === 1 /* VNode */) {
       if (context.isEqual(obj.domRef, stack[0])) {
         const eventObj = obj.events.captures[event.type];
-        if (eventObj) {
+        if (eventObj && eventObj.staticKey === undefined) {
           const options = eventObj.options;
           if (options.preventDefault)
             event.preventDefault();
@@ -958,7 +958,7 @@ function delegateEvent(event, obj, stack, debug, context) {
       }
     } else if (obj.type === 1 /* VNode */) {
       const eventCaptureObj = obj.events.captures[event.type];
-      if (eventCaptureObj && !event["captureStopped"]) {
+      if (eventCaptureObj && eventCaptureObj.staticKey === undefined && !event["captureStopped"]) {
         const options = eventCaptureObj.options;
         if (context.isEqual(stack[0], obj.domRef)) {
           if (options.preventDefault)
@@ -969,7 +969,8 @@ function delegateEvent(event, obj, stack, debug, context) {
         }
       }
       const eventObj = obj.events.bubbles[event.type];
-      if (eventObj && !event["captureStopped"]) {
+      const eventObjIsStatic = eventObj && eventObj.staticKey !== undefined;
+      if (eventObj && !eventObjIsStatic && !event["captureStopped"]) {
         const options = eventObj.options;
         if (context.isEqual(stack[0], obj.domRef)) {
           if (options.preventDefault)
@@ -997,7 +998,7 @@ function propagateWhileAble(vtree, event) {
         break;
       case 1 /* VNode */:
         const eventObj = vtree.events.bubbles[event.type];
-        if (eventObj) {
+        if (eventObj && eventObj.staticKey === undefined) {
           const options = eventObj.options;
           if (options.preventDefault)
             event.preventDefault();

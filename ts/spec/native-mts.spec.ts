@@ -70,7 +70,11 @@ describe('routeEvent — main-thread dispatch', () => {
     expect(mtsDispatches[0].componentId).toBe(42);
     expect(mtsDispatches[0].staticKey).toBe('sk-mid');
     expect(mtsDispatches[0].target).toBe(mid);
-    expect(btsDispatches.length).toBe(0); // handled on MTS, no BTS round-trip
+    // mid's handler didn't request stopPropagation, so ancestor BTS handlers
+    // must still get a chance to run — BTS's own delegateEvent skips
+    // re-running mid's staticKey-tagged handler (see event.ts), so this
+    // can't double-fire it.
+    expect(btsDispatches.length).toBe(1);
   });
 
   test('stopPropagation halts the climb (outer handler does not fire)', () => {

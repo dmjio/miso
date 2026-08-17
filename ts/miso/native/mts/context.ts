@@ -129,7 +129,13 @@ export function routeEvent(e: Event, name: string, capture: boolean, mount: Elem
   // (bottom-up). chain is target-first, so reverse for capture.
   const order = capture ? chain.slice().reverse() : chain;
   const other = phase === 'bubbles' ? 'captures' : 'bubbles';
-  let fired = false;
+  // Tracks whether a fired handler explicitly halted propagation — NOT
+  // whether any main-thread handler fired. A non-stopping main-thread
+  // handler on a descendant must not prevent ancestor BACKGROUND handlers
+  // from running, so BTS still gets the event unless something actually
+  // stopped it (mirrors DOM/ReactLynx per-node "catch" semantics, not a
+  // whole-dispatch "something matched" flag).
+  let stopped = false;
   for (const node of order) {
     const nid = nodeIdOf(node);
     const reg = nid !== undefined ? mainThreadKeys.get(nid) : undefined;
@@ -139,16 +145,19 @@ export function routeEvent(e: Event, name: string, capture: boolean, mount: Elem
     // the propagation chain — prefer the fired phase, fall back to the other.
     const entry = reg ? (reg[phase]?.[name] ?? reg[other]?.[name]) : undefined;
     if (!entry) continue;
-    fired = true;
     // Route in JS: apply the handler's options, then dispatch on the Haskell
     // layer (no BTS round-trip). stopPropagation halts the climb.
     if (entry.options.preventDefault && (e as any).preventDefault) (e as any).preventDefault();
     (globalThis['runtime'] as any)['dispatchMainThreadEvent']
       ({ componentId: entry.componentId, staticKey: entry.staticKey, event: e, target: node });
-    if (entry.options.stopPropagation) break;
+    if (entry.options.stopPropagation) { stopped = true; break; }
   }
-  if (!fired) {
-    // No main-thread handler on this chain — it's a background event.
+  if (!stopped) {
+    // Forward to BTS whenever nothing stopped propagation, even if a
+    // non-stopping main-thread handler already fired on a descendant —
+    // BTS's own delegateEvent skips re-running any handler tagged with a
+    // staticKey (see event.ts), so this can't double-fire that handler; it
+    // only lets ancestor background handlers still run.
     const jsContext = lynx.getJSContext();
     const stack = buildStack(mount, target, ctx);
     const msg : ProcessEvent = { event: e, stack, type: 'processEvent' };
