@@ -1,10 +1,21 @@
 // Import the one runtime value (getDOMRef) from its leaf module and the rest as
-// types, rather than through the `../../../miso` barrel: the barrel re-exports
+// types, rather than through the `../../miso` barrel: the barrel re-exports
 // several `type`s as values, which the bun test runtime can't resolve (see
 // ts/spec/native-mts.spec.ts). This also drops an unnecessary coupling.
-import { getDOMRef } from '../../../miso/util';
-import type { NodeId, VComp, DrawingContext, EventContext, EventCapture, EventKey, ProcessEvent } from '../../../miso/types';
+import { getDOMRef } from '../../util';
+import type {
+  NodeId,
+  VComp,
+  DrawingContext,
+  EventContext,
+  EventCapture,
+  EventKey,
+  ProcessEvent,
+  PATCH,
+} from '../../types';
 import type { ElementRef } from '@lynx-js/type-element-api';
+import { initialFrameRecorder, type InitialFrameReconciler } from '../ifr';
+import { adoptAuthoritativeNodeIds } from '../node-id';
 
 function buildStack(root: ElementRef, target: ElementRef, ctx: EventContext<ElementRef>): Array<number> {
   const stack: Array<number> = [];
@@ -27,6 +38,18 @@ function buildStack(root: ElementRef, target: ElementRef, ctx: EventContext<Elem
 function nextNodeId () : number {
   return globalThis['nodeId']++;
 }
+
+function recordInitialPatch(patch: PATCH): void {
+  if (globalThis['initialDraw']) initialFrameRecorder.record(patch);
+}
+
+function requiredNodeId(node: ElementRef): number {
+  const nodeId = nodeIdOf(node);
+  if (nodeId === undefined) throw new Error('[miso IFR] initial-frame node has no nodeId');
+  return nodeId;
+}
+
+let namespacedCreationDepth = 0;
 
 // --- <list> virtualization (minimal, non-recycling) ---------------------------
 // Lynx <list> is a recycler: its children are NOT mounted directly. The engine
@@ -56,6 +79,100 @@ const mainThreadKeys = new Map<number, MainThreadKeys>();
 // (the capability set is immutable for a reused node), so their only removal
 // point is destruction — see `destroyNodeEvents`.
 const directBindings = new Map<number, Set<string>>();
+
+/** Drop MTS-only registries before a BTS-authoritative full-tree repaint. */
+export function resetInitialFrameRegistries(nodes: Record<number, ElementRef>): void {
+  for (const [nodeIdText, node] of Object.entries(nodes)) {
+    const nodeId = Number(nodeIdText);
+    // The root element survives, but its initial-frame event bindings do not:
+    // the authoritative patch replay will register them again.
+    destroyNodeEvents(node, nodeId);
+  }
+  mainThreadKeys.clear();
+  directBindings.clear();
+  listStates.clear();
+}
+
+/**
+ * Convert DrawingContext's `(parent, inserted, anchor)` order to the BTS patch
+ * schema, whose historical field names are `(parent, node, child)`.
+ */
+export function mtsInsertBeforePatch(
+  parentNodeId: number,
+  insertedNodeId: number,
+  anchorNodeId: number,
+): Extract<PATCH, { type: 'insertBefore' }> {
+  return {
+    type: 'insertBefore',
+    parent: parentNodeId,
+    node: insertedNodeId,
+    child: anchorNodeId,
+  };
+}
+
+function remapMap<T>(source: Map<number, T>, nodeIds: Map<number, number>): Map<number, T> {
+  const adopted = new Map<number, T>();
+  for (const [localId, value] of source) {
+    const authoritativeId = nodeIds.get(localId);
+    if (authoritativeId === undefined) {
+      throw new Error(`[miso IFR] event registry references unknown nodeId ${localId}`);
+    }
+    if (adopted.has(authoritativeId)) {
+      throw new Error(`[miso IFR] duplicate adopted registry nodeId ${authoritativeId}`);
+    }
+    adopted.set(authoritativeId, value);
+  }
+  return adopted;
+}
+
+function replaceMap<T>(target: Map<number, T>, source: Map<number, T>): void {
+  target.clear();
+  for (const [nodeId, value] of source) target.set(nodeId, value);
+}
+
+/** Atomically rekey the MTS element/runtime registries to BTS-authoritative ids. */
+export function adoptInitialFrameNodeIds(nodeIds: Map<number, number>): void {
+  const runtime = globalThis['runtime'] as { nodes: Record<number, ElementRef> };
+  if (!runtime?.nodes) throw new Error('[miso IFR] MTS runtime.nodes is not initialized');
+
+  const adoptedNodes: Record<number, ElementRef> = {};
+  const assignments: Array<{ node: ElementRef; localId: number; authoritativeId: number }> = [];
+  for (const [localId, authoritativeId] of nodeIds) {
+    const node = runtime.nodes[localId];
+    if (!node) throw new Error(`[miso IFR] missing MTS node ${localId} during adoption`);
+    if (Object.prototype.hasOwnProperty.call(adoptedNodes, authoritativeId)) {
+      throw new Error(`[miso IFR] duplicate authoritative nodeId ${authoritativeId}`);
+    }
+    adoptedNodes[authoritativeId] = node;
+    assignments.push({ node, localId, authoritativeId });
+  }
+  if (Object.keys(runtime.nodes).length !== assignments.length) {
+    throw new Error(
+      `[miso IFR] runtime node count ${Object.keys(runtime.nodes).length} != manifest node count ${assignments.length}`,
+    );
+  }
+
+  // Build every JS-side replacement before touching the live registries.
+  const adoptedMainThreadKeys = remapMap(mainThreadKeys, nodeIds);
+  const adoptedDirectBindings = remapMap(directBindings, nodeIds);
+
+  // PAPI config is the only external mutation. Roll it back if one write fails,
+  // so a rejected adoption never leaves a half-rekeyed event path.
+  const configured: Array<{ node: ElementRef; localId: number }> = [];
+  try {
+    for (const { node, localId, authoritativeId } of assignments) {
+      __SetConfig(node, { nodeId: authoritativeId });
+      configured.push({ node, localId });
+    }
+  } catch (error) {
+    for (const { node, localId } of configured) __SetConfig(node, { nodeId: localId });
+    throw error;
+  }
+  runtime.nodes = adoptedNodes;
+  replaceMap(mainThreadKeys, adoptedMainThreadKeys);
+  replaceMap(directBindings, adoptedDirectBindings);
+  adoptAuthoritativeNodeIds(assignments.map(({ authoritativeId }) => authoritativeId));
+}
 
 // Tear down all event state for a destroyed node. Called from `dropChildren`
 // (ts/miso/native/mts.ts) when a subtree is removed, so neither the main-thread
@@ -118,6 +235,13 @@ function commitListInfo(st: ListState): void {
 // real VTree. Shared by the mount delegator (bubbling events) and the direct
 // per-element bindings used for non-bubbling input events.
 export function routeEvent(e: Event, name: string, capture: boolean, mount: ElementRef, ctx: EventContext<ElementRef>): void {
+  const ifr = globalThis['native']?.['ifr'] as InitialFrameReconciler<Array<PATCH>> | undefined;
+  if (
+    ifr?.deferEventUntilAdopted(
+      () => routeEvent(e, name, capture, mount, ctx),
+      `${name}:${capture ? 'capture' : 'bubble'}`,
+    )
+  ) return;
   const target = ctx.getTarget(e);
   const phase = capture ? 'captures' : 'bubbles';
   const chain : Array<ElementRef> = [];
@@ -184,9 +308,11 @@ export const eventContext : EventContext<ElementRef> = {
 /* Apply patches from BTS on MTS via PAPI calls */
 export const drawingContext : DrawingContext<ElementRef> = {
   addClass : (className : string, domRef : ElementRef) => {
+      recordInitialPatch({ type: 'addClass', nodeId: requiredNodeId(domRef), key: className });
       __AddClass(domRef, className);
   },
   removeClass : (className : string, domRef : ElementRef) => {
+      recordInitialPatch({ type: 'removeClass', nodeId: requiredNodeId(domRef), key: className });
       /* dmj: PR a __RemoveClass PAPI call to lynx ? */
       const classes = __GetClasses(domRef);
       if (classes.includes(className)) {
@@ -198,6 +324,17 @@ export const drawingContext : DrawingContext<ElementRef> = {
      (above) reads it back via __GetConfig at dispatch time. Read-modify-write so
      we don't clobber nodeId or sibling event keys. */
   addEvent : (node : ElementRef, name : string, key : EventKey) => {
+      const initialNodeId = requiredNodeId(node);
+      recordInitialPatch({
+          type: 'addEvent',
+          nodeId: initialNodeId,
+          name,
+          capture: key.capture,
+          staticKey: key.staticKey,
+          componentId: key.componentId,
+          options: key.options,
+          direct: key.direct,
+      });
       // Direct-bind: attach a real element-level listener (Lynx native events
       // that don't bubble to the mount delegator). Feeds the same routeEvent.
       if (key.direct) {
@@ -230,6 +367,7 @@ export const drawingContext : DrawingContext<ElementRef> = {
   },
   removeEvent : (node : ElementRef, name : string, capture : boolean) => {
       const nodeId = nodeIdOf(node);
+      if (nodeId !== undefined) recordInitialPatch({ type: 'removeEvent', nodeId, name, capture });
       const reg = nodeId !== undefined ? mainThreadKeys.get(nodeId) : undefined;
       if (!reg) return;
       const phase = capture ? 'captures' : 'bubbles';
@@ -249,16 +387,26 @@ export const drawingContext : DrawingContext<ElementRef> = {
         const nodeId: number = nextNodeId ();
         globalThis['runtime']['nodes'][nodeId] = node;
         __SetConfig (node, { nodeId });
+        recordInitialPatch({ type: 'createTextNode', nodeId, text: s });
     }
     return node;
   },
-  createElementNS : (_ns : string, tag : string) => {
+  createElementNS : (ns : string, tag : string) => {
     // Lynx has no XML namespaces; delegate to the tag-based factory, which also
     // handles cssId scoping and the initial-draw nodeId assignment. (The old
     // `globalThis.miso.context.createElement` path referenced a nonexistent
     // object — `globalThis.miso` only holds drawingContext/eventContext — and
     // threw for any namespaced element.)
-    return drawingContext.createElement(tag);
+    namespacedCreationDepth++;
+    try {
+      const node = drawingContext.createElement(tag);
+      if (globalThis['initialDraw']) {
+        recordInitialPatch({ type: 'createElementNS', nodeId: requiredNodeId(node), namespace: ns, tag });
+      }
+      return node;
+    } finally {
+      namespacedCreationDepth--;
+    }
   },
   createElement : (tag : string) => {
       var pageId = globalThis['native']['currentPageId'];
@@ -321,18 +469,29 @@ export const drawingContext : DrawingContext<ElementRef> = {
           const nodeId: number = nextNodeId ();
           globalThis['runtime']['nodes'][nodeId] = node;
           __SetConfig (node, { nodeId });
+          if (namespacedCreationDepth === 0) {
+            recordInitialPatch({ type: 'createElement', nodeId, tag });
+          }
       }
       return node;
   },
   appendChild : (parent, child) => {
+    recordInitialPatch({ type: 'appendChild', parent: requiredNodeId(parent), child: requiredNodeId(child) });
     const st = listStateOf(parent);
     if (st) { st.items.push(child); return child; }
     return __AppendElement (parent, child);
   },
   replaceChild : (parent, n, o) => {
+    recordInitialPatch({
+      type: 'replaceChild',
+      parent: requiredNodeId(parent),
+      new: requiredNodeId(n),
+      current: requiredNodeId(o),
+    });
     return __ReplaceElements (parent, [n], [o]);
   },
   removeChild : (parent, child) => {
+    recordInitialPatch({ type: 'removeChild', parent: requiredNodeId(parent), child: requiredNodeId(child) });
     const st = listStateOf(parent);
     if (st) {
       const i = st.items.indexOf(child);
@@ -343,6 +502,16 @@ export const drawingContext : DrawingContext<ElementRef> = {
     return __RemoveElement (parent, child);
   },
   insertBefore : (parent, child, node) => {
+    // Intentional crossing: DrawingContext calls the inserted element `child`
+    // and the anchor `node`, while the BTS PATCH schema calls them `node` and
+    // `child` respectively. Keep this helper and its cross-thread spec paired.
+    recordInitialPatch(
+      mtsInsertBeforePatch(
+        requiredNodeId(parent),
+        requiredNodeId(child),
+        requiredNodeId(node),
+      ),
+    );
     const st = listStateOf(parent);
     if (st) {
       const i = st.items.indexOf(node);
@@ -352,22 +521,40 @@ export const drawingContext : DrawingContext<ElementRef> = {
     return __InsertElementBefore (parent, child, node);
   },
   swapDOMRefs: (a: ElementRef, b: ElementRef, p: ElementRef): void => {
+    recordInitialPatch({
+      type: 'swapDOMRefs',
+      nodeA: requiredNodeId(a),
+      nodeB: requiredNodeId(b),
+      parent: requiredNodeId(p),
+    });
     return __SwapElement(a,b);
   },
   setAttribute : (node, key, value) => {
+    recordInitialPatch({ type: 'setAttribute', nodeId: requiredNodeId(node), key, value });
     if (key === 'id') return __SetID(node, value);
     return __SetAttribute(node,key,value);
   },
   removeAttribute : (node : ElementRef, key: string) => {
+    recordInitialPatch({ type: 'removeAttribute', nodeId: requiredNodeId(node), key });
     return __SetAttribute(node, key, '');
   },
   setAttributeNS : (node, ns, key, value) => {
+    recordInitialPatch({ type: 'setAttributeNS', nodeId: requiredNodeId(node), namespace: ns, key, value });
     return __SetAttribute(node,key,value);
   },
   setTextContent : (node, text) => {
+    recordInitialPatch({ type: 'setTextContent', nodeId: requiredNodeId(node), text });
     return __SetAttribute(node,'text',text);
   },
   setInlineStyle : (cCss, nCss, node) => {
+    if (!areEqual(cCss, nCss)) {
+      recordInitialPatch({
+        type: 'setInlineStyle',
+        nodeId: requiredNodeId(node),
+        current: cCss,
+        new: nCss,
+      });
+    }
     if (cCss != nCss)
       return __SetInlineStyles(node, nCss)
   },
@@ -389,3 +576,9 @@ export const drawingContext : DrawingContext<ElementRef> = {
   }
 };
 
+function areEqual(a: Object, b: Object): boolean {
+  const keysA = Object.keys(a);
+  const keysB = Object.keys(b);
+  if (keysA.length !== keysB.length) return false;
+  return keysA.every(key => a[key] === b[key]);
+}

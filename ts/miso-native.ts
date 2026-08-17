@@ -4,6 +4,7 @@ import {
 } from "text-encoding";
 
 import JSBI from "jsbi";
+import type { PATCH } from './miso';
 
 /* Polyfills for native, these come first */
 globalThis['TextEncoder'] = TextEncoder as any;
@@ -83,9 +84,20 @@ import {
 } from './miso';
 
 import { bts } from './miso/native/bts';
-import { mts } from './miso/native/mts';
+import { mts, resetInitialFrame } from './miso/native/mts';
 import { drawingContext as btsDC, eventContext as btsEC } from './miso/native/bts/context';
-import { drawingContext as mtsDC, eventContext as mtsEC } from './miso/native/mts/context';
+import {
+  adoptInitialFrameNodeIds,
+  drawingContext as mtsDC,
+  eventContext as mtsEC,
+} from './miso/native/mts/context';
+import {
+  INITIAL_FRAME_CHANNEL,
+  InitialFrameReconciler,
+  initialFrameRecorder,
+  type InitialFrameMessage,
+  type InitialFrameThread,
+} from './miso/native/ifr';
 
 globalThis['nodeId'] = 1;
 globalThis['initialDraw'] = true;
@@ -101,6 +113,46 @@ globalThis['native'] = {
   eventContext,
   currentPageId: undefined,
 };
+
+function installInitialFrameReconciliation(thread: InitialFrameThread) {
+  const peer = thread === 'background' ? lynx.getCoreContext() : lynx.getJSContext();
+  const reconciler = new InitialFrameReconciler<Array<PATCH>>(
+    thread,
+    initialFrameRecorder,
+    {
+      send: (message: InitialFrameMessage) => {
+        if (peer) peer.dispatchEvent({ type: INITIAL_FRAME_CHANNEL, data: message });
+      },
+    },
+    {
+      adoptNodeIds: thread === 'main' ? adoptInitialFrameNodeIds : undefined,
+      deliverPatches: thread === 'background'
+        ? patches => peer?.dispatchEvent({ type: 'Miso.patches', data: patches })
+        : undefined,
+      fallbackPatches:
+        thread === 'background' ? () => initialFrameRecorder.fullTreePatches() : undefined,
+      prepareFallback: thread === 'main' ? resetInitialFrame : undefined,
+      // Production exchanges a rolling digest. `debug` opts into the original
+      // full-manifest handshake for validation and per-operation diagnostics.
+      debugManifest: globalThis['debug'] === true,
+      reportError: message => console.error(message),
+      scheduleRetry: (callback, delayMs) => setTimeout(callback, delayMs),
+      cancelRetry: token => clearTimeout(token as ReturnType<typeof setTimeout>),
+    },
+  );
+  peer?.addEventListener(
+    INITIAL_FRAME_CHANNEL,
+    (event: MessageEvent<InitialFrameMessage>) => reconciler.receive(event.data),
+  );
+  return reconciler;
+}
+
+const initialFrameReconciler = installInitialFrameReconciliation(
+  __BACKGROUND__ ? 'background' : 'main',
+);
+globalThis['native']['ifr'] = initialFrameReconciler;
+globalThis['native']['finalizeInitialFrame'] = () => initialFrameReconciler.finalize();
+globalThis['native']['initialFrameStatus'] = () => initialFrameReconciler.status();
 
 globalThis['miso'] = {
   drawingContext,

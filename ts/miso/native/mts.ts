@@ -15,16 +15,19 @@
 
 */
 
-import
+import type
   { PATCH,
     Runtime,
-  } from "../../miso";
+  } from "../types";
 
 import type { ElementRef } from "@lynx-js/type-element-api";
+import { adoptAuthoritativeNodeIds, observePatchedNodeId } from './node-id';
+import type { InitialFrameReconciler } from './ifr';
 
 import
   { drawingContext
   , destroyNodeEvents
+  , resetInitialFrameRegistries
   } from './mts/context';
 
 export function mts () {
@@ -33,11 +36,34 @@ export function mts () {
   __SetCSSId([page], 0);
   globalThis['native']['currentPageId'] = pageId;
   globalThis['page'] = page;
+  __SetConfig(page, { nodeId: 0 });
 
   /* sets page as root node in document */
   globalThis['document'] = {} as any;
   globalThis['document']['body'] = page as any;
   initMainThreadProcessing();
+}
+
+/**
+ * Remove the MTS-painted first frame while preserving the Lynx page root. The
+ * next patch batch can then rebuild the tree with BTS-authoritative node ids.
+ */
+export function resetInitialFrame(): void {
+  const runtime = globalThis['runtime'] as Runtime<ElementRef> | undefined;
+  const root = runtime?.nodes?.[0] ?? globalThis['page'];
+  if (!runtime?.nodes || !root) throw new Error('[miso IFR] MTS root is not initialized');
+
+  resetInitialFrameRegistries(runtime.nodes);
+  for (let child = __FirstElement(root) as ElementRef; child; ) {
+    const next = __NextElement(child) as ElementRef;
+    // The page root is never a recycler/list. Registries are already cleared,
+    // so use the primitive directly and avoid recording these recovery-only
+    // removals as part of a new initial frame.
+    __RemoveElement(root, child);
+    child = next;
+  }
+  runtime.nodes = { 0: root };
+  adoptAuthoritativeNodeIds([0]);
 }
 
 /* Method to initialize main thread event handling / processing */
@@ -52,13 +78,16 @@ function initMainThreadProcessing () {
   runtime.nodes[0] = globalThis['page'];
   globalThis['runtime'] = runtime;
 
+  const ifr = globalThis['native']['ifr'] as InitialFrameReconciler<Array<PATCH>>;
+  const deliver = (patches: Array<PATCH>) => {
+    for (const patch of patches) processMessage(patch, runtime);
+    if (patches.length > 0) drawingContext.flush();
+  };
+  ifr?.setPatchDelivery(deliver);
+
   context.addEventListener("Miso.patches", (messages : MessageEvent<Array<PATCH>>) => {
-    for (const m of messages.data) {
-       processMessage(m,runtime);
-    }
-    if (messages.data.length > 0) {
-       drawingContext.flush();
-    }
+    if (ifr) ifr.receiveOrQueuePatches(messages.data);
+    else deliver(messages.data);
   });
 }
 
@@ -70,16 +99,19 @@ function processMessage (m : PATCH, runtime) {
       node = drawingContext.createElement (m.tag);
       __SetConfig (node, { nodeId : m.nodeId });
       runtime.nodes[m.nodeId] = node;
+      observePatchedNodeId(m.nodeId);
       break;
     case "createTextNode":
       node = drawingContext.createTextNode (m.text);
       __SetConfig (node, { nodeId : m.nodeId });
       runtime.nodes[m.nodeId] = node;
+      observePatchedNodeId(m.nodeId);
       break;
     case "createElementNS":
       node = drawingContext.createElementNS (m.namespace, m.tag);
       __SetConfig (node, { nodeId : m.nodeId });
       runtime.nodes[m.nodeId] = node;
+      observePatchedNodeId(m.nodeId);
       break;
     case "swapDOMRefs":
       drawingContext.swapDOMRefs
@@ -157,4 +189,3 @@ function dropChildren (nodeMap: Record<number, ElementRef>, node: ElementRef) {
       dropChildren(nodeMap, child);
    }
 }
-

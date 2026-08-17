@@ -4,8 +4,10 @@
    and per-node event-registry teardown. The Lynx PAPI globals (`__GetConfig`,
    `__AddEvent`) and the `runtime`/`lynx` host objects are stubbed here — in a web
    build they don't exist, which is exactly why this code has no other coverage. */
-import { test, expect, describe, beforeEach, afterAll, beforeAll } from 'bun:test';
+import { test, expect, describe, beforeEach, afterEach, afterAll, beforeAll } from 'bun:test';
 import { routeEvent, destroyNodeEvents, drawingContext } from '../miso/native/mts/context';
+import { adoptAuthoritativeNodeIds, observePatchedNodeId } from '../miso/native/node-id';
+import { resetInitialFrame } from '../miso/native/mts';
 import type { EventContext } from '../miso/types';
 
 /* silence the module's console.error diagnostics */
@@ -150,5 +152,80 @@ describe('destroyNodeEvents — registry teardown', () => {
 
     expect(mtsDispatches.length).toBe(0);     // registry entry gone
     expect(btsDispatches.length).toBe(1);     // now treated as a background event
+  });
+});
+
+afterEach(() => {
+  globalThis['nodeId'] = 1;
+  delete globalThis['runtime'];
+  delete globalThis['page'];
+  delete globalThis['initialDraw'];
+  delete globalThis['__GetElementUniqueID'];
+  delete globalThis['__FirstElement'];
+  delete globalThis['__NextElement'];
+  delete globalThis['__RemoveElement'];
+});
+
+describe('Native MTS node id allocation', () => {
+  afterEach(() => {
+    globalThis['nodeId'] = 1;
+  });
+
+  test('advances past ids created by BTS patches', () => {
+    globalThis['nodeId'] = 29;
+
+    observePatchedNodeId(29);
+    observePatchedNodeId(30);
+    observePatchedNodeId(31);
+
+    expect(globalThis['nodeId']).toBe(32);
+  });
+
+  test('never rewinds after observing an older patch', () => {
+    globalThis['nodeId'] = 42;
+
+    observePatchedNodeId(17);
+
+    expect(globalThis['nodeId']).toBe(42);
+  });
+
+  test('one-time IFR adoption replaces a drifted local allocator', () => {
+    globalThis['nodeId'] = 43;
+
+    adoptAuthoritativeNodeIds([0, 1, 2]);
+
+    expect(globalThis['nodeId']).toBe(3);
+  });
+
+  test('clears the MTS-painted tree but preserves the page root for fallback', () => {
+    type FakeElement = {
+      id: number;
+      parent?: FakeElement;
+      children: Array<FakeElement>;
+    };
+    const root: FakeElement = { id: 0, children: [] };
+    const first: FakeElement = { id: 41, parent: root, children: [] };
+    const second: FakeElement = { id: 42, parent: root, children: [] };
+    root.children.push(first, second);
+    globalThis['runtime'] = { nodes: { 0: root, 41: first, 42: second } };
+    globalThis['page'] = root;
+    globalThis['nodeId'] = 43;
+    globalThis['initialDraw'] = false;
+    globalThis['__GetElementUniqueID'] = ((node: FakeElement) => node.id) as any;
+    globalThis['__FirstElement'] = ((node: FakeElement) => node.children[0] ?? null) as any;
+    globalThis['__NextElement'] = ((node: FakeElement) => {
+      const siblings = node.parent?.children ?? [];
+      return siblings[siblings.indexOf(node) + 1] ?? null;
+    }) as any;
+    globalThis['__RemoveElement'] = ((parent: FakeElement, child: FakeElement) => {
+      parent.children.splice(parent.children.indexOf(child), 1);
+      return child;
+    }) as any;
+
+    resetInitialFrame();
+
+    expect(root.children).toEqual([]);
+    expect(globalThis['runtime'].nodes).toEqual({ 0: root });
+    expect(globalThis['nodeId']).toBe(1);
   });
 });

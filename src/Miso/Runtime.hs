@@ -303,6 +303,22 @@ initialize events _componentParentId hydrate isRoot initialProps maybeKey _compo
   when isRoot (delegator _componentDOMRef _componentVTree events (logLevel `elem` [DebugEvents, DebugAll]))
   registerComponent vcomponent
   initSubs subs _componentSubThreads _componentSink
+#ifdef NATIVE
+  -- TEST ONLY: @__misoTestBeforeInitialFrame@ may deliberately drift the MTS
+  -- allocator before the initial tree is created. It receives the current
+  -- allocator and returns its replacement, proving slot-normalized structural
+  -- adoption instead of accidentally testing lockstep allocation. Production
+  -- hosts must never define this global hook.
+  when isRoot $ do
+    nativeRuntime <- jsg ("native" :: MisoString)
+    hook <- nativeRuntime ! "__misoTestBeforeInitialFrame"
+    undefinedHook <- isUndefined hook
+    unless undefinedHook $ do
+      gt <- jsg ("globalThis" :: MisoString)
+      currentNodeId <- gt ! "nodeId"
+      adoptedNodeId <- FFI.callFunction nativeRuntime "__misoTestBeforeInitialFrame" currentNodeId
+      FFI.set "nodeId" adoptedNodeId (Object gt)
+#endif
   -- Runs on every thread. On Lynx the MTS paints the initial frame directly
   -- (fast first frame) while the BTS builds the same VTree but suppresses its
   -- create-patches (deterministic nodeId parity keeps both trees addressable) —
@@ -2116,7 +2132,13 @@ initComponent events hydrate live initialContext comp_@Component {..} key props 
         -- contexts' 'flush' — is the fix for the doubled render: the initial draw
         -- performs one 'flush' per mounted component, so a per-'flush' flip tripped
         -- on the first nested child and leaked the rest of the frame as patches.
-        do gt <- jsg ("globalThis" :: MisoString)
+        -- Finalize the versioned initial-frame manifest before opening the
+        -- incremental patch/event gate. The MTS compares its slot-normalized
+        -- draw against the BTS-authoritative manifest and atomically adopts the
+        -- BTS node ids; a mismatch remains terminal and observable.
+        do nativeRuntime <- jsg ("native" :: MisoString)
+           void $ FFI.callFunction nativeRuntime "finalizeInitialFrame" ()
+           gt <- jsg ("globalThis" :: MisoString)
            FFI.set "initialDraw" False (Object gt)
 #endif
         atomicWriteIORef schedulerThread =<< forkIO (scheduler proxy)
