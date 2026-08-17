@@ -1810,6 +1810,11 @@ import           Miso.JSON (ToJSON, FromJSON)
 -- main :: 'IO' ()
 -- main = 'miso' 'defaultEvents' app
 -- @
+--
+-- __Warning__: if compiling with the @native@ Cabal flag, use
+-- 'Miso.Native.native' \/ 'Miso.Native.nativeWithContext' instead of this —
+-- it mounts with no 'GHC.StaticPtr.StaticKey', which is needed for
+-- cross-thread mounting, cross-thread effect handling, and main-thread events.
 miso
 #ifdef NATIVE
   :: (Eq model, ToJSON model, ToJSON action, FromJSON model, FromJSON action)
@@ -1825,6 +1830,9 @@ miso events f = do
   comp_ <- f <$> getURI
   initComponent events Hydrate False () (comp_ { mountPoint = Nothing })
     Nothing () Nothing
+#ifdef NATIVE
+{-# WARNING miso "[NATIVE] If compiling with the 'native' Cabal flag, use 'Miso.Native.native' / 'Miso.Native.nativeWithContext' instead of 'miso' — it mounts with no StaticKey, which is needed for cross-thread mounting, cross-thread effect handling, and main-thread events." #-}
+#endif
 ----------------------------------------------------------------------------
 -- | Like 'miso', except discards the 'Miso.Router.URI' argument.
 --
@@ -1834,6 +1842,11 @@ miso events f = do
 -- main :: 'IO' ()
 -- main = 'prerender' 'defaultEvents' app
 -- @
+--
+-- __Warning__: if compiling with the @native@ Cabal flag, use
+-- 'Miso.Native.native' \/ 'Miso.Native.nativeWithContext' instead of this —
+-- it mounts with no 'GHC.StaticPtr.StaticKey', which is needed for
+-- cross-thread mounting, cross-thread effect handling, and main-thread events.
 prerender
 #ifdef NATIVE
   :: (Eq model, ToJSON model, ToJSON action, FromJSON model, FromJSON action)
@@ -1848,6 +1861,9 @@ prerender
 prerender events comp_ =
   initComponent events Hydrate False () comp_ { mountPoint = Nothing }
     Nothing () Nothing
+#ifdef NATIVE
+{-# WARNING prerender "[NATIVE] If compiling with the 'native' Cabal flag, use 'Miso.Native.native' / 'Miso.Native.nativeWithContext' instead of 'prerender' — it mounts with no StaticKey, which is needed for cross-thread mounting, cross-thread effect handling, and main-thread events." #-}
+#endif
 -----------------------------------------------------------------------------
 -- | Like 'miso', except it does not perform page hydration.
 --
@@ -1862,6 +1878,10 @@ prerender events comp_ =
 -- main = 'startApp' 'defaultEvents' app
 -- @
 --
+-- __Warning__: if compiling with the @native@ Cabal flag, use
+-- 'Miso.Native.native' \/ 'Miso.Native.nativeWithContext' instead of this —
+-- it mounts with no 'GHC.StaticPtr.StaticKey', which is needed for
+-- cross-thread mounting, cross-thread effect handling, and main-thread events.
 startApp
 #ifdef NATIVE
   :: (Eq model, ToJSON model, ToJSON action, FromJSON model, FromJSON action)
@@ -1874,6 +1894,9 @@ startApp
   -- ^ 'Component' application
   -> IO ()
 startApp events comp_ = initComponent events Draw False () comp_ Nothing () Nothing
+#ifdef NATIVE
+{-# WARNING startApp "[NATIVE] If compiling with the 'native' Cabal flag, use 'Miso.Native.native' / 'Miso.Native.nativeWithContext' instead of 'startApp' — it mounts with no StaticKey, which is needed for cross-thread mounting, cross-thread effect handling, and main-thread events." #-}
+#endif
 -----------------------------------------------------------------------------
 -- | Like 'startApp', but seeds the global React-style @context@ with an
 -- initial value.
@@ -1893,6 +1916,11 @@ startApp events comp_ = initComponent events Draw False () comp_ Nothing () Noth
 -- For server-side rendering (where the runtime is never started) seed the
 -- context with 'setContext' before serializing the 'Miso.Types.View'.
 --
+-- __Warning__: if compiling with the @native@ Cabal flag, use
+-- 'Miso.Native.nativeWithContext' instead of this — it mounts with no
+-- 'GHC.StaticPtr.StaticKey', which is needed for cross-thread mounting,
+-- cross-thread effect handling, and main-thread events.
+--
 -- @since 1.9.0.0
 startAppWithContext
 #ifdef NATIVE
@@ -1909,6 +1937,9 @@ startAppWithContext
   -> IO ()
 startAppWithContext events initialContext comp_ =
   initComponent events Draw False initialContext comp_ Nothing () Nothing
+#ifdef NATIVE
+{-# WARNING startAppWithContext "[NATIVE] If compiling with the 'native' Cabal flag, use 'Miso.Native.nativeWithContext' instead of 'startAppWithContext' — it mounts with no StaticKey, which is needed for cross-thread mounting, cross-thread effect handling, and main-thread events." #-}
+#endif
 -----------------------------------------------------------------------------
 -- | Alias for 'Miso.miso'.
 (🍜)
