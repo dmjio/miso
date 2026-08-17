@@ -1670,7 +1670,6 @@ main = withJS $ do
             div_ [] (replicate 999 (mount_ testComponent))) :: Component () () Int ())
         mountedComponents >>= (`shouldBe` 1000)
 
-#ifndef GHCJS_OLD
       it "On after OnStatic on the same node must not inherit a stale staticKey" $ do
         -- Regression for: an 'OnStatic' handler stashes 'pendingStaticKey' /
         -- 'pendingMainThread' on the shared vnode object so 'onWithOptions'
@@ -1698,7 +1697,6 @@ main = withJS $ do
         clickStaticKey <- liftIO (clickHandler ! "staticKey")
         clickStaticKeyUndefined <- liftIO (isUndefined clickStaticKey)
         clickStaticKeyUndefined `shouldBe` False
-#endif
 
     describe "Miso.DSL `await` tests" $ do
       it "Successful Promise resolution should result in a value" $ do
