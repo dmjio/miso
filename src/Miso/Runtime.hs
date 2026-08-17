@@ -2236,7 +2236,9 @@ resolveNodeRef domRef = do
 -----------------------------------------------------------------------------
 componentListener :: forall context . Eq context => Proxy context -> BTS -> IO ()
 componentListener Proxy (BTS ctx) = void $ do
-  FFI.addEventListener ctx "Miso.components" $ \msgEvent -> do
+  FFI.addEventListener ctx "Miso.components" $ \msgEvent ->
+    flip catch (\(e :: SomeException) ->
+        FFI.consoleError ("[componentListener]: exception in callback: " <> ms (show e))) $ do
     msg <- Object msgEvent ! "data"
     COMPONENT {..} <- fromJSValUnchecked msg :: IO COMPONENT
     case componentComponentStaticKey of
@@ -2407,7 +2409,8 @@ postComponent
   -> Maybe Value
   -> Maybe DOMRef
   -> IO ()
-postComponent componentType_ sk componentId_ parentId_ model_ domRef_ = do
+postComponent _ Nothing _ _ _ _ = pure ()
+postComponent componentType_ sk@(Just _) componentId_ parentId_ model_ domRef_ = do
   ctx <- getMTSContext
   dispatchEvent ctx "Miso.components"
     (COMPONENT componentType_ sk componentId_ parentId_ model_ domRef_)
