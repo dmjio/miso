@@ -310,8 +310,7 @@ initialize events _componentParentId hydrate isRoot initialProps maybeKey _compo
   -- create-patches (deterministic nodeId parity keeps both trees addressable) —
   -- both governed by the global 'initialDraw' latch in the drawing contexts,
   -- which 'initComponent' clears ONCE the whole root mount finishes (see the note
-  -- there). Flipping it per 'flush' tripped on the first nested child mount and
-  -- leaked the rest of the initial frame as patches, doubling the MTS's paint.
+  -- there).
   initialDraw initializedModel events hydrate isRoot comp vcomponent
   forM_ mount _componentSink
 #ifdef NATIVE
@@ -2297,19 +2296,27 @@ componentListener Proxy (BTS ctx) = void $ do
                         -- which the MTS learns about solely through this message.
                         IM.member componentComponentId <$> readIORef components >>= \case
                           True -> pure ()
-                          False -> do
-                            -- The BTS ships its @{ nodeId }@ 'DOMRef'; resolve it to the real
-                            -- native element via @globalThis.runtime.nodes[nodeId]@ so the MTS
-                            -- 'ComponentInfo' Reader ('componentInfoDOMRef') holds a live ref.
-                            parent_ <- maybe (unObject <$> create) resolveNodeRef componentComponentDOMRef
-                            -- Recover the child's initial @props@ from the wire (the BTS ships
-                            -- them on 'MOUNT'), decoded at the @props@ type recovered above.
-                            case componentComponentPayload of
-                              Just pv | Success initProps <- (fromJSON pv :: Result props) ->
-                                void $ initialize mempty componentComponentId Draw False initProps
-                                  Nothing (Just (staticKey ptr)) comp_ (pure parent_)
-                              _ ->
-                                FFI.consoleError "[COMPONENT]: MOUNT missing/invalid props payload"
+                          False ->
+                            -- The BTS always ships its @{ nodeId }@ 'DOMRef' alongside 'MOUNT'
+                            -- (see 'postComponent' MOUNT); 'Nothing' here means the wire
+                            -- invariant broke, so error out rather than silently mounting
+                            -- against a bogus synthesized parent.
+                            case componentComponentDOMRef of
+                              Nothing ->
+                                FFI.consoleError "[COMPONENT]: MOUNT missing domRef payload"
+                              Just domRef -> do
+                                -- Resolve the shipped 'DOMRef' to the real native element via
+                                -- @globalThis.runtime.nodes[nodeId]@ so the MTS 'ComponentInfo'
+                                -- Reader ('componentInfoDOMRef') holds a live ref.
+                                parent_ <- resolveNodeRef domRef
+                                -- Recover the child's initial @props@ from the wire (the BTS ships
+                                -- them on 'MOUNT'), decoded at the @props@ type recovered above.
+                                case componentComponentPayload of
+                                  Just pv | Success initProps <- (fromJSON pv :: Result props) ->
+                                    void $ initialize mempty componentComponentId Draw False initProps
+                                      Nothing (Just (staticKey ptr)) comp_ (pure parent_)
+                                  _ ->
+                                    FFI.consoleError "[COMPONENT]: MOUNT missing/invalid props payload"
                       UNMOUNT ->
                         IM.lookup componentComponentId <$> readIORef components >>= \case
                           Nothing ->
