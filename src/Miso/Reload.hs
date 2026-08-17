@@ -145,7 +145,7 @@ reload events = reloadWithContext events ()
 -- @since 1.12.0.0
 reloadWithContext
 #ifdef NATIVE
-  :: (FromJSON action, ToJSON model, ToJSON context, FromJSON context, Eq context, Eq model, ToJSON action)
+  :: (FromJSON action, ToJSON model, Eq context, Eq model, ToJSON action)
 #else
   :: (Eq context, Eq model)
 #endif
@@ -216,7 +216,7 @@ live events vcomp_ = liveWithContext events () vcomp_
 -- @since 1.12.0.0
 liveWithContext
 #ifdef NATIVE
-  :: (Eq context, Eq model, ToJSON model, ToJSON context, ToJSON action, FromJSON context, FromJSON action)
+  :: (Eq context, Eq model, ToJSON model, ToJSON action, FromJSON action)
 #else
   :: (Eq context, Eq model)
 #endif

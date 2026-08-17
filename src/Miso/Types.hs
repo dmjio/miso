@@ -451,7 +451,7 @@ data View context model action
 -- nested t'Miso.Types.Component' participates in the same app-global context.
 data SomeComponent context
 #ifdef NATIVE
-   = forall model action props . (FromJSON model, ToJSON model, FromJSON action, ToJSON action, FromJSON props, ToJSON props, FromJSON context, ToJSON context, Eq context, Eq model, Eq props)
+   = forall model action props . (FromJSON model, ToJSON model, FromJSON action, ToJSON action, FromJSON props, ToJSON props, Eq context, Eq model, Eq props)
 #else
    = forall model action props . (Eq context, Eq model, Eq props)
 #endif
@@ -536,7 +536,7 @@ fragment_ key = VFrag (Just (Key key))
 (+>)
   :: forall context childModel childAction model action .
 #ifdef NATIVE
-     (Eq context, Eq childModel, FromJSON childModel, ToJSON childModel, FromJSON childAction, ToJSON childAction, FromJSON context, ToJSON context)
+     (Eq context, Eq childModel, FromJSON childModel, ToJSON childModel, FromJSON childAction, ToJSON childAction)
 #else
      (Eq context, Eq childModel)
 #endif
@@ -572,7 +572,7 @@ key +> child = VComp (SomeComponent (Just (toKey key)) () child)
 -- @since 1.11.0.0
 mountStaticWithProps
 #ifdef NATIVE
-  :: (Eq context, Eq props, Eq model, FromJSON model, ToJSON model, FromJSON action, ToJSON action, FromJSON props, ToJSON props, FromJSON context, ToJSON context)
+  :: (Eq context, Eq props, Eq model, FromJSON model, ToJSON model, FromJSON action, ToJSON action, FromJSON props, ToJSON props)
 #else
   :: (Eq context, Eq props, Eq model)
 #endif
@@ -592,7 +592,7 @@ mountStaticWithProps child = SomeStaticComponent (\props -> SomeComponent Nothin
 mountWithProps
   :: forall context props childModel childAction model action .
 #ifdef NATIVE
-     (Eq context, Eq props, Eq childModel, FromJSON childModel, ToJSON childModel, FromJSON childAction, ToJSON childAction, FromJSON props, ToJSON props, FromJSON context, ToJSON context)
+     (Eq context, Eq props, Eq childModel, FromJSON childModel, ToJSON childModel, FromJSON childAction, ToJSON childAction, FromJSON props, ToJSON props)
 #else
      (Eq context, Eq props, Eq childModel)
 #endif
@@ -618,7 +618,7 @@ mountWithProps props comp = VComp (SomeComponent Nothing props comp)
 mountWithProps_
   :: forall context props childModel childAction model action .
 #ifdef NATIVE
-     (Eq context, Eq props, Eq childModel, FromJSON childAction, FromJSON childModel, ToJSON childModel, ToJSON childAction, FromJSON props, ToJSON props, FromJSON context, ToJSON context)
+     (Eq context, Eq props, Eq childModel, FromJSON childAction, FromJSON childModel, ToJSON childModel, ToJSON childAction, FromJSON props, ToJSON props)
 #else
      (Eq context, Eq childModel, Eq props)
 #endif
@@ -646,7 +646,7 @@ mountWithProps_ key props child = VComp (SomeComponent (Just (Key key)) props ch
 -- @since 1.9.0.0
 mountStatic_
 #ifdef NATIVE
-  :: (Eq context, Eq model, FromJSON model, ToJSON model, FromJSON action, ToJSON action, FromJSON context, ToJSON context)
+  :: (Eq context, Eq model, FromJSON model, ToJSON model, FromJSON action, ToJSON action)
 #else
   :: (Eq context, Eq model)
 #endif
@@ -677,7 +677,7 @@ mountStatic_ child = SomeStaticComponent (const (SomeComponent Nothing () child)
 mount_
   :: forall context childModel childAction model action .
 #ifdef NATIVE
-     (Eq context, Eq childModel, FromJSON childModel, ToJSON childModel, FromJSON childAction, ToJSON childAction, FromJSON context, ToJSON context)
+     (Eq context, Eq childModel, FromJSON childModel, ToJSON childModel, FromJSON childAction, ToJSON childAction)
 #else
      (Eq context, Eq childModel)
 #endif
@@ -735,7 +735,7 @@ vcomp_ = vcomp ()
 -- @since 1.12.0.0
 mountStaticUseContext
 #ifdef NATIVE
-  :: (Eq context, Eq model, FromJSON model, ToJSON model, FromJSON action, ToJSON action, FromJSON context, ToJSON context)
+  :: (Eq context, Eq model, FromJSON model, ToJSON model, FromJSON action, ToJSON action)
 #else
   :: (Eq context, Eq model)
 #endif
@@ -769,7 +769,7 @@ mountStaticUseContext child =
 mountUseContext
   :: forall context childModel childAction model action .
 #ifdef NATIVE
-     (Eq context, Eq childModel, FromJSON childModel, ToJSON childModel, FromJSON childAction, ToJSON childAction, FromJSON context, ToJSON context)
+     (Eq context, Eq childModel, FromJSON childModel, ToJSON childModel, FromJSON childAction, ToJSON childAction)
 #else
      (Eq context, Eq childModel)
 #endif

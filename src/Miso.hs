@@ -1916,7 +1916,7 @@ startApp events comp_ = initComponent events Draw False () comp_ Nothing () Noth
 -- @since 1.9.0.0
 startAppWithContext
 #ifdef NATIVE
-  :: (Eq model, ToJSON model, ToJSON action, FromJSON model, FromJSON action, FromJSON context, ToJSON context, Eq context)
+  :: (Eq model, ToJSON model, ToJSON action, FromJSON model, FromJSON action, Eq context)
 #else
   :: (Eq model, Eq context)
 #endif
