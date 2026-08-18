@@ -144,13 +144,17 @@ onMainWithOptions
   -- ^ Converts the decoded payload and the element's DOM reference to an @action@
   -> EventHandler model action
 onMainWithOptions phase opts name decoder conversion =
-  EventHandler $ \m snk tree ll events -> do
-    case onWithOptions phase opts name decoder conversion of
-      On cb -> do
-        FFI.set "pendingMainThread" True =<< toObject tree
-        cb m snk tree ll events
-      _ ->
-        error "onMainWithOptions: impossible"
+  EventHandler
+    { eventHandlerInstall = \m snk tree ll events ->
+        case onWithOptions phase opts name decoder conversion of
+          On cb -> do
+            FFI.set "pendingMainThread" True =<< toObject tree
+            cb m snk tree ll events
+          _ ->
+            error "onMainWithOptions: impossible"
+    , eventHandlerDecoder = decoder
+    , eventHandlerConvert = conversion
+    }
 -----------------------------------------------------------------------------
 -- | Attach an event handler with explicit phase and propagation options.
 --

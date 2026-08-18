@@ -129,7 +129,8 @@ import           Control.Exception (SomeException, catch)
 import           Control.Monad (forM, forM_, when, void, (<=<), zipWithM_, forever, foldM, unless)
 import           Control.Monad.Reader (ask, asks)
 import           Control.Monad.State hiding (state)
-import           Miso.JSON (FromJSON, ToJSON, Result(..), Value, encode, fromJSON, jsonStringify, toJSON)
+import           Miso.JSON (FromJSON, ToJSON, Result(..), Value, encode, fromJSON, jsonStringify, toJSON, parseEither)
+import           Miso.Event.Decoder (Decoder(decoder, decodeAt))
 
 #if __GLASGOW_HASKELL__ < 910
 import           Data.Foldable (foldl')
@@ -1287,11 +1288,11 @@ setAttrs vnode_@(Object jval) attrs snk vcompId logLevel events model_ = do
       -- 'False'; 'Miso.Event.mainThread' (part of @callback@) flips it 'True'
       -- so only marked handlers opt in.
       case deRefStaticPtr ptr of
-        EventHandler callback -> do
+        EventHandler {..} -> do
           FFI.set "pendingStaticKey" (staticKey ptr) vnode_
           FFI.set "pendingComponentId" vcompId vnode_
           FFI.set "pendingMainThread" False vnode_
-          callback model_ snk (VTree vnode_) logLevel events
+          eventHandlerInstall model_ snk (VTree vnode_) logLevel events
     Styles styles -> do
       cssObj <- getProp "css" vnode_
       forM_ (M.toList styles) $ \(k,v) -> do
@@ -2348,7 +2349,6 @@ dispatchMainThreadEvent arg =
     skHex     <- fromJSValUnchecked =<< o ! "staticKey"   :: IO MisoString
     eventVal  <- o ! "event"
     targetVal <- o ! "target"
-    eventName <- fromJSValUnchecked =<< Object eventVal ! "type" :: IO MisoString
     unsafeLookupStaticPtr (fromMisoString skHex) >>= \case
       Nothing ->
         FFI.consoleError ("[MTS dispatch] no handler for staticKey " <> skHex)
@@ -2358,41 +2358,26 @@ dispatchMainThreadEvent arg =
       -- MTS additionally requires the forwarded @pendingPayload@ decoded at the
       -- @payload@ type — see note below (not yet wired end-to-end).
       Just ehPtr -> case deRefStaticPtr ehPtr of
-        EventHandler cb -> do
+        EventHandler {..} -> do
           comps <- readIORef components
           case IM.lookup compId comps of
             Nothing ->
               FFI.consoleError ("[MTS dispatch] no component " <> ms (show compId))
             Just ComponentState {..} -> do
-              -- Run the handler with this component's sink to install its
-              -- 'runEvent' (decoder + sink) on a throwaway node, then fire it.
-              scratch <- createNode "vnode" HTML "div"
-              -- 'runEvent' re-reads the live model at fire time via
-              -- @pendingComponentId@ on its node (see 'onWithOptions'); stamp it on
-              -- the scratch node so that lookup resolves instead of throwing.
-              FFI.set "pendingComponentId" compId scratch
-              cb _componentModel _componentSink (VTree scratch) Off mempty
-              runner <- lookupEventRunner scratch eventName
-              forM_ runner $ \fn ->
-                void (call (Object fn) global [eventVal, targetVal])
-  where
-    -- Pull the installed 'runEvent' for @name@ out of the scratch node,
-    -- checking the capture phase then the bubble phase.
-    lookupEventRunner :: Object -> MisoString -> IO (Maybe JSVal)
-    lookupEventRunner scratch name = do
-      evs  <- getProp "events" scratch
-      caps <- getProp "captures" (Object evs)
-      capE <- Object caps ! name
-      capU <- isUndefined capE
-      entry <-
-        if not capU
-          then pure (Just capE)
-          else do
-            bubs <- getProp "bubbles" (Object evs)
-            bubE <- Object bubs ! name
-            bubU <- isUndefined bubE
-            pure (if bubU then Nothing else Just bubE)
-      traverse (\e -> Object e ! "runEvent") entry
+              -- Decode + dispatch directly from the captured 'Decoder' \/
+              -- convert pair — no JS installer round-trip (no scratch node,
+              -- no throwaway 'asyncCallback2') needed on this, the hot path
+              -- for every main-thread event.
+              decodeAtVal <- toJSVal (decodeAt eventHandlerDecoder)
+              mv <- fromJSVal =<< FFI.eventJSON decodeAtVal eventVal
+              case mv of
+                Nothing ->
+                  FFI.consoleError "[MTS dispatch] eventJSON returned no value"
+                Just v -> case parseEither (decoder eventHandlerDecoder) v of
+                  Left msg ->
+                    FFI.consoleError ("[MTS dispatch] decode error: " <> ms msg)
+                  Right result ->
+                    _componentSink (eventHandlerConvert result _componentModel targetVal)
 -----------------------------------------------------------------------------
 -- | Register 'dispatchMainThreadEvent' on @globalThis.runtime@ so the MTS
 -- delegator can invoke it synchronously. MTS only.
