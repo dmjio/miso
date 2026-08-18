@@ -149,6 +149,7 @@ library
     Miso.Html.Property
     Miso.Html.Render
     Miso.JSON
+    Miso.JSON.Diff
     Miso.JSON.Lexer
     Miso.JSON.Parser
     Miso.JSON.Types
