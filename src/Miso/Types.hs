@@ -227,6 +227,7 @@ import           Prelude
 import           Miso.DSL
 import           Miso.Effect (Effect, Sub, Sink, DOMRef, ComponentId)
 import           Miso.Event.Types
+import qualified Miso.Event.Decoder
 import           Miso.JSON (Value, ToJSON(..), encode)
 #ifdef NATIVE
 import           Miso.JSON (FromJSON(..))
@@ -845,8 +846,23 @@ instance ToKey Float where toKey = Key . toMisoString
 -- | Convert 'Word' to t'Key'
 instance ToKey Word where toKey = Key . toMisoString
 -----------------------------------------------------------------------------
--- | Wrapper for event handler callbacks, used for cross-thread communication
-newtype EventHandler model action = EventHandler (model -> Sink action -> VTree -> LogLevel -> Events -> IO ())
+-- | Wrapper for event handler callbacks, used for cross-thread communication.
+--
+-- Carries two independent things built from the same @(decoder, convert)@
+-- pair:
+--
+-- * 'eventHandlerInstall' — attaches a real JS listener to a live vnode.
+--   Used by 'Miso.Runtime.setAttrs' during diffing, on both threads.
+-- * 'eventHandlerDecoder' \/ 'eventHandlerConvert' — the decode step exposed
+--   directly, with no JS installer round-trip. Used by the MTS's
+--   @dispatchMainThreadEvent@ to decode + dispatch a main-thread event
+--   synchronously, without reconstructing (and discarding) a JS callback via
+--   a throwaway scratch node on every single event.
+data EventHandler model action = forall result. EventHandler
+  { eventHandlerInstall :: model -> Sink action -> VTree -> LogLevel -> Events -> IO ()
+  , eventHandlerDecoder :: Miso.Event.Decoder.Decoder result
+  , eventHandlerConvert :: result -> model -> DOMRef -> action
+  }
 -----------------------------------------------------------------------------
 -- | Embed a fully-applied @static@ event handler.
 --
