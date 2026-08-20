@@ -284,6 +284,8 @@
 -- __Seeding__ (set the initial value):
 --
 -- * 'startAppWithContext' — the client entry point, replaces 'startApp'.
+-- * 'misoWithContext' \/ 'prerenderWithContext' — the hydrating counterparts
+--   of 'miso' \/ 'prerender', for prerendered pages.
 -- * 'setContext' — seeds the value directly. Needed for __server-side
 --   rendering__, where a 'View' is serialized to HTML without ever starting
 --   the runtime.
@@ -1674,7 +1676,9 @@ module Miso
   ( -- * API
     -- ** Miso
     miso
+  , misoWithContext
   , prerender
+  , prerenderWithContext
   , (🍜)
     -- ** App
   , App
@@ -1878,6 +1882,63 @@ prerender events comp_ =
     Nothing () Nothing
 #ifdef NATIVE
 {-# WARNING prerender "[NATIVE] If compiling with the 'native' Cabal flag, use 'Miso.Native.native' / 'Miso.Native.nativeWithContext' instead of 'prerender' — it mounts with no StaticKey, which is needed for cross-thread mounting, cross-thread effect handling, and main-thread events." #-}
+#endif
+-----------------------------------------------------------------------------
+-- | Like 'miso', but seeds the global React-style @context@ with an
+-- initial value before hydrating. This is the hydration counterpart of
+-- 'startAppWithContext'.
+--
+-- @
+-- main :: 'IO' ()
+-- main = 'misoWithContext' 'defaultEvents' Light app
+--
+-- data Theme = Light | Dark deriving (Show, Eq)
+-- @
+--
+-- @since 1.13.0.0
+misoWithContext
+#ifdef NATIVE
+  :: (Eq model, ToJSON model, ToJSON action, FromJSON model, FromJSON action, Eq context)
+#else
+  :: (Eq model, Eq context)
+#endif
+  => Events
+  -- ^ Globally delegated Events
+  -> context
+  -- ^ Initial global @context@
+  -> (URI -> Component context () model action)
+  -- ^ The Component application, with the current URI as an argument
+  -> IO ()
+misoWithContext events initialContext f = do
+  comp_ <- f <$> getURI
+  initComponent events Hydrate False initialContext (comp_ { mountPoint = Nothing })
+    Nothing () Nothing
+#ifdef NATIVE
+{-# WARNING misoWithContext "[NATIVE] If compiling with the 'native' Cabal flag, use 'Miso.Native.nativeWithContext' instead of 'misoWithContext' — it mounts with no StaticKey, which is needed for cross-thread mounting, cross-thread effect handling, and main-thread events." #-}
+#endif
+-----------------------------------------------------------------------------
+-- | Like 'prerender', but seeds the global React-style @context@ with an
+-- initial value before hydrating.
+--
+-- @since 1.13.0.0
+prerenderWithContext
+#ifdef NATIVE
+  :: (Eq model, ToJSON model, ToJSON action, FromJSON model, FromJSON action, Eq context)
+#else
+  :: (Eq model, Eq context)
+#endif
+  => Events
+  -- ^ Globally delegated 'Events'
+  -> context
+  -- ^ Initial global @context@
+  -> Component context () model action
+  -- ^ 'Component' application
+  -> IO ()
+prerenderWithContext events initialContext comp_ =
+  initComponent events Hydrate False initialContext comp_ { mountPoint = Nothing }
+    Nothing () Nothing
+#ifdef NATIVE
+{-# WARNING prerenderWithContext "[NATIVE] If compiling with the 'native' Cabal flag, use 'Miso.Native.nativeWithContext' instead of 'prerenderWithContext' — it mounts with no StaticKey, which is needed for cross-thread mounting, cross-thread effect handling, and main-thread events." #-}
 #endif
 -----------------------------------------------------------------------------
 -- | Like 'miso', except it does not perform page hydration.
