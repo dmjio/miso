@@ -1,12 +1,11 @@
-<h1 align="center">miso</h1>
 
 <p align="center">
 
 <a href="https://haskell-miso.org">
-  <img width=10% src="https://em-content.zobj.net/thumbs/240/apple/325/steaming-bowl_1f35c.png">
 
+<img width="10%" height="512" alt="Image" src="https://github.com/user-attachments/assets/384a1898-0aed-4662-9a03-8dbe5641228f" />
    </a>
-<p align="center">A library for building web and <a href="https://github.com/haskell-miso/miso-lynx">mobile</a> applications</p>
+<p align="center"><b>miso</b> | A library for building web and <a href="https://github.com/haskell-miso/miso-lynx">mobile</a> applications</p>
 </p>
 
 <p align="center"> 
