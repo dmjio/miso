@@ -62,7 +62,6 @@ module Miso.Subscription.RAF
   , rAFSubElapsed
   ) where
 ----------------------------------------------------------------------------
-import           Control.Monad (void)
 import           Data.IORef
 ----------------------------------------------------------------------------
 import           Miso.DSL
@@ -80,17 +79,23 @@ rAFSub
 rAFSub toAction sink = createSub acquire release sink
   where
     acquire = do
-      ref <- newIORef (error "rAFSub: uninitialized, impossible")
+      cbRef <- newIORef (error "rAFSub: uninitialized, impossible")
+      idRef <- newIORef (0 :: Int)
       callback <-
         syncCallback1 $ \jsval -> do
           sink . toAction =<< fromJSValUnchecked jsval
-          void (requestAnimationFrame =<< readIORef ref)
+          writeIORef idRef =<< requestAnimationFrame =<< readIORef cbRef
 
-      writeIORef ref callback
-      void (requestAnimationFrame callback)
-      pure callback
+      writeIORef cbRef callback
+      writeIORef idRef =<< requestAnimationFrame callback
+      pure (callback, idRef)
 
-    release callback = freeFunction (Function callback)
+    -- N.B. the queued frame must be cancelled before the callback is
+    -- freed: the browser holds a reference to it, and invoking a freed
+    -- callback on the next frame crashes the runtime.
+    release (callback, idRef) = do
+      cancelAnimationFrame =<< readIORef idRef
+      freeFunction (Function callback)
 ----------------------------------------------------------------------------
 -- | Like 'rAFSub' but fires @action@ at most once per @interval@ milliseconds.
 --
@@ -113,6 +118,7 @@ rAFSubElapsed interval action sink = createSub acquire release sink
   where
     acquire = do
       cbRef <- newIORef (error "rAFSubElapsed: uninitialized, impossible")
+      idRef <- newIORef (0 :: Int)
       let go lastT elap = do
             cb <- syncCallback1 $ \jsval -> do
               t <- fromJSValUnchecked jsval
@@ -122,8 +128,11 @@ rAFSubElapsed interval action sink = createSub acquire release sink
                 then sink action *> go t (newElap - interval)
                 else go t newElap
             writeIORef cbRef cb
-            void (requestAnimationFrame cb)
+            writeIORef idRef =<< requestAnimationFrame cb
       go 0 0
-      pure cbRef
-    release cbRef = freeFunction . Function =<< readIORef cbRef
+      pure (cbRef, idRef)
+    -- N.B. cancel the queued frame before freeing the callback (see 'rAFSub')
+    release (cbRef, idRef) = do
+      cancelAnimationFrame =<< readIORef idRef
+      freeFunction . Function =<< readIORef cbRef
 ----------------------------------------------------------------------------
