@@ -5,7 +5,7 @@
 
 <img width="15%" height="512" alt="Image" src="https://github.com/user-attachments/assets/384a1898-0aed-4662-9a03-8dbe5641228f" />
    </a>
-<p align="center"><a href="https://haskell-miso.org"><b>miso</b></a> | A library for building web and <a href="https://github.com/haskell-miso/miso-lynx">mobile</a> applications</p>
+<p align="center">:ramen: <a href="https://haskell-miso.org"><b>miso</b></a> | A library for building web and <a href="https://github.com/haskell-miso/miso-lynx">mobile</a> applications</p>
 </p>
 
 <p align="center"> 
