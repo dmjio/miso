@@ -292,7 +292,7 @@ initialize events _componentParentId hydrate isRoot initialProps maybeKey _compo
         , _componentMailbox = mailbox
         , _componentUseContext = useContext
         , _componentTopics = mempty
-        , _componentModelDirty = modelCheck
+        , _componentModelDirty = dirtyCheck
         , _componentChildren = mempty
         , _componentModel = initializedModel
         , _prevComponentProps = _componentProps
@@ -346,9 +346,11 @@ initSubs subs_ _componentSubThreads _componentSink = do
     atomicModifyIORef' _componentSubThreads $ \m ->
       (M.insert subKey threadId m, ())
 -----------------------------------------------------------------------------
--- | Diffs two models, returning True if a redraw is necessary
-modelCheck :: Eq model => model -> model -> Bool
-modelCheck c n = unsafePerformIO $ do
+-- | Diffs two values (models, props, context), returning True if they differ
+-- and a redraw / propagation is necessary. Pointer equality via 'StableName'
+-- is used as a fast path before falling back to 'Eq'.
+dirtyCheck :: Eq a => a -> a -> Bool
+dirtyCheck c n = unsafePerformIO $ do
   currentName <- c `seq` makeStableName c
   updatedName <- n `seq` makeStableName n
   pure (currentName /= updatedName && c /= n)
@@ -436,7 +438,7 @@ scheduler Proxy =
       -- 'minBound' scheduler case) — MTS never draws context-driven changes
       -- itself (BTS ships DOM patches), so enqueueing from MTS would just be
       -- dequeued and discarded a moment later.
-      when (not mts && currentContext /= updatedContext) enqueueContextPropagation
+      when (not mts && dirtyCheck currentContext updatedContext) enqueueContextPropagation
       -- BTS is the sole owner of the shared model (mirrors ReactLynx, where
       -- React state is background-thread-only). On MTS the model is a read-only
       -- replica maintained purely by 'MODEL_HYDRATE' from BTS: 'commit' here
@@ -1073,7 +1075,7 @@ drain ComponentState {..} = do
              ContextModify f ->
                atomicModifyIORef' globalContext $ \ctx -> (f ctx, ())
            newContext <- readIORef globalContext
-           when (not mts && currentContext /= newContext) enqueueContextPropagation
+           when (not mts && dirtyCheck currentContext newContext) enqueueContextPropagation
            -- dmj: One last context propagation before aborting.
            -- Don't recurse on drain, we only fire-off the last set
            -- of events for 'onBeforeUnmounted' hooks. The queue will
@@ -1223,7 +1225,7 @@ buildVTree events_ parentId_ vcompId hydrate snk logLevel_ model_ = \case
         syncCallback $ do
           componentId_ <- fromJSValUnchecked =<< comp ! ("componentId" :: MisoString)
           currentProps <- _componentProps . (IM.! componentId_) <$> readIORef components
-          when (currentProps /= newProps) $ do
+          when (dirtyCheck currentProps newProps) $ do
             modifyComponent componentId_ $ do
               componentProps .= newProps
               prevComponentProps .= currentProps
