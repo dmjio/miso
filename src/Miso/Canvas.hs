@@ -212,7 +212,7 @@ canvas_ attributes initialize_ draw_ = node HTML "canvas" attrs []
 
     drawCallack _ _ (VTree vtree) _ _ =
       flip (FFI.set "draw") vtree =<< do
-        FFI.syncCallback1 $ \domRef -> do
+        FFI.asyncCallback1 $ \domRef -> do
           state <- fromJSValUnchecked =<< domRef ! ("state" :: MisoString)
           draw_ state
 -----------------------------------------------------------------------------
