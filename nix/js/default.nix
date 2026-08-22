@@ -9,6 +9,11 @@ pkgs:
 #   nix build .#rspeedy 2>&1 | grep 'got:' | awk '{print $2}'
 # or run: prefetch-npm-deps package-lock.json
 #
+# N.B. *any* edit to package-lock.json changes npmDepsHash -- including one
+# that leaves the resolved dependency tree untouched, such as rewriting a root
+# version spec. Re-derive the hash after every lockfile change, not only after
+# dependency upgrades.
+#
 # package-lock.json must be kept in sync with bun.lock.
 # Generate it with: npm install --package-lock-only
 let
@@ -27,7 +32,7 @@ in
 
     # Run: prefetch-npm-deps package-lock.json to get this hash.
     # Use lib.fakeHash initially to let nix tell you the real value.
-    npmDepsHash = "sha256-hh7duzVNIccp5tUsFfMc0fWb9pDgV9BimkqLgUy7Snk=";
+    npmDepsHash = "sha256-IdgLD4PnV65g1zCSez7ba3wS+YFLJCJOt3PX5a4zn14=";
 
     npmFlags = [ "--legacy-peer-deps" "--include=dev" ];
     makeCacheWritable = true;
