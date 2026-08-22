@@ -644,7 +644,7 @@ link_ = flip (nodeHtml "link") []
 --
 -- You can use 'Miso.CSS.style_' as a safer anternative.
 style_ :: [Attribute model action] -> MisoString -> View context model action
-style_ attrs rawText = node HTML "style" attrs [text rawText]
+style_ attrs rawText = node HTML "style" attrs [textRaw rawText]
 -----------------------------------------------------------------------------
 -- | [\<script\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/script)
 --

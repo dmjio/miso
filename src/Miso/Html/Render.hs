@@ -46,8 +46,17 @@
 -- * __'Miso.Types.VNode'__ — rendered as @\<tag attrs\>children\<\/tag\>@.
 --   Self-closing elements (@\<br\/\>@, @\<img\/\>@, @\<input\/\>@, …) are
 --   rendered without a closing tag.
--- * __'Miso.Types.VText'__ — rendered as a raw text string (no escaping
---   beyond what is already in the 'Miso.String.MisoString').
+-- * __'Miso.Types.VText'__ — rendered as stored. HTML-escaping of text
+--   happens at construction time in server builds (@-fssr@):
+--   'Miso.Types.text', string literals, 'Miso.Types.text_' and
+--   'Miso.Types.textKey' apply 'Miso.Types.htmlEncode'; 'Miso.Types.textRaw'
+--   opts out (and is what 'Miso.Html.Element.script_' \/
+--   'Miso.Html.Element.style_' use for their contents, since the parser
+--   never decodes character references inside raw-text elements).
+-- * __Attribute values__ — always rendered HTML-escaped
+--   ('Miso.Types.htmlEncode'), so quotes, ampersands and angle brackets in
+--   a value round-trip through the parser and cannot break out of the
+--   attribute.
 -- * __'Miso.Types.VComp'__ — recursively renders the sub-component's view
 --   using its initial (or hydrated) model.
 -- * __'Miso.Types.VFrag'__ — renders all children inline, no wrapper tag.
@@ -221,7 +230,7 @@ renderAttrs (ClassList classes) =
   mconcat
   [ "class"
   , stringUtf8 "=\""
-  , fromMisoString (MS.unwords classes)
+  , escapeAttr (MS.unwords classes)
   , stringUtf8 "\""
   ]
 renderAttrs (Property key (Bool enabled)) -- dmj: account for boolean properties
@@ -230,7 +239,7 @@ renderAttrs (Property key (Bool enabled)) -- dmj: account for boolean properties
   | otherwise = mconcat
       [ fromMisoString key
       , stringUtf8 "=\""
-      , toHtmlFromJSON (Bool enabled)
+      , escapeAttr (textFromJSON (Bool enabled))
       , stringUtf8 "\""
       ]
 renderAttrs (Property "key" _) = mempty
@@ -238,7 +247,7 @@ renderAttrs (Property key value) =
   mconcat
   [ fromMisoString key
   , stringUtf8 "=\""
-  , toHtmlFromJSON value
+  , escapeAttr (textFromJSON value)
   , stringUtf8 "\""
   ]
 renderAttrs (On _) = mempty
@@ -249,15 +258,24 @@ renderAttrs (Styles styles_) =
   , stringUtf8 "=\""
   , mconcat
     [ mconcat
-      [ fromMisoString k
+      [ escapeAttr k
       , charUtf8 ':'
-      , fromMisoString v
+      , escapeAttr v
       , charUtf8 ';'
       ]
     | (k,v) <- M.toList styles_
     ]
   , stringUtf8 "\""
   ]
+----------------------------------------------------------------------------
+-- | Escapes an attribute value with 'htmlEncode'. Values are rendered
+-- double-quoted, so an unescaped @\"@ (or @&@ \/ @<@) in a value would
+-- break out of the attribute — an injection vector — and would not
+-- round-trip through the browser's parser during hydration. Unlike text
+-- nodes (where 'text' encodes at construction under @-fssr@), attribute
+-- values have no construction-time encoding, so it is applied here.
+escapeAttr :: MisoString -> Builder
+escapeAttr = fromMisoString . htmlEncode
 ----------------------------------------------------------------------------
 -- | The browser can't distinguish between multiple text nodes
 -- and a single text node. So it will always parse a single text node
@@ -271,14 +289,14 @@ collapseSiblingTextNodes (x:xs) =
 ----------------------------------------------------------------------------
 -- | Helper for turning JSON into Text
 -- Object, Array and Null are kind of non-sensical here
-toHtmlFromJSON :: Value -> Builder
-toHtmlFromJSON (String t)   = fromMisoString (ms t)
-toHtmlFromJSON (Number t)   = fromMisoString $ ms (show t)
-toHtmlFromJSON (Bool True)  = "true"
-toHtmlFromJSON (Bool False) = "false"
-toHtmlFromJSON Null         = "null"
-toHtmlFromJSON (Object o)   = fromMisoString $ ms (show o)
-toHtmlFromJSON (Array a)    = fromMisoString $ ms (show a)
+textFromJSON :: Value -> MisoString
+textFromJSON (String t)   = ms t
+textFromJSON (Number t)   = ms (show t)
+textFromJSON (Bool True)  = "true"
+textFromJSON (Bool False) = "false"
+textFromJSON Null         = "null"
+textFromJSON (Object o)   = ms (show o)
+textFromJSON (Array a)    = ms (show a)
 -----------------------------------------------------------------------------
 #ifdef SSR
 -- | Used for server-side model hydration, internally only in 'renderView'.

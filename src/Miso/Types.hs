@@ -919,9 +919,11 @@ instance Show (Attribute model action) where
         | (k, v) <- M.toList styles
         ]
 -----------------------------------------------------------------------------
--- | 'IsString' instance
+-- | 'IsString' instance. Routes through 'text', so string literals are
+-- subject to the same @-fssr@ HTML-encoding as 'text' (use 'textRaw' to
+-- opt out).
 instance IsString (View context model action) where
-  fromString = VText Nothing . fromString
+  fromString = text . fromString
 -----------------------------------------------------------------------------
 -- | Virtual DOM implemented as a JavaScript t'Object'.
 --   Used for diffing, patching and event delegation.
@@ -988,11 +990,20 @@ vnode
 vnode = node
 -----------------------------------------------------------------------------
 -- | Create a new v'VText' with the given content.
+--
+-- In server builds (@-fssr@) the content is HTML-encoded via 'htmlEncode'
+-- so it round-trips through the browser's parser; use 'textRaw' to opt out.
 text :: MisoString -> View context model action
+text = VText Nothing . encodeText
+-----------------------------------------------------------------------------
+-- | 'htmlEncode' in server builds (@-fssr@), identity otherwise. Applied by
+-- every text-node constructor ('text', 'text_', 'textKey', 'textKey_' and
+-- string literals) except 'textRaw'.
+encodeText :: MisoString -> MisoString
 #ifdef SSR
-text = VText Nothing . htmlEncode
+encodeText = htmlEncode
 #else
-text = VText Nothing
+encodeText = id
 #endif
 -----------------------------------------------------------------------------
 -- | Synonym for 'text'
@@ -1041,7 +1052,7 @@ htmlEncode = MS.concatMap $ \case
 -- A single additional space is added between elements.
 --
 text_ :: [MisoString] -> View context model action
-text_ = VText Nothing . MS.intercalate " "
+text_ = text . MS.intercalate " "
 -----------------------------------------------------------------------------
 -- | Like 'text', but allow the node to be keyed for efficient diffing.
 --
@@ -1052,7 +1063,7 @@ text_ = VText Nothing . MS.intercalate " "
 --
 -- @since 1.9.0.0
 textKey :: ToKey key => key -> MisoString -> View context model action
-textKey k = VText (Just (toKey k))
+textKey k = VText (Just (toKey k)) . encodeText
 -----------------------------------------------------------------------------
 -- | Like 'text_', but allow the node to be keyed for efficient diffing.
 --
@@ -1063,7 +1074,7 @@ textKey k = VText (Just (toKey k))
 --
 -- @since 1.9.0.0
 textKey_ :: ToKey key => key -> [MisoString] -> View context model action
-textKey_ k xs = VText (Just (toKey k)) (MS.intercalate " " xs)
+textKey_ k = textKey k . MS.intercalate " "
 -----------------------------------------------------------------------------
 -- | Utility function to make it easy to specify conditional attributes
 --
