@@ -10,10 +10,10 @@
 -- = Overview
 --
 -- "Miso.PubSub" provides a lightweight publish\/subscribe channel for
--- passing messages between independent 'Miso.Types.Component' trees that
+-- passing messages between independent t'Miso.Types.Component' trees that
 -- do not share a parent-child relationship.
 --
--- A 'Topic' is an untyped broadcast channel. Any component can
+-- A t'Topic' is an untyped broadcast channel. Any component can
 -- 'publish' a message to it; every component that has called 'subscribe'
 -- on that topic will receive the message as an action.
 --
@@ -24,11 +24,11 @@
 -- import "Miso.PubSub"
 --
 -- -- 1. Create a shared topic (typically at the top level or in a shared module)
--- chatTopic :: IO 'Topic'
+-- chatTopic :: IO t'Topic'
 -- chatTopic = 'topic'
 --
 -- -- 2. Subscribe in a component's subs list
--- myChatSub :: 'Topic' -> 'Miso.Effect.Sub' Action
+-- myChatSub :: t'Topic' -> 'Miso.Effect.Sub' Action
 -- myChatSub t = 'subscribe' t GotMessage
 --
 -- -- 3. Publish from any component's update function
@@ -49,7 +49,7 @@
 -- = See also
 --
 -- * "Miso.Effect" — 'Miso.Effect.Sub', 'Miso.Effect.withSink'
--- * "Miso.Runtime" — where 'Topic', 'subscribe', 'publish' are defined
+-- * "Miso.Runtime" — where t'Topic', 'subscribe', 'publish' are defined
 ----------------------------------------------------------------------------
 module Miso.PubSub
   ( -- * Pub\/Sub

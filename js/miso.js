@@ -1,5 +1,5 @@
 // ts/miso/util.ts
-var version = "1.9.0.0";
+var version = "1.13.0.0";
 function onBTS() {
   return typeof __BACKGROUND__ !== "undefined" && __BACKGROUND__;
 }

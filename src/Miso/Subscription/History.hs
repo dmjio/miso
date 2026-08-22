@@ -28,7 +28,7 @@
 -- subs = [ 'uriSub' UrlChanged ]
 -- @
 --
--- 'routerSub' is a convenience wrapper that decodes the 'URI' via a
+-- 'routerSub' is a convenience wrapper that decodes the t'URI' via a
 -- 'Miso.Router.Router' instance before delivering it as an action:
 --
 -- @
@@ -87,7 +87,7 @@ import           Miso.Router
 import           Miso.Effect (Sub)
 import           Miso.Subscription.Util
 -----------------------------------------------------------------------------
--- | Pushes a new URI onto the History stack. Also raises a `popstate` event.
+-- | Pushes a new URI onto the History stack. Also raises a @popstate@ event.
 pushURI
   :: URI
   -- ^ The URI to push onto the history stack
@@ -96,9 +96,9 @@ pushURI uri = do
   pushState (prettyURI uri)
   raisePopState
 -----------------------------------------------------------------------------
--- | Pushes a new 'Route' onto the History stack. Also raises a `popstate` event.
+-- | Pushes a new @Route@ onto the History stack. Also raises a @popstate@ event.
 --
--- Converts the t'Route' to a t'URI' internally.
+-- Converts the @Route@ to a t'URI' internally.
 --
 pushRoute
   :: Router route
@@ -107,7 +107,7 @@ pushRoute
   -> IO ()
 pushRoute = pushURI . toURI
 -----------------------------------------------------------------------------
--- | Replaces current URI on stack. Also raises a `popstate` event.
+-- | Replaces current URI on stack. Also raises a @popstate@ event.
 replaceURI
   :: URI
   -- ^ The URI to replace the current history entry with
@@ -139,12 +139,12 @@ go n = void $ getHistory # "go" $ [n]
 -----------------------------------------------------------------------------
 -- | Subscription for t'URI' changes, uses the History API.
 --
--- This returns a new t'URI' whenever `go`, `back`, `forward`, `pushState`
--- or `replaceState` have been called.
+-- This returns a new t'URI' whenever 'go', 'back', 'forward', 'pushURI'
+-- or 'replaceURI' have been called.
 --
 uriSub
   :: (URI -> action)
-  -- ^ Callback fired with the new 'URI' on every URL change
+  -- ^ Callback fired with the new t'URI' on every URL change
   -> Sub action
 uriSub f sink = createSub acquire release sink
   where

@@ -12,7 +12,7 @@
 -- = Overview
 --
 -- "Miso.Runtime.Internal" is a __testing-only__ facade that re-exports
--- the miso runtime's global mutable state from "Miso.Runtime".
+-- the miso runtime's global mutable state from the internal runtime module.
 --
 -- __Do not import this module in application code.__ Mutating any of
 -- the exported 'Data.IORef.IORef' values will corrupt the component
@@ -23,18 +23,17 @@
 -- = Exported names
 --
 -- * 'components' — global 'Data.IORef.IORef' mapping 'Miso.Effect.ComponentId'
---   to 'ComponentState' for every mounted component.
+--   to t'ComponentState' for every mounted component.
 -- * 'componentIds' — monotonically increasing 'Data.IORef.IORef' used to
 --   assign fresh component identifiers.
 -- * 'rootComponentId' — the well-known identifier of the top-level app component.
--- * 'ComponentState' — record holding the live model, scheduler mailbox, and
+-- * t'ComponentState' — record holding the live model, scheduler mailbox, and
 --   other per-component runtime fields.
 -- * 'schedulerThread' — 'Data.IORef.IORef' holding the 'Control.Concurrent.ThreadId'
 --   of the event-loop scheduler thread.
 --
 -- = See also
 --
--- * "Miso.Runtime" — the authoritative definitions of everything exported here
 -- * "Miso.Reload" — uses these internals to kill and restart the scheduler on @:r@
 ----------------------------------------------------------------------------
 module Miso.Runtime.Internal
@@ -42,10 +41,11 @@ module Miso.Runtime.Internal
   , componentIds
   , rootComponentId
   , ComponentState(..)
+  , ComponentIds
   , schedulerThread
   , module FFI
   ) where
 ----------------------------------------------------------------------------
-import Miso.Runtime (components, ComponentState(..), componentIds, rootComponentId, schedulerThread)
+import Miso.Runtime (components, ComponentState(..), ComponentIds, componentIds, rootComponentId, schedulerThread)
 import Miso.FFI.Internal as FFI
 ----------------------------------------------------------------------------

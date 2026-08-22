@@ -9,6 +9,8 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- @since 1.13.0.0
 ----------------------------------------------------------------------------
 module Miso.Native.Element.List.Property
   ( -- *** Property
@@ -59,11 +61,11 @@ import Miso.Types (Attribute)
 data ListOptions
   = ListOptions
   { listType_ :: ListType
-    -- ^ list-type: 'single' | 'flow' | 'waterfall'
+    -- ^ list-type: @single@ | @flow@ | @waterfall@
   , spanCount_ :: Int
     -- ^ Sets the number of columns or rows for the \<list\> component layout
   , scrollOrientation_ :: ScrollOrientation
-    -- ^ 'vertical' ｜ 'horizontal'
+    -- ^ @vertical@ ｜ @horizontal@
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
 -- | ScrollOrientation
@@ -145,7 +147,7 @@ sticky_ = boolProp "sticky"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/list.html#sticky-offset
 --
--- The offset distance from the top or bottom of \<list\> for sticky positioning, in 'px'.
+-- The offset distance from the top or bottom of \<list\> for sticky positioning, in 'Miso.CSS.px'.
 --
 stickyOffset_ :: Int -> Attribute model action
 stickyOffset_ = intProp "sticky-offset"
@@ -192,18 +194,18 @@ initialScrollIndex_ = intProp "initial-scroll-index"
 -- information of the currently rendering node.
 --
 -- The scroll events include:
---  * `scroll`
---  * `scrolltoupper`
---  * `scrolltolower`
+--  * @scroll@
+--  * @scrolltoupper@
+--  * @scrolltolower@
 --
--- Default value: 'False'
+-- Default value: @False@
 --
 needVisibleItemInfo_ :: Bool -> Attribute model action
 needVisibleItemInfo_ = boolProp "need-visible-item-info"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/list.html#upper-threshold-item-count
 -- 
--- Triggers a `scrolltoupper` event once when the number of remaining displayable
+-- Triggers a @scrolltoupper@ event once when the number of remaining displayable
 -- child nodes at the top of \<list\> is less than `upper-threshold-item-count`
 -- for the first time.
 --
@@ -212,7 +214,7 @@ upperThresholdItemCount_ = intProp "upper-threshold-item-count"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/list.html#lower-threshold-item-count
 -- 
--- Triggers a `scrolltolower` event once when the number of remaining
+-- Triggers a @scrolltolower@ event once when the number of remaining
 -- displayable child nodes at the bottom of \<list\> is less than
 -- `lower-threshold-item-count` for the first time.
 --
@@ -221,7 +223,7 @@ lowerThresholdItemCount_ = intProp "lower-threshold-item-count"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/list.html#scroll-event-throttle
 -- 
--- Sets the time interval for the \<list\> callback `scroll` event, in milliseconds (ms).
+-- Sets the time interval for the \<list\> callback @scroll@ event, in milliseconds (ms).
 -- By default, the scroll event is called back every 200 ms.
 --
 -- Default Value: 200
@@ -229,6 +231,9 @@ lowerThresholdItemCount_ = intProp "lower-threshold-item-count"
 scrollEventThrottle_ :: Int -> Attribute model action
 scrollEventThrottle_ = intProp "scroll-event-throttle"
 -----------------------------------------------------------------------------
+-- | Where a @<list>@ item comes to rest when pagination snaps to it.
+-- 
+-- @since 1.13.0.0
 data ListItemSnapAlignment
   = ListItemSnapAlignment
   { factor :: Int
@@ -245,7 +250,7 @@ instance ToJSON ListItemSnapAlignment where
 -- | https://lynxjs.org/api/elements/built-in/list.html#item-snap
 -- 
 -- Used to mark the unique identifier for this data source update, which
--- will be returned in the [`layoutcomplete`](#layoutcomplete) event callback.
+-- will be returned in the 'Miso.Native.Element.List.Event.onLayoutComplete' event callback.
 --
 -- - `factor`: The parameter for paginated positioning, with a range of `[0, 1]`.
 -- - `offset`: Additional `offset` parameter added on top of `factor`.

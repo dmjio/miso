@@ -47,7 +47,7 @@
 -- = Miscellaneous
 --
 -- * '(=:)' — infix tuple constructor for key-value pairs:
---   @\"key\" '=:' value@
+--   @\"key\" @=:@ value@
 -- * 'compose' — forward function composition generalised to any
 --   'Control.Category.Category': @f \`compose\` g = g . f@
 --
@@ -100,7 +100,7 @@ withFoldable ta f = map f (toList ta)
 -- is True.
 conditionalViews
   :: Bool
-  -- ^ When 'True' the views are included; when 'False' an empty list is returned
+  -- ^ When 'True' the views are included; when @False@ an empty list is returned
   -> [view]
   -- ^ Views to include conditionally
   -> [view]

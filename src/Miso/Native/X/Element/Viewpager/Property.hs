@@ -8,6 +8,8 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- @since 1.13.0.0
 ----------------------------------------------------------------------------
 module Miso.Native.X.Element.Viewpager.Property
   ( -- *** Property
@@ -31,7 +33,7 @@ import           Miso.Property
 --
 -- *Android* only. Controls the bounce effect at the edges.
 --
--- Default Value: 'False'
+-- Default Value: @False@
 --
 androidAlwaysOverscroll_ :: Bool -> Attribute model action
 androidAlwaysOverscroll_ = boolProp "android-always-overscroll"
@@ -40,7 +42,7 @@ androidAlwaysOverscroll_ = boolProp "android-always-overscroll"
 --
 -- *Android* only. Prevents gesture pass-through to the parent.
 --
--- Default Value: 'False'
+-- Default Value: @False@
 --
 androidForceCanScroll_ :: Bool -> Attribute model action
 androidForceCanScroll_ = boolProp "android-force-can-scroll"
@@ -76,7 +78,7 @@ initialSelectIndex_ = intProp "initial-select-index"
 --
 -- *iOS* only. Allows the outer container to respond when at the edges.
 --
--- Default Value: 'False'
+-- Default Value: @False@
 --
 iosGestureDirection_ :: Bool -> Attribute model action
 iosGestureDirection_ = boolProp "ios-gesture-direction"
@@ -110,7 +112,7 @@ iosRecognizedViewTag_ = intProp "ios-recognized-view-tag"
 --
 -- Enables lazy-load mode with early exposure.
 --
--- Default Value: 'False'
+-- Default Value: @False@
 --
 keepItemView_ :: Bool -> Attribute model action
 keepItemView_ = boolProp "keep-item-view"

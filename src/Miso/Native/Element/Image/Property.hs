@@ -8,6 +8,8 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- @since 1.13.0.0
 ----------------------------------------------------------------------------
 module Miso.Native.Element.Image.Property
   ( -- *** Property
@@ -44,7 +46,7 @@ mode_ = textProp "mode"
 -- | https://lynxjs.org/api/elements/built-in/image.html#placeholder
 --
 -- Specifies the path to the placeholder image. The usage and limitations
--- are the same as for the 'src' attribute.
+-- are the same as for the @src@ attribute.
 --
 -- > placeholder_ "value"
 --
@@ -64,9 +66,9 @@ blurRadius_ = textProp "blur-radius"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/image.html#prefetch-widthprefetch-height
 --
--- Allows initiating a request when the image has a `width` / `height` of 0. This is
+-- Allows initiating a request when the image has a @width@ / @height@ of 0. This is
 -- typically used when preloading images. It's recommended to set the sizes
--- to match the actual layout `width` / `height`.
+-- to match the actual layout @width@ / @height@.
 --
 -- > prefetchWidth_ "10px"
 --
@@ -77,9 +79,9 @@ prefetchWidth_ = textProp "prefetch-width"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/image.html#prefetch-widthprefetch-height
 --
--- Allows initiating a request when the image has a `width` / `height` of 0. This is
+-- Allows initiating a request when the image has a @width@ / @height@ of 0. This is
 -- typically used when preloading images. It's recommended to set the sizes
--- to match the actual layout `width` / `height`.
+-- to match the actual layout @width@ / @height@.
 --
 -- > prefetchHeight_ "10px"
 --
@@ -127,11 +129,11 @@ loopCount_ = intProp "loop-count"
 --
 -- *Android* only.
 --
--- Specifies the image data format. There are two options: `RGB_565` | `ARGB_8888`;
+-- Specifies the image data format. There are two options: @RGB_565@ | @ARGB_8888@;
 --
 -- > imageConfig_ "RGB_565"
 --
--- Default Value: 'ARGB_8888'
+-- Default Value: @ARGB_8888@
 --
 imageConfig_ :: MisoString -> Attribute model action
 imageConfig_ = textProp "image-config"
@@ -145,7 +147,7 @@ imageConfig_ = textProp "image-config"
 --
 -- > autoSize_ True
 --
--- Default Value: 'False'
+-- Default Value: @False@
 --
 autoSize_ :: Bool -> Attribute model action
 autoSize_ = boolProp "auto-size"
@@ -157,7 +159,7 @@ autoSize_ = boolProp "auto-size"
 --
 -- > deferSrcInvalidation_ True
 --
--- Default Value: 'False'
+-- Default Value: @False@
 --
 deferSrcInvalidation_ :: Bool -> Attribute model action
 deferSrcInvalidation_ = boolProp "defer-src-invalidation"

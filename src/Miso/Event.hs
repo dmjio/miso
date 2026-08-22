@@ -22,9 +22,9 @@
 -- * __Lifecycle hooks__ — 'onCreated', 'onDestroyed', etc.: fire Haskell
 --   callbacks at specific points in a DOM element's mount\/unmount lifecycle.
 --
--- See "Miso.Event.Decoder" for building custom 'Decoder' values and
--- "Miso.Event.Types" for structured payload types ('KeyboardEvent',
--- 'PointerEvent', etc.).
+-- See "Miso.Event.Decoder" for building custom t'Decoder' values and
+-- "Miso.Event.Types" for structured payload types (@KeyboardEvent@,
+-- t'PointerEvent', etc.).
 --
 ----------------------------------------------------------------------------
 module Miso.Event
@@ -67,6 +67,7 @@ import           Miso.String (MisoString, ms)
 -- view_ [ event $ static ('onMain' "tap" emptyDecoder ) ] [ text_ \"+\" ]
 -- @
 --
+-- @since 1.13.0.0
 onMain :: MisoString
    -- ^ DOM event name (e.g. @\"click\"@, @\"input\"@)
    -> Decoder result
@@ -117,7 +118,7 @@ onCapture
    -> Attribute model action
 onCapture = onWithOptions CAPTURE defaultOptions
 -----------------------------------------------------------------------------
--- | Mark an event handler to be dispatched on the Lynx __main thread__ ('MTS')
+-- | Mark an event handler to be dispatched on the Lynx __main thread__ (@MTS@)
 -- rather than the background thread. This is the analog of Lynx's
 -- @main-thread:bind@ prefix, and is decided __per handler__ — so @tap@ can be a
 -- main-thread handler on one element and a background handler on another.
@@ -130,7 +131,7 @@ onCapture = onWithOptions CAPTURE defaultOptions
 -- view_ [ event (static (mainThread (onTapWith Grow))) ] children
 -- @
 --
--- @since 1.9.0.0
+-- @since 1.13.0.0
 onMainWithOptions
   :: Phase
   -- ^ Event propagation phase: 'BUBBLE' (default) or 'CAPTURE'
@@ -160,10 +161,10 @@ onMainWithOptions phase opts name decoder conversion =
 --
 -- * @phase@    — 'BUBBLE' (default) or 'CAPTURE': which DOM propagation phase
 --   the listener is registered on.
--- * @options@  — 'defaultOptions' or a custom 'Options' value: controls
+-- * @options@  — 'defaultOptions' or a custom t'Options' value: controls
 --   @preventDefault@ and @stopPropagation@ behaviour.
 -- * @eventName@ — the DOM event name, e.g. @\"click\"@, @\"keydown\"@.
--- * @decoder@  — a 'Decoder' that extracts relevant fields from the JS event object.
+-- * @decoder@  — a t'Decoder' that extracts relevant fields from the JS event object.
 -- * @toAction@ — maps the decoded payload and the element's 'DOMRef' to an @action@.
 --
 -- @
@@ -217,7 +218,7 @@ onWithOptions phase options eventName Decoder{..} toAction =
                 sink (toAction event _componentModel domRef)
     FFI.set "runEvent" cb eventHandlerObject
     FFI.set "options" jsOptions eventHandlerObject
-    -- Only 'mainThread'-marked handlers carry their 'StaticKey' \/ 'ComponentId'
+    -- Only 'mainThread'-marked handlers carry their 'StaticKey' \/ @ComponentId@
     -- (stashed on the node by 'setAttrs') onto the per-event object. That is what
     -- puts them in the node's @eventKeys@, telling the native delegator to
     -- dispatch this handler on the main thread. Unmarked handlers (and the

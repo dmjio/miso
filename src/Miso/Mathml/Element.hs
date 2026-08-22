@@ -29,12 +29,12 @@
 -- @
 -- import "Miso"
 -- import "Miso.Mathml.Element"
--- import "Miso.Mathml.Property" ('display_')
+-- import "Miso.Mathml.Property" (@display_@)
 --
 -- formula :: 'Miso.Types.View' model action
 -- formula =
 --   'Miso.Html.Element.p_' []
---     [ 'math_' [ 'display_' \"block\" ]
+--     [ 'math_' [ @display_@ \"block\" ]
 --         [ 'mfrac_' []
 --             [ 'mn_' [] [ 'Miso.text' \"1\" ]
 --             , 'msqrt_' [] [ 'mn_' [] [ 'Miso.text' \"2\" ] ]

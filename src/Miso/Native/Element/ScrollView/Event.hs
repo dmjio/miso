@@ -8,6 +8,8 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- @since 1.13.0.0
 ----------------------------------------------------------------------------
 module Miso.Native.Element.ScrollView.Event
   ( -- *** Event
@@ -46,6 +48,12 @@ import           Miso.Event
 import           Miso.JSON (withObject, (.:?), (.!=))
 import           Miso.String (MisoString)
 -----------------------------------------------------------------------------
+-- | The 'Events' map for the Lynx @<scrollview>@ element.
+--
+-- Combine with other element maps using @<>@ and pass the result to
+-- 'Miso.Native.native', so the delegator listens for these events.
+--
+-- @since 1.13.0.0
 scrollViewEvents :: Events
 scrollViewEvents
   = M.fromList
@@ -56,6 +64,12 @@ scrollViewEvents
   , ("contentsizechanged", BUBBLE)
   ]
 -----------------------------------------------------------------------------
+-- | t'Decoder' producing a t'ScrollEvent' from the raw Lynx event payload.
+--
+-- Pass it to 'Miso.Event.on' \/ 'Miso.Event.onMain' when writing a handler by
+-- hand; the @on*@ helpers in this module already use it.
+--
+-- @since 1.13.0.0
 scrollDecoder :: Decoder ScrollEvent
 scrollDecoder = ["detail"] `at` do
   withObject "ScrollEvent" $ \o ->
@@ -70,6 +84,10 @@ scrollDecoder = ["detail"] `at` do
       <*> o .:? "scrollHeight" .!= 0
       <*> o .:? "scrollWidth" .!= 0
 -----------------------------------------------------------------------------
+-- | Payload of a @<scroll-view>@ scroll event: the delta since the last
+-- event, the current offsets, and the full scrollable extent.
+-- 
+-- @since 1.13.0.0
 data ScrollEvent
   = ScrollEvent
   { scrollType :: MisoString
@@ -95,7 +113,7 @@ data ScrollEvent
 onScroll :: (ScrollEvent -> action) -> Attribute model action
 onScroll action = on "scroll" scrollDecoder (\x _ _ -> action x)
 -----------------------------------------------------------------------------
--- | Like 'onScroll', but dispatched on the Lynx __main thread__ ('MTS').
+-- | Like 'onScroll', but dispatched on the Lynx __main thread__ (@MTS@).
 --
 -- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
 -- @-XStaticPointers@.
@@ -139,7 +157,7 @@ onScrollMainWith action = onMain "scroll" scrollDecoder action
 onScrollToUpper :: (ScrollEvent -> action) -> Attribute model action
 onScrollToUpper action = on "scrolltoupper" scrollDecoder (\x _ _ -> action x)
 -----------------------------------------------------------------------------
--- | Like 'onScrollToUpper', but dispatched on the Lynx __main thread__ ('MTS').
+-- | Like 'onScrollToUpper', but dispatched on the Lynx __main thread__ (@MTS@).
 --
 -- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
 -- @-XStaticPointers@.
@@ -183,7 +201,7 @@ onScrollToUpperMainWith action = onMain "scrolltoupper" scrollDecoder action
 onScrollToLower :: (ScrollEvent -> action) -> Attribute model action
 onScrollToLower action = on "scrolltolower" scrollDecoder (\x _ _ -> action x)
 -----------------------------------------------------------------------------
--- | Like 'onScrollToLower', but dispatched on the Lynx __main thread__ ('MTS').
+-- | Like 'onScrollToLower', but dispatched on the Lynx __main thread__ (@MTS@).
 --
 -- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
 -- @-XStaticPointers@.
@@ -227,7 +245,7 @@ onScrollToLowerMainWith action = onMain "scrolltolower" scrollDecoder action
 onScrollEnd :: (ScrollEvent -> action) -> Attribute model action
 onScrollEnd action = on "scrollend" scrollDecoder (\x _ _ -> action x)
 -----------------------------------------------------------------------------
--- | Like 'onScrollEnd', but dispatched on the Lynx __main thread__ ('MTS').
+-- | Like 'onScrollEnd', but dispatched on the Lynx __main thread__ (@MTS@).
 --
 -- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
 -- @-XStaticPointers@.
@@ -276,7 +294,7 @@ onScrollEndMainWith action = onMain "scrollend" scrollDecoder action
 onContentSizeChanged :: (ScrollEvent -> action) -> Attribute model action
 onContentSizeChanged action = on "contentsizechanged" scrollDecoder (\x _ _ -> action x)
 -----------------------------------------------------------------------------
--- | Like 'onContentSizeChanged', but dispatched on the Lynx __main thread__ ('MTS').
+-- | Like 'onContentSizeChanged', but dispatched on the Lynx __main thread__ (@MTS@).
 --
 -- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
 -- @-XStaticPointers@.
@@ -304,27 +322,27 @@ onContentSizeChangedMainWith :: (ScrollEvent -> model -> DOMRef -> action) -> Ev
 onContentSizeChangedMainWith action = onMain "contentsizechanged" scrollDecoder action
 -----------------------------------------------------------------------------
 -- | Like 'onScroll', but the handler also receives the target element's 'DOMRef'.
--- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+-- Use for main-thread (@MTS@) handlers that imperatively mutate the element.
 onScrollWith :: (ScrollEvent -> DOMRef -> action) -> Attribute model action
 onScrollWith action = on "scroll" scrollDecoder $ \se _ domRef -> action se domRef
 -----------------------------------------------------------------------------
 -- | Like 'onScrollToUpper', but the handler also receives the target element's 'DOMRef'.
--- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+-- Use for main-thread (@MTS@) handlers that imperatively mutate the element.
 onScrollToUpperWith :: (ScrollEvent -> DOMRef -> action) -> Attribute model action
 onScrollToUpperWith action = on "scrolltoupper" scrollDecoder $ \se _ domRef -> action se domRef
 -----------------------------------------------------------------------------
 -- | Like 'onScrollToLower', but the handler also receives the target element's 'DOMRef'.
--- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+-- Use for main-thread (@MTS@) handlers that imperatively mutate the element.
 onScrollToLowerWith :: (ScrollEvent -> DOMRef -> action) -> Attribute model action
 onScrollToLowerWith action = on "scrolltolower" scrollDecoder $ \se _ domRef -> action se domRef
 -----------------------------------------------------------------------------
 -- | Like 'onScrollEnd', but the handler also receives the target element's 'DOMRef'.
--- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+-- Use for main-thread (@MTS@) handlers that imperatively mutate the element.
 onScrollEndWith :: (ScrollEvent -> DOMRef -> action) -> Attribute model action
 onScrollEndWith action = on "scrollend" scrollDecoder $ \se _ domRef -> action se domRef
 -----------------------------------------------------------------------------
 -- | Like 'onContentSizeChanged', but the handler also receives the target element's 'DOMRef'.
--- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+-- Use for main-thread (@MTS@) handlers that imperatively mutate the element.
 onContentSizeChangedWith :: (ScrollEvent -> DOMRef -> action) -> Attribute model action
 onContentSizeChangedWith action = on "contentsizechanged" scrollDecoder $ \se _ domRef -> action se domRef
 -----------------------------------------------------------------------------

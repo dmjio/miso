@@ -13,6 +13,7 @@
 --
 -- Applies a Gaussian blur / material effect to the content behind it.
 --
+-- @since 1.13.0.0
 ----------------------------------------------------------------------------
 module Miso.Native.X.Element.BlurView
   ( module Miso.Native.X.Element.BlurView.Property

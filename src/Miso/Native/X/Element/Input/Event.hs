@@ -8,6 +8,8 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- @since 1.13.0.0
 ----------------------------------------------------------------------------
 module Miso.Native.X.Element.Input.Event
   ( -- *** Events
@@ -49,6 +51,12 @@ import           Miso.JSON
 import           Miso.String (MisoString)
 import           Miso.Types (Attribute, EventHandler, DOMRef)
 -----------------------------------------------------------------------------
+-- | The 'Events' map for the Lynx @<input>@ element.
+--
+-- Combine with other element maps using @<>@ and pass the result to
+-- 'Miso.Native.native', so the delegator listens for these events.
+--
+-- @since 1.13.0.0
 inputEvents :: Events
 inputEvents
   = M.fromList
@@ -87,6 +95,12 @@ inputValueDecoder = ["detail"] `at` details
   where
     details = withObject "detail" $ \o -> o .: "value"
 -----------------------------------------------------------------------------
+-- | t'Decoder' producing a t'InputEvent' from the raw Lynx event payload.
+--
+-- Pass it to 'Miso.Event.on' \/ 'Miso.Event.onMain' when writing a handler by
+-- hand; the @on*@ helpers in this module already use it.
+--
+-- @since 1.13.0.0
 inputDecoder :: Decoder InputEvent
 inputDecoder = ["detail"] `at` details
   where
@@ -98,12 +112,18 @@ inputDecoder = ["detail"] `at` details
         -- Lynx's native input sends @isComposing@ as a number (0/1), bridged
         -- from an ObjC @BOOL@ — not a JSON boolean — so decode it as an 'Int'
         -- and coerce. Absent (e.g. on the simulator's non-composing path) is
-        -- 'False'. Decoding it as 'Bool' fails the whole decoder on device.
+        -- @False@. Decoding it as 'Bool' fails the whole decoder on device.
         <*> (maybe False (/= (0 :: Int)) <$> o .:? "isComposing")
 -----------------------------------------------------------------------------
 -- Note: the JS keys stay @selectionStart@/@selectionEnd@; the record fields are
 -- 'selStart'/'selEnd' to avoid clashing with 'InputValue' when the hub module
 -- re-exports Event and Method together.
+-- | t'Decoder' producing a t'SelectionEvent' from the raw Lynx event payload.
+--
+-- Pass it to 'Miso.Event.on' \/ 'Miso.Event.onMain' when writing a handler by
+-- hand; the @on*@ helpers in this module already use it.
+--
+-- @since 1.13.0.0
 selectionDecoder :: Decoder SelectionEvent
 selectionDecoder = ["detail"] `at` details
   where
@@ -119,7 +139,7 @@ selectionDecoder = ["detail"] `at` details
 onBlur :: (MisoString -> action) -> Attribute model action
 onBlur action = on "blur" inputValueDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
--- | Like 'onBlur', but dispatched on the Lynx __main thread__ ('MTS').
+-- | Like 'onBlur', but dispatched on the Lynx __main thread__ (@MTS@).
 --
 -- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
 -- @-XStaticPointers@.
@@ -152,7 +172,7 @@ onBlurMainWith action = onMain "blur" inputValueDecoder action
 onConfirm :: (MisoString -> action) -> Attribute model action
 onConfirm action = on "confirm" inputValueDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
--- | Like 'onConfirm', but dispatched on the Lynx __main thread__ ('MTS').
+-- | Like 'onConfirm', but dispatched on the Lynx __main thread__ (@MTS@).
 --
 -- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
 -- @-XStaticPointers@.
@@ -185,7 +205,7 @@ onConfirmMainWith action = onMain "confirm" inputValueDecoder action
 onFocus :: (MisoString -> action) -> Attribute model action
 onFocus action = on "focus" inputValueDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
--- | Like 'onFocus', but dispatched on the Lynx __main thread__ ('MTS').
+-- | Like 'onFocus', but dispatched on the Lynx __main thread__ (@MTS@).
 --
 -- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
 -- @-XStaticPointers@.
@@ -218,7 +238,7 @@ onFocusMainWith action = onMain "focus" inputValueDecoder action
 onInput :: (InputEvent -> action) -> Attribute model action
 onInput action = on "input" inputDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
--- | Like 'onInput', but dispatched on the Lynx __main thread__ ('MTS').
+-- | Like 'onInput', but dispatched on the Lynx __main thread__ (@MTS@).
 --
 -- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
 -- @-XStaticPointers@.
@@ -251,7 +271,7 @@ onInputMainWith action = onMain "input" inputDecoder action
 onSelection :: (SelectionEvent -> action) -> Attribute model action
 onSelection action = on "selection" selectionDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
--- | Like 'onSelection', but dispatched on the Lynx __main thread__ ('MTS').
+-- | Like 'onSelection', but dispatched on the Lynx __main thread__ (@MTS@).
 --
 -- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
 -- @-XStaticPointers@.
@@ -278,27 +298,27 @@ onSelectionMainWith :: (SelectionEvent -> model -> DOMRef -> action) -> EventHan
 onSelectionMainWith action = onMain "selection" selectionDecoder action
 -----------------------------------------------------------------------------
 -- | Like 'onBlur', but the handler also receives the target element's 'DOMRef'.
--- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+-- Use for main-thread (@MTS@) handlers that imperatively mutate the element.
 onBlurWith :: (MisoString -> DOMRef -> action) -> Attribute model action
 onBlurWith action = on "blur" inputValueDecoder $ \v _ domRef -> action v domRef
 -----------------------------------------------------------------------------
 -- | Like 'onConfirm', but the handler also receives the target element's 'DOMRef'.
--- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+-- Use for main-thread (@MTS@) handlers that imperatively mutate the element.
 onConfirmWith :: (MisoString -> DOMRef -> action) -> Attribute model action
 onConfirmWith action = on "confirm" inputValueDecoder $ \v _ domRef -> action v domRef
 -----------------------------------------------------------------------------
 -- | Like 'onFocus', but the handler also receives the target element's 'DOMRef'.
--- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+-- Use for main-thread (@MTS@) handlers that imperatively mutate the element.
 onFocusWith :: (MisoString -> DOMRef -> action) -> Attribute model action
 onFocusWith action = on "focus" inputValueDecoder $ \v _ domRef -> action v domRef
 -----------------------------------------------------------------------------
 -- | Like 'onInput', but the handler also receives the target element's 'DOMRef'.
--- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+-- Use for main-thread (@MTS@) handlers that imperatively mutate the element.
 onInputWith :: (InputEvent -> DOMRef -> action) -> Attribute model action
 onInputWith action = on "input" inputDecoder $ \v _ domRef -> action v domRef
 -----------------------------------------------------------------------------
 -- | Like 'onSelection', but the handler also receives the target element's 'DOMRef'.
--- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+-- Use for main-thread (@MTS@) handlers that imperatively mutate the element.
 onSelectionWith :: (SelectionEvent -> DOMRef -> action) -> Attribute model action
 onSelectionWith action = on "selection" selectionDecoder $ \v _ domRef -> action v domRef
 -----------------------------------------------------------------------------

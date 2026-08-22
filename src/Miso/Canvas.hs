@@ -80,8 +80,8 @@
 -- = Styling
 --
 -- 'fillStyle' and 'strokeStyle' accept a 'StyleArg', which can be a plain
--- 'Miso.CSS.Color.Color' (via 'color'), a 'Gradient' (via 'gradient'), or a
--- 'Pattern' (via 'pattern_'):
+-- 'Miso.CSS.Color.Color' (via 'color'), a t'Gradient' (via 'gradient'), or a
+-- t'Pattern' (via 'pattern_'):
 --
 -- @
 -- 'fillStyle' ('color' Color.'Miso.CSS.Color.red')
@@ -195,7 +195,7 @@ canvas_
    . (FromJSVal canvasState, ToJSVal canvasState)
   => [ Attribute model action ]
   -> (DOMRef -> IO canvasState)
-  -- ^ Init function, takes 'DOMRef' as arg, returns canvas init. state.
+  -- ^ Init function, takes @DOMRef@ as arg, returns canvas init. state.
   -> (canvasState -> IO ())
   -- ^ Callback to render graphics using this canvas' context, takes init state as arg.
   -> View context model action
@@ -224,7 +224,7 @@ canvas
    . (FromJSVal canvasState, ToJSVal canvasState)
   => [ Attribute model action ]
   -> (DOMRef -> Canvas canvasState)
-  -- ^ Init function, takes 'DOMRef' as arg, returns canvas init. state.
+  -- ^ Init function, takes @DOMRef@ as arg, returns canvas init. state.
   -> (canvasState -> Canvas ())
   -- ^ Callback to render graphics using this canvas' context, takes init state as arg.
   -> View context model action

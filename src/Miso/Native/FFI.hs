@@ -8,6 +8,8 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- @since 1.13.0.0
 ----------------------------------------------------------------------------
 module Miso.Native.FFI
   ( -- *** Lynx specific FFI
@@ -54,8 +56,8 @@ clearInterval intervalId = do
 -----------------------------------------------------------------------------
 -- | <https://lynxjs.org/api/lynx-api/nodes-ref/nodes-ref-invoke.html>
 --
--- Used to call methods on elements in 'view_', 'image_', etc.
--- We use this internally to implement the various 'Method' sections
+-- Used to call methods on elements in @view_@, @image_@, etc.
+-- We use this internally to implement the various @Method@ sections
 -- per the lynx docs.
 --
 -- > invokeExec "gifs" "startAnimate" :: IO ()
@@ -64,7 +66,7 @@ clearInterval intervalId = do
 -- lynx.createSelectorQuery()
 --   .select('#gifs')
 --   .invoke({
---    method: 'startAnimate'，
+--    method: @startAnimate@，
 --  }).exec();
 -- @
 --

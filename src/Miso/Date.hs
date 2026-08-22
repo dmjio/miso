@@ -14,11 +14,11 @@
 --
 -- "Miso.Date" is a Haskell wrapper around the JavaScript
 -- <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date Date>
--- object. A 'Date' value lives in JavaScript memory and represents a single
+-- object. A t'Date' value lives in JavaScript memory and represents a single
 -- point in time. All operations run in 'IO' and call through to the
 -- underlying JS object.
 --
--- Import qualified to avoid clashing with 'Prelude':
+-- Import qualified to avoid clashing with @Prelude@:
 --
 -- @
 -- import qualified "Miso.Date" as D
@@ -125,6 +125,8 @@ import qualified Miso.DSL as DSL
 import           Miso.FFI (callFunction)
 import           Miso.String (MisoString)
 -----------------------------------------------------------------------------
+-- | A JS [Date](https:\/\/developer.mozilla.org\/en-US\/docs\/Web\/JavaScript\/Reference\/Global_Objects\/Date),
+-- wrapped so it can be passed across the FFI without copying.
 newtype Date = Date JSVal deriving (FromJSVal, ToJSVal, ToObject, Eq)
 -----------------------------------------------------------------------------
 -- | Constructs a new JS [Date](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date) in t'IO'.

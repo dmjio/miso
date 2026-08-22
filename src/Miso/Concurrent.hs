@@ -11,7 +11,7 @@
 --
 -- = Overview
 --
--- "Miso.Concurrent" provides 'Waiter', a lightweight synchronization
+-- "Miso.Concurrent" provides t'Waiter', a lightweight synchronization
 -- primitive built on 'Control.Concurrent.MVar.MVar' that the miso runtime
 -- uses to coordinate its event loop with subscription threads.
 --

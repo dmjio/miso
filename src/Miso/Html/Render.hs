@@ -189,8 +189,8 @@ renderBuilder (VComp someComp) =
   case someComp of
     SomeComponent _key props comp_ ->
       -- The app-global @context@ is read from 'globalContext'. For the common
-      -- @context ~ ()@ case the 'view' ignores it, so the initial @undefined@ is
-      -- never forced. But if a 'view' here inspects a non-trivial @context@,
+      -- @context ~ ()@ case the 'Miso.Lens.view' ignores it, so the initial @undefined@ is
+      -- never forced. But if a 'Miso.Lens.view' here inspects a non-trivial @context@,
       -- SSR must seed the cell with 'Miso.setContext' before serializing, or
       -- forcing @ctx@ raises an exception. See 'Miso.setContext' for details.
       let ctx = unsafePerformIO (readIORef globalContext) in
@@ -204,8 +204,8 @@ renderBuilder (VCompStatic ptr props0) =
    SomeStaticComponent mk -> case mk props0 of
     SomeComponent _key props comp_ ->
       -- The app-global @context@ is read from 'globalContext'. For the common
-      -- @context ~ ()@ case the 'view' ignores it, so the initial @undefined@ is
-      -- never forced. But if a 'view' here inspects a non-trivial @context@,
+      -- @context ~ ()@ case the 'Miso.Lens.view' ignores it, so the initial @undefined@ is
+      -- never forced. But if a 'Miso.Lens.view' here inspects a non-trivial @context@,
       -- SSR must seed the cell with 'Miso.setContext' before serializing, or
       -- forcing @ctx@ raises an exception. See 'Miso.setContext' for details.
       let ctx = unsafePerformIO (readIORef globalContext) in

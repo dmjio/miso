@@ -125,7 +125,7 @@ main :: IO ()
 main = do
   enableDebugging
   nativeWithContext (nativeEvents <> nativeXEvents) Dark
-    (static (mountStatic_ galleryComponent))
+    (static (mountStatic galleryComponent))
 -----------------------------------------------------------------------------
 galleryComponent :: Component Theme () Model Action
 galleryComponent = component (Model [] False False False 6) updateModel viewModel

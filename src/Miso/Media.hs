@@ -15,7 +15,7 @@
 -- "Miso.Media" is a Haskell wrapper around the browser's
 -- <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement HTMLMediaElement>
 -- API. It covers both @\<audio\>@ and @\<video\>@ elements through the
--- unified 'Media' type, which wraps the underlying 'Miso.DSL.JSVal'.
+-- unified t'Media' type, which wraps the underlying 'Miso.DSL.JSVal'.
 --
 -- All property reads and method calls run in 'IO'. Properties that can be
 -- set declaratively are cross-linked to their corresponding
@@ -23,7 +23,7 @@
 --
 -- = Quick start
 --
--- Obtain a 'Media' handle from the DOM, then read or control it in an
+-- Obtain a t'Media' handle from the DOM, then read or control it in an
 -- 'Miso.Effect.Effect':
 --
 -- @
@@ -32,13 +32,13 @@
 --
 -- update :: Action -> 'Miso.Effect.Effect' p props Model Action
 -- update PlayVideo = 'Miso.Effect.io_' $ do
---   m <- 'Media' \<$\> 'Miso.FFI.getElementById' \"myVideo\"
+--   m <- t'Media' \<$\> 'Miso.FFI.getElementById' \"myVideo\"
 --   'play' m
 -- update PauseVideo = 'Miso.Effect.io_' $ do
---   m <- 'Media' \<$\> 'Miso.FFI.getElementById' \"myVideo\"
+--   m <- t'Media' \<$\> 'Miso.FFI.getElementById' \"myVideo\"
 --   'pause' m
 -- update ReadState = 'Miso.Effect.io' $ do
---   m  <- 'Media' \<$\> 'Miso.FFI.getElementById' \"myVideo\"
+--   m  <- t'Media' \<$\> 'Miso.FFI.getElementById' \"myVideo\"
 --   t  <- 'currentTime' m
 --   rs <- 'readyState' m
 --   pure (GotState t rs)
@@ -329,7 +329,7 @@ type Stream = JSVal
 -- | Sets the `srcObject` on audio or video elements.
 srcObject
   :: Stream
-  -- ^ A 'Stream' obtained from @navigator.mediaDevices.getUserMedia@ or similar
+  -- ^ A t'Stream' obtained from @navigator.mediaDevices.getUserMedia@ or similar
   -> Media
   -- ^ The audio\/video element whose @srcObject@ will be set
   -> IO ()

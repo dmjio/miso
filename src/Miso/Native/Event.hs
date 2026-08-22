@@ -9,6 +9,8 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- @since 1.13.0.0
 ----------------------------------------------------------------------------
 module Miso.Native.Event
   ( -- * Events
@@ -34,6 +36,12 @@ import           Miso.Native.X.Element.Webview.Event  (webviewEvents)
 ----------------------------------------------------------------------------
 import           Miso.Event                           (Events)
 ----------------------------------------------------------------------------
+-- | The combined 'Events' map for every built-in Lynx element.
+--
+-- Pass it to 'Miso.Native.native'; combine maps with @<>@ when an app
+-- needs both.
+--
+-- @since 1.13.0.0
 nativeEvents :: Events
 nativeEvents = mconcat
   [ frameEvents
@@ -44,6 +52,12 @@ nativeEvents = mconcat
   , viewEvents
   ]
 ----------------------------------------------------------------------------
+-- | The combined 'Events' map for every extended (@x-@ namespace) Lynx element.
+--
+-- Pass it to 'Miso.Native.native'; combine maps with @<>@ when an app
+-- needs both.
+--
+-- @since 1.13.0.0
 nativeXEvents :: Events
 nativeXEvents = mconcat
   [ inputEvents

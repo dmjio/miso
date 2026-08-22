@@ -8,6 +8,8 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- @since 1.13.0.0
 ----------------------------------------------------------------------------
 module Miso.Native.X.Element.Input.Property
   ( -- *** Property
@@ -94,7 +96,7 @@ confirmType_ = prop "confirm-type"
 --
 -- > disabled_ True
 --
--- Default Value: 'False'
+-- Default Value: @False@
 --
 disabled_ :: Bool -> Attribute model action
 disabled_ = boolProp "disabled"
@@ -156,7 +158,7 @@ placeholder_ = textProp "placeholder"
 --
 -- > readonly_ True
 --
--- Default Value: 'False'
+-- Default Value: @False@
 --
 readonly_ :: Bool -> Attribute model action
 readonly_ = boolProp "readonly"

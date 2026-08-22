@@ -8,6 +8,8 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- @since 1.13.0.0
 ----------------------------------------------------------------------------
 module Miso.Native.X.Element.Webview.Property
   ( -- *** Property
@@ -32,7 +34,7 @@ import           Miso.Property
 --
 -- *iOS* only. Enables the bounce effect.
 --
--- Default Value: 'False'
+-- Default Value: @False@
 --
 bounces_ :: Bool -> Attribute model action
 bounces_ = boolProp "bounces"
@@ -48,7 +50,7 @@ cookies_ = prop "cookies"
 --
 -- Enables WebView debugging on Android so it can be debugged in Chrome DevTools.
 --
--- Default Value: 'False'
+-- Default Value: @False@
 --
 enableDebug_ :: Bool -> Attribute model action
 enableDebug_ = boolProp "enable-debug"
@@ -79,7 +81,7 @@ params_ = prop "params"
 --
 -- *iOS* only. Enables the scrollbar.
 --
--- Default Value: 'False'
+-- Default Value: @False@
 --
 scrollBarEnable_ :: Bool -> Attribute model action
 scrollBarEnable_ = boolProp "scroll-bar-enable"
@@ -97,7 +99,7 @@ src_ = textProp "src"
 --
 -- *Desktop, Lynx 3.5+*. Whether to enable offscreen rendering mode.
 --
--- Default Value: 'False'
+-- Default Value: @False@
 --
 useOsr_ :: Bool -> Attribute model action
 useOsr_ = boolProp "use-osr"

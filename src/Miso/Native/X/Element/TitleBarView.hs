@@ -13,6 +13,7 @@
 --
 -- Defines a custom draggable window region (Clay Windows / macOS).
 --
+-- @since 1.13.0.0
 ----------------------------------------------------------------------------
 module Miso.Native.X.Element.TitleBarView
   ( module Miso.Native.X.Element.TitleBarView.Property

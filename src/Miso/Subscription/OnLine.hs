@@ -16,7 +16,7 @@
 -- <https://developer.mozilla.org/en-US/docs/Web/API/Navigator/onLine navigator.onLine>
 -- connectivity status. It registers @online@ and @offline@ event listeners
 -- on @window@ and fires an action with 'True' when the connection is
--- restored and 'False' when it is lost.
+-- restored and @False@ when it is lost.
 --
 -- = Quick start
 --
@@ -54,13 +54,13 @@ import           Miso.Subscription.Util (createSub)
 import qualified Miso.FFI.Internal as FFI
 -----------------------------------------------------------------------------
 -- | Returns 'Sub' for the navigator.onLine API.
--- Fires action with 'True' when the browser goes online, and 'False' when it goes offline.
+-- Fires action with 'True' when the browser goes online, and @False@ when it goes offline.
 --
 -- <https://developer.mozilla.org/en-US/docs/Web/API/Navigator/onLine>
 --
 onLineSub
   :: (Bool -> action)
-  -- ^ Callback: 'True' when going online, 'False' when going offline
+  -- ^ Callback: 'True' when going online, @False@ when going offline
   -> Sub action
 onLineSub f sink = createSub acquire release sink
   where

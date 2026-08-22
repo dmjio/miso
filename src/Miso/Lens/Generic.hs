@@ -34,7 +34,7 @@
 -- {-\# LANGUAGE OverloadedLabels, DeriveGeneric \#-}
 -- import GHC.Generics (Generic)
 -- import "Miso.Lens.Generic" ('HasLens', 'field')
--- import "Miso.Lens"         ('Lens', 'view', 'set', ('.='), ('++='))
+-- import "Miso.Lens"         ('Lens', 'Miso.Lens.view', @set@, (@.=@), (@++=@))
 -- @
 --
 -- = Quick start
@@ -52,8 +52,8 @@
 -- labelLens = 'field' \@\"_label\"
 --
 -- update :: Action -> 'Miso.Effect.Effect' p props Counter Action
--- update Increment = #_count '+=' 1
--- update (SetLabel l) = #_label '.=' l
+-- update Increment = #_count @+=@ 1
+-- update (SetLabel l) = #_label @.=@ l
 -- @
 --
 -- = How it works
@@ -73,7 +73,7 @@
 -- * "Miso.Lens" — 'Miso.Lens.Lens', 'Miso.Lens.lens', operators
 -- * "Miso.Lens.TH" — Template Haskell alternative
 -----------------------------------------------------------------------------
-module Miso.Lens.Generic (HasLens(..), field) where
+module Miso.Lens.Generic (HasLens(..), field, GSet(..), GetFieldType, TotalityCheck, And, Or) where
 
 -----------------------------------------------------------------------------
 import Data.Kind (Constraint, Type)
@@ -85,6 +85,13 @@ import GHC.TypeLits (ErrorMessage (..), Symbol, TypeError)
 import Miso.Lens (Lens, lens)
 -----------------------------------------------------------------------------
 
+-- | Provides a 'Lens' onto the field named @name@ of the record @s@.
+--
+-- The single instance is derived from @s@'s t'GHC.Generics.Generic'
+-- representation, so any record with a 'GHC.Generics.Generic' instance gets
+-- lenses for free. Also backs the @OverloadedLabels@ syntax @#fieldName@.
+--
+-- @since 1.11.0.0
 class Generic s => HasLens (name :: Symbol) s a | name s -> a where 
   getLens :: Lens s a
 
@@ -98,9 +105,20 @@ instance HasLens name s a => IsLabel name (Lens s a)
   where fromLabel = getLens @name
 
 {-# INLINE field #-}
+-- | A 'Lens' onto the record field named @name@, applied with a type
+-- application: @'field' \@"userName"@.
+--
+-- The @OverloadedLabels@ form @#userName@ is equivalent.
+--
+-- @since 1.11.0.0
 field :: forall name s a. HasLens name s a => Lens s a 
 field = fromLabel @name
 
+-- | Internal: writes the field named @name@ into a t'GHC.Generics.Generic'
+-- representation. Drives the setter half of 'HasLens'; you should not need to
+-- write instances.
+--
+-- @since 1.13.0.0
 class GSet (name :: Symbol) typ f where
   gSet :: typ -> f x -> f x
 
@@ -128,6 +146,11 @@ instance {-# OVERLAPPABLE #-} GSet name typ (S1 ('MetaSel ('Just anotherName) b 
   gSet _ f = f
   {-# INLINE gSet #-}
 
+-- | Internal: turns a missing field into a readable @TypeError@ rather than an
+-- unsolved-constraint message. Fails when 'GetFieldType' found no field of
+-- that name, or found one that is not present in every constructor.
+--
+-- @since 1.13.0.0
 type family TotalityCheck (name :: Symbol) r a (res :: Maybe Type) :: Constraint where
   TotalityCheck _ _ _ ('Just _) = ()
   TotalityCheck name r a 'Nothing =
@@ -138,6 +161,11 @@ type family TotalityCheck (name :: Symbol) r a (res :: Maybe Type) :: Constraint
           ':<>: 'Text " field missing or not in all constructors"
       )
 
+-- | Internal: looks up the type of the field named @field@ in a
+-- t'GHC.Generics.Generic' representation, yielding @'Just' t@ when found.
+-- Products search both sides ('Or'); sums require agreement ('And').
+--
+-- @since 1.13.0.0
 type family GetFieldType (field :: Symbol) f :: Maybe Type where
   GetFieldType field (S1 ('MetaSel ('Just field) _ _ _) (Rec0 t)) ='Just t
   GetFieldType field (l :*: r) = Or (GetFieldType field l) (GetFieldType field r)
@@ -146,10 +174,19 @@ type family GetFieldType (field :: Symbol) f :: Maybe Type where
   GetFieldType field (D1 _ f) = GetFieldType field f
   GetFieldType field x = 'Nothing
 
+-- | Internal: combines two 'GetFieldType' results across a sum, yielding
+-- @'Just' t@ only when both branches agree on @t@ — a field that is absent
+-- from some constructor is not addressable.
+--
+-- @since 1.13.0.0
 type family And (l :: Maybe Type) (r :: Maybe Type) :: Maybe Type where
   And ('Just a) ('Just a) = 'Just a
   And l r = 'Nothing
 
+-- | Internal: combines two 'GetFieldType' results across a product, taking
+-- whichever branch found the field.
+--
+-- @since 1.13.0.0
 type family Or (l :: Maybe Type) (r :: Maybe Type) :: Maybe Type where
   Or ('Just l) _ = 'Just l
   Or _ r = r

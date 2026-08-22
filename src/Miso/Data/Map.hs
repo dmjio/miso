@@ -14,7 +14,7 @@
 --
 -- "Miso.Data.Map" is a Haskell wrapper around the JavaScript
 -- <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map Map>
--- object. Values of type @'Map' k v@ live in JavaScript memory; all
+-- object. Values of type @t'Map' k v@ live in JavaScript memory; all
 -- operations run in 'IO' and mutate the underlying JS map in place.
 --
 -- Unlike 'Data.Map.Strict.Map', keys do not require an 'Ord' instance —
@@ -25,7 +25,7 @@
 -- API or a third-party JavaScript library. For pure Haskell processing,
 -- prefer 'Data.Map.Strict.Map'.
 --
--- Import qualified to avoid clashing with 'Prelude':
+-- Import qualified to avoid clashing with "Prelude":
 --
 -- @
 -- import qualified "Miso.Data.Map" as M
@@ -80,6 +80,9 @@ import           Miso.DSL (jsg, JSVal, ToJSVal, FromJSVal, (!))
 import qualified Miso.DSL as DSL
 import           Miso.FFI (callFunction)
 -----------------------------------------------------------------------------
+-- | A JS [Map](https:\/\/developer.mozilla.org\/en-US\/docs\/Web\/JavaScript\/Reference\/Global_Objects\/Map),
+-- wrapped so it can be passed across the FFI without copying. Operations live
+-- in t'IO' because the underlying object is mutable.
 newtype Map key value = Map JSVal deriving (FromJSVal, ToJSVal)
 -----------------------------------------------------------------------------
 -- | Constructs a new JS [Map](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map) in t'IO'.
@@ -119,7 +122,7 @@ clear (Map m) = void (callFunction m "clear" ())
 size :: Map key value -> IO Int
 size (Map m) = DSL.fromJSValUnchecked =<< m ! "size"
 -----------------------------------------------------------------------------
--- | Checks existence of a value by 'key', returns t'Bool.
+-- | Checks existence of a value by @key@, returns t'Bool.
 has
   :: ToJSVal key
   => key

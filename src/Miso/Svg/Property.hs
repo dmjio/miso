@@ -47,7 +47,7 @@
 -- = Attribute groups
 --
 -- * __Geometry__: 'cx_', 'cy_', 'r_', 'rx_', 'ry_', 'x_', 'y_',
---   'x1_', 'y1_', 'x2_', 'y2_', 'width_', 'height_', 'd_', 'points_',
+--   'x1_', 'y1_', 'x2_', 'y2_', @width_@, @height_@, 'd_', 'points_',
 --   'viewBox_', 'preserveAspectRatio_', 'pathLength_', 'textLength_'
 --
 -- * __Paint__: 'fill_', 'fillOpacity_', 'fillRule_', 'stroke_',

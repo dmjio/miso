@@ -8,6 +8,8 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- @since 1.13.0.0
 ----------------------------------------------------------------------------
 module Miso.Native.X.Element.Svg.Event
   ( -- *** Events
@@ -24,6 +26,12 @@ import qualified Data.Map as M
 import           Miso.Event
 import           Miso.Types (Attribute, EventHandler, DOMRef)
 -----------------------------------------------------------------------------
+-- | The 'Events' map for the Lynx @<svg>@ element.
+--
+-- Combine with other element maps using @<>@ and pass the result to
+-- 'Miso.Native.native', so the delegator listens for these events.
+--
+-- @since 1.13.0.0
 svgEvents :: Events
 svgEvents = M.fromList [ ("load", BUBBLE) ]
 -----------------------------------------------------------------------------
@@ -34,7 +42,7 @@ svgEvents = M.fromList [ ("load", BUBBLE) ]
 onLoad :: action -> Attribute model action
 onLoad action = on "load" emptyDecoder (\() _ _ -> action)
 -----------------------------------------------------------------------------
--- | Like 'onLoad', but dispatched on the Lynx __main thread__ ('MTS').
+-- | Like 'onLoad', but dispatched on the Lynx __main thread__ (@MTS@).
 --
 -- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
 -- @-XStaticPointers@.
@@ -61,7 +69,7 @@ onLoadMainWith :: (model -> DOMRef -> action) -> EventHandler model action
 onLoadMainWith action = onMain "load" emptyDecoder (\() m ref -> action m ref)
 -----------------------------------------------------------------------------
 -- | Like 'onLoad', but the handler also receives the target element's 'DOMRef'.
--- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+-- Use for main-thread (@MTS@) handlers that imperatively mutate the element.
 onLoadWith :: (DOMRef -> action) -> Attribute model action
 onLoadWith action = on "load" emptyDecoder (\() _ ref -> action ref)
 -----------------------------------------------------------------------------

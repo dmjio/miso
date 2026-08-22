@@ -39,7 +39,7 @@ data Model = Model
 main :: IO ()
 main =
   nativeWithContext nativeEvents ()
-    (static (mountStatic_ probeComponent))
+    (static (mountStatic probeComponent))
 
 probeComponent :: Component () () Model Action
 probeComponent = component initialModel updateModel viewModel

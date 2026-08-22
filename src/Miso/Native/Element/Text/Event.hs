@@ -9,6 +9,8 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- @since 1.13.0.0
 ----------------------------------------------------------------------------
 module Miso.Native.Element.Text.Event
   ( -- *** Events
@@ -39,6 +41,12 @@ import           Miso.JSON
 ----------------------------------------------------------------------------
 import           Miso.Types (Attribute, EventHandler, DOMRef)
 ----------------------------------------------------------------------------
+-- | The 'Events' map for the Lynx @<text>@ element.
+--
+-- Combine with other element maps using @<>@ and pass the result to
+-- 'Miso.Native.native', so the delegator listens for these events.
+--
+-- @since 1.13.0.0
 textEvents :: Events
 textEvents
   = M.fromList
@@ -67,7 +75,7 @@ textEvents
 onLayout :: (LayoutEvent -> action) -> Attribute model action
 onLayout action = on "layout" layoutDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
--- | Like 'onLayout', but dispatched on the Lynx __main thread__ ('MTS').
+-- | Like 'onLayout', but dispatched on the Lynx __main thread__ (@MTS@).
 --
 -- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
 -- @-XStaticPointers@.
@@ -113,7 +121,7 @@ onLayoutMainWith action = onMain "layout" layoutDecoder action
 onSelectionChange :: (SelectionChangeEvent -> action) -> Attribute model action
 onSelectionChange action = on "selectionchange" selectionChangeDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
--- | Like 'onSelectionChange', but dispatched on the Lynx __main thread__ ('MTS').
+-- | Like 'onSelectionChange', but dispatched on the Lynx __main thread__ (@MTS@).
 --
 -- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
 -- @-XStaticPointers@.
@@ -139,6 +147,12 @@ onSelectionChangeMain action = onMain "selectionchange" selectionChangeDecoder (
 onSelectionChangeMainWith :: (SelectionChangeEvent -> model -> DOMRef -> action) -> EventHandler model action
 onSelectionChangeMainWith action = onMain "selectionchange" selectionChangeDecoder action
 -----------------------------------------------------------------------------
+-- | t'Decoder' producing a t'SelectionChangeEvent' from the raw Lynx event payload.
+--
+-- Pass it to 'Miso.Event.on' \/ 'Miso.Event.onMain' when writing a handler by
+-- hand; the @on*@ helpers in this module already use it.
+--
+-- @since 1.13.0.0
 selectionChangeDecoder :: Decoder SelectionChangeEvent
 selectionChangeDecoder = ["detail"] `at` parser
   where
@@ -149,12 +163,19 @@ selectionChangeDecoder = ["detail"] `at` parser
         <*> o .: "end"
         <*> o .: "direction"
 -----------------------------------------------------------------------------
+-- | Payload of a @<text>@ selection-change event: the @start@ and @end@
+-- offsets of the new selection and the direction it was extended in.
+-- 
+-- @since 1.13.0.0
 data SelectionChangeEvent
   = SelectionChangeEvent
   { start, end :: Double
   , direction :: Direction
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
+-- | The direction a text selection was extended in.
+-- 
+-- @since 1.13.0.0
 data Direction = Forward | Backward
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
@@ -164,6 +185,10 @@ instance FromJSON Direction where
     "backward" -> pure Backward
     x -> typeMismatch "Direction" (String x)
 -----------------------------------------------------------------------------
+-- | Payload of a @<text>@ layout event: how many lines were laid out,
+-- per-line detail, and the resulting size.
+-- 
+-- @since 1.13.0.0
 data LayoutEvent
   = LayoutEvent
   { lineInfoLineCount     :: Double
@@ -171,6 +196,12 @@ data LayoutEvent
   , lineInfoSize          :: Size
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
+-- | t'Decoder' producing a t'LayoutEvent' from the raw Lynx event payload.
+--
+-- Pass it to 'Miso.Event.on' \/ 'Miso.Event.onMain' when writing a handler by
+-- hand; the @on*@ helpers in this module already use it.
+--
+-- @since 1.13.0.0
 layoutDecoder :: Decoder LayoutEvent
 layoutDecoder = ["detail"] `at` do
   withObject "LayoutEvent" $ \o ->
@@ -188,23 +219,30 @@ instance FromJSON LineInfo where
       <*> o .: "end"
       <*> o .: "ellipsisCount"
 -----------------------------------------------------------------------------
+-- | Per-line detail from a @<text>@ layout event: the character range the
+-- line covers and how many characters were ellipsized.
+-- 
+-- @since 1.13.0.0
 data LineInfo
   = LineInfo
   { lineInfoStart, lineInfoEnd, lineInfoEllipsisCount :: Double
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
+-- | The measured width and height of laid-out @<text>@ content, in px.
+-- 
+-- @since 1.13.0.0
 data Size
   = Size
   { sizeWidth, sizeHeight :: Double
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
 -- | Like 'onLayout', but the handler also receives the target element's 'DOMRef'.
--- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+-- Use for main-thread (@MTS@) handlers that imperatively mutate the element.
 onLayoutWith :: (LayoutEvent -> DOMRef -> action) -> Attribute model action
 onLayoutWith action = on "layout" layoutDecoder $ \v _ domRef -> action v domRef
 -----------------------------------------------------------------------------
 -- | Like 'onSelectionChange', but the handler also receives the target element's 'DOMRef'.
--- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+-- Use for main-thread (@MTS@) handlers that imperatively mutate the element.
 onSelectionChangeWith :: (SelectionChangeEvent -> DOMRef -> action) -> Attribute model action
 onSelectionChangeWith action = on "selectionchange" selectionChangeDecoder $ \v _ domRef -> action v domRef
 -----------------------------------------------------------------------------

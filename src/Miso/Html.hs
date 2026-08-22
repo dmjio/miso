@@ -34,24 +34,24 @@
 --
 -- view :: Int -> 'Miso.Types.View' Int Action
 -- view n =
---   'div_' [ 'Miso.Html.Property.class_' \"counter\" ]
+--   'Miso.Html.Element.div_' [ 'Miso.Html.Property.class_' \"counter\" ]
 --     [ 'h1_' [] [ 'Miso.text' \"Counter\" ]
---     , 'p_'  [] [ 'Miso.text' ('Miso.String.ms' n) ]
---     , 'button_' [ 'onClick' Increment ] [ 'Miso.text' \"+\" ]
---     , 'button_' [ 'onClick' Decrement ] [ 'Miso.text' \"-\" ]
---     , 'button_' [ 'onClick' Reset ]     [ 'Miso.text' \"Reset\" ]
+--     , 'Miso.Html.Element.p_'  [] [ 'Miso.text' ('Miso.String.ms' n) ]
+--     , 'button_' [ @onClick@ Increment ] [ 'Miso.text' \"+\" ]
+--     , 'button_' [ @onClick@ Decrement ] [ 'Miso.text' \"-\" ]
+--     , 'button_' [ @onClick@ Reset ]     [ 'Miso.text' \"Reset\" ]
 --     ]
 -- @
 --
 -- = Re-exported modules
 --
 -- ["Miso.Html.Element"]
---   Smart constructors for every standard HTML element (@'div_'@,
+--   Smart constructors for every standard HTML element (@'Miso.Html.Element.div_'@,
 --   @'button_'@, @'input_'@, @'table_'@, …).  All names are suffixed
---   with @_@ to avoid clashing with 'Prelude' identifiers.
+--   with @_@ to avoid clashing with @Prelude@ identifiers.
 --
 -- ["Miso.Html.Event"]
---   Pre-wired event-handler attributes (@'onClick'@, @'onInput'@,
+--   Pre-wired event-handler attributes (@@onClick@@, @'onInput'@,
 --   @'onKeyDown'@, @'onDrop'@, …).  Covers mouse, keyboard, form, focus,
 --   pointer, drag, touch, media, and lifecycle events.
 --

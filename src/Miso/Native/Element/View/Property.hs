@@ -8,6 +8,8 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- @since 1.13.0.0
 ----------------------------------------------------------------------------
 module Miso.Native.Element.View.Property
   ( -- *** Property
@@ -58,7 +60,7 @@ import           Miso.Types
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#id
 --
--- Used to specify the name of the element, generally for native to operate the corresponding node from the native side through `findViewByName`.
+-- Used to specify the name of the element, generally for native to operate the corresponding node from the native side through @findViewByName@.
 --
 -- > id_ "test"
 --
@@ -67,7 +69,7 @@ id_ = textProp "id"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#name
 --
--- Used to specify the name of the element, generally for native to operate the corresponding node from the native side through `findViewByName`.
+-- Used to specify the name of the element, generally for native to operate the corresponding node from the native side through @findViewByName@.
 --
 -- > name_ "test"
 --
@@ -76,7 +78,7 @@ name_ = textProp "name"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#classname
 --
--- Use `className` to set CSS class names, equivalent to 'class_'
+-- Use `className` to set CSS class names, equivalent to 'Miso.Html.Property.class_'
 --
 -- > className_ "foo"
 --
@@ -241,7 +243,7 @@ exposureArea_ = textProp "exposure-area"
 --
 -- > enableExposureUIMargin_ True
 --
--- Default Value: 'False'
+-- Default Value: @False@
 --
 enableExposureUIMargin_ :: Bool -> Attribute model action
 enableExposureUIMargin_ = boolProp "enable-exposure-ui-margin"
@@ -253,7 +255,7 @@ enableExposureUIMargin_ = boolProp "enable-exposure-ui-margin"
 --
 -- > enableExposureUIClip_ True
 --
--- Default Value: 'False'
+-- Default Value: @False@
 --
 enableExposureUIClip_ :: Bool -> Attribute model action
 enableExposureUIClip_ = boolProp "enable-exposure-ui-clip"
@@ -343,7 +345,7 @@ a11yId_ = textProp "a11y-id"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#ios-platform-accessibility-id
 --
--- Used to specify the accessibility identifier of a `UIView` in *iOS*. It is
+-- Used to specify the accessibility identifier of a @UIView@ in *iOS*. It is
 -- only used when the platform-level accessibility framework is accessed.
 --
 -- > iosPlatformAccessibilityId_ "view-3"
@@ -373,7 +375,7 @@ userInteractionEnabled_ = boolProp "user-interaction-enabled"
 --
 -- > nativeInteractionEnabled_ True
 --
--- Default Value: 'True' for *iOS*, 'False' for *Android*
+-- Default Value: 'True' for *iOS*, @False@ for *Android*
 --
 nativeInteractionEnabled_ :: Bool -> Attribute model action
 nativeInteractionEnabled_ = boolProp "native-interaction-enabled"
@@ -409,7 +411,7 @@ panInterceptScope_ = textProp "pan-intercept-scope"
 --
 -- > blockNativeEvent True
 --
--- Default Value: 'False'
+-- Default Value: @False@
 --
 blockNativeEvent_ :: Bool -> Attribute model action
 blockNativeEvent_ = boolProp "block-native-event"
@@ -448,7 +450,7 @@ consumeSlideEvent_ = prop "consume-slide-event"
 --
 -- > eventThrough_ True
 --
--- Default Value: 'False'
+-- Default Value: @False@
 --
 eventThrough_ :: Bool -> Attribute model action
 eventThrough_ = boolProp "event-through"
@@ -472,7 +474,7 @@ eventThroughActiveRegions_ = prop "event-through-active-regions"
 --
 -- > enableTouchPseudoPropagation_ True
 --
--- Default Value: 'False'
+-- Default Value: @False@
 --
 enableTouchPseudoPropagation_ :: Bool -> Attribute model action
 enableTouchPseudoPropagation_ = boolProp "enable-touch-pseudo-propagation"
@@ -512,7 +514,7 @@ ignoreFocus_ = textProp "ignore-focus"
 --
 -- > iosEnableSimultaneousTouch_ True
 --
--- Default Value: 'False'
+-- Default Value: @False@
 --
 iosEnableSimultaneousTouch_ :: Bool -> Attribute model action
 iosEnableSimultaneousTouch_ = boolProp "ios-enable-simultaneous-touch"

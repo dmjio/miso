@@ -16,7 +16,7 @@
 -- acquire-use-release lifecycle of an external resource (an event
 -- listener, an animation-frame callback, etc.) using
 -- 'Control.Exception.bracket' so the resource is always cleaned up when
--- the 'Miso.Types.Component' unmounts, even if an exception is thrown.
+-- the t'Miso.Types.Component' unmounts, even if an exception is thrown.
 --
 -- = Quick start
 --

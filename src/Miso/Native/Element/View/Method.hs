@@ -11,6 +11,8 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- @since 1.13.0.0
 ----------------------------------------------------------------------------
 module Miso.Native.Element.View.Method
   ( -- *** Methods
@@ -29,7 +31,7 @@ module Miso.Native.Element.View.Method
 import Miso
 import Miso.Native.FFI
 -----------------------------------------------------------------------------
--- | Result of calling `getClientBoundingRect`
+-- | Result of calling @getClientBoundingRect@
 data Rect
   = Rect
   { x,y :: Double
@@ -53,11 +55,15 @@ instance FromJSVal Rect where
     bottom <- readProp "bottom"
     pure $ Just Rect {..}
 -----------------------------------------------------------------------------
+-- | Parameters for @getBoundingClientRect@: whether to honour @transform@
+-- on Android, and which node to measure relative to.
+-- 
+-- @since 1.13.0.0
 data BoundingClientRect
   = BoundingClientRect
   { androidEnableTransformProps :: Bool
   -- ^ Specifies whether to consider the transform attribute
-  -- when calculating the position on Android. The default value is 'False'
+  -- when calculating the position on Android. The default value is @False@
   , relativeTo :: Maybe JSVal
   -- ^ Specify the reference node, relative to LynxView by default.
   }
@@ -107,6 +113,10 @@ boundingClientRect
   -> Effect context props model action
 boundingClientRect = invokeExec "boundingClientRect"
 -----------------------------------------------------------------------------
+-- | Parameters for 'takeScreenshot': the image @format@ and a @scale@ in
+-- @(0, 1]@ trading quality for size.
+-- 
+-- @since 1.13.0.0
 data TakeScreenshot
   = TakeScreenshot
   { format :: MisoString
@@ -154,7 +164,7 @@ takeScreenshot
   -> Effect context props model action
 takeScreenshot = invokeExec "takeScreenshot"
 -----------------------------------------------------------------------------
--- | Smart constructor for calling 'TakeScreenshot'
+-- | Smart constructor for calling t'TakeScreenshot'
 defaultTakeScreenshot :: TakeScreenshot
 defaultTakeScreenshot
   = TakeScreenshot
@@ -164,7 +174,7 @@ defaultTakeScreenshot
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#requestaccessibilityfocus
 --
--- The front end can execute 'requestAccessiblityFocus' through the SelectorQuery API.
+-- The front end can execute @requestAccessiblityFocus@ through the SelectorQuery API.
 --
 -- @
 --

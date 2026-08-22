@@ -13,6 +13,7 @@
 --
 -- Displays SVG content supplied inline or by URL.
 --
+-- @since 1.13.0.0
 ----------------------------------------------------------------------------
 module Miso.Native.X.Element.Svg
   ( module Miso.Native.X.Element.Svg.Event

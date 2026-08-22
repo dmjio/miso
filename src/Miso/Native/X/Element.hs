@@ -19,6 +19,7 @@
 -- Attributes, events and methods for each element live in the corresponding
 -- @Miso.Native.X.Element.\<Name\>@ modules.
 --
+-- @since 1.13.0.0
 ----------------------------------------------------------------------------
 module Miso.Native.X.Element
   ( -- ** Input

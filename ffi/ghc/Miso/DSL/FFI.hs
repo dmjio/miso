@@ -11,6 +11,9 @@ import           Text.Read (readMaybe)
 -- | A type that represents any JS value
 data JSVal = JSVal
 -----------------------------------------------------------------------------
+-- | An exception raised by a rejected JavaScript Promise.
+--
+-- @since 1.13.0.0
 data JSException = JSException
   deriving stock Show
   deriving anyclass Exception
@@ -103,9 +106,15 @@ isUndefined_ffi = undefined
 freeFunction_ffi :: JSVal -> IO ()
 freeFunction_ffi = undefined
 -----------------------------------------------------------------------------
+-- | Schedules a callback to run before the next repaint.
+--
+-- @since 1.13.0.0
 requestAnimationFrame :: JSVal -> IO Int
 requestAnimationFrame = undefined
 -----------------------------------------------------------------------------
+-- | Cancels a frame previously scheduled with 'requestAnimationFrame'.
+--
+-- @since 1.13.0.0
 cancelAnimationFrame :: Int -> IO ()
 cancelAnimationFrame = undefined
 -----------------------------------------------------------------------------
@@ -146,6 +155,9 @@ fromJSValUnchecked_Double = undefined
 fromJSVal_JSString :: JSVal -> IO (Maybe Text)
 fromJSVal_JSString = undefined
 -----------------------------------------------------------------------------
+-- | Awaits a JS Promise. If the promise rejects, it throws a t'JSException'.
+--
+-- @since 1.13.0.0
 await :: JSVal -> IO JSVal
 await = undefined
 -----------------------------------------------------------------------------

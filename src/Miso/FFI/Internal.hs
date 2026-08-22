@@ -74,12 +74,12 @@
 --   'scrollIntoView', 'requestFullscreen', 'click', 'files', 'setValue'
 -- * __CSS \/ JS injection__: 'addStyle', 'addStyleSheet', 'addScript',
 --   'addSrc', 'addScriptImportMap'
--- * __Network__: 'fetch' \/ 'Response' \/ 'CONTENT_TYPE',
+-- * __Network__: 'fetch' \/ t'Response' \/ 'CONTENT_TYPE',
 --   'websocketConnect', 'websocketSend', 'websocketClose',
 --   'eventSourceConnect', 'eventSourceClose'
 -- * __Navigator__: 'getUserMedia', 'copyClipboard', 'geolocation', 'isOnLine'
--- * __Types__: 'Image', 'Date', 'Blob', 'File', 'FormData',
---   'ArrayBuffer', 'Uint8Array', 'FileReader', 'URLSearchParams', 'Event'
+-- * __Types__: t'Image', t'Date', t'Blob', t'File', t'FormData',
+--   t'ArrayBuffer', t'Uint8Array', t'FileReader', t'URLSearchParams', t'Event'
 -- * __Randomness__: 'splitmix32', 'mathRandom', 'getRandomValue'
 --
 -- = See also
@@ -459,7 +459,7 @@ updateRef jsval1 jsval2 = do
 -- logNameGetAge :: Person -> IO Int
 -- logNameGetAge = inline
 --   """
---   console.log('name', name);
+--   console.log(@name@, name);
 --   return age;
 --   """
 --
@@ -706,7 +706,7 @@ addScript useModule js_ = do
   void $ context # "appendChild" $ (head_, script)
   pure script
 -----------------------------------------------------------------------------
--- | Sets the @.value@ property on a 'DOMRef'.
+-- | Sets the @.value@ property on a @DOMRef@.
 --
 -- Useful for resetting the @value@ property on an input element.
 --
@@ -1047,16 +1047,25 @@ websocketConnect
     withMaybe Nothing = pure jsNull
     withMaybe (Just f) = asyncCallback1 f
 -----------------------------------------------------------------------------
+-- | Closes an open WebSocket.
+--
+-- @since 1.13.0.0
 websocketClose :: JSVal -> IO ()
 {-# INLINABLE websocketClose #-}
 websocketClose websocket = void $ do
   jsg "miso" # "websocketClose" $ [websocket]
 -----------------------------------------------------------------------------
+-- | Sends a payload over an open WebSocket.
+--
+-- @since 1.13.0.0
 websocketSend :: JSVal -> JSVal -> IO ()
 {-# INLINABLE websocketSend #-}
 websocketSend websocket message = void $ do
   jsg "miso" # "websocketSend" $ [websocket, message]
 -----------------------------------------------------------------------------
+-- | Opens a @Server-Sent Events@ connection and wires up its callbacks.
+--
+-- @since 1.13.0.0
 eventSourceConnect
   :: MisoString
   -> IO ()
@@ -1078,6 +1087,9 @@ eventSourceConnect url onOpen onMessageText onMessageJSON onError textOnly = do
       withMaybe Nothing = pure jsNull
       withMaybe (Just f) = toJSVal =<< asyncCallback1 f
 -----------------------------------------------------------------------------
+-- | Closes an open @Server-Sent Events@ connection.
+--
+-- @since 1.13.0.0
 eventSourceClose :: JSVal -> IO ()
 {-# INLINABLE eventSourceClose #-}
 eventSourceClose eventSource = void $ do
@@ -1092,19 +1104,21 @@ isOnLine :: IO Bool
 isOnLine = fromJSValUnchecked =<< jsg "navigator" ! "onLine"
 -----------------------------------------------------------------------------
 -- | Returns 'True' when executing on the Lynx background thread (BTS),
--- 'False' on the main thread or in a web build.
+-- @False@ on the main thread or in a web build.
 --
 -- Backed by @miso.onBTS()@, which uses the @__BACKGROUND__@ compile-time
 -- define injected by rspeedy. In web builds where @__BACKGROUND__@ is
 -- undefined the function safely returns @false@.
 --
+-- @since 1.13.0.0
 onBTS :: IO Bool
 {-# INLINABLE onBTS #-}
 onBTS = fromJSValUnchecked =<< do jsg "miso" # "onBTS" $ ()
 -----------------------------------------------------------------------------
 -- | Returns 'True' when executing on the Lynx main thread (MTS),
--- 'False' on the background thread and in web builds.
+-- @False@ on the background thread and in web builds.
 --
+-- @since 1.13.0.0
 onMTS :: IO Bool
 {-# INLINABLE onMTS #-}
 onMTS = fromJSValUnchecked =<< do jsg "miso" # "onMTS" $ ()
@@ -1112,6 +1126,7 @@ onMTS = fromJSValUnchecked =<< do jsg "miso" # "onMTS" $ ()
 -- | Returns @(mts, bts, web)@: whether the current execution context is the
 -- Lynx main thread, Lynx background thread, or a plain web build.
 --
+-- @since 1.13.0.0
 getThreads :: IO (Bool, Bool, Bool)
 getThreads = do
   mts <- onMTS
@@ -1142,6 +1157,9 @@ instance FromJSVal ArrayBuffer where
 newtype ArrayBuffer = ArrayBuffer JSVal
   deriving (Eq, ToJSVal)
 -----------------------------------------------------------------------------
+-- | Reads the device position via @navigator.geolocation.getCurrentPosition@.
+--
+-- @since 1.13.0.0
 geolocation :: (JSVal -> IO ()) -> (JSVal -> IO ()) -> IO ()
 {-# INLINABLE geolocation #-}
 geolocation successful errorful = do
@@ -1262,7 +1280,7 @@ newCustomEvent :: ToArgs args => args -> IO Event
 {-# INLINABLE newCustomEvent #-}
 newCustomEvent args = Event <$> new (jsg "CustomEvent") args
 -----------------------------------------------------------------------------
--- | Uses the 'splitmix' function to generate a PRNG.
+-- | Uses the @splitmix@ function to generate a PRNG.
 --
 splitmix32 :: Double -> IO JSVal
 {-# INLINABLE splitmix32 #-}
@@ -1289,6 +1307,8 @@ getRandomValue = fromJSValUnchecked =<< do
 -- that name exists. The errorful callback receives the error message string.
 --
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/CookieStore/get>
+--
+-- @since 1.13.0.0
 cookieGet
   :: MisoString
   -- ^ Cookie name
@@ -1308,6 +1328,8 @@ cookieGet name successful errorful = do
 -- <https://developer.mozilla.org/en-US/docs/Web/API/CookieStore CookieStore API>.
 --
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/CookieStore/getAll>
+--
+-- @since 1.13.0.0
 cookieGetAll
   :: (JSVal -> IO ())
   -- ^ Successful callback (receives a JS array of cookie objects)
@@ -1324,6 +1346,8 @@ cookieGetAll successful errorful = do
 -- <https://developer.mozilla.org/en-US/docs/Web/API/CookieStore CookieStore API>.
 --
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/CookieStore/set>
+--
+-- @since 1.13.0.0
 cookieSet
   :: JSVal
   -- ^ Cookie options object (serialised 'Miso.Cookie.Cookie')
@@ -1342,6 +1366,8 @@ cookieSet cookie successful errorful = do
 -- <https://developer.mozilla.org/en-US/docs/Web/API/CookieStore CookieStore API>.
 --
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/CookieStore/delete>
+--
+-- @since 1.13.0.0
 cookieDelete
   :: MisoString
   -- ^ Cookie name
@@ -1361,6 +1387,8 @@ cookieDelete name successful errorful = do
 -- <https://developer.mozilla.org/en-US/docs/Web/API/CookieStore CookieStore API>.
 --
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/CookieStore/delete>
+--
+-- @since 1.13.0.0
 cookieDeleteWith
   :: JSVal
   -- ^ Cookie options object (name, path, domain, partitioned)
@@ -1377,7 +1405,7 @@ cookieDeleteWith opts successful errorful = do
 -----------------------------------------------------------------------------
 -- | Register a listener for
 -- <https://developer.mozilla.org/en-US/docs/Web/API/CookieStore/change_event cookieStore change>
--- events. Returns the 'Function' handle needed to remove the listener later.
+-- events. Returns the t'Function' handle needed to remove the listener later.
 cookieStoreAddEventListener :: (JSVal -> IO ()) -> IO Function
 {-# INLINABLE cookieStoreAddEventListener #-}
 cookieStoreAddEventListener cb = do

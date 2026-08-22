@@ -27,6 +27,7 @@ let
          (hasSuffix ".png" baseName) ||
          (hasSuffix ".js" baseName) ||
          (baseName == "README.md") ||
+         (baseName == "CHANGELOG.md") ||
          (baseName == "LICENSE") ||
          (type == "directory")));
     };

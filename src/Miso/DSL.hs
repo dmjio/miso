@@ -37,22 +37,22 @@
 --
 -- Two typeclasses handle the Haskell ↔ JavaScript boundary:
 --
--- * 'ToJSVal' — converts a Haskell value into a 'JSVal'. Instances exist
+-- * 'ToJSVal' — converts a Haskell value into a t'JSVal'. Instances exist
 --   for all primitive types, lists, tuples (up to 6), 'Maybe', and
 --   'Data.Map.Strict.Map' 'Miso.String.MisoString'. Product record types can
 --   derive 'ToJSVal' via @GHC.Generics@ (sum types are not supported).
 --
--- * 'FromJSVal' — parses a 'JSVal' back into Haskell, returning
+-- * 'FromJSVal' — parses a t'JSVal' back into Haskell, returning
 --   @'Maybe' a@ ('Nothing' on type mismatch or missing field).
 --   Use 'fromJSValUnchecked' when the shape is guaranteed by the caller.
 --   Product record types can derive 'FromJSVal' via @GHC.Generics@.
 --
 -- Two auxiliary classes support the calling convention:
 --
--- * 'ToArgs' — marshals a Haskell value to a @['JSVal']@ argument list.
+-- * 'ToArgs' — marshals a Haskell value to a @[t'JSVal']@ argument list.
 --   Tuples up to arity 6 automatically produce the correct positional list.
 --
--- * 'ToObject' — promotes a value to a JS 'Object' for use as the @this@
+-- * 'ToObject' — promotes a value to a JS t'Object' for use as the @this@
 --   receiver in method calls.
 --
 -- = Accessing the global scope
@@ -89,7 +89,7 @@
 -- = Callbacks
 --
 -- Wrap a Haskell @IO@ action as a JS function. Variants ending in @\'@
--- return the 'JSVal' of the callback's return value.
+-- return the t'JSVal' of the callback's return value.
 --
 -- @
 -- cb  <- 'syncCallback'  action         -- () -> ()
@@ -193,6 +193,9 @@ class ToJSVal a where
     gToJSVal (from x) o
     toJSVal o
 -----------------------------------------------------------------------------
+-- | Internal: writes a t'GHC.Generics.Generic' representation into a JS object
+-- field by field. Backs the default 'ToJSVal' implementation; you should not
+-- need to write instances.
 class GToJSVal (f :: Type -> Type) where
   gToJSVal :: f a -> Object -> IO ()
 -----------------------------------------------------------------------------
@@ -321,6 +324,9 @@ class FromJSVal a where
       Nothing -> error "fromJSValUnchecked: failure"
       Just y -> pure y
 -----------------------------------------------------------------------------
+-- | Internal: rebuilds a t'GHC.Generics.Generic' representation from a JS
+-- object, yielding 'Nothing' when a field is missing or ill-typed. Backs the
+-- default 'FromJSVal' implementation.
 class GFromJSVal (f :: Type -> Type) where
   gFromJSVal :: Object -> IO (Maybe (f a))
 -----------------------------------------------------------------------------
@@ -606,6 +612,10 @@ infixr 2 #
   invokeFunction func o' args'
 {-# INLINABLE (#) #-}
 -----------------------------------------------------------------------------
+-- | Calls a JavaScript t'Function' with the given arguments and marshals
+-- the result back into Haskell.
+--
+-- @since 1.13.0.0
 apply
   :: (FromJSVal a, ToArgs args)
   => Function
@@ -640,7 +650,7 @@ create = Object <$> create_ffi
 {-# INLINABLE create #-}
 -----------------------------------------------------------------------------
 -- | Creates a new JS t'Object' populated with key-value pairs specified
--- in the list. Meant for use with 'inline' JS functionality.
+-- in the list. Meant for use with 'Miso.FFI.inline' JS functionality.
 --
 -- @
 -- update = \case

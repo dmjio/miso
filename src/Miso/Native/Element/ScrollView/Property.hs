@@ -8,6 +8,8 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- @since 1.13.0.0
 ----------------------------------------------------------------------------
 module Miso.Native.Element.ScrollView.Property
   ( -- *** Property
@@ -78,7 +80,7 @@ bounces_ = boolProp "bounces"
 -- | https://lynxjs.org/api/elements/built-in/scroll-view.html#upper-threshold
 --
 -- Sets a scroll threshold (unit: `px`), indicating how far from the top
--- or left before triggering the `scrolltoupper` event.
+-- or left before triggering the @scrolltoupper@ event.
 --
 upperThreshold_ :: MisoString -> Attribute model action
 upperThreshold_ = textProp "upper-threshold"

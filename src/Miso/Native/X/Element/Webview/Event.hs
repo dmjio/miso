@@ -8,6 +8,8 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- @since 1.13.0.0
 ----------------------------------------------------------------------------
 module Miso.Native.X.Element.Webview.Event
   ( -- *** Events
@@ -48,6 +50,12 @@ import           Miso.JSON
 import           Miso.String (MisoString)
 import           Miso.Types (Attribute, EventHandler, DOMRef)
 -----------------------------------------------------------------------------
+-- | The 'Events' map for the Lynx @<webview>@ element.
+--
+-- Combine with other element maps using @<>@ and pass the result to
+-- 'Miso.Native.native', so the delegator listens for these events.
+--
+-- @since 1.13.0.0
 webviewEvents :: Events
 webviewEvents
   = M.fromList
@@ -67,6 +75,12 @@ data WebviewErrorEvent
     -- ^ The error message
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
+-- | t'Decoder' producing a t'WebviewErrorEvent' from the raw Lynx event payload.
+--
+-- Pass it to 'Miso.Event.on' \/ 'Miso.Event.onMain' when writing a handler by
+-- hand; the @on*@ helpers in this module already use it.
+--
+-- @since 1.13.0.0
 webviewErrorDecoder :: Decoder WebviewErrorEvent
 webviewErrorDecoder = ["detail"] `at` details
   where
@@ -94,7 +108,7 @@ messageDecoder = ["detail"] `at` details
 onError :: (WebviewErrorEvent -> action) -> Attribute model action
 onError action = on "error" webviewErrorDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
--- | Like 'onError', but dispatched on the Lynx __main thread__ ('MTS').
+-- | Like 'onError', but dispatched on the Lynx __main thread__ (@MTS@).
 --
 -- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
 -- @-XStaticPointers@.
@@ -127,7 +141,7 @@ onErrorMainWith action = onMain "error" webviewErrorDecoder action
 onLoad :: action -> Attribute model action
 onLoad action = on "load" emptyDecoder (\() _ _ -> action)
 -----------------------------------------------------------------------------
--- | Like 'onLoad', but dispatched on the Lynx __main thread__ ('MTS').
+-- | Like 'onLoad', but dispatched on the Lynx __main thread__ (@MTS@).
 --
 -- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
 -- @-XStaticPointers@.
@@ -160,7 +174,7 @@ onLoadMainWith action = onMain "load" emptyDecoder (\() m ref -> action m ref)
 onLocationChange :: (MisoString -> action) -> Attribute model action
 onLocationChange action = on "locationchange" urlDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
--- | Like 'onLocationChange', but dispatched on the Lynx __main thread__ ('MTS').
+-- | Like 'onLocationChange', but dispatched on the Lynx __main thread__ (@MTS@).
 --
 -- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
 -- @-XStaticPointers@.
@@ -193,7 +207,7 @@ onLocationChangeMainWith action = onMain "locationchange" urlDecoder action
 onMessage :: (MisoString -> action) -> Attribute model action
 onMessage action = on "message" messageDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
--- | Like 'onMessage', but dispatched on the Lynx __main thread__ ('MTS').
+-- | Like 'onMessage', but dispatched on the Lynx __main thread__ (@MTS@).
 --
 -- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
 -- @-XStaticPointers@.
@@ -226,7 +240,7 @@ onMessageMainWith action = onMain "message" messageDecoder action
 onOpenWindow :: (MisoString -> action) -> Attribute model action
 onOpenWindow action = on "openwindow" urlDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
--- | Like 'onOpenWindow', but dispatched on the Lynx __main thread__ ('MTS').
+-- | Like 'onOpenWindow', but dispatched on the Lynx __main thread__ (@MTS@).
 --
 -- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
 -- @-XStaticPointers@.
@@ -255,27 +269,27 @@ onOpenWindowMainWith action = onMain "openwindow" urlDecoder action
 
 -----------------------------------------------------------------------------
 -- | Like 'onError', but the handler also receives the target element's 'DOMRef'.
--- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+-- Use for main-thread (@MTS@) handlers that imperatively mutate the element.
 onErrorWith :: (WebviewErrorEvent -> DOMRef -> action) -> Attribute model action
 onErrorWith action = on "error" webviewErrorDecoder $ \v _ domRef -> action v domRef
 -----------------------------------------------------------------------------
 -- | Like 'onLoad', but the handler also receives the target element's 'DOMRef'.
--- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+-- Use for main-thread (@MTS@) handlers that imperatively mutate the element.
 onLoadWith :: (DOMRef -> action) -> Attribute model action
 onLoadWith action = on "load" emptyDecoder (\() _ ref -> action ref)
 -----------------------------------------------------------------------------
 -- | Like 'onLocationChange', but the handler also receives the target element's 'DOMRef'.
--- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+-- Use for main-thread (@MTS@) handlers that imperatively mutate the element.
 onLocationChangeWith :: (MisoString -> DOMRef -> action) -> Attribute model action
 onLocationChangeWith action = on "locationchange" urlDecoder $ \v _ domRef -> action v domRef
 -----------------------------------------------------------------------------
 -- | Like 'onMessage', but the handler also receives the target element's 'DOMRef'.
--- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+-- Use for main-thread (@MTS@) handlers that imperatively mutate the element.
 onMessageWith :: (MisoString -> DOMRef -> action) -> Attribute model action
 onMessageWith action = on "message" messageDecoder $ \v _ domRef -> action v domRef
 -----------------------------------------------------------------------------
 -- | Like 'onOpenWindow', but the handler also receives the target element's 'DOMRef'.
--- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+-- Use for main-thread (@MTS@) handlers that imperatively mutate the element.
 onOpenWindowWith :: (MisoString -> DOMRef -> action) -> Attribute model action
 onOpenWindowWith action = on "openwindow" urlDecoder $ \v _ domRef -> action v domRef
 -----------------------------------------------------------------------------

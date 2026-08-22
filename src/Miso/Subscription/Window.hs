@@ -97,7 +97,7 @@ windowSub
   :: MisoString
   -- ^ DOM event name to listen for on @window@ (e.g. @\"resize\"@, @\"pointermove\"@)
   -> Decoder r
-  -- ^ 'Decoder' for extracting a value from the raw event object
+  -- ^ t'Decoder' for extracting a value from the raw event object
   -> (r -> action)
   -- ^ Callback fired with the decoded value on each event
   -> Sub action
@@ -111,7 +111,7 @@ windowSubWithOptions
   -> MisoString
   -- ^ DOM event name to listen for on @window@
   -> Decoder result
-  -- ^ 'Decoder' for extracting a value from the raw event object
+  -- ^ t'Decoder' for extracting a value from the raw event object
   -> (result -> action)
   -- ^ Callback fired with the decoded value on each event
   -> Sub action
@@ -136,7 +136,7 @@ windowSubWithOptions Options{..} eventName Decoder {..} toAction sink =
 -- A 'Sub' to handle t'PointerEvent's on window.
 windowPointerMoveSub
   :: (PointerEvent -> action)
-  -- ^ Callback fired with the full 'PointerEvent' on every @pointermove@
+  -- ^ Callback fired with the full t'PointerEvent' on every @pointermove@
   -> Sub action
 windowPointerMoveSub = windowSub "pointermove" pointerDecoder
 -----------------------------------------------------------------------------

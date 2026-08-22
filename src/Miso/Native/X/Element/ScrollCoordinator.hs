@@ -14,6 +14,7 @@
 -- Coordinates nested scrolling, typically used with sticky headers and tabbed
 -- layouts.
 --
+-- @since 1.13.0.0
 ----------------------------------------------------------------------------
 module Miso.Native.X.Element.ScrollCoordinator
   ( module Miso.Native.X.Element.ScrollCoordinator.Event

@@ -13,6 +13,7 @@
 --
 -- Renders its children on an independent layer above the page.
 --
+-- @since 1.13.0.0
 ----------------------------------------------------------------------------
 module Miso.Native.X.Element.Overlay
   ( module Miso.Native.X.Element.Overlay.Event

@@ -18,7 +18,7 @@
 --
 -- Two usage styles are available:
 --
--- * __Explicit generator__ — pass a 'StdGen' through your code using
+-- * __Explicit generator__ — pass a t'StdGen' through your code using
 --   'next' (analogous to @System.Random@).
 -- * __Global generator__ — use 'replicateRM' or access 'globalStdGen'
 --   directly for fire-and-forget random values.
@@ -40,7 +40,7 @@
 -- tenValues = 'replicateRM' 10
 --
 -- -- Reproducible seed for tests
--- deterministicGen :: 'StdGen'
+-- deterministicGen :: t'StdGen'
 -- deterministicGen = 'mkStdGen' 42
 -- @
 --
@@ -100,7 +100,7 @@ newStdGen = do
   seed <- FFI.getRandomValue
   StdGen . Function <$> FFI.splitmix32 seed
 -----------------------------------------------------------------------------
--- | Get the next t'StdGen', extracting the value, useful with t'State'.
+-- | Get the next t'StdGen', extracting the value, useful with 'State'.
 next
   :: StdGen
   -- ^ Current generator state
@@ -109,7 +109,7 @@ next (StdGen func) = unsafePerformIO $ do
   result <- apply func ()
   pure (result, StdGen func)
 -----------------------------------------------------------------------------
--- | Global 'StdGen', used by 'replicateRM' and others.
+-- | Global t'StdGen', used by 'replicateRM' and others.
 globalStdGen :: IORef StdGen
 {-# NOINLINE globalStdGen #-}
 globalStdGen = unsafePerformIO $ do

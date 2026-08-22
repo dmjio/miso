@@ -13,6 +13,7 @@
 --
 -- Single-line text input element.
 --
+-- @since 1.13.0.0
 ----------------------------------------------------------------------------
 module Miso.Native.X.Element.Input
   ( module Miso.Native.X.Element.Input.Event

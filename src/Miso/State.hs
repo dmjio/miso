@@ -40,7 +40,7 @@
 -- @
 --
 -- When using "Miso.Lens" or "Miso.Lens.TH", the lens update operators
--- (@'.='@, @'+='@, @'%='@, …) are built directly on 'modify', so
+-- (@@.=@@, @@+=@@, @@%=@@, …) are built directly on 'modify', so
 -- explicit calls to 'modify' \/ 'put' are rarely needed.
 --
 -- = Exported combinators

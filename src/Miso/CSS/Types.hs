@@ -13,12 +13,12 @@
 -- "Miso.CSS". There are three layers:
 --
 -- * 'Style' — a single CSS property\/value pair (@(\"color\", \"red\")@).
--- * 'Styles' — one rule block: either a selector rule, a
+-- * t'Styles' — one rule block: either a selector rule, a
 --   <https://developer.mozilla.org/en-US/docs/Web/CSS/@keyframes \@keyframes>
 --   animation, or a
 --   <https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_media_queries \@media>
 --   query.
--- * 'StyleSheet' — an ordered list of 'Styles' rule blocks that together form
+-- * t'StyleSheet' — an ordered list of t'Styles' rule blocks that together form
 --   a complete
 --   <https://developer.mozilla.org/en-US/docs/Web/API/StyleSheet stylesheet>.
 --
@@ -30,9 +30,9 @@
 -- = Type hierarchy
 --
 -- @
--- 'StyleSheet'          -- rendered to a \<style\> tag
---   └─ ['Styles']       -- one rule block each
---        ├─ 'Styles'    (selector → ['Style'])
+-- t'StyleSheet'          -- rendered to a \<style\> tag
+--   └─ [t'Styles']       -- one rule block each
+--        ├─ t'Styles'    (selector → ['Style'])
 --        ├─ 'KeyFrame'  (animation-name → [(stop, ['Style'])])
 --        └─ 'Media'     (media-query   → [(selector, ['Style'])])
 --
@@ -96,7 +96,7 @@ newtype StyleSheet = StyleSheet
 type Style = (MisoString, MisoString)
 -----------------------------------------------------------------------------
 -- | An individual CSS <https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function transform function>.
--- Construct values with 'translate', 'rotate', 'scale', etc., then combine with 'transforms'.
+-- Construct values with @translate@, @rotate@, @scale@, etc., then combine with 'Miso.CSS.transforms'.
 --
 -- @
 -- transforms [ translate (px 10) (pct 50), rotate (deg 45), scaleX 1.5 ]
@@ -114,17 +114,17 @@ data Styles
   | Media MisoString [(MisoString, [Style])]
   deriving (Eq, Show)
 -----------------------------------------------------------------------------
--- | A single stop in a '@keyframes' rule. Construct with 'from_', 'to_', or 'at'.
+-- | A single stop in a '@keyframes' rule. Construct with @from_@, @to_@, or @at@.
 newtype KeyframeStop = KeyframeStop { getKeyframeStop :: (MisoString, [Style]) }
   deriving (Eq, Show)
 -----------------------------------------------------------------------------
--- | A selector rule inside a '@media' block. Construct with 'rule_'.
+-- | A selector rule inside a '@media' block. Construct with 'Miso.CSS.rule_'.
 newtype MediaRule = MediaRule { getMediaRule :: (MisoString, [Style]) }
   deriving (Eq, Show)
 -----------------------------------------------------------------------------
 -- | A CSS [media query](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_media_queries).
--- Construct with 'screen_', 'print_', 'all_', 'minWidth_', etc.,
--- and compose with 'and_', 'or_', 'not_'.
+-- Construct with 'Miso.CSS.screen_', 'Miso.CSS.print_', 'Miso.CSS.all_', 'Miso.CSS.minWidth_', etc.,
+-- and compose with 'Miso.CSS.and_', 'Miso.CSS.or_', 'Miso.CSS.not_'.
 newtype MediaQuery = MediaQuery { renderMediaQuery :: MisoString }
   deriving (Eq, Show)
 -----------------------------------------------------------------------------

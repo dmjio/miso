@@ -8,6 +8,8 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- @since 1.13.0.0
 ----------------------------------------------------------------------------
 module Miso.Native.Element.Frame.Event
   ( -- *** Events
@@ -36,6 +38,12 @@ import           Miso.JSON
 import           Miso.String (MisoString)
 import           Miso.Types (Attribute, EventHandler, DOMRef)
 -----------------------------------------------------------------------------
+-- | The 'Events' map for the Lynx @<frame>@ element.
+--
+-- Combine with other element maps using @<>@ and pass the result to
+-- 'Miso.Native.native', so the delegator listens for these events.
+--
+-- @since 1.13.0.0
 frameEvents :: Events
 frameEvents
   = M.fromList
@@ -56,6 +64,12 @@ data FrameLoadEvent
     -- ^ The url of the loaded \<frame\> resource
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
+-- | t'Decoder' producing a t'FrameLoadEvent' from the raw Lynx event payload.
+--
+-- Pass it to 'Miso.Event.on' \/ 'Miso.Event.onMain' when writing a handler by
+-- hand; the @on*@ helpers in this module already use it.
+--
+-- @since 1.13.0.0
 frameLoadDecoder :: Decoder FrameLoadEvent
 frameLoadDecoder = ["detail"] `at` details
   where
@@ -78,6 +92,12 @@ data FrameLoadMetricsEvent
     -- ^ The url of the loaded \<frame\> resource
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
+-- | t'Decoder' producing a t'FrameLoadMetricsEvent' from the raw Lynx event payload.
+--
+-- Pass it to 'Miso.Event.on' \/ 'Miso.Event.onMain' when writing a handler by
+-- hand; the @on*@ helpers in this module already use it.
+--
+-- @since 1.13.0.0
 frameLoadMetricsDecoder :: Decoder FrameLoadMetricsEvent
 frameLoadMetricsDecoder = ["detail"] `at` details
   where
@@ -105,7 +125,7 @@ frameLoadMetricsDecoder = ["detail"] `at` details
 onLoad :: (FrameLoadEvent -> action) -> Attribute model action
 onLoad action = on "load" frameLoadDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
--- | Like 'onLoad', but dispatched on the Lynx __main thread__ ('MTS').
+-- | Like 'onLoad', but dispatched on the Lynx __main thread__ (@MTS@).
 --
 -- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
 -- @-XStaticPointers@.
@@ -149,7 +169,7 @@ onLoadMainWith action = onMain "load" frameLoadDecoder action
 onLoadMetrics :: (FrameLoadMetricsEvent -> action) -> Attribute model action
 onLoadMetrics action = on "loadmetrics" frameLoadMetricsDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
--- | Like 'onLoadMetrics', but dispatched on the Lynx __main thread__ ('MTS').
+-- | Like 'onLoadMetrics', but dispatched on the Lynx __main thread__ (@MTS@).
 --
 -- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
 -- @-XStaticPointers@.
@@ -176,12 +196,12 @@ onLoadMetricsMainWith :: (FrameLoadMetricsEvent -> model -> DOMRef -> action) ->
 onLoadMetricsMainWith action = onMain "loadmetrics" frameLoadMetricsDecoder action
 -----------------------------------------------------------------------------
 -- | Like 'onLoad', but the handler also receives the target element's 'DOMRef'.
--- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+-- Use for main-thread (@MTS@) handlers that imperatively mutate the element.
 onLoadWith :: (FrameLoadEvent -> DOMRef -> action) -> Attribute model action
 onLoadWith action = on "load" frameLoadDecoder $ \f _ domRef -> action f domRef
 -----------------------------------------------------------------------------
 -- | Like 'onLoadMetrics', but the handler also receives the target element's 'DOMRef'.
--- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+-- Use for main-thread (@MTS@) handlers that imperatively mutate the element.
 onLoadMetricsWith :: (FrameLoadMetricsEvent -> DOMRef -> action) -> Attribute model action
 onLoadMetricsWith action = on "loadmetrics" frameLoadMetricsDecoder $ \f _ domRef -> action f domRef
 -----------------------------------------------------------------------------

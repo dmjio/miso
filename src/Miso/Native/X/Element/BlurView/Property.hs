@@ -8,6 +8,8 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- @since 1.13.0.0
 ----------------------------------------------------------------------------
 module Miso.Native.X.Element.BlurView.Property
   ( -- *** Property
@@ -114,7 +116,7 @@ experimentalUpdateBlurRadius_ = boolProp "experimental-update-blur-radius"
 --
 -- *iOS 3.8+*. Enables interactive glass effect behavior.
 --
--- Default Value: 'False'
+-- Default Value: @False@
 --
 glassInteractive_ :: Bool -> Attribute model action
 glassInteractive_ = boolProp "glass-interactive"

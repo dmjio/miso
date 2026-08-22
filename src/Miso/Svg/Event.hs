@@ -33,12 +33,12 @@
 --
 -- view :: Model -> 'Miso.Types.View' Model Action
 -- view _ =
---   'svg_' []
---     [ 'animate_'
+--   @svg_@ []
+--     [ 'Miso.Svg.Element.animate_'
 --         [ 'onEnd'  AnimDone
 --         , 'onZoom' Zoomed
 --         ]
---     , 'circle_'
+--     , 'Miso.Svg.Element.circle_'
 --         [ 'onClick'    Toggle
 --         , 'onMouseOver' Highlight
 --         ]

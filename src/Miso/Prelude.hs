@@ -14,7 +14,7 @@
 --
 -- * The entirety of "Miso" — all view, update, and subscription
 --   combinators are available without a qualified import.
--- * The standard 'Prelude' — familiar Haskell functions remain in scope,
+-- * The standard "Prelude" — familiar Haskell functions remain in scope,
 --   with @'(!!)'@ hidden to avoid the clash with miso's index operator.
 -- * @'Control.Category.(.)'@ — replaces 'Prelude.(.)' so it works for any
 --   'Control.Category.Category', not just @(->)@.

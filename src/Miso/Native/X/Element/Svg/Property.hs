@@ -8,6 +8,8 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- @since 1.13.0.0
 ----------------------------------------------------------------------------
 module Miso.Native.X.Element.Svg.Property
   ( -- *** Property
@@ -32,7 +34,7 @@ contentRaw_ = textProp "content"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/svg.html#content
 --
--- Inline SVG XML content using 'miso' 'Miso.Typess.View' Syntax.
+-- Inline SVG XML content using 'Miso.miso' 'Miso.Typess.View' Syntax.
 --
 -- > content_ (svg_ [] [])
 --

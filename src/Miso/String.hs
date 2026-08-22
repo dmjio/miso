@@ -86,7 +86,7 @@ class FromMisoString t where
   fromMisoStringEither :: MisoString -> Either String t
 ----------------------------------------------------------------------------
 -- | Parse a 'MisoString', throwing an error on failure.
--- Use 'fromMisoStringEither' as a safe alternative.
+-- Use @fromMisoStringEither@ as a safe alternative.
 fromMisoString :: FromMisoString a => MisoString -> a
 fromMisoString s =
   case fromMisoStringEither s of
