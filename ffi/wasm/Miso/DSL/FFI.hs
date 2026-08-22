@@ -254,6 +254,9 @@ foreign import javascript unsafe
 -----------------------------------------------------------------------------
 foreign import javascript unsafe "return globalThis" global :: JSVal
 -----------------------------------------------------------------------------
+-- | Awaits a JS Promise. If the promise rejects, it throws a 'JSException'.
+--
+-- @since 1.13.0.0
 foreign import javascript interruptible "return await $1;"
   await :: JSVal -> IO JSVal
 -----------------------------------------------------------------------------

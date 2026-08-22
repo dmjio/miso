@@ -1,7 +1,7 @@
 import { VTreeType, PRNG, VComp, VNode, VTree, Response } from './types';
 
 /* current miso version */
-export const version: string = '1.9.0.0';
+export const version: string = '1.13.0.0';
 
 /* Returns true when running on the Lynx background thread, false otherwise.
    Safe for web builds: __BACKGROUND__ is undefined there, so typeof guards it. */

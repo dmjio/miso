@@ -11,6 +11,9 @@ import           Text.Read (readMaybe)
 -- | A type that represents any JS value
 data JSVal = JSVal
 -----------------------------------------------------------------------------
+-- | An exception raised by a rejected JavaScript Promise.
+--
+-- @since 1.13.0.0
 data JSException = JSException
   deriving stock Show
   deriving anyclass Exception
@@ -146,6 +149,9 @@ fromJSValUnchecked_Double = undefined
 fromJSVal_JSString :: JSVal -> IO (Maybe Text)
 fromJSVal_JSString = undefined
 -----------------------------------------------------------------------------
+-- | Awaits a JS Promise. If the promise rejects, it throws a 'JSException'.
+--
+-- @since 1.13.0.0
 await :: JSVal -> IO JSVal
 await = undefined
 -----------------------------------------------------------------------------

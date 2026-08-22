@@ -14,6 +14,7 @@
 -- are not modelled here. They can be invoked directly with
 -- 'Miso.Native.FFI.invokeExec' if required.
 --
+-- @since 1.13.0.0
 ----------------------------------------------------------------------------
 module Miso.Native.X.Element.Webview.Method
   ( -- *** Methods

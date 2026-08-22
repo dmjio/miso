@@ -425,6 +425,8 @@ type Tag = MisoString
 -- | The set of events an element dispatches /directly/ on itself rather than
 -- by bubbling to the delegated mount listener. Empty for HTML\/SVG\/MathML;
 -- populated for Lynx native elements (see 'nodeDirectEvents').
+--
+-- @since 1.13.0.0
 type DirectEvents = Set MisoString
 -----------------------------------------------------------------------------
 -- | Core type for constructing a virtual DOM in Haskell
@@ -469,6 +471,8 @@ data SomeComponent context
 -- type and rebuild the 'SomeComponent'.
 --
 -- Built with 'mount_' \/ 'mountWithProps' \/ '(+>)'; consumed by 'vcomp'.
+--
+-- @since 1.13.0.0
 data SomeStaticComponent props context
 #ifdef NATIVE
   = (Eq props, FromJSON props, ToJSON props)
@@ -570,7 +574,7 @@ key +> child = VComp (SomeComponent (Just (toKey key)) () child)
 -- vcomp (model ^. field) (static (mountStaticWithProps child))
 -- @
 --
--- @since 1.11.0.0
+-- @since 1.13.0.0
 mountStaticWithProps
 #ifdef NATIVE
   :: (Eq context, Eq props, Eq model, FromJSON model, ToJSON model, FromJSON action, ToJSON action, FromJSON props, ToJSON props)
@@ -644,7 +648,7 @@ mountWithProps_ key props child = VComp (SomeComponent (Just (Key key)) props ch
 --  div_ [ id_ "foo" ] [ text (ms m) ]
 -- @
 --
--- @since 1.9.0.0
+-- @since 1.13.0.0
 mountStatic_
 #ifdef NATIVE
   :: (Eq context, Eq model, FromJSON model, ToJSON model, FromJSON action, ToJSON action)
@@ -715,6 +719,17 @@ vcomp
   -> View context model action
 vcomp = flip VCompStatic
 -----------------------------------------------------------------------------
+-- | Like 'vcomp', but for a t'Miso.Types.Component' that takes no @props@.
+--
+-- @'vcomp_' = 'vcomp' ()@ — pair it with 'mountStatic_' or
+-- 'mountStaticUseContext', both of which produce a
+-- @'SomeStaticComponent' () context@.
+--
+-- @
+-- div_ [] [ vcomp_ (static (mountStatic_ myComp)) ]
+-- @
+--
+-- @since 1.13.0.0
 vcomp_
   :: StaticPtr (SomeStaticComponent () context)
   -> View context model action
@@ -733,7 +748,7 @@ vcomp_ = vcomp ()
 -- vcomp_ (static (mountStaticUseContext myComp))
 -- @
 --
--- @since 1.12.0.0
+-- @since 1.13.0.0
 mountStaticUseContext
 #ifdef NATIVE
   :: (Eq context, Eq model, FromJSON model, ToJSON model, FromJSON action, ToJSON action)
@@ -766,7 +781,7 @@ mountStaticUseContext child =
 -- inside it. Use 'vcomp_' with 'mountStaticUseContext' instead under
 -- @NATIVE@.
 --
--- @since 1.9.0.0
+-- @since 1.13.0.0
 mountUseContext
   :: forall context childModel childAction model action .
 #ifdef NATIVE
@@ -858,6 +873,8 @@ instance ToKey Word where toKey = Key . toMisoString
 --   @dispatchMainThreadEvent@ to decode + dispatch a main-thread event
 --   synchronously, without reconstructing (and discarding) a JS callback via
 --   a throwaway scratch node on every single event.
+--
+-- @since 1.13.0.0
 data EventHandler model action = forall result. EventHandler
   { eventHandlerInstall :: model -> Sink action -> VTree -> LogLevel -> Events -> IO ()
   , eventHandlerDecoder :: Miso.Event.Decoder.Decoder result
@@ -875,6 +892,8 @@ data EventHandler model action = forall result. EventHandler
 -- button_ [ event (static (onClick AddOne)) ]
 -- div_    [ event (static (onScroll HandleScroll)) ]
 -- @
+--
+-- @since 1.13.0.0
 event :: StaticPtr (EventHandler model action) -> Attribute model action
 event = OnStatic
 -----------------------------------------------------------------------------
@@ -956,7 +975,7 @@ node ns tag attrs kids = VNode ns tag attrs kids mempty
 -- element. The set is a /capability/: a listener is bound only for events the
 -- element actually handles. Empty on the browser\/WASM runtime.
 --
--- @since 1.10.0.0
+-- @since 1.13.0.0
 nodeDirectEvents
   :: Namespace
   -- ^ Element namespace (@HTML@, @SVG@, or @MATHML@)

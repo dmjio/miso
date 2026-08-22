@@ -18,6 +18,6 @@ afterEach(() => {
 /* tests */
 describe('Version test', () => {
   test('Should be latest version', () => {
-    expect(version).toEqual('1.9.0.0');
+    expect(version).toEqual('1.13.0.0');
   });
 });

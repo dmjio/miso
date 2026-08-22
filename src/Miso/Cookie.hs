@@ -99,6 +99,8 @@ import qualified Miso.FFI.Internal as FFI
 --
 -- Fields map directly to the browser's
 -- <https://developer.mozilla.org/en-US/docs/Web/API/CookieStore/get#return_value CookieListItem>.
+--
+-- @since 1.13.0.0
 data Cookie = Cookie
   { cookieName        :: MisoString
   -- ^ Cookie name (empty string for nameless cookies)
@@ -164,6 +166,8 @@ instance FromJSVal Cookie where
 -- | The event payload delivered to
 -- <https://developer.mozilla.org/en-US/docs/Web/API/CookieStore/change_event cookieStore change>
 -- listeners. Consumed by 'Miso.Subscription.Cookie.cookieChangeSub'.
+--
+-- @since 1.13.0.0
 data CookieChangeEvent = CookieChangeEvent
   { cookiesChanged :: [Cookie]
   -- ^ Cookies that were added or updated
@@ -196,6 +200,8 @@ instance ToArgs CookieChangeEvent where
 -- absent, or @errorful@ with the error message if the operation fails.
 --
 -- <https://developer.mozilla.org/en-US/docs/Web/API/CookieStore/get>
+--
+-- @since 1.13.0.0
 cookieGet
   :: MisoString
   -- ^ Cookie name
@@ -212,6 +218,8 @@ cookieGet name successful errorful = withSink $ \sink ->
 -- | Retrieve all cookies visible to the current document.
 --
 -- <https://developer.mozilla.org/en-US/docs/Web/API/CookieStore/getAll>
+--
+-- @since 1.13.0.0
 cookieGetAll
   :: ([Cookie] -> action)
   -- ^ Successful callback
@@ -225,6 +233,8 @@ cookieGetAll successful errorful = withSink $ \sink -> do
 -----------------------------------------------------------------------------
 -- | A 'Cookie' with sensible defaults: @path = "/"@, session expiry,
 -- @SameSite = "lax"@, not secure, not partitioned, no domain restriction.
+--
+-- @since 1.13.0.0
 defaultCookie :: MisoString -> MisoString -> Cookie
 defaultCookie name value = Cookie
   { cookieName        = name
@@ -247,6 +257,8 @@ defaultCookie name value = Cookie
 -- If you do, the @set()@ method will fail with a @TypeError@.
 --
 -- <https://developer.mozilla.org/en-US/docs/Web/API/CookieStore/set>
+--
+-- @since 1.13.0.0
 cookieSet
   :: Cookie
   -- ^ Cookie to set (use 'defaultCookie' for the common case)
@@ -262,6 +274,8 @@ cookieSet cookie successful errorful = withSink $ \sink -> do
 -- | Delete a cookie by name.
 --
 -- <https://developer.mozilla.org/en-US/docs/Web/API/CookieStore/delete>
+--
+-- @since 1.13.0.0
 cookieDelete
   :: MisoString
   -- ^ Cookie name
@@ -287,6 +301,8 @@ cookieDelete name successful errorful = withSink $ \sink ->
 -- @
 --
 -- <https://developer.mozilla.org/en-US/docs/Web/API/CookieStore/delete>
+--
+-- @since 1.13.0.0
 cookieDeleteWith
   :: Cookie
   -- ^ Cookie whose name, path, domain and partitioned fields are used for matching
@@ -305,6 +321,8 @@ cookieDeleteWith cookie successful errorful = withSink $ \sink -> do
 -- @'Right' ()@ on success or @'Left' err@ on failure.
 --
 -- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+--
+-- @since 1.13.0.0
 cookieSet_ :: Cookie -> IO (Either MisoString ())
 cookieSet_ cookie = do
   mvar <- newEmptyMVar :: IO (MVar (Either MisoString ()))
@@ -322,6 +340,8 @@ cookieSet_ cookie = do
 -- when absent, or @'Left' err@ on failure.
 --
 -- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+--
+-- @since 1.13.0.0
 cookieGet_ :: MisoString -> IO (Either MisoString (Maybe MisoString))
 cookieGet_ name = do
   mvar <- newEmptyMVar :: IO (MVar (Either MisoString (Maybe MisoString)))
@@ -337,6 +357,8 @@ cookieGet_ name = do
 -- @'Right' ()@ on success or @'Left' err@ on failure.
 --
 -- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+--
+-- @since 1.13.0.0
 cookieDelete_ :: MisoString -> IO (Either MisoString ())
 cookieDelete_ name = do
   mvar <- newEmptyMVar :: IO (MVar (Either MisoString ()))
@@ -352,6 +374,8 @@ cookieDelete_ name = do
 -- @'Right' ()@ on success or @'Left' err@ on failure.
 --
 -- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+--
+-- @since 1.13.0.0
 cookieDeleteWith_ :: Cookie -> IO (Either MisoString ())
 cookieDeleteWith_ cookie = do
   mvar <- newEmptyMVar :: IO (MVar (Either MisoString ()))
@@ -368,6 +392,8 @@ cookieDeleteWith_ cookie = do
 -- @'Right' cookies@ on success or @'Left' err@ on failure.
 --
 -- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+--
+-- @since 1.13.0.0
 cookieGetAll_ :: IO (Either MisoString [Cookie])
 cookieGetAll_ = do
   mvar <- newEmptyMVar :: IO (MVar (Either MisoString [Cookie]))

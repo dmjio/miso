@@ -67,6 +67,7 @@ import           Miso.String (MisoString, ms)
 -- view_ [ event $ static ('onMain' "tap" emptyDecoder ) ] [ text_ \"+\" ]
 -- @
 --
+-- @since 1.13.0.0
 onMain :: MisoString
    -- ^ DOM event name (e.g. @\"click\"@, @\"input\"@)
    -> Decoder result
@@ -130,7 +131,7 @@ onCapture = onWithOptions CAPTURE defaultOptions
 -- view_ [ event (static (mainThread (onTapWith Grow))) ] children
 -- @
 --
--- @since 1.9.0.0
+-- @since 1.13.0.0
 onMainWithOptions
   :: Phase
   -- ^ Event propagation phase: 'BUBBLE' (default) or 'CAPTURE'

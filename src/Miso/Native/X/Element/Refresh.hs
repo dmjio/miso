@@ -13,6 +13,7 @@
 --
 -- Pull-to-refresh container.
 --
+-- @since 1.13.0.0
 ----------------------------------------------------------------------------
 module Miso.Native.X.Element.Refresh
   ( module Miso.Native.X.Element.Refresh.Event

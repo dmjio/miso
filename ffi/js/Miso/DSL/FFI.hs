@@ -337,6 +337,8 @@ foreign import javascript interruptible
 
 -- | Awaits a JS Promise. If the promise rejects, it throws a 'JSException',
 -- mirroring the exact behavior of the GHC WASM backend's 'safe' imports.
+--
+-- @since 1.13.0.0
 await :: JSVal -> IO JSVal
 await promise = do
   (err, val) <- awaitPromise_ffi promise

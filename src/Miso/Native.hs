@@ -381,6 +381,7 @@
 --
 -- <http://github.com/dmjio/miso>
 --
+-- @since 1.13.0.0
 ----------------------------------------------------------------------------
 module Miso.Native
    ( -- * Entrypoint
@@ -422,6 +423,7 @@ import GHC.StaticPtr (StaticPtr, deRefStaticPtr, staticKey)
 -- main = native nativeEvents (static (mountStatic_ app))
 -- @
 --
+-- @since 1.13.0.0
 native
   :: Events
   -> StaticPtr (SomeStaticComponent () ())
@@ -445,6 +447,7 @@ native events ptr =
 -- main = 'nativeWithContext' 'nativeEvents' () (static ('mountStatic_' app))
 -- @
 --
+-- @since 1.13.0.0
 nativeWithContext
   :: Eq context
   => Events

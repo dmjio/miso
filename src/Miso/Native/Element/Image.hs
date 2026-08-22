@@ -14,6 +14,7 @@
 -- Used to display different types of images, including web images,
 -- static resources, and locally stored images.
 --
+-- @since 1.13.0.0
 ----------------------------------------------------------------------------
 module Miso.Native.Element.Image
   ( module Miso.Native.Element.Image.Event

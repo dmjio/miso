@@ -44,6 +44,8 @@
 --
 -- These call Lynx element PAPI globals and are only meaningful on the native
 -- runtime's main thread.
+--
+-- @since 1.13.0.0
 ----------------------------------------------------------------------------
 module Miso.Native.MainThread
   ( -- *** Imperative element mutation (main thread only)

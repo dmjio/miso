@@ -679,7 +679,7 @@ globalContext = unsafePerformIO (newIORef undefined)
 -- and the 'globalContext' cell would otherwise still hold @undefined@. See
 -- 'Miso.setContext' for the full explanation.
 --
--- @since 1.12.0.0
+-- @since 1.13.0.0
 setContext :: Eq context => context -> IO ()
 setContext = atomicWriteIORef globalContext
 -----------------------------------------------------------------------------

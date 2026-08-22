@@ -13,6 +13,7 @@
 --
 -- Multi-line text input element.
 --
+-- @since 1.13.0.0
 ----------------------------------------------------------------------------
 module Miso.Native.X.Element.Textarea
   ( module Miso.Native.X.Element.Textarea.Event

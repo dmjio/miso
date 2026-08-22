@@ -737,6 +737,8 @@ biasHeaders userDefined contentSpecific
 -- @'Right' response@ on success or @'Left' response@ on failure.
 --
 -- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+--
+-- @since 1.13.0.0
 getJSON_
   :: (FromJSON body, FromJSVal error)
   => MisoString
@@ -779,6 +781,8 @@ getJSON_ url headers_ = do
 -- @'Right' response@ on success or @'Left' response@ on failure.
 --
 -- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+--
+-- @since 1.13.0.0
 postJSON_
   :: (FromJSVal error, ToJSON body)
   => MisoString
@@ -806,6 +810,8 @@ postJSON_ url body_ headers_ = do
 -- @'Right' response@ on success or @'Left' response@ on failure.
 --
 -- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+--
+-- @since 1.13.0.0
 postJSON'_
   :: (FromJSVal error, ToJSON body, FromJSON return)
   => MisoString
@@ -851,6 +857,8 @@ postJSON'_ url body_ headers_ = do
 -- @'Right' response@ on success or @'Left' response@ on failure.
 --
 -- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+--
+-- @since 1.13.0.0
 putJSON_
   :: (FromJSVal error, ToJSON body)
   => MisoString
@@ -878,6 +886,8 @@ putJSON_ url body_ headers_ = do
 -- @'Right' response@ on success or @'Left' response@ on failure.
 --
 -- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+--
+-- @since 1.13.0.0
 getText_
   :: FromJSVal error
   => MisoString
@@ -902,6 +912,8 @@ getText_ url headers_ = do
 -- @'Right' response@ on success or @'Left' response@ on failure.
 --
 -- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+--
+-- @since 1.13.0.0
 postText_
   :: FromJSVal error
   => MisoString
@@ -929,6 +941,8 @@ postText_ url body_ headers_ = do
 -- @'Right' response@ on success or @'Left' response@ on failure.
 --
 -- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+--
+-- @since 1.13.0.0
 putText_
   :: FromJSVal error
   => MisoString
@@ -956,6 +970,8 @@ putText_ url imageBody headers_ = do
 -- @'Right' response@ on success or @'Left' response@ on failure.
 --
 -- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+--
+-- @since 1.13.0.0
 getBlob_
   :: FromJSVal error
   => MisoString
@@ -980,6 +996,8 @@ getBlob_ url headers_ = do
 -- @'Right' response@ on success or @'Left' response@ on failure.
 --
 -- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+--
+-- @since 1.13.0.0
 postBlob_
   :: FromJSVal error
   => MisoString
@@ -1007,6 +1025,8 @@ postBlob_ url body_ headers_ = do
 -- @'Right' response@ on success or @'Left' response@ on failure.
 --
 -- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+--
+-- @since 1.13.0.0
 putBlob_
   :: FromJSVal error
   => MisoString
@@ -1034,6 +1054,8 @@ putBlob_ url imageBody headers_ = do
 -- @'Right' response@ on success or @'Left' response@ on failure.
 --
 -- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+--
+-- @since 1.13.0.0
 getFormData_
   :: FromJSVal error
   => MisoString
@@ -1058,6 +1080,8 @@ getFormData_ url headers_ = do
 -- @'Right' response@ on success or @'Left' response@ on failure.
 --
 -- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+--
+-- @since 1.13.0.0
 postFormData_
   :: FromJSVal error
   => MisoString
@@ -1085,6 +1109,8 @@ postFormData_ url body_ headers_ = do
 -- @'Right' response@ on success or @'Left' response@ on failure.
 --
 -- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+--
+-- @since 1.13.0.0
 putFormData_
   :: FromJSVal error
   => MisoString
@@ -1112,6 +1138,8 @@ putFormData_ url imageBody headers_ = do
 -- @'Right' response@ on success or @'Left' response@ on failure.
 --
 -- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+--
+-- @since 1.13.0.0
 getArrayBuffer_
   :: FromJSVal error
   => MisoString
@@ -1136,6 +1164,8 @@ getArrayBuffer_ url headers_ = do
 -- @'Right' response@ on success or @'Left' response@ on failure.
 --
 -- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+--
+-- @since 1.13.0.0
 postArrayBuffer_
   :: FromJSVal error
   => MisoString
@@ -1163,6 +1193,8 @@ postArrayBuffer_ url body_ headers_ = do
 -- @'Right' response@ on success or @'Left' response@ on failure.
 --
 -- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+--
+-- @since 1.13.0.0
 putArrayBuffer_
   :: FromJSVal error
   => MisoString
@@ -1190,6 +1222,8 @@ putArrayBuffer_ url arrayBuffer_ headers_ = do
 -- @'Right' response@ on success or @'Left' response@ on failure.
 --
 -- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+--
+-- @since 1.13.0.0
 getUint8Array_
   :: FromJSVal error
   => MisoString
@@ -1214,6 +1248,8 @@ getUint8Array_ url headers_ = do
 -- @'Right' response@ on success or @'Left' response@ on failure.
 --
 -- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+--
+-- @since 1.13.0.0
 postUint8Array_
   :: FromJSVal error
   => MisoString
@@ -1241,6 +1277,8 @@ postUint8Array_ url body_ headers_ = do
 -- @'Right' response@ on success or @'Left' response@ on failure.
 --
 -- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+--
+-- @since 1.13.0.0
 putUint8Array_
   :: FromJSVal error
   => MisoString
@@ -1268,6 +1306,8 @@ putUint8Array_ url uint8Array_ headers_ = do
 -- @'Right' response@ on success or @'Left' response@ on failure.
 --
 -- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+--
+-- @since 1.13.0.0
 postImage_
   :: FromJSVal error
   => MisoString
@@ -1293,6 +1333,8 @@ postImage_ url body_ headers_ = do
 -- @'Right' response@ on success or @'Left' response@ on failure.
 --
 -- __Note:__ best used with 'Miso.Effect.io' or 'Miso.Effect.io_', to avoid blocking the scheduler thread.
+--
+-- @since 1.13.0.0
 putImage_
   :: FromJSVal error
   => MisoString

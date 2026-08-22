@@ -1933,6 +1933,8 @@ transition x = "transition" =: x
 --
 -- >>> transition_ "transform" (s 0.3) (cubicBezier 0.22 1 0.36 1)
 -- ("transition","transform 0.3s cubic-bezier(0.22,1,0.36,1)")
+--
+-- @since 1.13.0.0
 transition_ :: MisoString -> MisoString -> MisoString -> Style
 transition_ property duration timing =
   "transition" =: (property <> " " <> duration <> " " <> timing)
@@ -1954,6 +1956,8 @@ transitionTimingFunction x = "transition-timing-function" =: x
 --
 -- >>> cubicBezier 0.22 1 0.36 1
 -- "cubic-bezier(0.22,1,0.36,1)"
+--
+-- @since 1.13.0.0
 cubicBezier :: Double -> Double -> Double -> Double -> MisoString
 cubicBezier a b c d =
   "cubic-bezier(" <> MS.intercalate "," (map MS.ms [a, b, c, d]) <> ")"

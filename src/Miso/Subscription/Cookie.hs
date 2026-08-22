@@ -73,6 +73,7 @@ import qualified Miso.FFI.Internal as FFI
 --
 -- <https://developer.mozilla.org/en-US/docs/Web/API/CookieStore/change_event>
 --
+-- @since 1.13.0.0
 cookieChangeSub
   :: (CookieChangeEvent -> action)
   -- ^ Callback: receives the change event on every cookie modification

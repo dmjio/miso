@@ -351,7 +351,7 @@ async = Schedule Async
 -- crosses to the BTS. It carries no other effects with it — only @action@ is
 -- sent, so sibling effects in the current 'Miso.Types.update' are unaffected.
 --
--- @since 1.9.0.0
+-- @since 1.13.0.0
 runOnBG :: action -> Effect context props model action
 runOnBG action = tell [ CrossThread BTS action ]
 -----------------------------------------------------------------------------
@@ -363,7 +363,7 @@ runOnBG action = tell [ CrossThread BTS action ]
 -- the MTS. Off the native runtime (or when already on the MTS) this is an
 -- ordinary local dispatch, equivalent to 'issue'.
 --
--- @since 1.9.0.0
+-- @since 1.13.0.0
 runOnMain :: action -> Effect context props model action
 runOnMain action = tell [ CrossThread MTS action ]
 -----------------------------------------------------------------------------
@@ -690,6 +690,7 @@ data Synchronicity
 -----------------------------------------------------------------------------
 -- | Type to indicate where the 'Effect' should execute.
 --
+-- @since 1.13.0.0
 data Thread
   = MTS
   | BTS

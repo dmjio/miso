@@ -142,7 +142,7 @@ reload events = reloadWithContext events ()
 -- main = 'reloadWithContext' 'defaultEvents' Light (static (mount_ app))
 -- @
 --
--- @since 1.12.0.0
+-- @since 1.13.0.0
 reloadWithContext
 #ifdef NATIVE
   :: (FromJSON action, ToJSON model, Eq context, Eq model, ToJSON action)
@@ -213,7 +213,7 @@ live events vcomp_ = liveWithContext events () vcomp_
 -- main = 'liveWithContext' 'defaultEvents' Light (static (mount_ app))
 -- @
 --
--- @since 1.12.0.0
+-- @since 1.13.0.0
 liveWithContext
 #ifdef NATIVE
   :: (Eq context, Eq model, ToJSON model, ToJSON action, FromJSON action)

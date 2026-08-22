@@ -1997,7 +1997,7 @@ startApp events comp_ = initComponent events Draw False () comp_ Nothing () Noth
 -- 'GHC.StaticPtr.StaticKey', which is needed for cross-thread mounting,
 -- cross-thread effect handling, and main-thread events.
 --
--- @since 1.9.0.0
+-- @since 1.13.0.0
 startAppWithContext
 #ifdef NATIVE
   :: (Eq model, ToJSON model, ToJSON action, FromJSON model, FromJSON action, Eq context)

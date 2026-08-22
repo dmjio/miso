@@ -1098,6 +1098,7 @@ isOnLine = fromJSValUnchecked =<< jsg "navigator" ! "onLine"
 -- define injected by rspeedy. In web builds where @__BACKGROUND__@ is
 -- undefined the function safely returns @false@.
 --
+-- @since 1.13.0.0
 onBTS :: IO Bool
 {-# INLINABLE onBTS #-}
 onBTS = fromJSValUnchecked =<< do jsg "miso" # "onBTS" $ ()
@@ -1105,6 +1106,7 @@ onBTS = fromJSValUnchecked =<< do jsg "miso" # "onBTS" $ ()
 -- | Returns 'True' when executing on the Lynx main thread (MTS),
 -- 'False' on the background thread and in web builds.
 --
+-- @since 1.13.0.0
 onMTS :: IO Bool
 {-# INLINABLE onMTS #-}
 onMTS = fromJSValUnchecked =<< do jsg "miso" # "onMTS" $ ()
@@ -1112,6 +1114,7 @@ onMTS = fromJSValUnchecked =<< do jsg "miso" # "onMTS" $ ()
 -- | Returns @(mts, bts, web)@: whether the current execution context is the
 -- Lynx main thread, Lynx background thread, or a plain web build.
 --
+-- @since 1.13.0.0
 getThreads :: IO (Bool, Bool, Bool)
 getThreads = do
   mts <- onMTS
@@ -1289,6 +1292,8 @@ getRandomValue = fromJSValUnchecked =<< do
 -- that name exists. The errorful callback receives the error message string.
 --
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/CookieStore/get>
+--
+-- @since 1.13.0.0
 cookieGet
   :: MisoString
   -- ^ Cookie name
@@ -1308,6 +1313,8 @@ cookieGet name successful errorful = do
 -- <https://developer.mozilla.org/en-US/docs/Web/API/CookieStore CookieStore API>.
 --
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/CookieStore/getAll>
+--
+-- @since 1.13.0.0
 cookieGetAll
   :: (JSVal -> IO ())
   -- ^ Successful callback (receives a JS array of cookie objects)
@@ -1324,6 +1331,8 @@ cookieGetAll successful errorful = do
 -- <https://developer.mozilla.org/en-US/docs/Web/API/CookieStore CookieStore API>.
 --
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/CookieStore/set>
+--
+-- @since 1.13.0.0
 cookieSet
   :: JSVal
   -- ^ Cookie options object (serialised 'Miso.Cookie.Cookie')
@@ -1342,6 +1351,8 @@ cookieSet cookie successful errorful = do
 -- <https://developer.mozilla.org/en-US/docs/Web/API/CookieStore CookieStore API>.
 --
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/CookieStore/delete>
+--
+-- @since 1.13.0.0
 cookieDelete
   :: MisoString
   -- ^ Cookie name
@@ -1361,6 +1372,8 @@ cookieDelete name successful errorful = do
 -- <https://developer.mozilla.org/en-US/docs/Web/API/CookieStore CookieStore API>.
 --
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/CookieStore/delete>
+--
+-- @since 1.13.0.0
 cookieDeleteWith
   :: JSVal
   -- ^ Cookie options object (name, path, domain, partitioned)

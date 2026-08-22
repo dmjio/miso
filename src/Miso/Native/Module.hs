@@ -24,6 +24,7 @@
 -- dispatched to the BTS with 'Miso.Effect.runOnBG', or a background-thread
 -- subscription.
 --
+-- @since 1.13.0.0
 ----------------------------------------------------------------------------
 module Miso.Native.Module
   ( -- * Combinators

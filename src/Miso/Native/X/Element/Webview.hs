@@ -13,6 +13,7 @@
 --
 -- Embeds a web page.
 --
+-- @since 1.13.0.0
 ----------------------------------------------------------------------------
 module Miso.Native.X.Element.Webview
   ( module Miso.Native.X.Element.Webview.Event

@@ -13,6 +13,7 @@
 --
 -- Horizontally paged container.
 --
+-- @since 1.13.0.0
 ----------------------------------------------------------------------------
 module Miso.Native.X.Element.Viewpager
   ( module Miso.Native.X.Element.Viewpager.Event
