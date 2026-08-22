@@ -45,7 +45,7 @@
 -- * __MTS__ — the /main thread/ (\"main thread script\"). This thread owns the
 --   actual element tree and /rendering/. It is where the pixels land. It is also
 --   available as a low-latency escape hatch for performance-critical event
---   handling (see [Main-thread events](#g:mainthread) below).
+--   handling (see [Main-thread events](#mainthread) below).
 --
 -- The __same Haskell bundle runs on both threads__; the native runtime
 -- (@ts\/miso-native.ts@) selects the BTS or MTS drawing context per-thread from a
@@ -60,7 +60,7 @@
 -- Lynx builds the bundle with [rspeedy](https://lynxjs.org) — its Rust-based
 -- tooling — which compiles the sources /twice/, once per thread, inlining a
 -- __compile-time constant__ (@__BACKGROUND__@) that distinguishes the two. That
--- constant surfaces in Haskell as three top-level 'Bool's in "Miso.Runtime":
+-- constant surfaces in Haskell as three top-level 'Bool's re-exported from "Miso":
 --
 -- * @mts@ — 'True' when this execution context is the Lynx /main/ thread.
 -- * @bts@ — 'True' when this context is the Lynx /background/ thread.
@@ -99,9 +99,9 @@
 --   handlers observe an eventually-consistent copy. A child's initial @props@ ride
 --   the /static mount/ payload — the @static@ pointer carries the /constructor/
 --   and the @props@ value is shipped separately, so it may depend on the parent
---   @model@. But @props@ and the global @context@ are __not__ re-synced on later
---   changes: after the first frame they stay background-thread-only (matching
---   ReactLynx — see [Main-thread events](#g:mainthread)).
+--   @model@. Neither @props@ nor the global @context@ is re-synced afterwards,
+--   however: the MTS keeps the values it booted with (matching ReactLynx — see
+--   [Main-thread events](#mainthread)).
 --
 -- * __Events__ — Events raised on the MTS are, by default, forwarded to the BTS
 --   where 'update' runs (see below). Cross-thread handlers are carried as an
@@ -278,18 +278,21 @@
 -- BTS (the authoritative model still lives on the background thread), so a
 -- handler may observe a value slightly behind the latest BTS state.
 --
--- __Props and context are not on the main thread.__ Unlike the @model@, a
--- component's @props@ and the app-global @context@ are __not__ mirrored to the
--- MTS at all (matching ReactLynx, where React state — and therefore props and
--- context — is background-thread-only). They live solely on the BTS; the MTS
--- keeps only its boot values, so 'Miso.Effect.getProps' \/
--- 'Miso.Effect.getContext' inside a main-thread handler would read stale data.
--- Only the @model@ is hydrated to the MTS (eventually consistently, as above).
--- If a main-thread handler needs a prop or context value, fold it into the
--- @model@ or carry it in the dispatched action payload — do not read @props@ or
--- @context@ on the main thread. This also means less cross-thread traffic: the
--- BTS ships a @props@\/@context@ change to the MTS only via the initial 'MOUNT'
--- (for @props@), never on every subsequent change.
+-- __Props and context are not kept up to date on the main thread.__ Both are
+-- /present/ on the MTS — a child's @props@ arrive on the initial 'MOUNT'
+-- payload, and the @context@ is seeded when 'native' \/ 'nativeWithContext'
+-- boots the thread — but, unlike the @model@, neither is ever shipped again.
+-- The MTS holds whatever it booted with, so 'Miso.Effect.getProps' \/
+-- 'Miso.Effect.getContext' inside a main-thread handler return values frozen at
+-- mount time, arbitrarily far behind the BTS. (This matches ReactLynx, where
+-- React state — and therefore props and context — is background-thread-only.)
+-- Only the @model@ is re-synced, eventually consistently, as above.
+--
+-- If a main-thread handler needs a prop or context value that can change, fold
+-- it into the @model@ or carry it in the dispatched action payload — do not read
+-- @props@ or @context@ on the main thread. The upside is less cross-thread
+-- traffic: a @props@ change crosses only on the initial 'MOUNT', and a @context@
+-- change never crosses at all.
 --
 -- __Ownership caveat.__ A property you drive imperatively from the MTS must not
 -- /also/ be written declaratively by the BTS @view@ for the same element: both
@@ -361,16 +364,20 @@
 --
 -- = A minimal native component
 --
+-- Note the import: "Miso" and "Miso.Native" both export a @text_@ — the string
+-- helper 'Miso.Types.text_' and the Lynx @\<text\>@ element
+-- 'Miso.Native.Element.text_' respectively — so the web one must be hidden.
+--
 -- @
 -- -----------------------------------------------------------------------------
 -- {-# LANGUAGE StaticPointers #-}
 -- -----------------------------------------------------------------------------
--- import "Miso"
+-- import "Miso" hiding (text_)
 -- import "Miso.Native"
 -- -----------------------------------------------------------------------------
--- view :: context -> props -> Model -> 'Miso.Types.View' context Action
+-- view :: context -> props -> Model -> 'Miso.Types.View' context Model Action
 -- view _ _ m =
---   'vfrag_'
+--   'vfrag'
 --   [ 'view_' [ 'Miso.Native.Element.View.Event.onTap' Increment ] [ 'text_' [] [ \"+\" ] ]
 --   , 'text_' [] [ 'text' $ 'Miso.String.ms' ('show' m) ]
 --   , 'view_' [ 'Miso.Native.Element.View.Event.onTap' Decrement ] [ 'text_' [] [ \"-\" ] ]

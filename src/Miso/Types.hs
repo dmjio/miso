@@ -41,7 +41,7 @@
 --   { model           :: model
 --   , hydrateModel    :: Maybe (IO model)
 --   , update          :: action -> 'Miso.Effect.Effect' context props model action
---   , view            :: context -> props -> model -> 'View' context action
+--   , view            :: context -> props -> model -> 'View' context model action
 --   , useContext      :: Bool
 --   , subs            :: ['Miso.Effect.Sub' action]
 --   , styles          :: ['CSS']
@@ -69,13 +69,15 @@
 --
 -- = The View type
 --
--- @'View' context action@ is miso's virtual DOM tree. Its four constructors
--- map to the four node kinds the runtime handles:
+-- @'View' context model action@ is miso's virtual DOM tree. Its five
+-- constructors map to the five node kinds the runtime handles:
 --
 -- * 'VNode' — a regular DOM element (@\<div\>@, @\<svg\>@, …)
 -- * 'VText' — a text node
 -- * 'VComp' — an embedded child 'Component'
--- * 'VFrag' — a keyless group of siblings (no wrapper element)
+-- * 'VCompStatic' — an embedded child 'Component' behind a 'GHC.StaticPtr.StaticPtr',
+--   so it can cross the Lynx dual-thread boundary (see 'vcomp' \/ 'mountStatic')
+-- * 'VFrag' — a group of siblings with no wrapper element, optionally keyed
 --
 -- = Key types at a glance
 --
@@ -442,7 +444,7 @@ data View context model action
     -- @props -> component@ constructor ('SomeStaticComponent'); the @props@ value — often
     -- derived from the parent's @model@ — rides alongside and crosses the
     -- dual-thread (Lynx) boundary as JSON. The no-props case uses @props ~ ()@
-    -- (see 'mount_'). This split is what lets a mount escape @static@\'s
+    -- (see 'mountStatic'). This split is what lets a mount escape @static@\'s
     -- closedness restriction. See 'vcomp'. This is necessary for lynx dual-thread
     -- in order to transfer context, props, event handlers etc.
   | VFrag (Maybe Key) [View context model action]
@@ -843,7 +845,7 @@ instance ToKey Word where toKey = Key . toMisoString
 -- pair:
 --
 -- * 'eventHandlerInstall' — attaches a real JS listener to a live vnode.
---   Used by 'Miso.Runtime.setAttrs' during diffing, on both threads.
+--   Used by the runtime's attribute diffing, on both threads.
 -- * 'eventHandlerDecoder' \/ 'eventHandlerConvert' — the decode step exposed
 --   directly, with no JS installer round-trip. Used by the MTS's
 --   @dispatchMainThreadEvent@ to decode + dispatch a main-thread event
@@ -1186,7 +1188,7 @@ instance ToJSVal VTreeType where
     VFragType -> toJSVal (3 :: Int)
 -----------------------------------------------------------------------------
 -- | Hydrate avoids calling @diff@, and instead calls @hydrate@
--- 'Draw' invokes 'Miso.Diff.diff'
+-- 'Draw' invokes the virtual-DOM diff
 data Hydrate
   = Draw
   | Hydrate

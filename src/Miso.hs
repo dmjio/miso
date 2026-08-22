@@ -144,7 +144,7 @@
 --          |     |      |           * - The global @context@ threaded into the 'View' (@'View' context model action@)
 --          |     |      |           |  * - The type of the action that updates 'Component' 'model'
 --          |     |      |           |  |
---     v :: () -> () -> 'Int' -> 'View' () Action
+--     v :: () -> () -> 'Int' -> 'View' () 'Int' Action
 --     v _context _props x = 'vfrag'
 --       [ H.'Miso.Html.Element.button_' [ HE.'Miso.Html.Event.onClick' Add, HP.'Miso.Html.Property.id_' "add" ] [ "+" ]
 --       , 'text' ('ms' x)
@@ -186,7 +186,7 @@
 -- main :: 'IO' ()
 -- main = 'startApp' 'defaultEvents' counter { 'mount' = Just Init }
 --
--- update :: 'App' model Action
+-- update :: Action -> 'Effect' () () model Action
 -- update = \\case
 --   Init -> 'io_' ('consoleLog' "hello world!")
 -- @
@@ -445,7 +445,7 @@
 --   Highlight domRef -> 'io_' $ do
 --     ['Miso.FFI.QQ.js'| hljs.highlight(${domRef}) |]
 --
--- view :: context -> props -> model -> 'View' context Action
+-- view :: context -> props -> model -> 'View' context model Action
 -- view _ _ x =
 --   'Miso.Html.Element.code_'
 --   [ 'onCreatedWith' Highlight
@@ -752,7 +752,11 @@
 -- Any 'MonadState' function is allowed for use when manipulating @model@, 'Miso.State.get', 'Miso.State.put', etc. See "Miso.State".
 --
 -- The 'MonadReader' instances allows the retrieval of 'ComponentInfo' within 'Effect'.
--- 'ComponentInfo' provides the current 'ComponentId' the @parent@ 'ComponentId', and the 'DOMRef' ('_componentDOMRef') that the 'Component' is mounted on.
+-- 'ComponentInfo' provides the current 'ComponentId', the parent 'ComponentId', the
+-- 'DOMRef' that the 'Component' is mounted on, and the current @props@ and @context@.
+-- Read them with the 'Miso.Effect.componentInfoId', 'Miso.Effect.componentInfoParentId',
+-- 'Miso.Effect.componentInfoDOMRef', 'Miso.Effect.componentInfoProps' and
+-- 'Miso.Effect.componentInfoContext' lenses.
 --
 -- = 'Component' communication
 --
@@ -796,16 +800,17 @@
 --
 -- === Props in 'Miso.Types.view'
 --
--- The 'Miso.Types.view' field of a 'Component' always takes @props@ as its first argument:
+-- The 'Miso.Types.view' field of a 'Component' takes the app-global @context@ as
+-- its first argument and the @props@ as its second:
 --
 -- @
--- view :: props -> model -> 'View' model action
+-- view :: context -> props -> model -> 'View' context model action
 -- @
 --
 -- Top-level applications have no parent, so @props@ is always @()@:
 --
 -- @
--- view :: () -> () -> model -> 'View' () action
+-- view :: () -> () -> model -> 'View' () model action
 -- view _context _props model = …
 -- @
 --
@@ -851,11 +856,11 @@
 --
 -- @
 -- 'mountWithProps_'
---   :: ('Eq' context, 'Eq' model, 'Eq' props)
+--   :: ('Eq' context, 'Eq' childModel, 'Eq' props)
 --   => 'MisoString'
 --   -> props
---   -> 'Component' context props model action
---   -> 'View' context a
+--   -> 'Component' context props childModel childAction
+--   -> 'View' context model action
 -- @
 --
 -- === Example: child reading parent-supplied props
@@ -874,9 +879,9 @@
 -- --                  context props    model  action
 -- --                  |       |        |      |
 -- child :: 'Component' ()      Greeting ()     ChildAction
--- child = 'vcomp' () updateChild viewChild
+-- child = 'component' () updateChild viewChild
 --   where
---     viewChild :: () -> Greeting -> () -> 'View' () ChildAction
+--     viewChild :: () -> Greeting -> () -> 'View' () () ChildAction
 --     viewChild _ (Greeting g) _ =
 --       'Miso.Html.Element.div_' [] [ 'text' ("Hello, " <> g <> "!") ]
 --
@@ -888,9 +893,9 @@
 -- -----------------------------------------------------------------------------
 -- -- Parent component: owns the greeting, passes it to the child as props
 -- parentComp :: 'App' ParentModel ParentAction
--- parentComp = 'vcomp' (ParentModel \"World\") 'noop' viewParent
+-- parentComp = 'component' (ParentModel \"World\") 'noop' viewParent
 --   where
---     viewParent :: () -> () -> ParentModel -> 'View' () ParentAction
+--     viewParent :: () -> () -> ParentModel -> 'View' () ParentModel ParentAction
 --     viewParent _ _ (ParentModel g) = 'mountWithProps_' "child" (Greeting g) child
 -- -----------------------------------------------------------------------------
 -- newtype ParentModel = ParentModel 'MisoString' deriving ('Eq')
@@ -1116,7 +1121,7 @@
 -- 'Miso.Canvas.canvas'
 --   [ HP.'Miso.Html.Property.width_' "800", HP.'Miso.Html.Property.height_' "480" ]
 --   (\\_ -> pure ())                   -- init: called once on canvas initialization
---   (\\() -> drawScene myModel)        -- draw: called many times, on each 'Miso.Diff.diff'.
+--   (\\() -> drawScene myModel)        -- draw: called many times, on each diff.
 -- @
 --
 -- 'Miso.Canvas.canvas_' is the variant that threads no init state at all (always passes @()@).
@@ -1175,7 +1180,7 @@
 --   'Miso.Html.ToHtml.toHtml' :: a -> 'Data.ByteString.Lazy.ByteString'
 -- @
 --
--- Instances are provided for @'View' m a@ and @['View' m a]@:
+-- Instances are provided for @'View' c m a@ and @['View' c m a]@:
 --
 -- @
 -- import "Miso.Html.Render" ('Miso.Html.Render.toHtml')
@@ -1604,7 +1609,7 @@
 --   Incoming events are routed through the virtual DOM tree to the matching handler.
 --   This minimises listener churn when the VDOM is patched.
 --
--- * __VDOM diffing__: The diff algorithm in "Miso.Diff" compares old and new
+-- * __VDOM diffing__: The internal diff algorithm compares old and new
 --   'View' trees and emits the minimal set of DOM mutations. Keyed children (see
 --   the 'Key' section) significantly speed up child list reconciliation.
 --
@@ -1627,7 +1632,7 @@
 --
 -- @
 -- main :: IO ()
--- main = 'prerender' 'defaultEvents' $ ('component' () 'noop' $ \\_ () -> "hello world") { 'logLevel' = 'DebugPrerender' }
+-- main = 'prerender' 'defaultEvents' $ ('component' () 'noop' $ \\_ () -> "hello world") { 'logLevel' = 'DebugHydrate' }
 -- @
 --
 -- Assuming the JS / WASM payload and @index.html@ are delivered together from the web server, the console should output below

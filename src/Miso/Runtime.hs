@@ -676,7 +676,7 @@ globalContext = unsafePerformIO (newIORef undefined)
 -- 'Miso.startAppWithContext' seeds this before the first draw, so client
 -- applications never call it. It exists for __server-side rendering__, where a
 -- t'Miso.Types.View' is serialized to HTML without ever starting the runtime
--- and the 'globalContext' cell would otherwise still hold @undefined@. See
+-- and the global @context@ cell would otherwise still hold @undefined@. See
 -- 'Miso.setContext' for the full explanation.
 --
 -- @since 1.13.0.0
@@ -2461,7 +2461,7 @@ schedulerThread = unsafePerformIO (newIORef undefined)
 --
 -- N.B. this is invariant for the lifetime of a given JS context, so it's
 -- safe to compute once and cache via 'unsafePerformIO' rather than making
--- an FFI call on every 'initialize' \/ 'initComponent'.
+-- an FFI call on every component initialization.
 --
 mts, bts, web :: Bool
 {-# NOINLINE mts #-}

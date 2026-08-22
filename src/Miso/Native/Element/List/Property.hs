@@ -247,7 +247,7 @@ instance ToJSON ListItemSnapAlignment where
 -- | https://lynxjs.org/api/elements/built-in/list.html#item-snap
 -- 
 -- Used to mark the unique identifier for this data source update, which
--- will be returned in the [`layoutcomplete`](#layoutcomplete) event callback.
+-- will be returned in the 'Miso.Native.Element.List.Event.onLayoutComplete' event callback.
 --
 -- - `factor`: The parameter for paginated positioning, with a range of `[0, 1]`.
 -- - `offset`: Additional `offset` parameter added on top of `factor`.
