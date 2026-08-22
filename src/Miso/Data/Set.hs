@@ -14,7 +14,7 @@
 --
 -- "Miso.Data.Set" is a Haskell wrapper around the JavaScript
 -- <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set Set>
--- object. Values of type @'Set' a@ live in JavaScript memory; all
+-- object. Values of type @t'Set' a@ live in JavaScript memory; all
 -- operations run in 'IO' and mutate the underlying JS set in place.
 --
 -- Unlike 'Data.Set.Set', elements do not require an 'Ord' instance —
@@ -27,7 +27,7 @@
 -- third-party JavaScript library. For pure Haskell processing, prefer
 -- 'Data.Set.Set'.
 --
--- Import qualified to avoid clashing with 'Prelude':
+-- Import qualified to avoid clashing with "Prelude":
 --
 -- @
 -- import qualified "Miso.Data.Set" as S
@@ -115,7 +115,7 @@ clear (Set m) = void (callFunction m "clear" ())
 size :: Set key -> IO Int
 size (Set m) = DSL.fromJSValUnchecked =<< m ! "size"
 -----------------------------------------------------------------------------
--- | Checks existence of 'key' in t'Set', returns t'Bool.
+-- | Checks existence of @key@ in t'Set', returns t'Bool.
 member
   :: ToJSVal key
   => key

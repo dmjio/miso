@@ -61,7 +61,7 @@ instance ToJSON OverlayMode where
 -- *iOS* only. When the overlay is displayed, whether swiping right closes the
 -- current page.
 --
--- Default Value: 'False'
+-- Default Value: @False@
 --
 iosEnableSwipeBack_ :: Bool -> Attribute model action
 iosEnableSwipeBack_ = boolProp "ios-enable-swipe-back"
@@ -94,7 +94,7 @@ mode_ = prop "mode"
 --
 -- Controls whether the overlay is displayed.
 --
--- Default Value: 'False'
+-- Default Value: @False@
 --
 visible_ :: Bool -> Attribute model action
 visible_ = boolProp "visible"

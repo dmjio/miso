@@ -101,7 +101,7 @@ confirmType_ = prop "confirm-type"
 --
 -- Controls whether interaction is enabled.
 --
--- Default Value: 'False'
+-- Default Value: @False@
 --
 disabled_ :: Bool -> Attribute model action
 disabled_ = boolProp "disabled"
@@ -110,7 +110,7 @@ disabled_ = boolProp "disabled"
 --
 -- Whether to show the scroll bar.
 --
--- Default Value: 'False'
+-- Default Value: @False@
 --
 enableScrollBar_ :: Bool -> Attribute model action
 enableScrollBar_ = boolProp "enable-scroll-bar"
@@ -174,7 +174,7 @@ placeholder_ = textProp "placeholder"
 --
 -- Makes the input read-only.
 --
--- Default Value: 'False'
+-- Default Value: @False@
 --
 readonly_ :: Bool -> Attribute model action
 readonly_ = boolProp "readonly"

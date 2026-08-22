@@ -47,7 +47,7 @@ textMaxLine_ = intProp "text-maxline"
 --
 -- > includeFontPadding_ True
 -- 
--- Default Value: 'False'
+-- Default Value: @False@
 --
 includeFontPadding_ :: Bool -> Attribute model action
 includeFontPadding_ = boolProp "include-font-padding"
@@ -60,7 +60,7 @@ includeFontPadding_ = boolProp "include-font-padding"
 --
 -- > tailColorConvert_ True
 -- 
--- Default Value: 'False'
+-- Default Value: @False@
 --
 tailColorConvert_ :: Bool -> Attribute model action
 tailColorConvert_ = boolProp "tail-color-convert"
@@ -86,7 +86,7 @@ textSingleLineVerticalAlign_ = textProp "text-single-line-vertical-align"
 --
 -- > textSelection_ True
 --
--- Default Value: 'False'
+-- Default Value: @False@
 --
 textSelection_ :: Bool -> Attribute model action
 textSelection_ = boolProp "text-selection"
@@ -98,7 +98,7 @@ textSelection_ = boolProp "text-selection"
 --
 -- > customContextMenu_ True
 --
--- Default Value: 'False'
+-- Default Value: @False@
 --
 customContextMenu_ :: Bool -> Attribute model action
 customContextMenu_ = boolProp "custom-context-menu"
@@ -112,7 +112,7 @@ customContextMenu_ = boolProp "custom-context-menu"
 --
 -- > customTextSelection_ True
 --
--- Default Value: 'False'
+-- Default Value: @False@
 --
 customTextSelection_ :: Bool -> Attribute model action
 customTextSelection_ = boolProp "custom-text-selection"

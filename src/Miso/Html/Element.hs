@@ -22,7 +22,7 @@
 -- @
 --
 -- All names are suffixed with @_@ to avoid clashing with Haskell
--- 'Prelude' names (e.g. 'div_', 'head_', 'map_').
+-- @Prelude@ names (e.g. 'div_', 'head_', 'map_').
 -- This module is re-exported in its entirety by "Miso.Html" and "Miso".
 --
 -- = Quick start
@@ -54,7 +54,7 @@
 --   'q_', 'rp_', 'rt_', 'ruby_', 's_', 'samp_', 'small_', 'span_',
 --   'strong_', 'sub_', 'sup_', 'time_', 'u_', 'var_', 'wbr_'
 -- * __Embedded content__: 'audio_', 'canvas_', 'embed_', 'iframe_',
---   'img_', 'map_', 'object_', 'picture_', 'portal_', 'source_',
+--   'img_', 'map_', 'object_', 'picture_', @portal_@, 'source_',
 --   'track_', 'video_'
 -- * __Scripting__: 'noscript_', 'script_'
 -- * __Edits__: 'del_', 'ins_'

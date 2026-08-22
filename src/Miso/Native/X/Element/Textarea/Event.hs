@@ -183,7 +183,7 @@ onConfirmMainWith action = onMain "confirm" textareaValueDecoder action
 onFocus :: (MisoString -> action) -> Attribute model action
 onFocus action = on "focus" textareaValueDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
--- | Like 'onFocus', but dispatched on the Lynx __main thread__ ('MTS').
+-- | Like 'onFocus', but dispatched on the Lynx __main thread__ (@MTS@).
 --
 -- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
 -- @-XStaticPointers@.
@@ -216,7 +216,7 @@ onFocusMainWith action = onMain "focus" textareaValueDecoder action
 onInput :: (TextareaEvent -> action) -> Attribute model action
 onInput action = on "input" textareaDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
--- | Like 'onInput', but dispatched on the Lynx __main thread__ ('MTS').
+-- | Like 'onInput', but dispatched on the Lynx __main thread__ (@MTS@).
 --
 -- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
 -- @-XStaticPointers@.
@@ -249,7 +249,7 @@ onInputMainWith action = onMain "input" textareaDecoder action
 onSelection :: (SelectionEvent -> action) -> Attribute model action
 onSelection action = on "selection" selectionDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
--- | Like 'onSelection', but dispatched on the Lynx __main thread__ ('MTS').
+-- | Like 'onSelection', but dispatched on the Lynx __main thread__ (@MTS@).
 --
 -- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
 -- @-XStaticPointers@.
@@ -276,27 +276,27 @@ onSelectionMainWith :: (SelectionEvent -> model -> DOMRef -> action) -> EventHan
 onSelectionMainWith action = onMain "selection" selectionDecoder action
 -----------------------------------------------------------------------------
 -- | Like 'onBlur', but the handler also receives the target element's 'DOMRef'.
--- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+-- Use for main-thread (@MTS@) handlers that imperatively mutate the element.
 onBlurWith :: (MisoString -> DOMRef -> action) -> Attribute model action
 onBlurWith action = on "blur" textareaValueDecoder $ \v _ domRef -> action v domRef
 -----------------------------------------------------------------------------
 -- | Like 'onConfirm', but the handler also receives the target element's 'DOMRef'.
--- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+-- Use for main-thread (@MTS@) handlers that imperatively mutate the element.
 onConfirmWith :: (MisoString -> DOMRef -> action) -> Attribute model action
 onConfirmWith action = on "confirm" textareaValueDecoder $ \v _ domRef -> action v domRef
 -----------------------------------------------------------------------------
 -- | Like 'onFocus', but the handler also receives the target element's 'DOMRef'.
--- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+-- Use for main-thread (@MTS@) handlers that imperatively mutate the element.
 onFocusWith :: (MisoString -> DOMRef -> action) -> Attribute model action
 onFocusWith action = on "focus" textareaValueDecoder $ \v _ domRef -> action v domRef
 -----------------------------------------------------------------------------
 -- | Like 'onInput', but the handler also receives the target element's 'DOMRef'.
--- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+-- Use for main-thread (@MTS@) handlers that imperatively mutate the element.
 onInputWith :: (TextareaEvent -> DOMRef -> action) -> Attribute model action
 onInputWith action = on "input" textareaDecoder $ \v _ domRef -> action v domRef
 -----------------------------------------------------------------------------
 -- | Like 'onSelection', but the handler also receives the target element's 'DOMRef'.
--- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+-- Use for main-thread (@MTS@) handlers that imperatively mutate the element.
 onSelectionWith :: (SelectionEvent -> DOMRef -> action) -> Attribute model action
 onSelectionWith action = on "selection" selectionDecoder $ \v _ domRef -> action v domRef
 -----------------------------------------------------------------------------

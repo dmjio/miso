@@ -27,8 +27,8 @@
 --
 -- badge :: 'Miso.Types.View' model action
 -- badge =
---   'svg_' [ SP.'Miso.Svg.Property.width_' \"100\", SP.'Miso.Svg.Property.height_' \"100\" ]
---     [ 'circle_'
+--   @svg_@ [ SP.'Miso.Svg.Property.width_' \"100\", SP.'Miso.Svg.Property.height_' \"100\" ]
+--     [ 'Miso.Svg.Element.circle_'
 --         [ SP.'Miso.Svg.Property.cx_' \"50\", SP.'Miso.Svg.Property.cy_' \"50\"
 --         , SP.'Miso.Svg.Property.r_' \"40\"
 --         , SP.'Miso.Svg.Property.stroke_' \"green\"

@@ -35,7 +35,7 @@
 --
 -- update :: Action -> 'Miso.Effect.Effect' p props Model Action
 -- update (CookiesChanged ev) =
---   'Miso.Effect.io_' (consoleLog (ms (show ('cookiesChanged' ev))))
+--   'Miso.Effect.io_' (consoleLog (ms (show (@cookiesChanged@ ev))))
 -- @
 --
 -- = Availability

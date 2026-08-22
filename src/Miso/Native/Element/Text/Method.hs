@@ -19,6 +19,7 @@ module Miso.Native.Element.Text.Method
   , getSelectedText
   -- *** Types
   , SetTextSelection (..)
+  , GetTextBoundingRect (GetTextBoundingRect)
   -- *** Smart constructors
   , defaultGetTextBoundingRect
   ) where

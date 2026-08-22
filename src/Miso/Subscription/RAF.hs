@@ -74,7 +74,7 @@ import           Miso.Subscription.Util (createSub)
 --
 rAFSub
   :: (Double -> action)
-  -- ^ Callback fired each frame with a 'DOMHighResTimeStamp' in milliseconds
+  -- ^ Callback fired each frame with a @DOMHighResTimeStamp@ in milliseconds
   -> Sub action
 rAFSub toAction sink = createSub acquire release sink
   where

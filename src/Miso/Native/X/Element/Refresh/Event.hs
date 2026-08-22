@@ -102,7 +102,7 @@ startRefreshDecoder = ["detail"] `at` details
 onHeaderOffset :: (HeaderOffsetEvent -> action) -> Attribute model action
 onHeaderOffset action = on "headeroffset" headerOffsetDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
--- | Like 'onHeaderOffset', but dispatched on the Lynx __main thread__ ('MTS').
+-- | Like 'onHeaderOffset', but dispatched on the Lynx __main thread__ (@MTS@).
 --
 -- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
 -- @-XStaticPointers@.
@@ -135,7 +135,7 @@ onHeaderOffsetMainWith action = onMain "headeroffset" headerOffsetDecoder action
 onRefreshStateChange :: (RefreshStateChangeEvent -> action) -> Attribute model action
 onRefreshStateChange action = on "refreshstatechange" refreshStateChangeDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
--- | Like 'onRefreshStateChange', but dispatched on the Lynx __main thread__ ('MTS').
+-- | Like 'onRefreshStateChange', but dispatched on the Lynx __main thread__ (@MTS@).
 --
 -- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
 -- @-XStaticPointers@.
@@ -169,7 +169,7 @@ onRefreshStateChangeMainWith action = onMain "refreshstatechange" refreshStateCh
 onStartRefresh :: (StartRefreshEvent -> action) -> Attribute model action
 onStartRefresh action = on "startrefresh" startRefreshDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
--- | Like 'onStartRefresh', but dispatched on the Lynx __main thread__ ('MTS').
+-- | Like 'onStartRefresh', but dispatched on the Lynx __main thread__ (@MTS@).
 --
 -- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
 -- @-XStaticPointers@.
@@ -196,17 +196,17 @@ onStartRefreshMainWith :: (StartRefreshEvent -> model -> DOMRef -> action) -> Ev
 onStartRefreshMainWith action = onMain "startrefresh" startRefreshDecoder action
 -----------------------------------------------------------------------------
 -- | Like 'onHeaderOffset', but the handler also receives the target element's 'DOMRef'.
--- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+-- Use for main-thread (@MTS@) handlers that imperatively mutate the element.
 onHeaderOffsetWith :: (HeaderOffsetEvent -> DOMRef -> action) -> Attribute model action
 onHeaderOffsetWith action = on "headeroffset" headerOffsetDecoder $ \h _ domRef -> action h domRef
 -----------------------------------------------------------------------------
 -- | Like 'onRefreshStateChange', but the handler also receives the target element's 'DOMRef'.
--- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+-- Use for main-thread (@MTS@) handlers that imperatively mutate the element.
 onRefreshStateChangeWith :: (RefreshStateChangeEvent -> DOMRef -> action) -> Attribute model action
 onRefreshStateChangeWith action = on "refreshstatechange" refreshStateChangeDecoder $ \h _ domRef -> action h domRef
 -----------------------------------------------------------------------------
 -- | Like 'onStartRefresh', but the handler also receives the target element's 'DOMRef'.
--- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+-- Use for main-thread (@MTS@) handlers that imperatively mutate the element.
 onStartRefreshWith :: (StartRefreshEvent -> DOMRef -> action) -> Attribute model action
 onStartRefreshWith action = on "startrefresh" startRefreshDecoder $ \h _ domRef -> action h domRef
 -----------------------------------------------------------------------------

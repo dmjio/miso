@@ -58,7 +58,7 @@ offsetDecoder = ["detail"] `at` details
 onOffset :: (ScrollCoordinatorOffsetEvent -> action) -> Attribute model action
 onOffset action = on "offset" offsetDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
--- | Like 'onOffset', but dispatched on the Lynx __main thread__ ('MTS').
+-- | Like 'onOffset', but dispatched on the Lynx __main thread__ (@MTS@).
 --
 -- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
 -- @-XStaticPointers@.
@@ -85,7 +85,7 @@ onOffsetMainWith :: (ScrollCoordinatorOffsetEvent -> model -> DOMRef -> action) 
 onOffsetMainWith action = onMain "offset" offsetDecoder action
 -----------------------------------------------------------------------------
 -- | Like 'onOffset', but the handler also receives the target element's 'DOMRef'.
--- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+-- Use for main-thread (@MTS@) handlers that imperatively mutate the element.
 onOffsetWith :: (ScrollCoordinatorOffsetEvent -> DOMRef -> action) -> Attribute model action
 onOffsetWith action = on "offset" offsetDecoder $ \v _ domRef -> action v domRef
 -----------------------------------------------------------------------------

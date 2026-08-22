@@ -24,6 +24,7 @@ module Miso.Native.Element.List.Method
   , ScrollToPosition (..)
   , AutoScroll (..)
   , ScrollBy (..)
+  , Consumed (..)
   -- *** Smart constructors
   , defaultScrollToPosition
   , defaultAutoScroll
@@ -66,7 +67,7 @@ instance ToJSVal ScrollToPosition where
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/list.html#scrolltoposition
 --
--- The front end can execute 'boundingClientRect' through the SelectorQuery API.
+-- The front end can execute 'Miso.Native.Element.View.Method.boundingClientRect' through the SelectorQuery API.
 --
 -- @
 --

@@ -19,7 +19,7 @@
 -- the corresponding DOM node on every render, diffing only changed values.
 --
 -- All names are suffixed with @_@ to avoid clashing with Haskell
--- 'Prelude' names. This module is re-exported in its entirety by
+-- @Prelude@ names. This module is re-exported in its entirety by
 -- "Miso.Html" and "Miso".
 --
 -- = Quick start

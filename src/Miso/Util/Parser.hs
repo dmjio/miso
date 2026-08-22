@@ -25,7 +25,7 @@
 -- newtype 'ParserT' r token m a = Parser
 --   { 'runParserT' :: r -> token -> m (a, token) }
 --
--- type 'Parser' token a = 'ParserT' () [token] [] a
+-- type t'Parser' token a = 'ParserT' () [token] [] a
 -- @
 --
 -- 'ParserT' is a monad transformer parameterised by:
@@ -35,7 +35,7 @@
 -- * @m@ — the result monad; using @[]@ gives non-deterministic\/backtracking parsing
 -- * @a@ — the parsed result
 --
--- The @'Parser' token a@ convenience alias fixes @r = ()@ and @m = []@,
+-- The @t'Parser' token a@ convenience alias fixes @r = ()@ and @m = []@,
 -- which gives a standard backtracking parser over a @[token]@ stream.
 --
 -- = Primitive combinators
@@ -43,8 +43,8 @@
 -- @
 -- 'anyToken'    :: 'ParserT' r [a] [] a         -- consume any single token
 -- 'satisfy'     :: (a -> Bool) -> 'ParserT' r [a] [] a  -- consume if predicate holds
--- 'token_'      :: Eq t => t -> 'Parser' t t    -- match a specific token
--- 'peek'        :: 'Parser' a a                 -- look ahead without consuming
+-- 'token_'      :: Eq t => t -> t'Parser' t t    -- match a specific token
+-- 'peek'        :: t'Parser' a a                 -- look ahead without consuming
 -- 'endOfInput'  :: 'ParserT' r a [] ()          -- succeed only at end of stream
 -- 'allTokens'   :: 'ParserT' r a [] a           -- return the entire remaining stream
 -- 'modifyTokens' :: (t -> t) -> 'ParserT' r t [] ()  -- transform the token stream
@@ -66,7 +66,7 @@
 -- = Running a parser
 --
 -- @
--- 'parse' :: 'Parser' token a -> [token] -> Either ('ParseError' a token) a
+-- 'parse' :: t'Parser' token a -> [token] -> Either ('ParseError' a token) a
 -- @
 --
 -- 'parse' returns 'Right' only when exactly one parse consumes all input.

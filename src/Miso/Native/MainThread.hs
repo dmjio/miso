@@ -15,7 +15,7 @@
 -- = Main-thread (MTS) imperative element manipulation
 --
 -- Helpers for /main-thread events/ on the Lynx dual-thread runtime. A handler
--- registered for a 'Miso.Event.Types.MTS' event (see
+-- registered for a t'Miso.Event.Types.MTS' event (see
 -- 'Miso.Event.Types.mainThreadEvents') runs synchronously on the main thread and
 -- receives the target 'DOMRef' via a @*With@ combinator
 -- (e.g. 'Miso.Native.Element.View.Event.onTapWith'). Such a handler must be
@@ -154,13 +154,13 @@ nextElementSibling = jsg1 "__NextElement"
 parentElement :: DOMRef -> IO DOMRef
 parentElement = jsg1 "__GetParent"
 -----------------------------------------------------------------------------
--- | Drive @step@ once per animation frame until it returns 'False', then release
+-- | Drive @step@ once per animation frame until it returns @False@, then release
 -- the underlying callback. @step@ receives the frame timestamp in milliseconds.
 --
 -- This is the vsync-coalesced loop primitive for main-thread, scroll-linked
 -- animation: read the latest gesture state, imperatively paint at most once per
 -- frame (via 'setStyleProperty' \/ 'setStylePropertyTransform'), and stop by
--- returning 'False' when the gesture ends.
+-- returning @False@ when the gesture ends.
 --
 -- @
 -- startFollow ref = 'eachFrame' $ \\_ts -> do
@@ -209,7 +209,7 @@ data SystemInfo = SystemInfo
 
 instance FromJSVal SystemInfo
 
--- | Read Lynx's @lynx.SystemInfo@, decoded into 'SystemInfo'. This global is
+-- | Read Lynx's @lynx.SystemInfo@, decoded into t'SystemInfo'. This global is
 -- main-thread-only: present on the MTS realm and absent on the BTS realm, so
 -- this returns 'Just' on the main thread and 'Nothing' on the background thread.
 -- The @undefined@ guard makes the background-thread read a safe 'Nothing' rather
@@ -231,16 +231,16 @@ getSystemInfo = do
 -- single-threaded; no atomics are needed.
 newtype MainThreadRef a = MainThreadRef (IORef a)
 -----------------------------------------------------------------------------
--- | Create a top-level 'MainThreadRef' with an initial value.
+-- | Create a top-level t'MainThreadRef' with an initial value.
 --
 -- This uses 'unsafePerformIO' to allocate the underlying 'IORef' as a CAF, so
 -- the ref is shared across all uses of the binding. __You must give every
--- top-level 'MainThreadRef' binding a @{-\# NOINLINE \#-}@ pragma__ — otherwise
+-- top-level t'MainThreadRef' binding a @{-\# NOINLINE \#-}@ pragma__ — otherwise
 -- GHC may inline the CAF and allocate a fresh, independent 'IORef' at each use
 -- site, silently splitting your state into multiple copies.
 --
 -- @
--- dragRef :: 'MainThreadRef' Double
+-- dragRef :: t'MainThreadRef' Double
 -- dragRef = 'mainThreadRef' 0
 -- {-\# NOINLINE dragRef \#-}
 -- @
@@ -248,25 +248,25 @@ mainThreadRef :: a -> MainThreadRef a
 mainThreadRef x = MainThreadRef (unsafePerformIO (newIORef x))
 {-# NOINLINE mainThreadRef #-}
 -----------------------------------------------------------------------------
--- | Read the current value of a 'MainThreadRef'.
+-- | Read the current value of a t'MainThreadRef'.
 readMainThreadRef :: MainThreadRef a -> IO a
 readMainThreadRef (MainThreadRef ref) = readIORef ref
 -----------------------------------------------------------------------------
--- | Overwrite the value of a 'MainThreadRef'.
+-- | Overwrite the value of a t'MainThreadRef'.
 writeMainThreadRef :: MainThreadRef a -> a -> IO ()
 writeMainThreadRef (MainThreadRef ref) = writeIORef ref
 -----------------------------------------------------------------------------
--- | Strictly modify the value of a 'MainThreadRef'.
+-- | Strictly modify the value of a t'MainThreadRef'.
 modifyMainThreadRef :: MainThreadRef a -> (a -> a) -> IO ()
 modifyMainThreadRef (MainThreadRef ref) = modifyIORef' ref
 -----------------------------------------------------------------------------
--- | Strictly modify a 'MainThreadRef' with a @'State' a ()@ computation, letting
+-- | Strictly modify a t'MainThreadRef' with a @'State' a ()@ computation, letting
 -- you drive the update with the "Miso.Lens" operators (@.=@, @%=@, @+=@, …).
 --
 -- @
 -- modifyMainThreadRef_ dragRef $ do
---   offset '.=' newX
---   active '.=' True
+--   offset @.=@ newX
+--   active @.=@ True
 -- @
 modifyMainThreadRef_ :: MainThreadRef a -> State a () -> IO ()
 modifyMainThreadRef_ ref go = modifyMainThreadRef ref (execState go)

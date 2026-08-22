@@ -34,7 +34,7 @@ contentRaw_ = textProp "content"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/svg.html#content
 --
--- Inline SVG XML content using 'miso' 'Miso.Typess.View' Syntax.
+-- Inline SVG XML content using 'Miso.miso' 'Miso.Typess.View' Syntax.
 --
 -- > content_ (svg_ [] [])
 --

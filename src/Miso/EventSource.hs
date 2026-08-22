@@ -23,7 +23,7 @@
 --   modify (\\m -> m { messages = msg : messages m })
 -- @
 --
--- 'close' shuts down an open 'EventSource' connection. 'socketState' reads
+-- 'close' shuts down an open t'EventSource' connection. 'socketState' reads
 -- the current ready-state, and 'emptyEventSource' provides a zero-value for
 -- use in the model before a connection is established.
 --
@@ -54,7 +54,7 @@ import           Miso.String
 -- The three callbacks map browser events to @action@ values dispatched into
 -- the MVU loop:
 --
--- * @onOpen@    — receives the live 'EventSource' handle (store it in the model
+-- * @onOpen@    — receives the live t'EventSource' handle (store it in the model
 --   to 'close' it later)
 -- * @onMessage@ — called with each message payload as a plain string
 -- * @onError@   — called with a description of the connection error
@@ -64,7 +64,7 @@ connectText
   :: URL
   -- ^ URL endpoint for the Server-Sent Events stream
   -> (EventSource -> action)
-  -- ^ @onOpen@ callback; receives the live 'EventSource' handle
+  -- ^ @onOpen@ callback; receives the live t'EventSource' handle
   -> (MisoString -> action)
   -- ^ @onMessage@ callback; receives each raw text message
   -> (MisoString -> action)
@@ -85,7 +85,7 @@ connectJSON
   => URL
   -- ^ URL endpoint for the Server-Sent Events stream
   -> (EventSource -> action)
-  -- ^ @onOpen@ callback; receives the live 'EventSource' handle
+  -- ^ @onOpen@ callback; receives the live t'EventSource' handle
   -> (value -> action)
   -- ^ @onMessage@ callback; receives each JSON-decoded message
   -> (MisoString -> action)
@@ -93,14 +93,14 @@ connectJSON
   -> Effect context props model action
 connectJSON = eventSourceConnectJSON
 -----------------------------------------------------------------------------
--- | Close an open 'EventSource' connection.
+-- | Close an open t'EventSource' connection.
 --
 -- After calling 'close', no further @onMessage@ or @onError@ callbacks will
 -- fire. Corresponds to
 -- <https://developer.mozilla.org/en-US/docs/Web/API/EventSource/close EventSource.close()>.
 close
   :: EventSource
-  -- ^ The 'EventSource' handle to close
+  -- ^ The t'EventSource' handle to close
   -> Effect context props model action
 close = eventSourceClose
 -----------------------------------------------------------------------------

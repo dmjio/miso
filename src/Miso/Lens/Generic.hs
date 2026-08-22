@@ -34,7 +34,7 @@
 -- {-\# LANGUAGE OverloadedLabels, DeriveGeneric \#-}
 -- import GHC.Generics (Generic)
 -- import "Miso.Lens.Generic" ('HasLens', 'field')
--- import "Miso.Lens"         ('Lens', 'view', 'set', ('.='), ('++='))
+-- import "Miso.Lens"         ('Lens', 'Miso.Lens.view', @set@, (@.=@), (@++=@))
 -- @
 --
 -- = Quick start
@@ -52,8 +52,8 @@
 -- labelLens = 'field' \@\"_label\"
 --
 -- update :: Action -> 'Miso.Effect.Effect' p props Counter Action
--- update Increment = #_count '+=' 1
--- update (SetLabel l) = #_label '.=' l
+-- update Increment = #_count @+=@ 1
+-- update (SetLabel l) = #_label @.=@ l
 -- @
 --
 -- = How it works
@@ -73,7 +73,7 @@
 -- * "Miso.Lens" — 'Miso.Lens.Lens', 'Miso.Lens.lens', operators
 -- * "Miso.Lens.TH" — Template Haskell alternative
 -----------------------------------------------------------------------------
-module Miso.Lens.Generic (HasLens(..), field) where
+module Miso.Lens.Generic (HasLens(..), field, GSet(..), GetFieldType, TotalityCheck, And, Or) where
 
 -----------------------------------------------------------------------------
 import Data.Kind (Constraint, Type)

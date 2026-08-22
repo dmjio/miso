@@ -29,7 +29,7 @@
 -- subs = [ 'arrowsSub' ArrowsChanged ]
 --
 -- update :: Action -> 'Miso.Effect.Effect' p props Model Action
--- update (ArrowsChanged ('Arrows' x y)) = do
+-- update (ArrowsChanged (t'Arrows' x y)) = do
 --   -- x ∈ {-1, 0, 1}, y ∈ {-1, 0, 1}
 --   'Miso.Effect.io_' (move x y)
 -- @
@@ -41,13 +41,13 @@
 --   <https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/keyCode keyCodes>.
 --   Use this when you need to handle arbitrary key combinations.
 --
--- * 'arrowsSub' — maps the four arrow keys (37–40) to an 'Arrows' value
+-- * 'arrowsSub' — maps the four arrow keys (37–40) to an t'Arrows' value
 --   with @arrowX ∈ {-1, 0, 1}@ and @arrowY ∈ {-1, 0, 1}@.
 --
 -- * 'wasdSub' — same as 'arrowsSub' but for W\/A\/S\/D (keyCodes 87\/83\/65\/68).
 --
 -- * 'directionSub' — fully configurable: supply your own @(up, down, left, right)@
---   keyCode lists and get the same 'Arrows' mapping.
+--   keyCode lists and get the same t'Arrows' mapping.
 --
 -- = See also
 --
@@ -120,7 +120,7 @@ directionSub
   :: ([Int], [Int], [Int], [Int])
   -- ^ @(up, down, left, right)@ keyCode lists for each direction
   -> (Arrows -> action)
-  -- ^ Callback fired with the current 'Arrows' state on every key change
+  -- ^ Callback fired with the current t'Arrows' state on every key change
   -> Sub action
 directionSub dirs = keyboardSub . (. toArrows dirs)
 -----------------------------------------------------------------------------

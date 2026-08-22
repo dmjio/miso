@@ -39,8 +39,8 @@
 -- --   text  :: 'Lens' Model 'Miso.String.MisoString'
 --
 -- update :: Action -> 'Miso.Effect.Effect' p props Model Action
--- update Increment   = count '+=' 1
--- update (SetText t) = text  '.=' t
+-- update Increment   = count @+=@ 1
+-- update (SetText t) = text  @.=@ t
 -- @
 --
 -- = makeClassy
@@ -73,7 +73,7 @@
 -- = See also
 --
 -- * "Miso.Lens" — 'Miso.Lens.Lens', 'Miso.Lens.lens', 'Miso.Lens.view',
---   'Miso.Lens.set', and the update operators ('.=', '+=', '%=', …)
+--   'Miso.Lens.set', and the update operators (@.=@, @+=@, @%=@, …)
 -- * "Miso.Lens.Generic" — label-based alternative requiring no TH splice
 -----------------------------------------------------------------------------
 module Miso.Lens.TH

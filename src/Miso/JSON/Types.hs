@@ -31,16 +31,16 @@
 -- @
 -- data 'Value'
 --   = 'Number' Double          -- JSON number
---   | 'Bool'   Bool            -- JSON boolean
---   | 'String' 'Miso.String.MisoString'   -- JSON string
+--   | t'Bool'   Bool            -- JSON boolean
+--   | t'String' 'Miso.String.MisoString'   -- JSON string
 --   | 'Array'  ['Value']       -- JSON array
---   | 'Object' ('Miso.JSON.Types.Object')  -- JSON object (Map MisoString Value)
+--   | t'Object' ('Miso.JSON.Types.Object')  -- JSON object (Map MisoString Value)
 --   | 'Null'                   -- JSON null
 -- @
 --
 -- = See also
 --
--- * "Miso.JSON" — top-level re-export hub; 'Miso.JSON.FromJSON', 'Miso.JSON.ToJSON', @('.:')@, 'Miso.JSON.withObject'
+-- * "Miso.JSON" — top-level re-export hub; 'Miso.JSON.FromJSON', 'Miso.JSON.ToJSON', @(@.:@)@, 'Miso.JSON.withObject'
 -- * "Miso.JSON.Parser" — pure server-side JSON decoder ('Miso.JSON.Parser.decodePure')
 -- * "Miso.JSON.Lexer" — tokenizer used by the parser
 -- * "Miso.Event.Decoder" — uses 'Value' and 'Result' via 'Miso.JSON.Parser'

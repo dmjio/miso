@@ -87,6 +87,20 @@ All notable changes to `miso` are documented here.
   readable via `nodeDirectEvents`, used by the native runtime to skip the
   scratch-node round trip.
 
+- **Types that were reachable but not exported.** Several types appeared in
+  exported signatures without being exported themselves, so callers could not
+  name them: `Consumed` (the payload of `Miso.Native.Element.List.Method`'s
+  callback), `GetTextBoundingRect` (the parameter of `getTextBoundingRect`),
+  `ListItemInfo`, `AnimationType` and `UIAppearanceDetailEventType` (field
+  types of exported Lynx event records), and `ComponentIds` (the type of
+  `ComponentState`'s `_componentChildren`). `Miso.JSON` now exports `ToJSON`
+  with both methods — `toJSONList` was hidden, so it could not be overridden
+  outside the module — along with the four generic-deriving classes missing
+  from its `Generics` group (`GToJSONRep`, `GToJSONSumNullary`,
+  `GFromJSONRep`, `GFromJSONSumNullary`). `Miso.Lens.Generic` likewise exports
+  the type-level machinery its `HasLens` instances mention (`GSet`,
+  `GetFieldType`, `TotalityCheck`, `And`, `Or`).
+
 ### Changed
 
 - **Breaking: `View` and `Attribute` gained type parameters.**

@@ -18,8 +18,8 @@
 -- The t'Lens' type is defined as:
 --
 -- @
--- data 'Lens' record field
---  = 'Lens'
+-- data t'Lens' record field
+--  = t'Lens'
 --  { '_get' :: record -> field
 --  , '_set' :: record -> field -> record
 --  }
@@ -86,7 +86,7 @@
 --
 -- updateModel :: Action -> Effect context props Model Action
 -- updateModel = \\case
---   AddOne    -> value '+=' 1
+--   AddOne    -> value @+=@ 1
 --   SubtractOne -> value '-=' 1
 -- @
 ----------------------------------------------------------------------------
@@ -665,7 +665,7 @@ infix 4 %?=
 -- value = lens _value $ \\p x -> p { _value = x }
 --
 -- update :: Action -> Effect context props Model Action
--- update (IncrementBy x) = value '+=' x
+-- update (IncrementBy x) = value @+=@ x
 -- @
 infix 4 +=
 (+=) :: (MonadState record m, Num field)  => Lens record field -> field -> m ()
@@ -766,7 +766,7 @@ this = _id
 ---------------------------------------------------------------------------------
 -- | Smart constructor 'lens' function. Used to easily construct a t'Lens'
 --
--- > name :: 'Lens' Person String
+-- > name :: t'Lens' Person String
 -- > name = 'lens' _name $ \p n -> p { _name = n }
 --
 lens
@@ -779,7 +779,7 @@ lens getter setter = Lens getter (flip setter)
 ----------------------------------------------------------------------------
 -- | A t'Prism' is a first-class reference into a sum type constructor.
 --
--- 'Prism' values can be used with 'preview' to try to extract a value,
+-- t'Prism' values can be used with 'preview' to try to extract a value,
 -- and with 'review' to embed a value back into the sum type.
 data Prism s a
   = Prism

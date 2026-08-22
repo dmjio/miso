@@ -25,7 +25,7 @@ import           Miso.Property
 --
 -- > moveable_ True
 --
--- Default Value: 'False'
+-- Default Value: @False@
 --
 moveable_ :: Bool -> Attribute model action
 moveable_ = boolProp "moveable"

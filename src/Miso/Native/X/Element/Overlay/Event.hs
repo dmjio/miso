@@ -104,7 +104,7 @@ overlayTouchDecoder = ["detail"] `at` details
 onDismissOverlay :: action -> Attribute model action
 onDismissOverlay action = on "dismissoverlay" emptyDecoder (\() _ _ -> action)
 -----------------------------------------------------------------------------
--- | Like 'onDismissOverlay', but dispatched on the Lynx __main thread__ ('MTS').
+-- | Like 'onDismissOverlay', but dispatched on the Lynx __main thread__ (@MTS@).
 --
 -- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
 -- @-XStaticPointers@.
@@ -137,7 +137,7 @@ onDismissOverlayMainWith action = onMain "dismissoverlay" emptyDecoder (\() m re
 onError :: (OverlayErrorEvent -> action) -> Attribute model action
 onError action = on "error" overlayErrorDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
--- | Like 'onError', but dispatched on the Lynx __main thread__ ('MTS').
+-- | Like 'onError', but dispatched on the Lynx __main thread__ (@MTS@).
 --
 -- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
 -- @-XStaticPointers@.
@@ -170,7 +170,7 @@ onErrorMainWith action = onMain "error" overlayErrorDecoder action
 onOverlayTouch :: (OverlayTouchEvent -> action) -> Attribute model action
 onOverlayTouch action = on "overlaytouch" overlayTouchDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
--- | Like 'onOverlayTouch', but dispatched on the Lynx __main thread__ ('MTS').
+-- | Like 'onOverlayTouch', but dispatched on the Lynx __main thread__ (@MTS@).
 --
 -- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
 -- @-XStaticPointers@.
@@ -203,7 +203,7 @@ onOverlayTouchMainWith action = onMain "overlaytouch" overlayTouchDecoder action
 onRequestClose :: action -> Attribute model action
 onRequestClose action = on "requestclose" emptyDecoder (\() _ _ -> action)
 -----------------------------------------------------------------------------
--- | Like 'onRequestClose', but dispatched on the Lynx __main thread__ ('MTS').
+-- | Like 'onRequestClose', but dispatched on the Lynx __main thread__ (@MTS@).
 --
 -- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
 -- @-XStaticPointers@.
@@ -236,7 +236,7 @@ onRequestCloseMainWith action = onMain "requestclose" emptyDecoder (\() m ref ->
 onShowOverlay :: action -> Attribute model action
 onShowOverlay action = on "showoverlay" emptyDecoder (\() _ _ -> action)
 -----------------------------------------------------------------------------
--- | Like 'onShowOverlay', but dispatched on the Lynx __main thread__ ('MTS').
+-- | Like 'onShowOverlay', but dispatched on the Lynx __main thread__ (@MTS@).
 --
 -- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
 -- @-XStaticPointers@.
@@ -263,27 +263,27 @@ onShowOverlayMainWith :: (model -> DOMRef -> action) -> EventHandler model actio
 onShowOverlayMainWith action = onMain "showoverlay" emptyDecoder (\() m ref -> action m ref)
 -----------------------------------------------------------------------------
 -- | Like 'onDismissOverlay', but the handler also receives the target element's 'DOMRef'.
--- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+-- Use for main-thread (@MTS@) handlers that imperatively mutate the element.
 onDismissOverlayWith :: (DOMRef -> action) -> Attribute model action
 onDismissOverlayWith action = on "dismissoverlay" emptyDecoder (\() _ ref -> action ref)
 -----------------------------------------------------------------------------
 -- | Like 'onError', but the handler also receives the target element's 'DOMRef'.
--- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+-- Use for main-thread (@MTS@) handlers that imperatively mutate the element.
 onErrorWith :: (OverlayErrorEvent -> DOMRef -> action) -> Attribute model action
 onErrorWith action = on "error" overlayErrorDecoder $ \v _ domRef -> action v domRef
 -----------------------------------------------------------------------------
 -- | Like 'onOverlayTouch', but the handler also receives the target element's 'DOMRef'.
--- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+-- Use for main-thread (@MTS@) handlers that imperatively mutate the element.
 onOverlayTouchWith :: (OverlayTouchEvent -> DOMRef -> action) -> Attribute model action
 onOverlayTouchWith action = on "overlaytouch" overlayTouchDecoder $ \v _ domRef -> action v domRef
 -----------------------------------------------------------------------------
 -- | Like 'onRequestClose', but the handler also receives the target element's 'DOMRef'.
--- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+-- Use for main-thread (@MTS@) handlers that imperatively mutate the element.
 onRequestCloseWith :: (DOMRef -> action) -> Attribute model action
 onRequestCloseWith action = on "requestclose" emptyDecoder (\() _ ref -> action ref)
 -----------------------------------------------------------------------------
 -- | Like 'onShowOverlay', but the handler also receives the target element's 'DOMRef'.
--- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+-- Use for main-thread (@MTS@) handlers that imperatively mutate the element.
 onShowOverlayWith :: (DOMRef -> action) -> Attribute model action
 onShowOverlayWith action = on "showoverlay" emptyDecoder (\() _ ref -> action ref)
 -----------------------------------------------------------------------------

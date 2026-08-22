@@ -107,7 +107,7 @@ frameLoadMetricsDecoder = ["detail"] `at` details
 onLoad :: (FrameLoadEvent -> action) -> Attribute model action
 onLoad action = on "load" frameLoadDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
--- | Like 'onLoad', but dispatched on the Lynx __main thread__ ('MTS').
+-- | Like 'onLoad', but dispatched on the Lynx __main thread__ (@MTS@).
 --
 -- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
 -- @-XStaticPointers@.
@@ -151,7 +151,7 @@ onLoadMainWith action = onMain "load" frameLoadDecoder action
 onLoadMetrics :: (FrameLoadMetricsEvent -> action) -> Attribute model action
 onLoadMetrics action = on "loadmetrics" frameLoadMetricsDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
--- | Like 'onLoadMetrics', but dispatched on the Lynx __main thread__ ('MTS').
+-- | Like 'onLoadMetrics', but dispatched on the Lynx __main thread__ (@MTS@).
 --
 -- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
 -- @-XStaticPointers@.
@@ -178,12 +178,12 @@ onLoadMetricsMainWith :: (FrameLoadMetricsEvent -> model -> DOMRef -> action) ->
 onLoadMetricsMainWith action = onMain "loadmetrics" frameLoadMetricsDecoder action
 -----------------------------------------------------------------------------
 -- | Like 'onLoad', but the handler also receives the target element's 'DOMRef'.
--- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+-- Use for main-thread (@MTS@) handlers that imperatively mutate the element.
 onLoadWith :: (FrameLoadEvent -> DOMRef -> action) -> Attribute model action
 onLoadWith action = on "load" frameLoadDecoder $ \f _ domRef -> action f domRef
 -----------------------------------------------------------------------------
 -- | Like 'onLoadMetrics', but the handler also receives the target element's 'DOMRef'.
--- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+-- Use for main-thread (@MTS@) handlers that imperatively mutate the element.
 onLoadMetricsWith :: (FrameLoadMetricsEvent -> DOMRef -> action) -> Attribute model action
 onLoadMetricsWith action = on "loadmetrics" frameLoadMetricsDecoder $ \f _ domRef -> action f domRef
 -----------------------------------------------------------------------------

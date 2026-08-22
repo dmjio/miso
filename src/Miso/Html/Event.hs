@@ -507,56 +507,56 @@ onSubmit action =
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/pointerup
 onPointerUp
   :: (PointerEvent -> action)
-  -- ^ Callback receiving the full 'PointerEvent'
+  -- ^ Callback receiving the full t'PointerEvent'
   -> Attribute model action
 onPointerUp f = on "pointerup" pointerDecoder (\action _ _ -> f action)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/pointerdown
 onPointerDown
   :: (PointerEvent -> action)
-  -- ^ Callback receiving the full 'PointerEvent'
+  -- ^ Callback receiving the full t'PointerEvent'
   -> Attribute model action
 onPointerDown f = on "pointerdown" pointerDecoder (\action _ _ -> f action)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/pointerenter
 onPointerEnter
   :: (PointerEvent -> action)
-  -- ^ Callback receiving the full 'PointerEvent'
+  -- ^ Callback receiving the full t'PointerEvent'
   -> Attribute model action
 onPointerEnter f = on "pointerenter" pointerDecoder (\action _ _ -> f action)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/pointerleave
 onPointerLeave
   :: (PointerEvent -> action)
-  -- ^ Callback receiving the full 'PointerEvent'
+  -- ^ Callback receiving the full t'PointerEvent'
   -> Attribute model action
 onPointerLeave f = on "pointerleave" pointerDecoder (\action _ _ -> f action)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/pointerover
 onPointerOver
   :: (PointerEvent -> action)
-  -- ^ Callback receiving the full 'PointerEvent'
+  -- ^ Callback receiving the full t'PointerEvent'
   -> Attribute model action
 onPointerOver f = on "pointerover" pointerDecoder (\action _ _ -> f action)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/pointerout
 onPointerOut
   :: (PointerEvent -> action)
-  -- ^ Callback receiving the full 'PointerEvent'
+  -- ^ Callback receiving the full t'PointerEvent'
   -> Attribute model action
 onPointerOut f = on "pointerout" pointerDecoder (\action _ _ -> f action)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/pointercancel
 onPointerCancel
   :: (PointerEvent -> action)
-  -- ^ Callback receiving the full 'PointerEvent'
+  -- ^ Callback receiving the full t'PointerEvent'
   -> Attribute model action
 onPointerCancel f = on "pointercancel" pointerDecoder (\action _ _ -> f action)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/pointermove
 onPointerMove
   :: (PointerEvent -> action)
-  -- ^ Callback receiving the full 'PointerEvent'
+  -- ^ Callback receiving the full t'PointerEvent'
   -> Attribute model action
 onPointerMove f = on "pointermove" pointerDecoder (\action _ _ -> f action)
 -----------------------------------------------------------------------------

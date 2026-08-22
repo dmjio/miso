@@ -16,7 +16,7 @@
 -- frames — into the update loop by calling its 'Miso.Effect.Sink'.
 --
 -- Register subscriptions in the 'Miso.Types.subs' field of a
--- 'Miso.Types.Component':
+-- t'Miso.Types.Component':
 --
 -- @
 -- import "Miso"
@@ -38,7 +38,7 @@
 -- ['keyboardSub'] global @keydown@ \/ @keyup@ — "Miso.Subscription.Keyboard"
 -- ['arrowsSub', 'wasdSub', 'directionSub'] arrow or WASD keys held — "Miso.Subscription.Keyboard"
 -- ['uriSub'] browser @popstate@ (back\/forward\/pushState) — "Miso.Subscription.History"
--- ['routerSub'] same, decoded via 'Miso.Router.Router' — "Miso.Subscription.History"
+-- ['Miso.Subscription.History.routerSub'] same, decoded via 'Miso.Router.Router' — "Miso.Subscription.History"
 -- ['windowCoordsSub'] global window @pointermove@ — "Miso.Subscription.Window"
 -- ['windowPointerMoveSub'] global window @pointermove@ — "Miso.Subscription.Window"
 -- ['windowSubWithOptions'] any window event — "Miso.Subscription.Window"
@@ -60,7 +60,7 @@
 --
 -- * "Miso.Effect" — 'Miso.Effect.Sub', 'Miso.Effect.Sink', 'Miso.Effect.mapSub'
 -- * "Miso.Subscription.Util" — 'Miso.Subscription.Util.createSub' for custom subscriptions
--- * "Miso.Router" — 'Miso.Router.Router' typeclass used by 'routerSub'
+-- * "Miso.Router" — 'Miso.Router.Router' typeclass used by 'Miso.Subscription.History.routerSub'
 ----------------------------------------------------------------------------
 module Miso.Subscription
   ( -- ** Mouse

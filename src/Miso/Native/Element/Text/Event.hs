@@ -69,7 +69,7 @@ textEvents
 onLayout :: (LayoutEvent -> action) -> Attribute model action
 onLayout action = on "layout" layoutDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
--- | Like 'onLayout', but dispatched on the Lynx __main thread__ ('MTS').
+-- | Like 'onLayout', but dispatched on the Lynx __main thread__ (@MTS@).
 --
 -- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
 -- @-XStaticPointers@.
@@ -115,7 +115,7 @@ onLayoutMainWith action = onMain "layout" layoutDecoder action
 onSelectionChange :: (SelectionChangeEvent -> action) -> Attribute model action
 onSelectionChange action = on "selectionchange" selectionChangeDecoder (\e _ _ -> action e)
 -----------------------------------------------------------------------------
--- | Like 'onSelectionChange', but dispatched on the Lynx __main thread__ ('MTS').
+-- | Like 'onSelectionChange', but dispatched on the Lynx __main thread__ (@MTS@).
 --
 -- Runs imperatively on the MTS (no VDOM diff). Meant to be used with
 -- @-XStaticPointers@.
@@ -201,12 +201,12 @@ data Size
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
 -- | Like 'onLayout', but the handler also receives the target element's 'DOMRef'.
--- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+-- Use for main-thread (@MTS@) handlers that imperatively mutate the element.
 onLayoutWith :: (LayoutEvent -> DOMRef -> action) -> Attribute model action
 onLayoutWith action = on "layout" layoutDecoder $ \v _ domRef -> action v domRef
 -----------------------------------------------------------------------------
 -- | Like 'onSelectionChange', but the handler also receives the target element's 'DOMRef'.
--- Use for main-thread ('MTS') handlers that imperatively mutate the element.
+-- Use for main-thread (@MTS@) handlers that imperatively mutate the element.
 onSelectionChangeWith :: (SelectionChangeEvent -> DOMRef -> action) -> Attribute model action
 onSelectionChangeWith action = on "selectionchange" selectionChangeDecoder $ \v _ domRef -> action v domRef
 -----------------------------------------------------------------------------

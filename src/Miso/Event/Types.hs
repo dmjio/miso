@@ -51,10 +51,10 @@
 --
 -- = Payload types
 --
--- * 'KeyCode' \/ 'KeyInfo' — keyboard event key code and modifier state.
--- * 'Checked' — checkbox @checked@ boolean.
--- * 'PointerEvent' \/ 'PointerType' — pointer position, pressure, tilt, and device type.
--- * 'Options' — per-handler flags: 'preventDefault', 'stopPropagation'.
+-- * t'KeyCode' \/ t'KeyInfo' — keyboard event key code and modifier state.
+-- * t'Checked' — checkbox @checked@ boolean.
+-- * t'PointerEvent' \/ 'PointerType' — pointer position, pressure, tilt, and device type.
+-- * t'Options' — per-handler flags: 'preventDefault', 'stopPropagation'.
 --
 -- = See also
 --
@@ -99,7 +99,7 @@ import           Miso.String (MisoString, ms)
 data KeyInfo
   = KeyInfo
   { keyCode :: !KeyCode
-  -- ^ Numeric key code of the pressed key (see 'KeyCode')
+  -- ^ Numeric key code of the pressed key (see t'KeyCode')
   , shiftKey :: !Bool
   -- ^ 'True' if the Shift key was held when the event fired
   , metaKey :: !Bool
@@ -210,8 +210,8 @@ defaultOptions
 -- | Convenience type for Events
 --
 -- The map declares which DOM events are delegated and at which 'Phase'. Whether
--- an individual handler runs on the Lynx main thread ('MTS') or background
--- thread ('BTS') is decided __per handler__ (see @Miso.Event.mainThread@), not
+-- an individual handler runs on the Lynx main thread (@MTS@) or background
+-- thread (@BTS@) is decided __per handler__ (see @Miso.Event.mainThread@), not
 -- per event name — mirroring Lynx's @main-thread:bind@ vs @bind@ prefix.
 type Events = M.Map MisoString Phase
 -----------------------------------------------------------------------------

@@ -15,14 +15,14 @@
 --
 -- "Miso.Data.Array" is a Haskell wrapper around the JavaScript
 -- <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array Array>
--- object. Values of type @'Array' a@ live in JavaScript memory; all
+-- object. Values of type @t'Array' a@ live in JavaScript memory; all
 -- operations run in 'IO' and mutate the underlying JS array in place.
 --
 -- Use this module when you need to pass a JS-native array to a browser API
 -- or a third-party JavaScript library. For pure Haskell data processing,
 -- prefer ordinary lists or 'Data.Map.Strict.Map'.
 --
--- Import qualified to avoid clashing with 'Prelude':
+-- Import qualified to avoid clashing with "Prelude":
 --
 -- @
 -- import qualified "Miso.Data.Array" as A
@@ -154,7 +154,7 @@ size (Array m) = DSL.fromJSValUnchecked =<< m ! "length"
 null :: Array value -> IO Bool
 null m = (== 0) <$> size m
 -----------------------------------------------------------------------------
--- | Checks existence of 'value' in t'Array', returns t'Bool.
+-- | Checks existence of @value@ in t'Array', returns t'Bool.
 member
   :: ToJSVal value
   => value

@@ -76,22 +76,22 @@
 -- * __Constructor name__ becomes the lowercase path segment:
 --   @About@ → @\/about@, @UserProfile@ → @\/user@ (first camel-case hump only).
 -- * The special name __@Index@__ encodes the root path @\/@.
--- * The position of 'Capture' and 'Path' fields in the constructor
+-- * The position of t'Capture' and t'Path' fields in the constructor
 --   determines their order in the URL path. The position of
---   'QueryParam' and 'QueryFlag' does not matter.
+--   t'QueryParam' and t'QueryFlag' does not matter.
 --
 -- = URL types
 --
--- [@'Capture' sym a@] dynamic path segment — @Capture 42@ → @\/42@
--- [@'Path' sym@] fixed path segment — @Path \"foo\"@ → @\/foo@
--- [@'QueryParam' sym a@] optional query key — @QueryParam (Just 1)@ → @?sym=1@
--- [@'QueryFlag' sym@] boolean query flag — @QueryFlag True@ → @?sym@
--- [@'Fragment' sym@] hash fragment — @Fragment@ → @#sym@
+-- [@t'Capture' sym a@] dynamic path segment — @Capture 42@ → @\/42@
+-- [@t'Path' sym@] fixed path segment — @Path \"foo\"@ → @\/foo@
+-- [@t'QueryParam' sym a@] optional query key — @QueryParam (Just 1)@ → @?sym=1@
+-- [@t'QueryFlag' sym@] boolean query flag — @QueryFlag True@ → @?sym@
+-- [@t'Fragment' sym@] hash fragment — @Fragment@ → @#sym@
 --
 -- = Integration with history subscription
 --
 -- @
--- import "Miso.Subscription.History" ('routerSub')
+-- import "Miso.Subscription.History" ('Miso.Subscription.History.routerSub')
 --
 -- subs :: ['Miso.Effect.Sub' Action]
 -- subs = [ 'Miso.Subscription.History.routerSub' RouteChanged ]

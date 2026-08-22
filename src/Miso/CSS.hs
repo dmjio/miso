@@ -45,11 +45,11 @@
 --
 -- = Global Stylesheets
 --
--- Construct a 'StyleSheet' with 'sheet_' and 'selector_', then render it to
+-- Construct a t'StyleSheet' with 'sheet_' and 'selector_', then render it to
 -- a 'MisoString' with 'renderStyleSheet' for injection into a @\<style\>@ tag:
 --
 -- @
--- mySheet :: 'StyleSheet'
+-- mySheet :: t'StyleSheet'
 -- mySheet = 'sheet_'
 --   [ 'selector_' "body"
 --       [ CSS.'margin'     (CSS.'px' 0)
@@ -65,13 +65,13 @@
 -- = Animations and Media Queries
 --
 -- @
--- myAnimation :: 'Styles'
+-- myAnimation :: t'Styles'
 -- myAnimation = 'keyframes_' "slide-in"
 --   [ 'from_' [ CSS.'transform' "translateX(-100%)" ]
 --   , 'to_'   [ CSS.'transform' "translateX(0)" ]
 --   ]
 --
--- myMedia :: 'Styles'
+-- myMedia :: t'Styles'
 -- myMedia = 'media_' ('screen_' \`and_\` 'minWidth_' (CSS.'px' 480))
 --   [ 'rule_' "header" [ CSS.'height' "auto" ]
 --   , 'rule_' "nav"    [ CSS.'display' "flex" ]
@@ -589,7 +589,7 @@ pct x = MS.ms x <> "%"
 ppx :: Double -> MisoString
 ppx x = MS.ms x <> "ppx"
 -----------------------------------------------------------------------------
--- | Constructs a 'Styles' entry pairing a CSS selector with a list of properties.
+-- | Constructs a t'Styles' entry pairing a CSS selector with a list of properties.
 -- Combine multiple entries with 'sheet_'.
 --
 -- @
@@ -602,7 +602,7 @@ ppx x = MS.ms x <> "ppx"
 selector_ :: MisoString -> [Style] -> Styles
 selector_ k v = Styles (k,v)
 -----------------------------------------------------------------------------
--- | Constructs a 'StyleSheet' from a list of 'Styles' entries.
+-- | Constructs a t'StyleSheet' from a list of t'Styles' entries.
 --
 -- Combine with 'selector_', 'keyframes_', and 'media_' to build a full
 -- stylesheet, then render it to a 'MisoString' with 'renderStyleSheet'.
@@ -694,7 +694,7 @@ renderStyles indent (Media name frames) = MS.intercalate " "
   , "}\n"
   ]
 -----------------------------------------------------------------------------
--- | Renders a 'StyleSheet' to a 'MisoString' suitable for injection into a
+-- | Renders a t'StyleSheet' to a 'MisoString' suitable for injection into a
 -- @\<style\>@ tag.
 --
 -- @
@@ -749,7 +749,7 @@ at stop styles = KeyframeStop (stop, styles)
 -- @(selector, [Style])@ pairs scoped to that query.
 --
 -- @
--- responsive :: 'Styles'
+-- responsive :: t'Styles'
 -- responsive = 'media_' ('screen_' \`and_\` 'minWidth_' (px 480))
 --   [ 'rule_' "header" [ 'height' "auto" ]
 --   , 'rule_' "ul"     [ 'display' "block" ]

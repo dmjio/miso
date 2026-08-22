@@ -30,10 +30,10 @@
 --
 -- data Action
 --   = RequestLocation
---   | GotLocation 'Geolocation'
---   | LocationError 'GeolocationError'
+--   | GotLocation t'Geolocation'
+--   | LocationError t'GeolocationError'
 --   | RequestCamera
---   | GotStream 'Stream'
+--   | GotStream t'Stream'
 --   | MediaError 'Miso.DSL.JSVal'
 --
 -- update :: Action -> 'Miso.Effect.Effect' p props Model Action
@@ -47,19 +47,19 @@
 -- = API groups
 --
 -- * __Camera \/ microphone__ ('Navigator.mediaDevices.getUserMedia'):
---   'getUserMedia', 'userMedia', 'UserMedia', 'Stream'
+--   'getUserMedia', 'userMedia', t'UserMedia', t'Stream'
 -- * __Clipboard__ ('Navigator.clipboard.writeText'):
 --   'copyClipboard'
 -- * __Online status__ ('Navigator.onLine'):
 --   'isOnLine'
 -- * __Geolocation__ ('Navigator.geolocation.getCurrentPosition'):
---   'geolocation', 'Geolocation', 'GeolocationError', 'GeolocationErrorCode'
+--   'geolocation', t'Geolocation', t'GeolocationError', 'GeolocationErrorCode'
 --
 -- = Error handling
 --
 -- Geolocation errors are decoded from the browser's
 -- <https://developer.mozilla.org/en-US/docs/Web/API/GeolocationPositionError GeolocationPositionError>
--- object into 'GeolocationError', which carries a 'GeolocationErrorCode'
+-- object into t'GeolocationError', which carries a 'GeolocationErrorCode'
 -- (@'PERMISSION_DENIED'@, @'POSITION_UNAVAILABLE'@, @'TIMEOUT'@) and a
 -- human-readable message string.
 --
@@ -168,7 +168,7 @@ geolocation
   :: (Geolocation -> action)
   -- ^ Success callback; receives the device's current position
   -> (GeolocationError -> action)
-  -- ^ Error callback; receives a 'GeolocationError' with code and message
+  -- ^ Error callback; receives a t'GeolocationError' with code and message
   -> Effect context props model action
 geolocation successful errorful = do
   withSink $ \sink ->

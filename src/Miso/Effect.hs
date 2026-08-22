@@ -32,15 +32,15 @@
 --
 -- @
 -- type 'Effect' context props model action
---      = RWS ('ComponentInfo' context props) ['Schedule' context action] model ()
+--      = RWS (t'ComponentInfo' context props) [t'Schedule' context action] model ()
 -- @
 --
 -- The @RWS@ decomposition:
 --
--- * __Reader__ — 'ComponentInfo': component metadata ('componentInfoId',
+-- * __Reader__ — t'ComponentInfo': component metadata ('componentInfoId',
 --   'componentInfoDOMRef', 'componentInfoProps') accessible via 'Control.Monad.Reader.ask'
 --   or the convenience lenses.
--- * __Writer__ — accumulated list of 'Schedule'd 'IO' actions to run after
+-- * __Writer__ — accumulated list of t'Schedule'd 'IO' actions to run after
 --   the model update.
 -- * __State__ — the @model@, updated via 'Control.Monad.State.put',
 --   'Control.Monad.State.modify', or the lens operators from "Miso.Lens".
@@ -77,7 +77,7 @@
 --
 -- = Component metadata
 --
--- Within 'update', access the current component's runtime info through
+-- Within @update@, access the current component's runtime info through
 -- 'Control.Monad.Reader.ask' or the provided lenses:
 --
 -- @
@@ -91,8 +91,8 @@
 --
 -- = See also
 --
--- * "Miso.Types" — 'Miso.Types.Component', 'Miso.Types.update', 'Miso.Types.subs'
--- * "Miso.Lens" — lens operators (@'.='@, @'+='@, @'%='@) for model updates
+-- * "Miso.Types" — t'Miso.Types.Component', 'Miso.Types.update', 'Miso.Types.subs'
+-- * "Miso.Lens" — lens operators (@@.=@@, @@+=@@, @@%=@@) for model updates
 -- * "Miso.Subscription" — pre-built subscriptions (mouse, keyboard, history, …)
 -----------------------------------------------------------------------------
 module Miso.Effect
@@ -173,8 +173,8 @@ mkComponentInfo = ComponentInfo
 -----------------------------------------------------------------------------
 -- | This is the 'Reader r' in t'Miso.Effect'. Accessible via 'Control.Monad.Reader.ask'. It holds
 -- a phantom type for @context@ (the app-global React-style context, which is
--- write-only from within 'update'). It gives access to 'Component' metadata such
--- as the 'DOMRef' the 'Component' was mounted on and the 'ComponentId' associated
+-- write-only from within @update@). It gives access to t'Miso.Types.Component' metadata such
+-- as the 'DOMRef' the t'Miso.Types.Component' was mounted on and the 'ComponentId' associated
 -- with it.
 data ComponentInfo context props
   = ComponentInfo
@@ -268,7 +268,7 @@ componentInfoContext = lens _componentInfoContext $ \r x -> r { _componentInfoCo
 -- @
 --
 -- __Note:__ this lens is __read-only__ within 'Effect'. It targets the
--- 'ComponentInfo' reader environment, so setting through it (e.g. with
+-- t'ComponentInfo' reader environment, so setting through it (e.g. with
 -- 'Miso.Lens.set' \/ 'Miso.Lens..=') has no observable effect. To change the
 -- global @context@ from 'Miso.Types.update', use 'Miso.Effect.modifyContext',
 -- 'Miso.Effect.putContext', or 'Miso.Effect.modifyContext_' (the 'State'-monad
@@ -341,7 +341,7 @@ async = Schedule Async
 -- | Run @action@'s 'Miso.Types.update' on the __background__ thread (BTS).
 --
 -- On the Lynx dual-thread runtime the shared @model@ is owned solely by the
--- background thread. A main-thread ('Miso.Event.Types.MTS') event handler that
+-- background thread. A main-thread (t'Miso.Event.Types.MTS') event handler that
 -- needs to change shared state cannot do so directly — it dispatches the state
 -- change here, and @action@'s 'Miso.Types.update' runs (exactly once) on the
 -- BTS, where the model write commits. Off the native runtime (or when already
@@ -357,7 +357,7 @@ runOnBG action = tell [ CrossThread BTS action ]
 -----------------------------------------------------------------------------
 -- | Run @action@'s 'Miso.Types.update' on the __main__ thread (MTS).
 --
--- The dual of 'runOnBG': a background-thread ('Miso.Event.Types.MTS') effect
+-- The dual of 'runOnBG': a background-thread (t'Miso.Event.Types.MTS') effect
 -- that needs an imperative main-thread operation (see "Miso.Native.MainThread")
 -- dispatches @action@ here, and its 'Miso.Types.update' runs (exactly once) on
 -- the MTS. Off the native runtime (or when already on the MTS) this is an
@@ -395,12 +395,12 @@ batch_ actions = sequence_
 -----------------------------------------------------------------------------
 -- | A monad for succinctly expressing model transitions in the @update@ function.
 --
--- t'Effect' is a @RWS@, where the @State@ allows modification to 'model'.
+-- t'Effect' is a @RWS@, where the @State@ allows modification to @model@.
 -- It's also a @Writer@ @Monad@, where the accumulator is a list of scheduled
 -- @IO@ actions. Multiple actions can be scheduled using 'Control.Monad.Writer.Class.tell'
 -- from the @mtl@ library and a single asynchronous action can be scheduled using 'io_'.
 --
--- An t'Effect' represents the results of an 'update' action.
+-- An t'Effect' represents the results of an @update@ action.
 --
 -- It consists of the updated model and a list of subscriptions. Each t'Sub' is
 -- run in a new thread so there is no risk of accidentally blocking the
@@ -415,13 +415,13 @@ batch_ actions = sequence_
 -- myComponent = Component
 --   { update = \\case
 --       MyAction1 -> do
---         field1 '.=' value1
---         counter '+=' 1
+--         field1 @.=@ value1
+--         counter @+=@ 1
 --       MyAction2 -> do
---         field2 '%=' f
+--         field2 @%=@ f
 --         'io_' $ do
---           'consoleLog' \"Hello\"
---           'consoleLog' \"World!\"
+--           'Miso.FFI.consoleLog' \"Hello\"
+--           'Miso.FFI.consoleLog' \"World!\"
 --   , ...
 --   }
 -- @
@@ -440,12 +440,12 @@ type Effect context props model action = RWS (ComponentInfo context props) [Sche
 -- The 'ContextModify' constructor carries a pending mutation to the app-global
 -- React-style @context@. It is emitted by 'modifyContext' \/ 'putContext' and
 -- applied to the global context during the scheduler's commit phase, triggering
--- a re-render of every 'Component' with @useContext@ enabled.
+-- a re-render of every t'Miso.Types.Component' with @useContext@ enabled.
 --
 -- The 'CrossThread' constructor carries an @action@ to be handled on a specific
 -- Lynx 'Thread'. Emitted by 'runOnBG' \/ 'runOnMain', it is dispatched locally
 -- when already on the target thread, otherwise forwarded to the peer thread
--- (where the @action@'s 'Miso.Types.update' runs). A plain 'Schedule' always
+-- (where the @action@'s 'Miso.Types.update' runs). A plain t'Schedule' always
 -- runs on the thread that produced it.
 --
 -- @since 1.9.0.0
@@ -593,7 +593,7 @@ modifyAllIO f = censor (map go)
 -- to turn events into actions.
 --
 -- @
--- 'update' FetchJSON = 'withSink' $ \\sink -> getJSON (sink . ReceivedJSON) (sink . HandleError)
+-- @update@ FetchJSON = 'withSink' $ \\sink -> getJSON (sink . ReceivedJSON) (sink . HandleError)
 -- @
 --
 -- @since 1.9.0.0
@@ -603,18 +603,18 @@ withSink
   -> Effect context props model action
 withSink f = tell [ async f ]
 -----------------------------------------------------------------------------
--- | Mutate the app-global React-style @context@ from within 'update'.
+-- | Mutate the app-global React-style @context@ from within @update@.
 --
 -- The supplied function is scheduled as a 'ContextModify' and folded over the
 -- current global context during the scheduler's commit phase. If the context
--- value changes (per its 'Eq' instance), every 'Component' with @useContext@
+-- value changes (per its 'Eq' instance), every t'Miso.Types.Component' with @useContext@
 -- enabled is re-rendered.
 --
--- Note that @context@ is __write-only__ inside 'update'; to read it, use the
+-- Note that @context@ is __write-only__ inside @update@; to read it, use the
 -- @context@ argument threaded into the 'Miso.Types.view' function.
 --
 -- @
--- 'update' Toggle = 'modifyContext' (\\theme -> if theme == Light then Dark else Light)
+-- @update@ Toggle = 'modifyContext' (\\theme -> if theme == Light then Dark else Light)
 -- @
 --
 -- @since 1.13.0.0
@@ -645,7 +645,7 @@ putContext = modifyContext . const
 -- from "Miso.Lens" to update @context@, mirroring how @model@ is updated.
 --
 -- @
--- 'update' Toggle = 'modifyContext_' $ theme '.=' Dark
+-- @update@ Toggle = 'modifyContext_' $ theme @.=@ Dark
 -- @
 --
 -- @since 1.13.0.0
@@ -661,8 +661,8 @@ modifyContext_ = modifyContext . execState
 -- data Action = HelloWorld
 -- type Model  = Int
 --
--- 'update' :: Action -> 'Effect' context props Model Action
--- 'update' = \\case
+-- @update@ :: Action -> 'Effect' context props Model Action
+-- @update@ = \\case
 --   Click -> 'issue' HelloWorld
 -- @
 --

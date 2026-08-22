@@ -25,7 +25,7 @@
 --
 -- data Action
 --   = LoadSession
---   | GotSession (Maybe 'Cookie')
+--   | GotSession (Maybe t'Cookie')
 --   | SessionError 'Miso.String.MisoString'
 --   | SaveTheme
 --   | ThemeSaved
@@ -40,8 +40,8 @@
 --
 -- = Types
 --
--- * 'Cookie' — a single cookie with all standard fields
--- * 'CookieChangeEvent' — payload for 'Miso.Subscription.Cookie.cookieChangeSub'
+-- * t'Cookie' — a single cookie with all standard fields
+-- * t'CookieChangeEvent' — payload for 'Miso.Subscription.Cookie.cookieChangeSub'
 --
 -- = API groups
 --
@@ -231,7 +231,7 @@ cookieGetAll successful errorful = withSink $ \sink -> do
     (sink . successful <=< fromJSValUnchecked)
     (sink . errorful)
 -----------------------------------------------------------------------------
--- | A 'Cookie' with sensible defaults: @path = "/"@, session expiry,
+-- | A t'Cookie' with sensible defaults: @path = "/"@, session expiry,
 -- @SameSite = "lax"@, not secure, not partitioned, no domain restriction.
 --
 -- @since 1.13.0.0
@@ -250,8 +250,8 @@ defaultCookie name value = Cookie
 -- | Set a cookie via the
 -- <https://developer.mozilla.org/en-US/docs/Web/API/CookieStore CookieStore API>.
 --
--- Use 'defaultCookie' to construct a 'Cookie' with sensible defaults, or
--- supply a fully specified 'Cookie' record for custom path, domain, expiry etc.
+-- Use 'defaultCookie' to construct a t'Cookie' with sensible defaults, or
+-- supply a fully specified t'Cookie' record for custom path, domain, expiry etc.
 --
 -- __Important:__ You cannot use both @expires@ and @maxAge@ in the same call.
 -- If you do, the @set()@ method will fail with a @TypeError@.

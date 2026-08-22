@@ -65,10 +65,10 @@ lynxDirect_ direct tag attrs kids = nodeDirectEvents HTML tag attrs direct kids
 -- You can omit the explicit <page> wrapper, as the frontend framework will
 -- generate the root node by default.
 --
--- You shouldn't use this, we already generate the 'page' for you when
--- the initial 'renderPage' callback is invoked by PrimJS, and there can
--- only be one 'page' present at at time. We include it here for completeness,
--- and because 'page' functionality might change in the future.
+-- You shouldn't use this, we already generate the @page@ for you when
+-- the initial @renderPage@ callback is invoked by PrimJS, and there can
+-- only be one @page@ present at at time. We include it here for completeness,
+-- and because @page@ functionality might change in the future.
 --
 page_ :: [Attribute model action] -> [View context model action] -> View context model action
 page_ = lynx_ "page"

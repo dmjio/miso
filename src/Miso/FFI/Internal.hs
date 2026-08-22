@@ -74,12 +74,12 @@
 --   'scrollIntoView', 'requestFullscreen', 'click', 'files', 'setValue'
 -- * __CSS \/ JS injection__: 'addStyle', 'addStyleSheet', 'addScript',
 --   'addSrc', 'addScriptImportMap'
--- * __Network__: 'fetch' \/ 'Response' \/ 'CONTENT_TYPE',
+-- * __Network__: 'fetch' \/ t'Response' \/ 'CONTENT_TYPE',
 --   'websocketConnect', 'websocketSend', 'websocketClose',
 --   'eventSourceConnect', 'eventSourceClose'
 -- * __Navigator__: 'getUserMedia', 'copyClipboard', 'geolocation', 'isOnLine'
--- * __Types__: 'Image', 'Date', 'Blob', 'File', 'FormData',
---   'ArrayBuffer', 'Uint8Array', 'FileReader', 'URLSearchParams', 'Event'
+-- * __Types__: t'Image', t'Date', t'Blob', t'File', t'FormData',
+--   t'ArrayBuffer', t'Uint8Array', t'FileReader', t'URLSearchParams', t'Event'
 -- * __Randomness__: 'splitmix32', 'mathRandom', 'getRandomValue'
 --
 -- = See also
@@ -459,7 +459,7 @@ updateRef jsval1 jsval2 = do
 -- logNameGetAge :: Person -> IO Int
 -- logNameGetAge = inline
 --   """
---   console.log('name', name);
+--   console.log(@name@, name);
 --   return age;
 --   """
 --
@@ -706,7 +706,7 @@ addScript useModule js_ = do
   void $ context # "appendChild" $ (head_, script)
   pure script
 -----------------------------------------------------------------------------
--- | Sets the @.value@ property on a 'DOMRef'.
+-- | Sets the @.value@ property on a @DOMRef@.
 --
 -- Useful for resetting the @value@ property on an input element.
 --
@@ -1092,7 +1092,7 @@ isOnLine :: IO Bool
 isOnLine = fromJSValUnchecked =<< jsg "navigator" ! "onLine"
 -----------------------------------------------------------------------------
 -- | Returns 'True' when executing on the Lynx background thread (BTS),
--- 'False' on the main thread or in a web build.
+-- @False@ on the main thread or in a web build.
 --
 -- Backed by @miso.onBTS()@, which uses the @__BACKGROUND__@ compile-time
 -- define injected by rspeedy. In web builds where @__BACKGROUND__@ is
@@ -1104,7 +1104,7 @@ onBTS :: IO Bool
 onBTS = fromJSValUnchecked =<< do jsg "miso" # "onBTS" $ ()
 -----------------------------------------------------------------------------
 -- | Returns 'True' when executing on the Lynx main thread (MTS),
--- 'False' on the background thread and in web builds.
+-- @False@ on the background thread and in web builds.
 --
 -- @since 1.13.0.0
 onMTS :: IO Bool
@@ -1265,7 +1265,7 @@ newCustomEvent :: ToArgs args => args -> IO Event
 {-# INLINABLE newCustomEvent #-}
 newCustomEvent args = Event <$> new (jsg "CustomEvent") args
 -----------------------------------------------------------------------------
--- | Uses the 'splitmix' function to generate a PRNG.
+-- | Uses the @splitmix@ function to generate a PRNG.
 --
 splitmix32 :: Double -> IO JSVal
 {-# INLINABLE splitmix32 #-}
@@ -1390,7 +1390,7 @@ cookieDeleteWith opts successful errorful = do
 -----------------------------------------------------------------------------
 -- | Register a listener for
 -- <https://developer.mozilla.org/en-US/docs/Web/API/CookieStore/change_event cookieStore change>
--- events. Returns the 'Function' handle needed to remove the listener later.
+-- events. Returns the t'Function' handle needed to remove the listener later.
 cookieStoreAddEventListener :: (JSVal -> IO ()) -> IO Function
 {-# INLINABLE cookieStoreAddEventListener #-}
 cookieStoreAddEventListener cb = do

@@ -14,27 +14,27 @@
 --
 -- = Overview
 --
--- "Miso.Event.Decoder" provides 'Decoder', the type that tells miso how to
+-- "Miso.Event.Decoder" provides t'Decoder', the type that tells miso how to
 -- extract a Haskell value from a browser
 -- <https://developer.mozilla.org/en-US/docs/Web/API/Event DOM Event> object.
--- It pairs a target path ('DecodeTarget') into the event with a
+-- It pairs a target path (t'DecodeTarget') into the event with a
 -- JSON-style parser ('Miso.JSON.Value' @->@ 'Miso.JSON.Parser' @a@).
 --
 -- Decoders are consumed by 'Miso.Html.Event.on' from "Miso.Html.Event":
 --
 -- @
 -- on :: 'Miso.String.MisoString'   -- event name (e.g. \"click\")
---    -> 'Decoder' a      -- how to extract @a@ from the event object
+--    -> t'Decoder' a      -- how to extract @a@ from the event object
 --    -> (a -> action)   -- turn the extracted value into an action
 --    -> 'Miso.Types.Attribute' action
 -- @
 --
 -- = DecodeTarget
 --
--- A 'DecodeTarget' selects the sub-object of the event to decode:
+-- A t'DecodeTarget' selects the sub-object of the event to decode:
 --
--- * @'DecodeTarget' []@ — the event object itself (e.g. for keyboard events).
--- * @'DecodeTarget' [\"target\"]@ — @event.target@ (e.g. for input values).
+-- * @t'DecodeTarget' []@ — the event object itself (e.g. for keyboard events).
+-- * @t'DecodeTarget' [\"target\"]@ — @event.target@ (e.g. for input values).
 -- * @'DecodeTargets' [[\"a\"], [\"b\"]]@ — tries @event.a@ first, then
 --   @event.b@; the first successful decode wins.
 --
@@ -49,13 +49,13 @@
 --
 -- = Custom decoders
 --
--- Build a custom decoder with 'at' or by constructing 'Decoder' directly:
+-- Build a custom decoder with 'at' or by constructing t'Decoder' directly:
 --
 -- @
 -- -- Extract (offsetX, offsetY) from a click event
--- clickXY :: 'Decoder' (Int, Int)
--- clickXY = 'Decoder'
---   { 'decodeAt' = 'DecodeTarget' []
+-- clickXY :: t'Decoder' (Int, Int)
+-- clickXY = t'Decoder'
+--   { 'decodeAt' = t'DecodeTarget' []
 --   , 'decoder'  = 'Miso.JSON.withObject' \"click\" $ \\o ->
 --       (,) \<$\> o 'Miso.JSON..:' \"offsetX\"
 --           \<*\> o 'Miso.JSON..:' \"offsetY\"

@@ -149,7 +149,7 @@ fromJSValUnchecked_Double = undefined
 fromJSVal_JSString :: JSVal -> IO (Maybe Text)
 fromJSVal_JSString = undefined
 -----------------------------------------------------------------------------
--- | Awaits a JS Promise. If the promise rejects, it throws a 'JSException'.
+-- | Awaits a JS Promise. If the promise rejects, it throws a t'JSException'.
 --
 -- @since 1.13.0.0
 await :: JSVal -> IO JSVal

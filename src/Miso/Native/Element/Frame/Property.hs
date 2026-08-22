@@ -42,7 +42,7 @@ src_ = textProp "src"
 --
 -- > autoHeight_ True
 --
--- Default Value: 'False'
+-- Default Value: @False@
 --
 autoHeight_ :: Bool -> Attribute model action
 autoHeight_ = boolProp "auto-height"
@@ -53,7 +53,7 @@ autoHeight_ = boolProp "auto-height"
 --
 -- > autoWidth_ True
 --
--- Default Value: 'False'
+-- Default Value: @False@
 --
 autoWidth_ :: Bool -> Attribute model action
 autoWidth_ = boolProp "auto-width"
@@ -73,7 +73,7 @@ data_ = prop "data"
 --
 -- > enableMultiAsyncThread_ True
 --
--- Default Value: 'False'
+-- Default Value: @False@
 --
 enableMultiAsyncThread_ :: Bool -> Attribute model action
 enableMultiAsyncThread_ = boolProp "enable-multi-async-thread"

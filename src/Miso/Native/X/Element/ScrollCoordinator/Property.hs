@@ -47,7 +47,7 @@ instance ToJSON RefreshMode where
 -- *Android* only. Enables nested scroll behavior as a child element in other
 -- scrolling widgets.
 --
--- Default Value: 'False'
+-- Default Value: @False@
 --
 androidNestedScrollAsChild_ :: Bool -> Attribute model action
 androidNestedScrollAsChild_ = boolProp "android-nested-scroll-as-child"
@@ -76,7 +76,7 @@ enableScroll_ = boolProp "enable-scroll"
 -- *iOS \/ Harmony* only. Determines scrollbar visibility during coordinator
 -- scrolling.
 --
--- Default Value: 'False'
+-- Default Value: @False@
 --
 enableScrollBar_ :: Bool -> Attribute model action
 enableScrollBar_ = boolProp "enable-scroll-bar"
@@ -94,7 +94,7 @@ granularity_ = doubleProp "granularity"
 --
 -- Controls header layering hierarchy relative to slot content.
 --
--- Default Value: 'False'
+-- Default Value: @False@
 --
 headerOverSlot_ :: Bool -> Attribute model action
 headerOverSlot_ = boolProp "header-over-slot"
@@ -103,7 +103,7 @@ headerOverSlot_ = boolProp "header-over-slot"
 --
 -- *iOS* only. Forces @nested-vertical-scroll-behavior@ invalidation.
 --
--- Default Value: 'False'
+-- Default Value: @False@
 --
 iosForceScrollDetach_ :: Bool -> Attribute model action
 iosForceScrollDetach_ = boolProp "ios-force-scroll-detach"
@@ -112,7 +112,7 @@ iosForceScrollDetach_ = boolProp "ios-force-scroll-detach"
 --
 -- *iOS* only. Enables status-bar tap-to-scroll-top functionality.
 --
--- Default Value: 'False'
+-- Default Value: @False@
 --
 iosScrollsToTop_ :: Bool -> Attribute model action
 iosScrollsToTop_ = boolProp "ios-scrolls-to-top"

@@ -17,7 +17,7 @@
 -- for making HTTP requests inside Miso's 'Effect' monad.
 --
 -- Each function accepts a URL, optional request headers, a success callback,
--- and an error callback of the form @'Response' x -> action@. The resulting
+-- and an error callback of the form @t'Response' x -> action@. The resulting
 -- 'Effect' dispatches the appropriate action into the MVU loop when the
 -- response arrives.
 --
@@ -348,7 +348,7 @@ putText url imageBody headers_ successful errorful =
   where
     textHeaders_ = biasHeaders headers_ [contentType =: textPlain]
 ----------------------------------------------------------------------------
--- | Retrieve a binary resource as a 'Blob' via GET.
+-- | Retrieve a binary resource as a t'Blob' via GET.
 --
 -- Sets @Accept: application\/octet-stream@ automatically.
 getBlob
@@ -371,7 +371,7 @@ getBlob url headers_ successful errorful =
   where
     blobHeaders_ = biasHeaders headers_ [accept =: octetStream]
 ----------------------------------------------------------------------------
--- | Send a POST request with a 'Blob' body; ignores the response body.
+-- | Send a POST request with a t'Blob' body; ignores the response body.
 --
 -- Sets @Content-Type: application\/octet-stream@ automatically.
 postBlob
@@ -397,7 +397,7 @@ postBlob url body_ headers_ successful errorful =
   where
     blobHeaders_ = biasHeaders headers_ [contentType =: octetStream]
 ----------------------------------------------------------------------------
--- | Send a PUT request with a 'Blob' body; ignores the response body.
+-- | Send a PUT request with a t'Blob' body; ignores the response body.
 --
 -- Sets @Content-Type: application\/octet-stream@ automatically.
 putBlob
@@ -423,7 +423,7 @@ putBlob url imageBody headers_ successful errorful =
   where
     blobHeaders_ = biasHeaders headers_ [contentType =: octetStream]
 ----------------------------------------------------------------------------
--- | Retrieve a multipart resource as 'FormData' via GET.
+-- | Retrieve a multipart resource as t'FormData' via GET.
 --
 -- Sets @Accept: multipart\/form-data@ automatically.
 getFormData
@@ -446,7 +446,7 @@ getFormData url headers_ successful errorful =
   where
     formDataHeaders_ = biasHeaders headers_ [accept =: formData]
 ----------------------------------------------------------------------------
--- | Send a POST request with a 'FormData' body; ignores the response body.
+-- | Send a POST request with a t'FormData' body; ignores the response body.
 --
 -- Sets @Content-Type: multipart\/form-data@ automatically.
 postFormData
@@ -472,7 +472,7 @@ postFormData url body_ headers_ successful errorful =
   where
     formDataHeaders_ = biasHeaders headers_ [contentType =: formData]
 ----------------------------------------------------------------------------
--- | Send a PUT request with a 'FormData' body; ignores the response body.
+-- | Send a PUT request with a t'FormData' body; ignores the response body.
 --
 -- Sets @Content-Type: multipart\/form-data@ automatically.
 putFormData
@@ -498,7 +498,7 @@ putFormData url imageBody headers_ successful errorful =
   where
     formDataHeaders_ = biasHeaders headers_ [contentType =: formData]
 ----------------------------------------------------------------------------
--- | Retrieve a binary resource as an 'ArrayBuffer' via GET.
+-- | Retrieve a binary resource as an t'ArrayBuffer' via GET.
 --
 -- Sets @Accept: application\/octet-stream@ automatically.
 getArrayBuffer
@@ -521,7 +521,7 @@ getArrayBuffer url headers_ successful errorful =
   where
     arrayBufferHeaders_ = biasHeaders headers_ [accept =: octetStream]
 ----------------------------------------------------------------------------
--- | Send a POST request with an 'ArrayBuffer' body; ignores the response body.
+-- | Send a POST request with an t'ArrayBuffer' body; ignores the response body.
 --
 -- Sets @Content-Type: application\/octet-stream@ automatically.
 postArrayBuffer
@@ -547,7 +547,7 @@ postArrayBuffer url body_ headers_ successful errorful =
   where
     arrayBufferHeaders_ = biasHeaders headers_ [contentType =: octetStream]
 ----------------------------------------------------------------------------
--- | Send a PUT request with an 'ArrayBuffer' body; ignores the response body.
+-- | Send a PUT request with an t'ArrayBuffer' body; ignores the response body.
 --
 -- Sets @Content-Type: application\/octet-stream@ automatically.
 putArrayBuffer
@@ -573,7 +573,7 @@ putArrayBuffer url arrayBuffer_ headers_ successful errorful =
   where
     arrayBufferHeaders_ = biasHeaders headers_ [contentType =: octetStream]
 ----------------------------------------------------------------------------
--- | Retrieve a binary resource as a 'Uint8Array' via GET.
+-- | Retrieve a binary resource as a t'Uint8Array' via GET.
 --
 -- Sets @Accept: application\/octet-stream@ automatically.
 getUint8Array
@@ -596,7 +596,7 @@ getUint8Array url headers_ successful errorful =
   where
     uint8ArrayHeaders_ = biasHeaders headers_ [accept =: octetStream]
 ----------------------------------------------------------------------------
--- | Send a POST request with a 'Uint8Array' body; ignores the response body.
+-- | Send a POST request with a t'Uint8Array' body; ignores the response body.
 --
 -- Sets @Content-Type: application\/octet-stream@ automatically.
 postUint8Array
@@ -622,7 +622,7 @@ postUint8Array url body_ headers_ successful errorful =
   where
     uint8ArrayHeaders_ = biasHeaders headers_ [contentType =: octetStream]
 ----------------------------------------------------------------------------
--- | Send a PUT request with a 'Uint8Array' body; ignores the response body.
+-- | Send a PUT request with a t'Uint8Array' body; ignores the response body.
 --
 -- Sets @Content-Type: application\/octet-stream@ automatically.
 putUint8Array
@@ -648,7 +648,7 @@ putUint8Array url uint8Array_ headers_ successful errorful =
   where
     uint8ArrayHeaders_ = biasHeaders headers_ [contentType =: octetStream]
 ----------------------------------------------------------------------------
--- | Send a POST request with an 'Image' body; ignores the response body.
+-- | Send a POST request with an t'Image' body; ignores the response body.
 postImage
   :: FromJSVal error
   => MisoString
@@ -670,7 +670,7 @@ postImage url body_ headers_ successful errorful =
       (sink . errorful)
       NONE
 ----------------------------------------------------------------------------
--- | Send a PUT request with an 'Image' body; ignores the response body.
+-- | Send a PUT request with an t'Image' body; ignores the response body.
 putImage
   :: FromJSVal error
   => MisoString
@@ -696,12 +696,12 @@ putImage url imageBody headers_ successful errorful =
 type Body = JSVal
 ----------------------------------------------------------------------------
 -- | HTTP header name @\"Accept\"@.
--- Use with '=:' to build request headers, e.g. @accept =: applicationJSON@.
+-- Use with @=:@ to build request headers, e.g. @accept =: applicationJSON@.
 accept :: MisoString
 accept = "Accept"
 ----------------------------------------------------------------------------
 -- | HTTP header name @\"Content-Type\"@.
--- Use with '=:' to build request headers, e.g. @contentType =: textPlain@.
+-- Use with @=:@ to build request headers, e.g. @contentType =: textPlain@.
 contentType :: MisoString
 contentType = "Content-Type"
 ----------------------------------------------------------------------------
