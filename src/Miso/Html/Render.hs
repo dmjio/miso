@@ -46,8 +46,16 @@
 -- * __'Miso.Types.VNode'__ — rendered as @\<tag attrs\>children\<\/tag\>@.
 --   Self-closing elements (@\<br\/\>@, @\<img\/\>@, @\<input\/\>@, …) are
 --   rendered without a closing tag.
--- * __'Miso.Types.VText'__ — rendered as a raw text string (no escaping
---   beyond what is already in the 'Miso.String.MisoString').
+-- * __'Miso.Types.VText'__ — rendered with HTML escaping: @&@, @\<@ and @>@
+--   become @&amp;@, @&lt;@ and @&gt;@, so the browser's parser reproduces
+--   the original string exactly. This keeps hydration faithful (the parsed
+--   DOM text matches the client's virtual DOM byte-for-byte) and prevents
+--   markup \/ script injection through text content. Text inside raw-text
+--   elements (@script@, @style@) is emitted unescaped, since the parser
+--   does not decode entities there.
+-- * __Attribute values__ — rendered with HTML escaping: @&@, @\"@, @\<@ and
+--   @>@ become entities, for the same round-tripping and injection-safety
+--   reasons as text nodes.
 -- * __'Miso.Types.VComp'__ — recursively renders the sub-component's view
 --   using its initial (or hydrated) model.
 -- * __'Miso.Types.VFrag'__ — renders all children inline, no wrapper tag.
@@ -153,10 +161,18 @@ booleanProperties = S.fromList
   ]
 ----------------------------------------------------------------------------
 renderBuilder :: View context model action -> Builder
-renderBuilder (VText _ "")    = fromMisoString " "
-renderBuilder (VText _ s)     = fromMisoString s
-renderBuilder (VNode _ "doctype" [] [] _) = "<!doctype html>"
-renderBuilder (VNode ns tag attrs children _) = mconcat
+renderBuilder = renderBuilderWith False
+----------------------------------------------------------------------------
+-- | Serializes a 'View'. The 'Bool' tracks whether we are inside a raw-text
+-- element (@script@ \/ @style@), where the HTML parser does not decode
+-- character references and text must therefore be emitted unescaped.
+renderBuilderWith :: Bool -> View context model action -> Builder
+renderBuilderWith _ (VText _ "")    = fromMisoString " "
+renderBuilderWith rawText (VText _ s)
+  | rawText = fromMisoString s
+  | otherwise = escapeText s
+renderBuilderWith _ (VNode _ "doctype" [] [] _) = "<!doctype html>"
+renderBuilderWith _ (VNode ns tag attrs children _) = mconcat
   [ "<"
   , fromMisoString tag
   , mconcat [ " " <> intercalate " " (renderAttrs <$> attrs)
@@ -165,12 +181,15 @@ renderBuilder (VNode ns tag attrs children _) = mconcat
   , if tag `elem` selfClosing then "/>" else ">"
   , mconcat
     [ mconcat
-      [ foldMap renderBuilder (collapseSiblingTextNodes children)
+      [ foldMap
+          (renderBuilderWith (tag `elem` rawTextElements))
+          (collapseSiblingTextNodes children)
       , "</" <> fromMisoString tag <> ">"
       ]
     | tag `notElem` selfClosing
     ]
   ] where
+      rawTextElements = [ "script", "style" ]
       selfClosing = htmls <> svgs <> mathmls
       htmls = [ x
               | ns == HTML
@@ -185,7 +204,7 @@ renderBuilder (VNode ns tag attrs children _) = mconcat
               | ns == MATHML
               , x <- ["mglyph", "mprescripts", "none", "maligngroup", "malignmark" ]
               ]
-renderBuilder (VComp someComp) =
+renderBuilderWith rawText (VComp someComp) =
   case someComp of
     SomeComponent _key props comp_ ->
       -- The app-global @context@ is read from 'globalContext'. For the common
@@ -195,11 +214,11 @@ renderBuilder (VComp someComp) =
       -- forcing @ctx@ raises an exception. See 'Miso.setContext' for details.
       let ctx = unsafePerformIO (readIORef globalContext) in
 #ifdef SSR
-      renderBuilder (view comp_ ctx props (getInitialComponentModel comp_))
+      renderBuilderWith rawText (view comp_ ctx props (getInitialComponentModel comp_))
 #else
-      renderBuilder (view comp_ ctx props (model comp_))
+      renderBuilderWith rawText (view comp_ ctx props (model comp_))
 #endif
-renderBuilder (VCompStatic ptr props0) =
+renderBuilderWith rawText (VCompStatic ptr props0) =
   case deRefStaticPtr ptr of
    SomeStaticComponent mk -> case mk props0 of
     SomeComponent _key props comp_ ->
@@ -210,18 +229,19 @@ renderBuilder (VCompStatic ptr props0) =
       -- forcing @ctx@ raises an exception. See 'Miso.setContext' for details.
       let ctx = unsafePerformIO (readIORef globalContext) in
 #ifdef SSR
-      renderBuilder (view comp_ ctx props (getInitialComponentModel comp_))
+      renderBuilderWith rawText (view comp_ ctx props (getInitialComponentModel comp_))
 #else
-      renderBuilder (view comp_ ctx props (model comp_))
+      renderBuilderWith rawText (view comp_ ctx props (model comp_))
 #endif
-renderBuilder (VFrag _ kids) = foldMap renderBuilder kids
+renderBuilderWith rawText (VFrag _ kids) =
+  foldMap (renderBuilderWith rawText) kids
 ----------------------------------------------------------------------------
 renderAttrs :: Attribute model action -> Builder
 renderAttrs (ClassList classes) =
   mconcat
   [ "class"
   , stringUtf8 "=\""
-  , fromMisoString (MS.unwords classes)
+  , escapeAttr (MS.unwords classes)
   , stringUtf8 "\""
   ]
 renderAttrs (Property key (Bool enabled)) -- dmj: account for boolean properties
@@ -230,7 +250,7 @@ renderAttrs (Property key (Bool enabled)) -- dmj: account for boolean properties
   | otherwise = mconcat
       [ fromMisoString key
       , stringUtf8 "=\""
-      , toHtmlFromJSON (Bool enabled)
+      , escapeAttr (textFromJSON (Bool enabled))
       , stringUtf8 "\""
       ]
 renderAttrs (Property "key" _) = mempty
@@ -238,7 +258,7 @@ renderAttrs (Property key value) =
   mconcat
   [ fromMisoString key
   , stringUtf8 "=\""
-  , toHtmlFromJSON value
+  , escapeAttr (textFromJSON value)
   , stringUtf8 "\""
   ]
 renderAttrs (On _) = mempty
@@ -249,15 +269,39 @@ renderAttrs (Styles styles_) =
   , stringUtf8 "=\""
   , mconcat
     [ mconcat
-      [ fromMisoString k
+      [ escapeAttr k
       , charUtf8 ':'
-      , fromMisoString v
+      , escapeAttr v
       , charUtf8 ';'
       ]
     | (k,v) <- M.toList styles_
     ]
   , stringUtf8 "\""
   ]
+----------------------------------------------------------------------------
+-- | Escapes a text node so the browser's parser reproduces the original
+-- string exactly. Without this, text containing @\<@ followed by a letter
+-- (e.g. code listings, user-generated content) parses as markup: the DOM
+-- gains phantom elements, hydration reports a mismatch and falls back to a
+-- full diff, and untrusted text becomes an injection vector.
+escapeText :: MisoString -> Builder
+escapeText = mconcat . fmap escapeChar . MS.unpack
+  where
+    escapeChar '&' = "&amp;"
+    escapeChar '<' = "&lt;"
+    escapeChar '>' = "&gt;"
+    escapeChar c   = charUtf8 c
+----------------------------------------------------------------------------
+-- | Escapes an attribute value (values are always rendered double-quoted,
+-- so @\"@ must become an entity as well).
+escapeAttr :: MisoString -> Builder
+escapeAttr = mconcat . fmap escapeChar . MS.unpack
+  where
+    escapeChar '&'  = "&amp;"
+    escapeChar '"'  = "&quot;"
+    escapeChar '<'  = "&lt;"
+    escapeChar '>'  = "&gt;"
+    escapeChar c    = charUtf8 c
 ----------------------------------------------------------------------------
 -- | The browser can't distinguish between multiple text nodes
 -- and a single text node. So it will always parse a single text node
@@ -271,14 +315,14 @@ collapseSiblingTextNodes (x:xs) =
 ----------------------------------------------------------------------------
 -- | Helper for turning JSON into Text
 -- Object, Array and Null are kind of non-sensical here
-toHtmlFromJSON :: Value -> Builder
-toHtmlFromJSON (String t)   = fromMisoString (ms t)
-toHtmlFromJSON (Number t)   = fromMisoString $ ms (show t)
-toHtmlFromJSON (Bool True)  = "true"
-toHtmlFromJSON (Bool False) = "false"
-toHtmlFromJSON Null         = "null"
-toHtmlFromJSON (Object o)   = fromMisoString $ ms (show o)
-toHtmlFromJSON (Array a)    = fromMisoString $ ms (show a)
+textFromJSON :: Value -> MisoString
+textFromJSON (String t)   = ms t
+textFromJSON (Number t)   = ms (show t)
+textFromJSON (Bool True)  = "true"
+textFromJSON (Bool False) = "false"
+textFromJSON Null         = "null"
+textFromJSON (Object o)   = ms (show o)
+textFromJSON (Array a)    = ms (show a)
 -----------------------------------------------------------------------------
 #ifdef SSR
 -- | Used for server-side model hydration, internally only in 'renderView'.
