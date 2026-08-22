@@ -41,5 +41,3 @@ haddocks/
 sample-app-native/android/app/src/main/assets/main.lynx.bundle
 sample-app-native/android/app/src/main/assets/main.lynx.bundle.sha256
 
-# npm lockfile -- this project uses bun (bun.lock)
-package-lock.json

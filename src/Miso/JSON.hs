@@ -500,6 +500,11 @@ instance GToJSONRep f => GToJSON (D1 m f) where
   gToJSON opts (M1 x) = gToJSONRep opts x
 ----------------------------------------------------------------------------
 -- Internal: dispatches single-constructor vs sum at the child of D1.
+-- | Internal: dispatches on the child of @D1@, choosing the
+-- single-constructor encoding or the sum encoding. Sits between 'GToJSON' and
+-- 'GToFields' \/ 'GToJSONSum'.
+--
+-- @since 1.13.0.0
 class GToJSONRep (f :: Type -> Type) where
   gToJSONRep :: Options -> f a -> Value
 -- Single constructor: no tag
@@ -719,6 +724,10 @@ instance GFromJSONRep f => GFromJSON (D1 m f) where
   gParseJSON opts v = M1 <$> gFromJSONRep opts v
 ----------------------------------------------------------------------------
 -- Internal: dispatches single-constructor vs sum at the child of D1.
+-- | Internal: the decoding counterpart of 'GToJSONRep'. Dispatches on the
+-- child of @D1@, choosing the single-constructor or sum decoder.
+--
+-- @since 1.13.0.0
 class GFromJSONRep (f :: Type -> Type) where
   gFromJSONRep :: Options -> Value -> Parser (f a)
 -- Single constructor
@@ -1358,6 +1367,7 @@ fromJSVal_Value jsval = do
 fromJSVal_Value :: JSVal -> IO (Maybe Value)
 fromJSVal_Value = error "fromJSVal_Value: not implemented"
 -----------------------------------------------------------------------------
+-- | Convert a Miso JSON t'Value' to a raw JavaScript value via FFI.
 toJSVal_Value :: Value -> IO JSVal
 toJSVal_Value = error "toJSVal_Value: not implemented"
 -----------------------------------------------------------------------------
@@ -1382,6 +1392,7 @@ foreign import javascript unsafe
 #endif
 -----------------------------------------------------------------------------
 #ifdef WASM
+-- | Convert a Miso JSON t'Value' to a raw JavaScript value via FFI.
 toJSVal_Value :: Value -> IO JSVal
 toJSVal_Value = \case
   Null ->

@@ -40,6 +40,12 @@ import           Miso.Event
 import           Miso.JSON
 import           Miso.Types (DOMRef, Attribute, EventHandler)
 -----------------------------------------------------------------------------
+-- | The 'Events' map for the Lynx @<viewpager>@ element.
+--
+-- Combine with other element maps using @<>@ and pass the result to
+-- 'Miso.Native.native', so the delegator listens for these events.
+--
+-- @since 1.13.0.0
 viewpagerEvents :: Events
 viewpagerEvents
   = M.fromList
@@ -57,6 +63,12 @@ data ViewpagerChangeEvent
     -- ^ Whether the change was user-initiated
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
+-- | t'Decoder' producing a t'ViewpagerChangeEvent' from the raw Lynx event payload.
+--
+-- Pass it to 'Miso.Event.on' \/ 'Miso.Event.onMain' when writing a handler by
+-- hand; the @on*@ helpers in this module already use it.
+--
+-- @since 1.13.0.0
 viewpagerChangeDecoder :: Decoder ViewpagerChangeEvent
 viewpagerChangeDecoder = ["detail"] `at` details
   where
@@ -65,6 +77,12 @@ viewpagerChangeDecoder = ["detail"] `at` details
         <$> o .: "index"
         <*> o .: "isDragged"
 -----------------------------------------------------------------------------
+-- | t'Decoder' producing a t'Double' from the raw Lynx event payload.
+--
+-- Pass it to 'Miso.Event.on' \/ 'Miso.Event.onMain' when writing a handler by
+-- hand; the @on*@ helpers in this module already use it.
+--
+-- @since 1.13.0.0
 offsetChangeDecoder :: Decoder Double
 offsetChangeDecoder = ["detail"] `at` details
   where

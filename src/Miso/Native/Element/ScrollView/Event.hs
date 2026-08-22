@@ -48,6 +48,12 @@ import           Miso.Event
 import           Miso.JSON (withObject, (.:?), (.!=))
 import           Miso.String (MisoString)
 -----------------------------------------------------------------------------
+-- | The 'Events' map for the Lynx @<scrollview>@ element.
+--
+-- Combine with other element maps using @<>@ and pass the result to
+-- 'Miso.Native.native', so the delegator listens for these events.
+--
+-- @since 1.13.0.0
 scrollViewEvents :: Events
 scrollViewEvents
   = M.fromList
@@ -58,6 +64,12 @@ scrollViewEvents
   , ("contentsizechanged", BUBBLE)
   ]
 -----------------------------------------------------------------------------
+-- | t'Decoder' producing a t'ScrollEvent' from the raw Lynx event payload.
+--
+-- Pass it to 'Miso.Event.on' \/ 'Miso.Event.onMain' when writing a handler by
+-- hand; the @on*@ helpers in this module already use it.
+--
+-- @since 1.13.0.0
 scrollDecoder :: Decoder ScrollEvent
 scrollDecoder = ["detail"] `at` do
   withObject "ScrollEvent" $ \o ->
@@ -72,6 +84,10 @@ scrollDecoder = ["detail"] `at` do
       <*> o .:? "scrollHeight" .!= 0
       <*> o .:? "scrollWidth" .!= 0
 -----------------------------------------------------------------------------
+-- | Payload of a @<scroll-view>@ scroll event: the delta since the last
+-- event, the current offsets, and the full scrollable extent.
+-- 
+-- @since 1.13.0.0
 data ScrollEvent
   = ScrollEvent
   { scrollType :: MisoString

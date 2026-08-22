@@ -26,6 +26,12 @@ import qualified Data.Map as M
 import           Miso.Event
 import           Miso.Types (Attribute, EventHandler, DOMRef)
 -----------------------------------------------------------------------------
+-- | The 'Events' map for the Lynx @<svg>@ element.
+--
+-- Combine with other element maps using @<>@ and pass the result to
+-- 'Miso.Native.native', so the delegator listens for these events.
+--
+-- @since 1.13.0.0
 svgEvents :: Events
 svgEvents = M.fromList [ ("load", BUBBLE) ]
 -----------------------------------------------------------------------------

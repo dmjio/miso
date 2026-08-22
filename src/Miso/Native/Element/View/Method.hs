@@ -55,6 +55,10 @@ instance FromJSVal Rect where
     bottom <- readProp "bottom"
     pure $ Just Rect {..}
 -----------------------------------------------------------------------------
+-- | Parameters for @getBoundingClientRect@: whether to honour @transform@
+-- on Android, and which node to measure relative to.
+-- 
+-- @since 1.13.0.0
 data BoundingClientRect
   = BoundingClientRect
   { androidEnableTransformProps :: Bool
@@ -109,6 +113,10 @@ boundingClientRect
   -> Effect context props model action
 boundingClientRect = invokeExec "boundingClientRect"
 -----------------------------------------------------------------------------
+-- | Parameters for 'takeScreenshot': the image @format@ and a @scale@ in
+-- @(0, 1]@ trading quality for size.
+-- 
+-- @since 1.13.0.0
 data TakeScreenshot
   = TakeScreenshot
   { format :: MisoString

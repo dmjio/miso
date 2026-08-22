@@ -107,6 +107,12 @@ import           Miso.JSON
 import           Miso.String (MisoString)
 import           Miso.Types (Attribute, EventHandler, DOMRef)
 ----------------------------------------------------------------------------
+-- | The 'Events' map for the Lynx @<view>@ element.
+--
+-- Combine with other element maps using @<>@ and pass the result to
+-- 'Miso.Native.native', so the delegator listens for these events.
+--
+-- @since 1.13.0.0
 viewEvents :: Events
 viewEvents = M.fromList
   [ ("touchstart", BUBBLE)
@@ -175,6 +181,10 @@ data AnimationEvent
     -- ^ Default value 'True'
   } deriving (Show, Eq)
 ----------------------------------------------------------------------------
+-- | Which animation kind raised the event: a @\@keyframes@ animation or a
+-- CSS transition.
+-- 
+-- @since 1.13.0.0
 data AnimationType
   = KeyFrameAnimation
   | TransitionAnimation
@@ -198,6 +208,10 @@ animationDecoder = Decoder {..}
         <*> d .: "animation_name"
         <*> d .: "new_animator"
 -----------------------------------------------------------------------------
+-- | Payload of a @<view>@ layout-change event: the target's id, its new
+-- box, and its @dataset@.
+-- 
+-- @since 1.13.0.0
 data LayoutChangeDetailEvent
   = LayoutChangeDetailEvent
   { layoutChangeDetailEventId :: MisoString
@@ -218,6 +232,12 @@ data LayoutChangeDetailEvent
     -- ^ The dataset of the target.
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
+-- | t'Decoder' producing a t'LayoutChangeDetailEvent' from the raw Lynx event payload.
+--
+-- Pass it to 'Miso.Event.on' \/ 'Miso.Event.onMain' when writing a handler by
+-- hand; the @on*@ helpers in this module already use it.
+--
+-- @since 1.13.0.0
 layoutChangeDetailDecoder :: Decoder LayoutChangeDetailEvent
 layoutChangeDetailDecoder = Decoder {..}
   where
@@ -234,6 +254,9 @@ layoutChangeDetailDecoder = Decoder {..}
         <*> d .: "left"
         <*> d .: "dataset"
 -----------------------------------------------------------------------------
+-- | Whether the element entered or left the viewport.
+-- 
+-- @since 1.13.0.0
 data UIAppearanceDetailEventType
   = UIAppear
   | UIDisappear
@@ -245,6 +268,10 @@ instance FromJSON UIAppearanceDetailEventType where
     "uidisappear" -> pure UIDisappear
     x -> typeMismatch "UIAppearanceDetailEventType" (String x)
 -----------------------------------------------------------------------------
+-- | Payload of a @<view>@ appearance event: whether the element appeared
+-- or disappeared, plus the exposure identifiers Lynx assigns it.
+-- 
+-- @since 1.13.0.0
 data UIAppearanceDetailEvent
   = UIAppearanceDetailEvent
   { uiAppearanceDetailEventType :: UIAppearanceDetailEventType
@@ -254,6 +281,12 @@ data UIAppearanceDetailEvent
   , uiAppearanceDetailEventDataset :: Object
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
+-- | t'Decoder' producing a t'UIAppearanceDetailEvent' from the raw Lynx event payload.
+--
+-- Pass it to 'Miso.Event.on' \/ 'Miso.Event.onMain' when writing a handler by
+-- hand; the @on*@ helpers in this module already use it.
+--
+-- @since 1.13.0.0
 uiAppearanceDetailDecoder :: Decoder UIAppearanceDetailEvent
 uiAppearanceDetailDecoder = Decoder {..}
   where

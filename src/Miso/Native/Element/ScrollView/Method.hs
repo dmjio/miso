@@ -35,6 +35,10 @@ module Miso.Native.Element.ScrollView.Method
 import Miso hiding (scrollIntoView, inline)
 import Miso.Native.FFI
 -----------------------------------------------------------------------------
+-- | Parameters for @scrollTo@: the target @index@, an extra @offset@ to continue past it,
+-- and whether the movement is animated.
+--
+-- @since 1.13.0.0
 data ScrollTo
   = ScrollTo
   { offset :: Double
@@ -50,9 +54,20 @@ instance ToJSVal ScrollTo where
     set "smooth" smooth object
     toJSVal object 
 -----------------------------------------------------------------------------
+-- | A t'ScrollTo' with sensible defaults (first index, no offset, animated).
+--
+-- Override only the fields you need.
+--
+-- @since 1.13.0.0
 defaultScrollTo :: ScrollTo
 defaultScrollTo = ScrollTo 0 1 True
 -----------------------------------------------------------------------------
+-- | Invokes the Lynx @scrollTo@ method on a @<scroll-view>@ element.
+--
+-- Takes a selector, a t'ScrollTo' of parameters, a success continuation and
+-- an error continuation.
+--
+-- @since 1.13.0.0
 scrollTo
   :: MisoString
   -> ScrollTo
@@ -61,6 +76,10 @@ scrollTo
   -> Effect context props model action
 scrollTo = invokeExec "scrollTo"
 -----------------------------------------------------------------------------
+-- | Parameters for 'autoScroll': the scroll @rate@, whether to @start@ or stop, and
+-- whether to stop automatically at the end.
+--
+-- @since 1.13.0.0
 data AutoScroll
   = AutoScroll
   { rate :: Double
@@ -74,9 +93,20 @@ instance ToJSVal AutoScroll where
     set "start" start object
     toJSVal object 
 -----------------------------------------------------------------------------
+-- | A t'AutoScroll' with sensible defaults (stopped).
+--
+-- Override only the fields you need.
+--
+-- @since 1.13.0.0
 defaultAutoScroll :: AutoScroll
 defaultAutoScroll = AutoScroll 120 True
 -----------------------------------------------------------------------------
+-- | Invokes the Lynx @autoScroll@ method on a @<scroll-view>@ element.
+--
+-- Takes a selector, a t'AutoScroll' of parameters, a success continuation and
+-- an error continuation.
+--
+-- @since 1.13.0.0
 autoScroll
   :: MisoString
   -> AutoScroll
@@ -85,6 +115,10 @@ autoScroll
   -> Effect context props model action
 autoScroll = invokeExec "autoScroll"
 -----------------------------------------------------------------------------
+-- | Parameters for 'scrollIntoView': where the element should come to rest within the
+-- viewport.
+--
+-- @since 1.13.0.0
 data ScrollIntoView
   = ScrollIntoView
   { block :: MisoString
@@ -105,6 +139,11 @@ instance ToJSVal ScrollIntoView where
     set "scrollIntoViewOptions" object scrollIntoViewOptions
     toJSVal scrollIntoViewOptions
 -----------------------------------------------------------------------------
+-- | A t'ScrollIntoView' with sensible defaults (nearest alignment).
+--
+-- Override only the fields you need.
+--
+-- @since 1.13.0.0
 defaultScrollIntoView :: ScrollIntoView
 defaultScrollIntoView
   = ScrollIntoView
@@ -113,6 +152,12 @@ defaultScrollIntoView
   , behavior = "smooth"
   }
 -----------------------------------------------------------------------------
+-- | Invokes the Lynx @scrollIntoView@ method on a @<scroll-view>@ element.
+--
+-- Takes a selector, a t'ScrollIntoView' of parameters, a success continuation and
+-- an error continuation.
+--
+-- @since 1.13.0.0
 scrollIntoView
   :: MisoString
   -> ScrollIntoView
@@ -121,6 +166,9 @@ scrollIntoView
   -> Effect context props model action
 scrollIntoView = invokeExec "scrollIntoView"
 -----------------------------------------------------------------------------
+-- | Parameters for 'scrollBy': the distance to scroll, relative to the current position.
+--
+-- @since 1.13.0.0
 newtype ScrollBy
   = ScrollBy
   { scrollByOffset :: Double
@@ -132,11 +180,22 @@ instance ToJSVal ScrollBy where
     set "offset" scrollByOffset object
     toJSVal object
 -----------------------------------------------------------------------------
+-- | A t'ScrollBy' with sensible defaults (zero offset).
+--
+-- Override only the fields you need.
+--
+-- @since 1.13.0.0
 defaultScrollBy :: ScrollBy
 defaultScrollBy = ScrollBy
   { scrollByOffset = 0
   }
 -----------------------------------------------------------------------------
+-- | Invokes the Lynx @scrollBy@ method on a @<scroll-view>@ element.
+--
+-- Takes a selector, a t'ScrollBy' of parameters, a success continuation and
+-- an error continuation.
+--
+-- @since 1.13.0.0
 scrollBy
   :: MisoString
   -> ScrollBy

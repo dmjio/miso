@@ -1047,16 +1047,25 @@ websocketConnect
     withMaybe Nothing = pure jsNull
     withMaybe (Just f) = asyncCallback1 f
 -----------------------------------------------------------------------------
+-- | Closes an open WebSocket.
+--
+-- @since 1.13.0.0
 websocketClose :: JSVal -> IO ()
 {-# INLINABLE websocketClose #-}
 websocketClose websocket = void $ do
   jsg "miso" # "websocketClose" $ [websocket]
 -----------------------------------------------------------------------------
+-- | Sends a payload over an open WebSocket.
+--
+-- @since 1.13.0.0
 websocketSend :: JSVal -> JSVal -> IO ()
 {-# INLINABLE websocketSend #-}
 websocketSend websocket message = void $ do
   jsg "miso" # "websocketSend" $ [websocket, message]
 -----------------------------------------------------------------------------
+-- | Opens a @Server-Sent Events@ connection and wires up its callbacks.
+--
+-- @since 1.13.0.0
 eventSourceConnect
   :: MisoString
   -> IO ()
@@ -1078,6 +1087,9 @@ eventSourceConnect url onOpen onMessageText onMessageJSON onError textOnly = do
       withMaybe Nothing = pure jsNull
       withMaybe (Just f) = toJSVal =<< asyncCallback1 f
 -----------------------------------------------------------------------------
+-- | Closes an open @Server-Sent Events@ connection.
+--
+-- @since 1.13.0.0
 eventSourceClose :: JSVal -> IO ()
 {-# INLINABLE eventSourceClose #-}
 eventSourceClose eventSource = void $ do
@@ -1145,6 +1157,9 @@ instance FromJSVal ArrayBuffer where
 newtype ArrayBuffer = ArrayBuffer JSVal
   deriving (Eq, ToJSVal)
 -----------------------------------------------------------------------------
+-- | Reads the device position via @navigator.geolocation.getCurrentPosition@.
+--
+-- @since 1.13.0.0
 geolocation :: (JSVal -> IO ()) -> (JSVal -> IO ()) -> IO ()
 {-# INLINABLE geolocation #-}
 geolocation successful errorful = do

@@ -27,6 +27,10 @@ module Miso.Native.Element.Text.Method
 import           Miso
 import           Miso.Native.FFI (invokeExec)
 -----------------------------------------------------------------------------
+-- | Parameters for @setTextSelection@: the start and end coordinates of the
+-- selection and whether to show its drag handles.
+--
+-- @since 1.13.0.0
 data SetTextSelection
   = SetTextSelection
   { startX, startY :: Double
@@ -73,6 +77,10 @@ setTextSelection
 setTextSelection selector params action =
   invokeExec "setTextSelection" selector params (\() -> action)
 -----------------------------------------------------------------------------
+-- | Parameters for 'getTextBoundingRect': the @start@ and @end@ offsets of
+-- the range to measure.
+--
+-- @since 1.13.0.0
 data GetTextBoundingRect
   = GetTextBoundingRect
   { start, end :: Double
@@ -86,6 +94,11 @@ instance ToJSVal GetTextBoundingRect where
     set "end" end o
     toJSVal o
 -----------------------------------------------------------------------------
+-- | A t'GetTextBoundingRect' with sensible defaults (the whole range, offsets 0 to 0).
+--
+-- Override only the fields you need.
+--
+-- @since 1.13.0.0
 defaultGetTextBoundingRect :: GetTextBoundingRect
 defaultGetTextBoundingRect = GetTextBoundingRect 0 0
 -----------------------------------------------------------------------------

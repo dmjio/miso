@@ -231,6 +231,9 @@ lowerThresholdItemCount_ = intProp "lower-threshold-item-count"
 scrollEventThrottle_ :: Int -> Attribute model action
 scrollEventThrottle_ = intProp "scroll-event-throttle"
 -----------------------------------------------------------------------------
+-- | Where a @<list>@ item comes to rest when pagination snaps to it.
+-- 
+-- @since 1.13.0.0
 data ListItemSnapAlignment
   = ListItemSnapAlignment
   { factor :: Int

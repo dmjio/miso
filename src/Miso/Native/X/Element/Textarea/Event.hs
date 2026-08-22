@@ -51,6 +51,12 @@ import           Miso.JSON
 import           Miso.String (MisoString)
 import           Miso.Types (Attribute, EventHandler, DOMRef)
 -----------------------------------------------------------------------------
+-- | The 'Events' map for the Lynx @<textarea>@ element.
+--
+-- Combine with other element maps using @<>@ and pass the result to
+-- 'Miso.Native.native', so the delegator listens for these events.
+--
+-- @since 1.13.0.0
 textareaEvents :: Events
 textareaEvents = M.fromList
   [ ("blur", BUBBLE)
@@ -88,6 +94,12 @@ textareaValueDecoder = ["detail"] `at` details
   where
     details = withObject "detail" $ \o -> o .: "value"
 -----------------------------------------------------------------------------
+-- | t'Decoder' producing a t'TextareaEvent' from the raw Lynx event payload.
+--
+-- Pass it to 'Miso.Event.on' \/ 'Miso.Event.onMain' when writing a handler by
+-- hand; the @on*@ helpers in this module already use it.
+--
+-- @since 1.13.0.0
 textareaDecoder :: Decoder TextareaEvent
 textareaDecoder = ["detail"] `at` details
   where
@@ -103,6 +115,12 @@ textareaDecoder = ["detail"] `at` details
 -- Note: the JS keys stay @selectionStart@/@selectionEnd@; the record fields are
 -- 'selStart'/'selEnd' to avoid clashing with 'TextareaValue' when the hub module
 -- re-exports Event and Method together.
+-- | t'Decoder' producing a t'SelectionEvent' from the raw Lynx event payload.
+--
+-- Pass it to 'Miso.Event.on' \/ 'Miso.Event.onMain' when writing a handler by
+-- hand; the @on*@ helpers in this module already use it.
+--
+-- @since 1.13.0.0
 selectionDecoder :: Decoder SelectionEvent
 selectionDecoder = ["detail"] `at` details
   where

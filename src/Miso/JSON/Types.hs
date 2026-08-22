@@ -67,6 +67,11 @@ import Prelude hiding (fail)
 import Control.Monad.Fail (MonadFail (..))
 #endif
 ----------------------------------------------------------------------------
+-- | A parsed JSON value.
+--
+-- The JSON data model: numbers are 'Double', objects are keyed by
+-- t'Miso.String.MisoString', and 'Null' is explicit. An 'IsString' instance
+-- makes string literals usable directly as a t'Value'.
 data Value
   = Number Double
   | Bool Bool
@@ -79,10 +84,16 @@ data Value
 instance IsString Value where
   fromString = String . fromString
 ----------------------------------------------------------------------------
+-- | A single key\/value member of a JSON object, as produced by
+-- 'Miso.JSON..=' and consumed by 'Miso.JSON.object'.
 type Pair = (MisoString, Value)
 ----------------------------------------------------------------------------
+-- | A JSON object: its members keyed by name.
 type Object = Map MisoString Value
 ----------------------------------------------------------------------------
+-- | The outcome of decoding a t'Value' into a Haskell type.
+--
+-- 'Error' carries a human-readable message describing where decoding failed.
 data Result a
   = Success a
   | Error MisoString

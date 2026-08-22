@@ -50,6 +50,12 @@ import           Miso.JSON
 import           Miso.String (MisoString)
 import           Miso.Types (Attribute, EventHandler, DOMRef)
 -----------------------------------------------------------------------------
+-- | The 'Events' map for the Lynx @<overlay>@ element.
+--
+-- Combine with other element maps using @<>@ and pass the result to
+-- 'Miso.Native.native', so the delegator listens for these events.
+--
+-- @since 1.13.0.0
 overlayEvents :: Events
 overlayEvents
   = M.fromList
@@ -80,6 +86,12 @@ data OverlayTouchEvent
     -- ^ The vertical position of the touch
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
+-- | t'Decoder' producing a t'OverlayErrorEvent' from the raw Lynx event payload.
+--
+-- Pass it to 'Miso.Event.on' \/ 'Miso.Event.onMain' when writing a handler by
+-- hand; the @on*@ helpers in this module already use it.
+--
+-- @since 1.13.0.0
 overlayErrorDecoder :: Decoder OverlayErrorEvent
 overlayErrorDecoder = ["detail"] `at` details
   where
@@ -88,6 +100,12 @@ overlayErrorDecoder = ["detail"] `at` details
         <$> o .: "errorCode"
         <*> o .: "errorMsg"
 -----------------------------------------------------------------------------
+-- | t'Decoder' producing a t'OverlayTouchEvent' from the raw Lynx event payload.
+--
+-- Pass it to 'Miso.Event.on' \/ 'Miso.Event.onMain' when writing a handler by
+-- hand; the @on*@ helpers in this module already use it.
+--
+-- @since 1.13.0.0
 overlayTouchDecoder :: Decoder OverlayTouchEvent
 overlayTouchDecoder = ["detail"] `at` details
   where

@@ -44,6 +44,12 @@ import           Miso.JSON
 import           Miso.String (MisoString)
 import           Miso.Types (Attribute, EventHandler, DOMRef)
 -----------------------------------------------------------------------------
+-- | The 'Events' map for the Lynx @<refresh>@ element.
+--
+-- Combine with other element maps using @<>@ and pass the result to
+-- 'Miso.Native.native', so the delegator listens for these events.
+--
+-- @since 1.13.0.0
 refreshEvents :: Events
 refreshEvents
   = M.fromList
@@ -75,6 +81,12 @@ newtype StartRefreshEvent
     -- ^ Whether the @startrefresh@ event was triggered by a manual drag
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
+-- | t'Decoder' producing a t'HeaderOffsetEvent' from the raw Lynx event payload.
+--
+-- Pass it to 'Miso.Event.on' \/ 'Miso.Event.onMain' when writing a handler by
+-- hand; the @on*@ helpers in this module already use it.
+--
+-- @since 1.13.0.0
 headerOffsetDecoder :: Decoder HeaderOffsetEvent
 headerOffsetDecoder = ["detail"] `at` details
   where
@@ -83,12 +95,24 @@ headerOffsetDecoder = ["detail"] `at` details
         <$> o .: "isDragging"
         <*> o .: "offsetPercent"
 -----------------------------------------------------------------------------
+-- | t'Decoder' producing a t'RefreshStateChangeEvent' from the raw Lynx event payload.
+--
+-- Pass it to 'Miso.Event.on' \/ 'Miso.Event.onMain' when writing a handler by
+-- hand; the @on*@ helpers in this module already use it.
+--
+-- @since 1.13.0.0
 refreshStateChangeDecoder :: Decoder RefreshStateChangeEvent
 refreshStateChangeDecoder = ["detail"] `at` details
   where
     details = withObject "detail" $ \o ->
       RefreshStateChangeEvent <$> o .: "state"
 -----------------------------------------------------------------------------
+-- | t'Decoder' producing a t'StartRefreshEvent' from the raw Lynx event payload.
+--
+-- Pass it to 'Miso.Event.on' \/ 'Miso.Event.onMain' when writing a handler by
+-- hand; the @on*@ helpers in this module already use it.
+--
+-- @since 1.13.0.0
 startRefreshDecoder :: Decoder StartRefreshEvent
 startRefreshDecoder = ["detail"] `at` details
   where

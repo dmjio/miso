@@ -320,6 +320,8 @@ index specified = do
   when (specified /= "index") (fail "index")
   pure "/"
 -----------------------------------------------------------------------------
+-- | Matches a literal URI fragment (the part after @#@), failing the parse if
+-- it differs. Returns the matched fragment.
 fragment :: MisoString -> RouteParser MisoString
 fragment specified = do
   FragmentToken frag <- indexToken
@@ -592,6 +594,7 @@ pctEncoded = do
 hexDig :: Lexer Char
 hexDig = L.satisfy C.isHexDigit
 -----------------------------------------------------------------------------
+-- | Lexes a URI into route t'Token's, or reports where lexing failed.
 lexTokens :: MisoString -> Either L.LexerError [Token]
 lexTokens input =
   case L.runLexer uriLexer (L.mkStream input) of

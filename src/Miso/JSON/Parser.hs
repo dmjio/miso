@@ -96,6 +96,10 @@ value = oneOf
   , Null <$ null
   ]
 ----------------------------------------------------------------------------
+-- | Parses JSON text into a t'Value' purely, returning a message on failure.
+--
+-- Unlike 'Miso.JSON.decode' this does not go through the browser's
+-- @JSON.parse@, so it is usable off the main thread and in server builds.
 decodePure :: MisoString -> Either String Value
 decodePure = first show
   . either (Left . LexicalError) (parse value . fst)

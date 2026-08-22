@@ -38,6 +38,12 @@ import           Miso.JSON
 import           Miso.String (MisoString)
 import           Miso.Types (Attribute, EventHandler, DOMRef)
 -----------------------------------------------------------------------------
+-- | The 'Events' map for the Lynx @<frame>@ element.
+--
+-- Combine with other element maps using @<>@ and pass the result to
+-- 'Miso.Native.native', so the delegator listens for these events.
+--
+-- @since 1.13.0.0
 frameEvents :: Events
 frameEvents
   = M.fromList
@@ -58,6 +64,12 @@ data FrameLoadEvent
     -- ^ The url of the loaded \<frame\> resource
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
+-- | t'Decoder' producing a t'FrameLoadEvent' from the raw Lynx event payload.
+--
+-- Pass it to 'Miso.Event.on' \/ 'Miso.Event.onMain' when writing a handler by
+-- hand; the @on*@ helpers in this module already use it.
+--
+-- @since 1.13.0.0
 frameLoadDecoder :: Decoder FrameLoadEvent
 frameLoadDecoder = ["detail"] `at` details
   where
@@ -80,6 +92,12 @@ data FrameLoadMetricsEvent
     -- ^ The url of the loaded \<frame\> resource
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
+-- | t'Decoder' producing a t'FrameLoadMetricsEvent' from the raw Lynx event payload.
+--
+-- Pass it to 'Miso.Event.on' \/ 'Miso.Event.onMain' when writing a handler by
+-- hand; the @on*@ helpers in this module already use it.
+--
+-- @since 1.13.0.0
 frameLoadMetricsDecoder :: Decoder FrameLoadMetricsEvent
 frameLoadMetricsDecoder = ["detail"] `at` details
   where

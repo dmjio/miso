@@ -476,6 +476,8 @@ modifyComponent vcompId go =
   atomicModifyIORef' components $ \vcomps ->
     (IM.adjust (execState go) vcompId vcomps, ())
 -----------------------------------------------------------------------------
+-- | The set of child t'Miso.Effect.ComponentId's a component currently has
+-- mounted (the @_componentChildren@ field of 'ComponentState').
 type ComponentIds = IntSet
 -----------------------------------------------------------------------------
 initialDraw
@@ -2385,7 +2387,7 @@ dispatchMainThreadEvent arg =
             Nothing ->
               FFI.consoleError ("[MTS dispatch] no component " <> ms (show compId))
             Just ComponentState {..} -> do
-              -- Decode + dispatch directly from the captured 'Decoder' \/
+              -- Decode + dispatch directly from the captured t'Decoder' \/
               -- convert pair — no JS installer round-trip (no scratch node,
               -- no throwaway 'asyncCallback2') needed on this, the hot path
               -- for every main-thread event.

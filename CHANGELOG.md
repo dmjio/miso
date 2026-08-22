@@ -66,6 +66,11 @@ All notable changes to `miso` are documented here.
   `mountStatic comp { useContext = True }`. `mountUseContext` is the
   non-static equivalent.
 
+- **Every exported name is documented.** `cabal haddock` reported 118
+  undocumented exports across 34 modules — mostly the Lynx event payloads,
+  decoders, method parameter records and `Events` maps under
+  `Miso.Native.Element.*`. All now carry Haddock.
+
 - **Context-seeding SSR entry points.** `misoWithContext` and
   `prerenderWithContext` hydrate a server-rendered page with an explicit
   initial `context`; `setContext` seeds the global context for use from the

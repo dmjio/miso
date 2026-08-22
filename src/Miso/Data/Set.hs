@@ -88,6 +88,9 @@ import           Miso.DSL (jsg, JSVal, ToJSVal, FromJSVal, (!))
 import qualified Miso.DSL as DSL
 import           Miso.FFI (callFunction)
 -----------------------------------------------------------------------------
+-- | A JS [Set](https:\/\/developer.mozilla.org\/en-US\/docs\/Web\/JavaScript\/Reference\/Global_Objects\/Set),
+-- wrapped so it can be passed across the FFI without copying. Operations live
+-- in t'IO' because the underlying object is mutable.
 newtype Set key = Set JSVal deriving (FromJSVal, ToJSVal)
 -----------------------------------------------------------------------------
 -- | Constructs a new JS [Set](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set) in t'IO'.

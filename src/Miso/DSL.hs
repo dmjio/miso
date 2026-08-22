@@ -193,6 +193,9 @@ class ToJSVal a where
     gToJSVal (from x) o
     toJSVal o
 -----------------------------------------------------------------------------
+-- | Internal: writes a t'GHC.Generics.Generic' representation into a JS object
+-- field by field. Backs the default 'ToJSVal' implementation; you should not
+-- need to write instances.
 class GToJSVal (f :: Type -> Type) where
   gToJSVal :: f a -> Object -> IO ()
 -----------------------------------------------------------------------------
@@ -321,6 +324,9 @@ class FromJSVal a where
       Nothing -> error "fromJSValUnchecked: failure"
       Just y -> pure y
 -----------------------------------------------------------------------------
+-- | Internal: rebuilds a t'GHC.Generics.Generic' representation from a JS
+-- object, yielding 'Nothing' when a field is missing or ill-typed. Backs the
+-- default 'FromJSVal' implementation.
 class GFromJSVal (f :: Type -> Type) where
   gFromJSVal :: Object -> IO (Maybe (f a))
 -----------------------------------------------------------------------------
@@ -606,6 +612,10 @@ infixr 2 #
   invokeFunction func o' args'
 {-# INLINABLE (#) #-}
 -----------------------------------------------------------------------------
+-- | Calls a JavaScript t'Function' with the given arguments and marshals
+-- the result back into Haskell.
+--
+-- @since 1.13.0.0
 apply
   :: (FromJSVal a, ToArgs args)
   => Function

@@ -88,6 +88,9 @@ import qualified Miso.DSL as DSL
 import           Miso.FFI (callFunction)
 import           Miso.String (ms, unpack)
 -----------------------------------------------------------------------------
+-- | A JS [Array](https:\/\/developer.mozilla.org\/en-US\/docs\/Web\/JavaScript\/Reference\/Global_Objects\/Array),
+-- wrapped so it can be passed across the FFI without copying. Operations live
+-- in t'IO' because the underlying object is mutable.
 newtype Array value = Array JSVal deriving (FromJSVal, ToJSVal, ToObject)
 -----------------------------------------------------------------------------
 -- | Constructs a new JS [Array](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array) in t'IO'.

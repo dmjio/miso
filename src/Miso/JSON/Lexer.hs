@@ -64,6 +64,10 @@ import           Miso.Util.Lexer hiding (string', token)
 import Control.Applicative (liftA2)
 #endif
 ----------------------------------------------------------------------------
+-- | A single lexical token of JSON text, produced by 'tokens'.
+--
+-- Punctuators are the structural characters @{}[],:@; the remaining
+-- constructors carry already-decoded literals.
 data Token
   = TokenPunctuator Char
   | TokenNumber Double
@@ -145,6 +149,10 @@ token = oneOf
   , TokenNull <$ null
   ]
 ----------------------------------------------------------------------------
+-- | Lexes JSON source into a list of t'Token', skipping whitespace.
+--
+-- The first half of 'Miso.JSON.decode'; feed the result to
+-- "Miso.JSON.Parser".
 tokens :: Lexer [Token]
 tokens = some (many whitespace *> token)
 ----------------------------------------------------------------------------
