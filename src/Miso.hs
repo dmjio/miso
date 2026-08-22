@@ -254,8 +254,8 @@
 --
 -- The 'GHC.StaticPtr.StaticKey' itself serves as the mount's identity, so
 -- there's no need for ('+>') or a manually-supplied 'Key' — use 'vcomp' \/
--- 'vcomp_' together with 'Miso.Types.mountStatic_' (or
--- 'Miso.Types.mountStaticWithProps' \/ 'Miso.Types.mountStaticUseContext') to
+-- 'vcomp_' together with 'Miso.Types.mountStatic' (or
+-- 'Miso.Types.mountStaticWithProps') to
 -- build a 'VCompStatic'.
 --
 -- See "Miso.Native" for the entry points ('Miso.Native.native',

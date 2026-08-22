@@ -57,11 +57,14 @@ All notable changes to `miso` are documented here.
   `eventHandlerConvert` / `eventHandlerDecoder` and the `EventHandler` type
   are exported for building custom handlers.
 
-- **Static components.** `mountStatic_`, `mountStaticWithProps` and
-  `mountStaticUseContext` mount a `Component` through a `StaticPtr`
-  (`SomeStaticComponent`), so the component survives the dual-thread
-  boundary. `mountUseContext` is the non-static equivalent for opting a
-  mounted child into context re-renders.
+- **Static components.** `mountStatic` and `mountStaticWithProps` mount a
+  `Component` through a `StaticPtr` (`SomeStaticComponent`), so the component
+  survives the dual-thread boundary; `vcomp_` / `vcomp` turn the resulting
+  pointer into a `View`. Unlike the non-static combinators these need no key —
+  the compile-time `StaticKey` supplies identity. To opt a statically mounted
+  child into `context` re-renders, set the field directly:
+  `mountStatic comp { useContext = True }`. `mountUseContext` is the
+  non-static equivalent.
 
 - **Context-seeding SSR entry points.** `misoWithContext` and
   `prerenderWithContext` hydrate a server-rendered page with an explicit
@@ -107,7 +110,7 @@ All notable changes to `miso` are documented here.
 
 - **Breaking: `Miso.Types.keyed` was removed.** Use the keyed constructors
   directly: `textKey` / `textKey_` for text, `fragment_` / `vfrag_` for
-  fragments, `mount_` / `vcomp_` / `mountStatic_` for components, and
+  fragments, `mount_` / `vcomp_` / `mountStatic` for components, and
   `key_` in the attribute list for element nodes.
 
 - **Breaking: runtime internals dropped from `Miso.FFI`.** `mountComponent`,

@@ -91,7 +91,7 @@
 --   /static mounting/: the child is wrapped in a @static@ pointer
 --   (@-XStaticPointers@) so only its 'GHC.StaticPtr.StaticKey' — not a closure —
 --   needs to cross the boundary. The MTS dereferences the key to rebuild the
---   component locally. See 'Miso.Types.vcomp' \/ 'Miso.Types.mountStatic_'.
+--   component locally. See 'Miso.Types.vcomp' \/ 'Miso.Types.mountStatic'.
 --
 -- * __State synchronization__ — The BTS owns the shared @model@ and ships it to
 --   the MTS as it changes (JSON-serialized, hence the @ToJSON@ \/ @FromJSON@
@@ -133,7 +133,7 @@
 -- boundary as @static@ pointers rather than closures. This requires the
 -- @-XStaticPointers@ language extension.
 --
--- The root component is mounted with 'Miso.Types.mountStatic_' wrapped in
+-- The root component is mounted with 'Miso.Types.mountStatic' wrapped in
 -- @static@:
 --
 -- @
@@ -145,13 +145,13 @@
 -- import "Miso.Native"
 -- -----------------------------------------------------------------------------
 -- main :: 'IO' ()
--- main = 'native' 'nativeEvents' (static ('Miso.Types.mountStatic_' app))
+-- main = 'native' 'nativeEvents' (static ('Miso.Types.mountStatic' app))
 -- @
 --
 -- Child components are embedded in a 'view' the same way, with 'Miso.Types.vcomp':
 --
 -- @
--- view _ _ _ = view_ [] [ 'Miso.Types.vcomp' () (static ('Miso.Types.mountStatic_' childComponent)) ]
+-- view _ _ _ = view_ [] [ 'Miso.Types.vcomp' () (static ('Miso.Types.mountStatic' childComponent)) ]
 -- @
 --
 -- __Static-pointer limitation.__ A @static@ form may only close over
@@ -388,9 +388,8 @@ module Miso.Native
      native
    , nativeWithContext
      -- * 'Miso.Types.Component' mounting
-   , mountStatic_
+   , mountStatic
    , mountStaticWithProps
-   , mountStaticUseContext
      -- * Element
    , module Miso.Native.Element
      -- * FFI
@@ -401,7 +400,7 @@ module Miso.Native
 -----------------------------------------------------------------------------
 import Miso.Runtime (initComponent)
 import Miso.Types (Events, SomeStaticComponent(..), SomeComponent(..), Hydrate(..))
-import Miso.Types (mountStatic_, mountStaticWithProps, mountStaticUseContext)
+import Miso.Types (mountStatic, mountStaticWithProps)
 -----------------------------------------------------------------------------
 import Miso.Native.Element
 import Miso.Native.FFI
@@ -420,7 +419,7 @@ import GHC.StaticPtr (StaticPtr, deRefStaticPtr, staticKey)
 -- import Miso.Native
 --
 -- main :: IO ()
--- main = native nativeEvents (static (mountStatic_ app))
+-- main = native nativeEvents (static (mountStatic app))
 -- @
 --
 -- @since 1.13.0.0
@@ -444,7 +443,7 @@ native events ptr =
 -- import "Miso.Native"
 --
 -- main :: IO ()
--- main = 'nativeWithContext' 'nativeEvents' () (static ('mountStatic_' app))
+-- main = 'nativeWithContext' 'nativeEvents' () (static ('mountStatic' app))
 -- @
 --
 -- @since 1.13.0.0

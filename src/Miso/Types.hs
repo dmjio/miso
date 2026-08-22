@@ -104,8 +104,8 @@
 -- * 'mount_' — mount without a key (unsafe in dynamic lists)
 -- * 'mountWithProps' / 'mountWithProps_' — mount with explicit @props@
 -- * 'mountUseContext' — mount without a key, subscribed to @context@ updates
--- * 'vcomp' / 'vcomp_' (with 'mountStatic_' \/ 'mountStaticWithProps' \/
---   'mountStaticUseContext') — static-key mounting; the compile-time
+-- * 'vcomp' / 'vcomp_' (with 'mountStatic' \/ 'mountStaticWithProps') —
+--   static-key mounting; the compile-time
 --   'GHC.StaticPtr.StaticKey' already provides identity, so unlike the
 --   non-static combinators there is no keyed variant
 --
@@ -180,9 +180,8 @@ module Miso.Types
   , mountUseContext
   , mountWithProps_
   , mountWithProps
-  , mountStatic_
+  , mountStatic
   , mountStaticWithProps
-  , mountStaticUseContext
   -- ** Fragment combinators
   , fragment
   , fragment_
@@ -637,19 +636,23 @@ mountWithProps_
 #endif
 mountWithProps_ key props child = VComp (SomeComponent (Just (Key key)) props child)
 -----------------------------------------------------------------------------
--- | t'Miso.Types.Component' mounting combinator.
+-- | Static t'Miso.Types.Component' mounting combinator, for a component
+-- that takes no @props@.
 --
--- Note: only use this if you're certain you won't be diffing two t'Miso.Types.Component'
--- against each other. Otherwise, you will need a key to distinguish between
--- the two t'Miso.Types.Component', to ensure unmounting and mounting occurs.
+-- Produces a @'SomeStaticComponent' () context@ to be wrapped in @static@ and
+-- turned into a 'View' by 'vcomp_'. Unlike 'mount_', no key is needed: the
+-- compile-time 'GHC.StaticPtr.StaticKey' already supplies identity, so this is
+-- safe to diff against another t'Miso.Types.Component'.
+--
+-- To opt the child into app-global @context@ updates, set the field directly:
+-- @mountStatic comp { useContext = True }@.
 --
 -- @
--- mountStatic_ $ component model noop $ \\m ->
---  div_ [ id_ "foo" ] [ text (ms m) ]
+-- div_ [] [ vcomp_ (static (mountStatic myComp)) ]
 -- @
 --
 -- @since 1.13.0.0
-mountStatic_
+mountStatic
 #ifdef NATIVE
   :: (Eq context, Eq model, FromJSON model, ToJSON model, FromJSON action, ToJSON action)
 #else
@@ -658,7 +661,7 @@ mountStatic_
   => Component context () model action
   -- ^ 'Component' to mount
   -> SomeStaticComponent () context
-mountStatic_ child = SomeStaticComponent (const (SomeComponent Nothing () child))
+mountStatic child = SomeStaticComponent (const (SomeComponent Nothing () child))
 -----------------------------------------------------------------------------
 -- | t'Miso.Types.Component' mounting combinator.
 --
@@ -675,7 +678,7 @@ mountStatic_ child = SomeStaticComponent (const (SomeComponent Nothing () child)
 -- also builds a 'VComp' with no 'GHC.StaticPtr.StaticKey', so the same
 -- caveat applies: mounted /after/ the initial frame, it never gets a
 -- main-thread mirror registered, silently breaking @OnStatic@ handlers
--- inside it. Use 'vcomp_' with 'mountStatic_' instead for anything that may
+-- inside it. Use 'vcomp_' with 'mountStatic' instead for anything that may
 -- mount dynamically under @NATIVE@.
 --
 -- @since 1.9.0.0
@@ -690,7 +693,7 @@ mount_
   -- ^ 'Component' to mount
   -> View context model action
 #ifdef NATIVE
-{-# WARNING mount_ "[NATIVE] 'mount_' has no StaticKey; a component mounted with it after the initial frame silently drops OnStatic handlers inside it. Use 'vcomp_' with 'mountStatic_' instead." #-}
+{-# WARNING mount_ "[NATIVE] 'mount_' has no StaticKey; a component mounted with it after the initial frame silently drops OnStatic handlers inside it. Use 'vcomp_' with 'mountStatic' instead." #-}
 #endif
 mount_ comp = VComp (SomeComponent Nothing () comp)
 -----------------------------------------------------------------------------
@@ -699,7 +702,7 @@ mount_ comp = VComp (SomeComponent Nothing () comp)
 -- Smart constructor for 'VComp', mirroring 'vnode' \/ 'vtext' \/ 'vfrag'.
 --
 -- The 'StaticPtr' wraps only the closed @props -> component@ constructor (built
--- with 'mount_', 'mountWithProps', or '(+>)'); it must use the @static@ keyword
+-- with 'mountStatic' or 'mountStaticWithProps'); it must use the @static@ keyword
 -- and refer to a closed, top-level binding. The @props@ value is supplied
 -- /separately/ — so it may depend on the parent's @model@ — and is serialized
 -- across the dual-thread boundary. The no-props case passes @()@.
@@ -709,7 +712,7 @@ mount_ comp = VComp (SomeComponent Nothing () comp)
 -- the 'Props'.
 --
 -- @
--- div_ [] [ vcomp_ (static (mountStatic_ myComp)) ]
+-- div_ [] [ vcomp_ (static (mountStatic myComp)) ]
 -- @
 --
 -- @since 1.12.0.0
@@ -721,12 +724,11 @@ vcomp = flip VCompStatic
 -----------------------------------------------------------------------------
 -- | Like 'vcomp', but for a t'Miso.Types.Component' that takes no @props@.
 --
--- @'vcomp_' = 'vcomp' ()@ — pair it with 'mountStatic_' or
--- 'mountStaticUseContext', both of which produce a
+-- @'vcomp_' = 'vcomp' ()@ — pair it with 'mountStatic', which produces a
 -- @'SomeStaticComponent' () context@.
 --
 -- @
--- div_ [] [ vcomp_ (static (mountStatic_ myComp)) ]
+-- div_ [] [ vcomp_ (static (mountStatic myComp)) ]
 -- @
 --
 -- @since 1.13.0.0
@@ -734,32 +736,6 @@ vcomp_
   :: StaticPtr (SomeStaticComponent () context)
   -> View context model action
 vcomp_ = vcomp ()
------------------------------------------------------------------------------
--- | Static t'Miso.Types.Component' mounting combinator that opts the child
--- into app-global React-style @context@ updates.
---
--- Equivalent to 'mountStatic_', but sets @useContext = True@ on the mounted
--- t'Miso.Types.Component' so it re-renders whenever the @context@ changes
--- (see 'Miso.Effect.modifyContext'). The static-key counterpart of
--- 'mountUseContext' — use this (with 'vcomp_') instead of 'mountUseContext'
--- under the Lynx dual-thread (@NATIVE@) backend.
---
--- @
--- vcomp_ (static (mountStaticUseContext myComp))
--- @
---
--- @since 1.13.0.0
-mountStaticUseContext
-#ifdef NATIVE
-  :: (Eq context, Eq model, FromJSON model, ToJSON model, FromJSON action, ToJSON action)
-#else
-  :: (Eq context, Eq model)
-#endif
-  => Component context () model action
-  -- ^ 'Component' to mount
-  -> SomeStaticComponent () context
-mountStaticUseContext child =
-  SomeStaticComponent (const (SomeComponent Nothing () child { useContext = True }))
 -----------------------------------------------------------------------------
 -- | t'Miso.Types.Component' mounting combinator that opts the child into
 -- app-global React-style @context@ updates.
@@ -778,8 +754,8 @@ mountStaticUseContext child =
 -- this also builds a 'VComp' with no 'GHC.StaticPtr.StaticKey', so the same
 -- caveat applies: mounted /after/ the initial frame, it never gets a
 -- main-thread mirror registered, silently breaking @OnStatic@ handlers
--- inside it. Use 'vcomp_' with 'mountStaticUseContext' instead under
--- @NATIVE@.
+-- inside it. Use @'vcomp_' (static ('mountStatic' comp { useContext = True }))@
+-- instead under @NATIVE@.
 --
 -- @since 1.13.0.0
 mountUseContext
@@ -793,7 +769,7 @@ mountUseContext
   -- ^ 'Component' to mount
   -> View context model action
 #ifdef NATIVE
-{-# WARNING mountUseContext "[NATIVE] 'mountUseContext' has no StaticKey; a component mounted with it after the initial frame silently drops OnStatic handlers inside it. Use 'vcomp_' with 'mountStaticUseContext' instead." #-}
+{-# WARNING mountUseContext "[NATIVE] 'mountUseContext' has no StaticKey; a component mounted with it after the initial frame silently drops OnStatic handlers inside it. Use 'vcomp_' with 'mountStatic' on a component with useContext = True instead." #-}
 #endif
 mountUseContext comp = VComp (SomeComponent Nothing () comp { useContext = True })
 -----------------------------------------------------------------------------
