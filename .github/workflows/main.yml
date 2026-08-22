@@ -126,6 +126,12 @@ jobs:
      - name: Bun build js
        run: bun run js
 
+     - name: bun.nix is in sync with bun.lock
+       run: |
+         nix run github:nix-community/bun2nix -- -o nix/js/bun.nix
+         git diff --exit-code -- nix/js/bun.nix \
+           || { echo "::error::nix/js/bun.nix is stale -- run 'bun run nix:lock' and commit"; exit 1; }
+
      - name: Sample app native bundle
        run: |
          nix-build -A sample-app-native-bundle

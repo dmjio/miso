@@ -30,6 +30,12 @@
     ghc-wasm-meta.url =
       "gitlab:haskell-wasm/ghc-wasm-meta?host=gitlab.haskell.org";
 
+    # Builds the LynxJS `rspeedy` bundler from this repo's bun.lock, so that
+    # bun.lock is the only JS lockfile. Pinned here and read back out of
+    # flake.lock by nix/js/default.nix, so the legacy `nix-build` entry point
+    # uses the same revision. See nix/js/README.md.
+    bun2nix.url = "github:nix-community/bun2nix/0f2a1f0b6f42cebe3b149bf62d38754c5e0e9729";
+
     # dmj: (leave commented for now, we might cache our own copy of ghc-wasm if we need to)
     #
     # ghc-wasm-meta.inputs.nixpkgs.follows =

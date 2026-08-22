@@ -17,7 +17,8 @@
     "build-native": "bun build --outfile=js/miso-native.js ./ts/miso-native.ts --target=browser --minify-whitespace",
     "prod-native": "bun build --outfile=js/miso-native.prod.js ./ts/miso-native.ts --target=browser --minify",
     "build-test": "bun build --outfile=./tests/js/test.js ./ts/tests.ts --target=bun",
-    "js": "bun run build && bun run prod && bun run build-native && bun run prod-native"
+    "js": "bun run build && bun run prod && bun run build-native && bun run prod-native",
+    "nix:lock": "bun2nix -o nix/js/bun.nix"
   },
   "main": "./js/miso.js",
   "module": "./ts/miso.ts",
