@@ -554,7 +554,7 @@
 -- recurses into nested fragments and processes all fragments as if they were
 -- a flat sequence of sibling DOM nodes, so nesting carries no runtime cost beyond the extra 'VFrag' constructor allocation.
 --
--- Empty fragments (@@fragment@ []@) in child nodes are erased from the virtual DOM tree in the
+-- Empty fragments (@fragment []@) in child nodes are erased from the virtual DOM tree in the
 -- Haskell layer before they reach diffing in JavaScript and are therefore a no-op.
 --
 -- The smart constructors for 'VFrag' are:
@@ -1089,7 +1089,7 @@
 --   Rename n  -> #name 'Miso.Lens..=' n            -- via OverloadedLabels
 -- @
 --
--- * __Hand-written__: construct a @Lens@ directly using @lens@ and the @@Lens@ s a@ synonym.
+-- * __Hand-written__: construct a @Lens@ directly using @lens@ and the @Lens s a@ synonym.
 --
 -- @
 -- name :: 'Miso.Lens.Lens' Person 'MisoString'

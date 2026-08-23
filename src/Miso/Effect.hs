@@ -92,7 +92,7 @@
 -- = See also
 --
 -- * "Miso.Types" — t'Miso.Types.Component', 'Miso.Types.update', 'Miso.Types.subs'
--- * "Miso.Lens" — lens operators (@@.=@@, @@+=@@, @@%=@@) for model updates
+-- * "Miso.Lens" — lens operators (@.=@, @+=@, @%=@) for model updates
 -- * "Miso.Subscription" — pre-built subscriptions (mouse, keyboard, history, …)
 -----------------------------------------------------------------------------
 module Miso.Effect
