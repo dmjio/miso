@@ -1297,7 +1297,7 @@ setAttrs vnode_@(Object jval) attrs snk vcompId logLevel events model_ = do
     OnStatic ptr ->
       -- Stash the handler's 'StaticKey' and owning @ComponentId@ on the node
       -- so 'onWithOptions' can attach them to the per-event object; the native
-      -- PATCH protocol ships them to the MTS for main-thread (t'MTS') dispatch.
+      -- PATCH protocol ships them to the MTS for main-thread ('MTS') dispatch.
       -- Browser\/WASM never dereferences them. 'pendingMainThread' starts
       -- @False@; 'Miso.Event.mainThread' (part of @callback@) flips it 'True'
       -- so only marked handlers opt in.
@@ -2348,7 +2348,7 @@ componentListener Proxy (BTS ctx) = void $ do
                       READY_ACK -> pure ()
 #endif
 ----------------------------------------------------------------------------
--- | Dispatch a main-thread (t'MTS') event on the Haskell layer.
+-- | Dispatch a main-thread ('MTS') event on the Haskell layer.
 --
 -- Invoked synchronously by the MTS delegator (see @ts\/miso\/native\/mts\/context.ts@)
 -- with a @{ componentId, staticKey, event, target }@ object. Recovers the event

@@ -31,7 +31,7 @@
 --
 -- @
 -- t'StyleSheet'          -- rendered to a \<style\> tag
---   └─ [t'Styles']       -- one rule block each
+--   └─ ['Styles']       -- one rule block each
 --        ├─ t'Styles'    (selector → ['Style'])
 --        ├─ 'KeyFrame'  (animation-name → [(stop, ['Style'])])
 --        └─ 'Media'     (media-query   → [(selector, ['Style'])])

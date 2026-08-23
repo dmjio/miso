@@ -216,8 +216,8 @@
 -- data 'View' context model action
 --   = 'VNode' 'Namespace' 'Tag' ['Attribute' model action] ['View' context model action] 'DirectEvents'
 --   | 'VText' (Maybe t'Key') 'MisoString'
---   | @VComp@ (t'SomeComponent' context)
---   | forall props . @VCompStatic@ (@StaticPtr@ (t'SomeStaticComponent' props context)) props
+--   | VComp ('SomeComponent' context)
+--   | forall props . VCompStatic (StaticPtr ('SomeStaticComponent' props context)) props
 --   | 'VFrag' (Maybe t'Key') ['View' context model action]
 -- @
 --
@@ -226,7 +226,7 @@
 -- @
 -- data t'SomeComponent' context
 --   = forall model action props . ('Eq' context, 'Eq' model, 'Eq' props)
---   => t'SomeComponent' (Maybe t'Key') props (t'Miso.Types.Component' context props model action)
+--   => t'SomeComponent' (Maybe t'Key') props ('Miso.Types.Component' context props model action)
 -- @
 --
 -- The smart constructors:
@@ -275,7 +275,7 @@
 -- * __@context@__ — global; the same value is visible to the whole tree.
 --
 -- This is why @context@ is a type parameter on both t'Miso.Types.Component' and 'View'
--- (@t'Miso.Types.Component' context props model action@, @'View' context model action@): the
+-- (@'Miso.Types.Component' context props model action@, @'View' context model action@): the
 -- parameter is threaded through the entire view tree so that every nested
 -- t'Miso.Types.Component' — reachable via t'SomeComponent' — is statically guaranteed to
 -- agree on __one__ @context@ type. There is exactly one live @context@ value per
@@ -359,7 +359,7 @@
 --   => 'MisoString'
 --   -> t'Miso.Types.Component' context () model action
 --   -> 'View' context model action
--- key '+>' comp = @VComp@ (t'SomeComponent' (Just ('toKey' key)) () comp)
+-- key '+>' comp = @VComp@ ('SomeComponent' (Just ('toKey' key)) () comp)
 -- @
 --
 -- Practically, using this combinator looks like:
@@ -554,7 +554,7 @@
 -- recurses into nested fragments and processes all fragments as if they were
 -- a flat sequence of sibling DOM nodes, so nesting carries no runtime cost beyond the extra 'VFrag' constructor allocation.
 --
--- Empty fragments (@@fragment@ []@) in child nodes are erased from the virtual DOM tree in the
+-- Empty fragments (@fragment []@) in child nodes are erased from the virtual DOM tree in the
 -- Haskell layer before they reach diffing in JavaScript and are therefore a no-op.
 --
 -- The smart constructors for 'VFrag' are:
@@ -655,7 +655,7 @@
 --   = 'Property' 'MisoString' 'Miso.JSON.Value'          -- ^ DOM property (key/value)
 --   | 'ClassList' ['MisoString']             -- ^ 'CSS' class list
 --   | 'On' (model -> 'Sink' action -> ...)   -- ^ Fully-applied event handler
---   | 'OnStatic' (@StaticPtr@ (t'EventHandler' model action)) -- ^ @static@ handler, rebuilt on the main thread (dual-thread)
+--   | 'OnStatic' (@StaticPtr@ ('EventHandler' model action)) -- ^ @static@ handler, rebuilt on the main thread (dual-thread)
 --   | 'Styles' ('Data.Map.Strict.Map' 'MisoString' 'MisoString') -- ^ Inline style map
 -- @
 --
@@ -694,7 +694,7 @@
 -- == Keys
 --
 -- @key_@ (and its alias 'keyProp') attaches a reconciliation key to any element.
--- See the @t'Key'@ section for details.
+-- See the @'Key'@ section for details.
 --
 -- @
 --
@@ -714,7 +714,7 @@
 -- The 'Effect' type is defined as a 'Control.Monad.RWS.RWS'.
 --
 -- @
--- type 'Effect' context props model action = 'Control.Monad.RWS.RWS' (t'ComponentInfo' context props) [t'Schedule' context action] model ()
+-- type 'Effect' context props model action = 'Control.Monad.RWS.RWS' ('ComponentInfo' context props) ['Schedule' context action] model ()
 -- @
 --
 -- * The 'Control.Monad.Reader' portion of 'Effect' is t'ComponentInfo'. 'ask', 'asks', 'Miso.Lens.view' can be used to access its fields.
@@ -1089,7 +1089,7 @@
 --   Rename n  -> #name 'Miso.Lens..=' n            -- via OverloadedLabels
 -- @
 --
--- * __Hand-written__: construct a @Lens@ directly using @lens@ and the @@Lens@ s a@ synonym.
+-- * __Hand-written__: construct a @Lens@ directly using @lens@ and the @Lens s a@ synonym.
 --
 -- @
 -- name :: 'Miso.Lens.Lens' Person 'MisoString'
@@ -1197,7 +1197,7 @@
 -- @
 -- import Servant.Miso.Html (HTML)
 --
--- type Home    = \"home\"    :\> Get '[HTML] (t'Miso.Types.Component' context props model action)
+-- type Home    = \"home\"    :\> Get '[HTML] ('Miso.Types.Component' context props model action)
 -- type About   = \"about\"   :\> Get '[HTML] ('View' context model action)
 -- type Contact = \"contact\" :\> Get '[HTML] ['View' context model action]
 -- type API = Home :\<|\> About :\<|\> Contact

@@ -49,7 +49,7 @@
 --
 -- Two auxiliary classes support the calling convention:
 --
--- * 'ToArgs' — marshals a Haskell value to a @[t'JSVal']@ argument list.
+-- * 'ToArgs' — marshals a Haskell value to a @['JSVal']@ argument list.
 --   Tuples up to arity 6 automatically produce the correct positional list.
 --
 -- * 'ToObject' — promotes a value to a JS t'Object' for use as the @this@

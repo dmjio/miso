@@ -35,7 +35,7 @@
 -- * @m@ — the result monad; using @[]@ gives non-deterministic\/backtracking parsing
 -- * @a@ — the parsed result
 --
--- The @t'Parser' token a@ convenience alias fixes @r = ()@ and @m = []@,
+-- The @'Parser' token a@ convenience alias fixes @r = ()@ and @m = []@,
 -- which gives a standard backtracking parser over a @[token]@ stream.
 --
 -- = Primitive combinators

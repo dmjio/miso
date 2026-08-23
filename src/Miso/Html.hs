@@ -51,7 +51,7 @@
 --   with @_@ to avoid clashing with @Prelude@ identifiers.
 --
 -- ["Miso.Html.Event"]
---   Pre-wired event-handler attributes (@@onClick@@, @'onInput'@,
+--   Pre-wired event-handler attributes (@'onClick'@, @'onInput'@,
 --   @'onKeyDown'@, @'onDrop'@, …).  Covers mouse, keyboard, form, focus,
 --   pointer, drag, touch, media, and lifecycle events.
 --
