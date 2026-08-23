@@ -68,6 +68,7 @@ module Miso.DSL.FFI
   , isNull_ffi
   , jsNull
   , freeFunction_ffi
+  , freeJSVal_ffi
   , requestAnimationFrame
   , cancelAnimationFrame
   , listProps_ffi
@@ -418,6 +419,11 @@ foreign import javascript unsafe "return $2[$1]"
 freeFunction_ffi :: JSVal -> IO ()
 freeFunction_ffi = freeJSVal
 {-# INLINE freeFunction_ffi #-}
+-----------------------------------------------------------------------------
+-- | Eagerly release a 'JSVal' handle. See 'Miso.DSL.freeJSVal'.
+freeJSVal_ffi :: JSVal -> IO ()
+freeJSVal_ffi = freeJSVal
+{-# INLINE freeJSVal_ffi #-}
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """

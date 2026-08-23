@@ -66,6 +66,7 @@ module Miso.DSL.FFI
   , isNull_ffi
   , jsNull
   , freeFunction_ffi
+  , freeJSVal_ffi
   , listProps_ffi
   , requestAnimationFrame
   , cancelAnimationFrame
@@ -201,6 +202,11 @@ isUndefined_ffi = isUndefined
 freeFunction_ffi :: JSVal -> IO ()
 freeFunction_ffi _ = pure ()
 {-# INLINE freeFunction_ffi #-}
+-----------------------------------------------------------------------------
+-- | No-op on GHCJS: 'JSVal's are ordinary JS references collected by the JS GC.
+freeJSVal_ffi :: JSVal -> IO ()
+freeJSVal_ffi _ = pure ()
+{-# INLINE freeJSVal_ffi #-}
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
 #if GHCJS_NEW

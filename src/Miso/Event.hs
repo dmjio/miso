@@ -233,6 +233,10 @@ onWithOptions phase options eventName Decoder{..} toAction =
       mCid <- fromJSVal pendingCid :: IO (Maybe Int)
       maybe (pure ()) (\c -> FFI.set "componentId" (c :: Int) eventHandlerObject) mCid
     FFI.set eventName eo (Object eventObj)
+    -- The handler object is now reachable from the node; release the scratch
+    -- handles. @decodeAtVal@, @cb@ and @n@ are captured by the callback and
+    -- must stay alive. See Note [Freeing VTree handles] in "Miso.Runtime".
+    mapM_ freeJSVal [eventsVal, eventObj, eo, jsOptions, pendingMT]
 -----------------------------------------------------------------------------
 -- | Fire an action immediately after the DOM element is inserted into the document.
 --
