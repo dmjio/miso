@@ -100,6 +100,15 @@
             styles = ./sample-app-native/conformance.css;
           };
 
+          # Lynxtron desktop sample: exercises the card <-> Node bridge
+          # (Miso.Native.Lynxtron). Host it with sample-app-native/desktop.
+          sample-app-native-lynxtron-bundle = pkgs.mkLynxBundle {
+            name = "sample-app-native-lynxtron-bundle";
+            jsDrv = pkgs.pkgsCross.ghcjs.haskell.packages.ghcNative.sample-app-native;
+            exeName = "app-native-lynxtron";
+            styles = ./sample-app-native/conformance.css;
+          };
+
           # Util
           inherit (pkgs.haskell.packages.ghc9122)
             miso-from-html;
