@@ -32,7 +32,7 @@
 --
 -- @
 -- type 'Effect' context props model action
---      = RWS (t'ComponentInfo' context props) [t'Schedule' context action] model ()
+--      = RWS ('ComponentInfo' context props) ['Schedule' context action] model ()
 -- @
 --
 -- The @RWS@ decomposition:
@@ -341,7 +341,7 @@ async = Schedule Async
 -- | Run @action@'s 'Miso.Types.update' on the __background__ thread (BTS).
 --
 -- On the Lynx dual-thread runtime the shared @model@ is owned solely by the
--- background thread. A main-thread (t'Miso.Event.Types.MTS') event handler that
+-- background thread. A main-thread ('Miso.Event.Types.MTS') event handler that
 -- needs to change shared state cannot do so directly — it dispatches the state
 -- change here, and @action@'s 'Miso.Types.update' runs (exactly once) on the
 -- BTS, where the model write commits. Off the native runtime (or when already
@@ -357,7 +357,7 @@ runOnBG action = tell [ CrossThread BTS action ]
 -----------------------------------------------------------------------------
 -- | Run @action@'s 'Miso.Types.update' on the __main__ thread (MTS).
 --
--- The dual of 'runOnBG': a background-thread (t'Miso.Event.Types.MTS') effect
+-- The dual of 'runOnBG': a background-thread ('Miso.Event.Types.MTS') effect
 -- that needs an imperative main-thread operation (see "Miso.Native.MainThread")
 -- dispatches @action@ here, and its 'Miso.Types.update' runs (exactly once) on
 -- the MTS. Off the native runtime (or when already on the MTS) this is an

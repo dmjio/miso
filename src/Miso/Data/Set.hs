@@ -14,7 +14,7 @@
 --
 -- "Miso.Data.Set" is a Haskell wrapper around the JavaScript
 -- <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set Set>
--- object. Values of type @t'Set' a@ live in JavaScript memory; all
+-- object. Values of type @'Set' a@ live in JavaScript memory; all
 -- operations run in 'IO' and mutate the underlying JS set in place.
 --
 -- Unlike 'Data.Set.Set', elements do not require an 'Ord' instance —

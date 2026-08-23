@@ -54,7 +54,7 @@
 -- @
 -- 'getInput'     :: t'Lexer' t'Stream'
 -- 'putInput'     :: t'Stream' -> t'Lexer' ()
--- 'modifyInput'  :: (t'Stream' -> t'Stream') -> t'Lexer' ()
+-- 'modifyInput'  :: ('Stream' -> t'Stream') -> t'Lexer' ()
 -- 'getLocation'  :: t'Lexer' t'Location'
 -- 'setLocation'  :: t'Location' -> t'Lexer' ()
 -- @

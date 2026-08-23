@@ -82,11 +82,11 @@
 --
 -- = URL types
 --
--- [@t'Capture' sym a@] dynamic path segment — @Capture 42@ → @\/42@
--- [@t'Path' sym@] fixed path segment — @Path \"foo\"@ → @\/foo@
--- [@t'QueryParam' sym a@] optional query key — @QueryParam (Just 1)@ → @?sym=1@
--- [@t'QueryFlag' sym@] boolean query flag — @QueryFlag True@ → @?sym@
--- [@t'Fragment' sym@] hash fragment — @Fragment@ → @#sym@
+-- [@'Capture' sym a@] dynamic path segment — @Capture 42@ → @\/42@
+-- [@'Path' sym@] fixed path segment — @Path \"foo\"@ → @\/foo@
+-- [@'QueryParam' sym a@] optional query key — @QueryParam (Just 1)@ → @?sym=1@
+-- [@'QueryFlag' sym@] boolean query flag — @QueryFlag True@ → @?sym@
+-- [@'Fragment' sym@] hash fragment — @Fragment@ → @#sym@
 --
 -- = Integration with history subscription
 --

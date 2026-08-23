@@ -17,7 +17,7 @@
 -- for making HTTP requests inside Miso's 'Effect' monad.
 --
 -- Each function accepts a URL, optional request headers, a success callback,
--- and an error callback of the form @t'Response' x -> action@. The resulting
+-- and an error callback of the form @'Response' x -> action@. The resulting
 -- 'Effect' dispatches the appropriate action into the MVU loop when the
 -- response arrives.
 --

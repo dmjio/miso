@@ -15,7 +15,7 @@
 --
 -- "Miso.Data.Array" is a Haskell wrapper around the JavaScript
 -- <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array Array>
--- object. Values of type @t'Array' a@ live in JavaScript memory; all
+-- object. Values of type @'Array' a@ live in JavaScript memory; all
 -- operations run in 'IO' and mutate the underlying JS array in place.
 --
 -- Use this module when you need to pass a JS-native array to a browser API

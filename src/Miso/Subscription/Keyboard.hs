@@ -29,7 +29,7 @@
 -- subs = [ 'arrowsSub' ArrowsChanged ]
 --
 -- update :: Action -> 'Miso.Effect.Effect' p props Model Action
--- update (ArrowsChanged (t'Arrows' x y)) = do
+-- update (ArrowsChanged ('Arrows' x y)) = do
 --   -- x ∈ {-1, 0, 1}, y ∈ {-1, 0, 1}
 --   'Miso.Effect.io_' (move x y)
 -- @

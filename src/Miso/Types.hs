@@ -33,7 +33,7 @@
 --
 -- = The Component record
 --
--- @t'Component' context props model action@ is the central record type. It
+-- @'Component' context props model action@ is the central record type. It
 -- wires together the MVU loop and all supporting runtime configuration:
 --
 -- @
@@ -81,16 +81,16 @@
 --
 -- = Key types at a glance
 --
--- [t'Component'] full MVU application\/component record
--- ['App'] alias for @t'Component' () () model action@
+-- ['Component'] full MVU application\/component record
+-- ['App'] alias for @'Component' () () model action@
 -- ['View'] virtual DOM node
 -- ['Attribute'] DOM property, class list, event handler, or style
 -- ['Namespace'] @HTML@ \| @SVG@ \| @MATHML@
--- [t'Key'] reconciliation hint for list diffing
+-- ['Key'] reconciliation hint for list diffing
 -- ['CSS'] stylesheet reference (@Href@, @Style@, @Sheet@)
 -- ['JS'] script reference (@Src@, @Script@, @Module@, …)
 -- ['LogLevel'] debug verbosity (@Off@, @DebugHydrate@, …)
--- [t'URI'] parsed URL (path + query string + fragment)
+-- ['URI'] parsed URL (path + query string + fragment)
 --
 -- = Text combinators
 --
@@ -441,7 +441,7 @@ data View context model action
   | VComp (SomeComponent context)
   | forall props . VCompStatic (StaticPtr (SomeStaticComponent props context)) props
     -- ^ An embedded child t'Component'. The 'StaticPtr' holds only the closed
-    -- @props -> component@ constructor (t'SomeStaticComponent'); the @props@ value — often
+    -- @props -> component@ constructor ('SomeStaticComponent'); the @props@ value — often
     -- derived from the parent's @model@ — rides alongside and crosses the
     -- dual-thread (Lynx) boundary as JSON. The no-props case uses @props ~ ()@
     -- (see 'mountStatic'). This split is what lets a mount escape @static@\'s
@@ -564,7 +564,7 @@ key +> child = VComp (SomeComponent (Just (toKey key)) () child)
 -- the two t'Miso.Types.Component', to ensure unmounting and mounting occurs.
 --
 -- It takes only the @component@ and yields a closed @props -> component@
--- constructor (t'SomeStaticComponent') suitable for @static@ — the @props@ value
+-- constructor ('SomeStaticComponent') suitable for @static@ — the @props@ value
 -- is /not/ supplied here, but later at the 'vcomp' site, so a parent can pass
 -- runtime @props@ (e.g. derived from its own @model@) without an explicit lambda:
 --
@@ -641,7 +641,7 @@ mountWithProps_ key props child = VComp (SomeComponent (Just (Key key)) props ch
 -- | Static t'Miso.Types.Component' mounting combinator, for a component
 -- that takes no @props@.
 --
--- Produces a @t'SomeStaticComponent' () context@ to be wrapped in @static@ and
+-- Produces a @'SomeStaticComponent' () context@ to be wrapped in @static@ and
 -- turned into a 'View' by 'vcomp_'. Unlike 'mount_', no key is needed: the
 -- compile-time 'GHC.StaticPtr.StaticKey' already supplies identity, so this is
 -- safe to diff against another t'Miso.Types.Component'.
@@ -727,7 +727,7 @@ vcomp = flip VCompStatic
 -- | Like 'vcomp', but for a t'Miso.Types.Component' that takes no @props@.
 --
 -- @'vcomp_' = 'vcomp' ()@ — pair it with 'mountStatic', which produces a
--- @t'SomeStaticComponent' () context@.
+-- @'SomeStaticComponent' () context@.
 --
 -- @
 -- div_ [] [ vcomp_ (static (mountStatic myComp)) ]
