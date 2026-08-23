@@ -106,6 +106,20 @@ All notable changes to `miso` are documented here.
   the type-level machinery its `HasLens` instances mention (`GSet`,
   `GetFieldType`, `TotalityCheck`, `And`, `Or`).
 
+- **`aeson` cabal flag.** When enabled (`-faeson`, off by default),
+  `Miso.JSON` keeps its API but is defined in terms of
+  [aeson](https://hackage.haskell.org/package/aeson): `Value`, `Object`, and
+  `Parser` become aeson's types, so existing aeson `ToJSON` / `FromJSON`
+  instances work directly with `Miso.Fetch`, `Miso.WebSocket`, and the event
+  decoders. Signatures are unchanged — the accessors still take `MisoString`
+  keys, `withArray` still passes the continuation a `[Value]`, `withNumber`
+  still passes a `Double`, and `Result` still carries `MisoString` error
+  messages. On the JS / WASM backends orphan instances make `JSString` a
+  first-class JSON citizen. Miso's own generic-deriving machinery (`GToJSON`
+  et al.) is not exported in this mode; aeson's `genericToJSON` / `Options` /
+  `camelTo2` are re-exported instead. CI runs the WASM integration suite in
+  both modes.
+
 ### Changed
 
 - **Breaking: `View` and `Attribute` gained type parameters.**
@@ -156,6 +170,14 @@ All notable changes to `miso` are documented here.
 
 - **`context` no longer requires `ToJSON` / `FromJSON`.** The constraints
   were unused — `context` is never sent across the dual-thread boundary.
+
+### Removed
+
+- **`Miso.String.QQ`.** The `misoString` QuasiQuoter for multiline
+  `MisoString` literals is gone. GHC's `MultilineStrings` extension
+  (GHC 9.12+) covers the use case directly — enable the pragma and write
+  triple-quoted `MisoString` literals. (`Miso.FFI.QQ` and `Miso.Lens.TH`,
+  the other `template-haskell`-flag modules, are unaffected.)
 
 ### Fixed
 
