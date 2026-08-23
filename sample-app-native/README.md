@@ -30,8 +30,8 @@ events, and `contextBridge.exposeInLynxBTS` functions).
 ```bash
 nix build .#sample-app-native-lynxtron-bundle     # => ./result/main.lynx.bundle
 cd sample-app-native/desktop
-npm install                                        # pulls @lynx-js/lynxtron + binary (macOS / Windows)
-npm start                                          # loads ../../result/main.lynx.bundle
+npm install   # or: bun install — pulls @lynx-js/lynxtron + binary (macOS / Windows)
+npm start     # or: bun run start — loads ../../result/main.lynx.bundle
 ```
 
 `desktop/main.js` is the main process (`LynxWindow`, `lynxBridge.handle`,

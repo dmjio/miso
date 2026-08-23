@@ -9,5 +9,8 @@
   },
   "devDependencies": {
     "@lynx-js/lynxtron": "^0.0.15"
-  }
+  },
+  "trustedDependencies": [
+    "@lynx-js/lynxtron"
+  ]
 }
