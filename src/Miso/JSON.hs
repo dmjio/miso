@@ -162,7 +162,11 @@ module Miso.JSON
   , withBool
     -- * Type conversion
   , FromJSON(parseJSON)
+#ifdef AESON
+  , Parser
+#else
   , Parser (..)
+#endif
   , parseMaybe
   , ToJSON(..)
   -- * Misc.
@@ -184,6 +188,7 @@ module Miso.JSON
   , Options (..)
   , defaultOptions
   -- * Generics
+#ifndef AESON
   , GToJSON (..)
   , GToFields (..)
   , GToJSONRep (..)
@@ -196,6 +201,7 @@ module Miso.JSON
   , GFromJSONRep (..)
   , GFromJSONSum (..)
   , GFromJSONSumNullary (..)
+#endif
   , genericToJSON
   , genericParseJSON
   -- * Modifiers
@@ -206,12 +212,28 @@ module Miso.JSON
 import qualified GHCJS.Marshal as Marshal
 #endif
 ----------------------------------------------------------------------------
-import           Control.Applicative
 import           Control.Monad
 #if __GLASGOW_HASKELL__ <= 865
 import           Control.Monad.Fail
 import           GHC.Natural (Natural)
 #endif
+#ifdef AESON
+import           Data.Aeson.Types
+  ( ToJSON (..), FromJSON (..), Parser, Options (..), Key
+  , defaultOptions, camelTo2, genericToJSON, genericParseJSON
+  , object, emptyArray, emptyObject, parseMaybe, (.!=)
+  )
+import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.Types as Aeson
+import qualified Data.Aeson.Key as Key
+import           Data.Bifunctor (first)
+import           Data.Scientific (Scientific, toRealFloat, fromFloatDigits)
+#ifndef VANILLA
+import           Data.Aeson.Types (ToJSONKey (..), FromJSONKey (..), FromJSONKeyFunction (..), toJSONKeyText)
+import qualified Data.Aeson.KeyMap as KeyMap
+#endif
+#else
+import           Control.Applicative
 import           Data.Char
 import qualified Data.Map.Strict as M
 import           Data.Map.Strict (Map)
@@ -223,16 +245,24 @@ import           Data.Kind
 import qualified Data.Text.Lazy as LT
 import           Data.Word
 import           GHC.Generics
+#endif
 ----------------------------------------------------------------------------
 import           Miso.DSL.FFI
+#ifdef AESON
+import           Miso.String (FromMisoString, ToMisoString, MisoString, ms, pack)
+#else
 import           Miso.String (FromMisoString, ToMisoString, MisoString, ms, singleton, pack)
+#endif
 import qualified Miso.String as MS
 import           Miso.JSON.Types
 import qualified Miso.JSON.Parser as Parser
+#ifndef AESON
 import           Numeric (showHex)
+#endif
 ----------------------------------------------------------------------------
 #ifndef VANILLA
 import           Control.Monad.Trans.Maybe
+import           Data.Foldable (toList)
 import           System.IO.Unsafe (unsafePerformIO)
 import qualified Data.Text as T
 #endif
@@ -244,6 +274,32 @@ import qualified Data.Text as T
 -- object [ \"name\" .= (\"Alice\" :: MisoString), \"age\" .= (30 :: Int) ]
 -- @
 infixr 8 .=
+#ifdef AESON
+(.=) :: ToJSON v => MisoString -> v -> Pair
+k .= v  = (toKey k, toJSON v)
+----------------------------------------------------------------------------
+-- | Convert a t'MisoString' to an aeson 'Key'.
+toKey :: MisoString -> Key
+toKey = Key.fromText . MS.fromMisoString
+----------------------------------------------------------------------------
+-- 'object', 'emptyObject', 'emptyArray', and '.!=' are re-exported from aeson.
+----------------------------------------------------------------------------
+-- | Look up a required key in a JSON t'Object'.
+-- Fails with a parse error if the key is absent.
+(.:) :: FromJSON a => Object -> MisoString -> Parser a
+m .: k = (Aeson..:) m (toKey k)
+----------------------------------------------------------------------------
+-- | Look up an optional key in a JSON t'Object'.
+-- Returns 'Nothing' if the key is absent; delegates to 'parseJSON' if present.
+(.:?) :: FromJSON a => Object -> MisoString -> Parser (Maybe a)
+m .:? k = (Aeson..:?) m (toKey k)
+----------------------------------------------------------------------------
+-- | Like '.:?' but always wraps a present value in 'Just', so a key with a
+-- @null@ JSON value decodes to @Just Null@ rather than 'Nothing'.
+-- Useful when you need to distinguish a missing key from an explicit null.
+(.:!) :: FromJSON a => Object -> MisoString -> Parser (Maybe a)
+m .:! k = (Aeson..:!) m (toKey k)
+#else
 (.=) :: ToJSON v => MisoString -> v -> Pair
 k .= v  = (k, toJSON v)
 ----------------------------------------------------------------------------
@@ -281,7 +337,26 @@ m .:! k = maybe (pure Nothing) (fmap Just . parseJSON) (M.lookup k m)
 -- @o '.:?' \"count\" '.!=' 0@
 (.!=) :: Parser (Maybe a) -> a -> Parser a
 mv .!= def = fmap (fromMaybe def) mv
+#endif
 ----------------------------------------------------------------------------
+#ifdef AESON
+#ifndef VANILLA
+-- On the JavaScript and WASM backends t'MisoString' is @JSString@, which
+-- aeson does not know about; these orphans make it a first-class JSON
+-- citizen so code written against "Miso.JSON" keeps compiling.
+instance ToJSON MisoString where
+  toJSON = String . MS.fromMisoString
+----------------------------------------------------------------------------
+instance FromJSON MisoString where
+  parseJSON = withText "MisoString" pure
+----------------------------------------------------------------------------
+instance ToJSONKey MisoString where
+  toJSONKey = toJSONKeyText MS.fromMisoString
+----------------------------------------------------------------------------
+instance FromJSONKey MisoString where
+  fromJSONKey = FromJSONKeyText ms
+#endif
+#else
 -- | A type that can be serialised to a JSON 'Value'.
 --
 -- Instances for the most common Haskell types are provided. Derive via
@@ -621,7 +696,9 @@ instance ToJSON Integer where toJSON = Number . fromInteger
 ----------------------------------------------------------------------------
 -- | Possibly lossy due to conversion to 'Double'
 instance ToJSON Natural where toJSON = Number . fromInteger . naturalToInteger
+#endif
 ----------------------------------------------------------------------------
+#ifndef AESON
 -- | A lightweight JSON parse monad. Wraps @Either MisoString a@ so that
 -- parse failures carry a human-readable error message.
 --
@@ -679,7 +756,19 @@ parseEither m v = unParser (m v)
 ----------------------------------------------------------------------------
 pfail :: MisoString -> Parser a
 pfail message = Parser (Left message)
+#else
 ----------------------------------------------------------------------------
+-- | Run a parser function, returning @'Left' errMsg@ on failure.
+parseEither
+  :: (a -> Parser b)
+  -- ^ Parser function to apply
+  -> a
+  -- ^ Input value to parse
+  -> Either MisoString b
+parseEither m v = first ms (Aeson.parseEither m v)
+#endif
+----------------------------------------------------------------------------
+#ifndef AESON
 -- | A type that can be deserialised from a JSON 'Value'.
 --
 -- Instances for the most common Haskell types are provided. Derive via
@@ -993,7 +1082,78 @@ instance FromJSON Char where
 ----------------------------------------------------------------------------
 instance FromJSON v => FromJSON (Map MisoString v) where
   parseJSON = withObject "FromJSON v => Map MisoString v" $ mapM parseJSON
+#endif
 ----------------------------------------------------------------------------
+#ifdef AESON
+-- | Succeed only when the 'Value' is a t'Bool'; fail with 'typeMismatch' otherwise.
+withBool
+  :: MisoString
+  -- ^ Expected type name used in the error message (e.g. @\"MyType\"@)
+  -> (Bool -> Parser a)
+  -- ^ Continuation receiving the unwrapped t'Bool'
+  -> Value
+  -- ^ JSON value to inspect
+  -> Parser a
+withBool expected = Aeson.withBool (MS.unpack expected)
+----------------------------------------------------------------------------
+-- | Succeed only when the 'Value' is a JSON string ('MisoString');
+-- fail with 'typeMismatch' otherwise.
+withText
+  :: MisoString
+  -- ^ Expected type name used in the error message
+  -> (MisoString -> Parser a)
+  -- ^ Continuation receiving the unwrapped string
+  -> Value
+  -- ^ JSON value to inspect
+  -> Parser a
+withText expected f = Aeson.withText (MS.unpack expected) (f . ms)
+----------------------------------------------------------------------------
+-- | Succeed only when the 'Value' is a JSON array; fail with 'typeMismatch' otherwise.
+-- The inner parser receives the list of elements.
+withArray
+  :: MisoString
+  -- ^ Expected type name used in the error message
+  -> ([Value] -> Parser a)
+  -- ^ Continuation receiving the list of array elements
+  -> Value
+  -- ^ JSON value to inspect
+  -> Parser a
+withArray expected f = Aeson.withArray (MS.unpack expected) (f . foldr (:) [])
+----------------------------------------------------------------------------
+-- | Succeed only when the 'Value' is a JSON object; fail with 'typeMismatch' otherwise.
+-- The inner parser receives the t'Object' map for key lookups with @.:@ etc.
+withObject
+  :: MisoString
+  -- ^ Expected type name used in the error message
+  -> (Object -> Parser a)
+  -- ^ Continuation receiving the t'Object' key\/value map
+  -> Value
+  -- ^ JSON value to inspect
+  -> Parser a
+withObject expected = Aeson.withObject (MS.unpack expected)
+----------------------------------------------------------------------------
+-- | Succeed only when the 'Value' is a JSON number; fail with 'typeMismatch' otherwise.
+-- The inner parser receives the underlying 'Double'.
+withNumber
+  :: MisoString
+  -- ^ Expected type name used in the error message
+  -> (Double -> Parser a)
+  -- ^ Continuation receiving the numeric value as a 'Double'
+  -> Value
+  -- ^ JSON value to inspect
+  -> Parser a
+withNumber expected f = Aeson.withScientific (MS.unpack expected) (f . toRealFloat)
+----------------------------------------------------------------------------
+-- | Produce a parse failure describing a type mismatch.
+-- Used by the @with*@ combinators and useful in hand-written 'FromJSON' instances.
+typeMismatch
+  :: MisoString
+  -- ^ Human-readable name of the expected type (e.g. @\"Int\"@)
+  -> Value
+  -- ^ The actual 'Value' that was encountered
+  -> Parser a
+typeMismatch expected = Aeson.typeMismatch (MS.unpack expected)
+#else
 -- | Succeed only when the 'Value' is a t'Bool'; fail with 'typeMismatch' otherwise.
 withBool
   :: MisoString
@@ -1076,6 +1236,7 @@ typeMismatch expected actual =
         Bool _ -> "Boolean"
         Null -> "Null"
     )
+#endif
 ----------------------------------------------------------------------------
 -- | Encode a value as a JSON 'MisoString'.
 --
@@ -1100,6 +1261,10 @@ encodePure = ms . toJSON
 instance FromMisoString Value where
   fromMisoStringEither = Parser.decodePure
 ----------------------------------------------------------------------------
+#ifdef AESON
+instance ToMisoString Value where
+  toMisoString = ms . Aeson.encode
+#else
 -- | Escape special characters in a string for JSON serialization
 -- Handles: \, ", and all JSON control characters per RFC 8259
 escapeJSONString :: MisoString -> MisoString
@@ -1139,6 +1304,7 @@ instance ToMisoString Value where
       "{" <>
         MS.intercalate "," [ "\"" <> escapeJSONString k <> "\"" <> ":" <> ms v | (k,v) <- M.toList o ]
       <> "}"
+#endif
 ----------------------------------------------------------------------------
 -- | Decode a JSON 'MisoString' into a Haskell value, returning 'Nothing' on failure.
 --
@@ -1284,6 +1450,55 @@ fromJSON value =
     Left s -> Error s
     Right x -> Success x
 ----------------------------------------------------------------------------
+#ifndef VANILLA
+-- Bridge helpers so the FFI marshalling code below is agnostic to whether
+-- 'Value' is miso's own representation or aeson's (Scientific numbers,
+-- Text strings, Vector arrays, KeyMap objects).
+#ifdef AESON
+numberToDouble :: Scientific -> Double
+numberToDouble = toRealFloat
+-----------------------------------------------------------------------------
+doubleToNumber :: Double -> Value
+doubleToNumber = Number . fromFloatDigits
+-----------------------------------------------------------------------------
+stringToMiso :: T.Text -> MisoString
+stringToMiso = ms
+-----------------------------------------------------------------------------
+mkString :: MisoString -> Value
+mkString = String . MS.fromMisoString
+-----------------------------------------------------------------------------
+mkArray :: [Value] -> Value
+mkArray = toJSON
+-----------------------------------------------------------------------------
+mkObject :: [(MisoString, Value)] -> Value
+mkObject kvs = Object (KeyMap.fromList [ (toKey k, v) | (k, v) <- kvs ])
+-----------------------------------------------------------------------------
+objectAssocs :: Object -> [(MisoString, Value)]
+objectAssocs o = [ (ms (Key.toText k), v) | (k, v) <- KeyMap.toList o ]
+#else
+numberToDouble :: Double -> Double
+numberToDouble = id
+-----------------------------------------------------------------------------
+doubleToNumber :: Double -> Value
+doubleToNumber = Number
+-----------------------------------------------------------------------------
+stringToMiso :: MisoString -> MisoString
+stringToMiso = id
+-----------------------------------------------------------------------------
+mkString :: MisoString -> Value
+mkString = String
+-----------------------------------------------------------------------------
+mkArray :: [Value] -> Value
+mkArray = Array
+-----------------------------------------------------------------------------
+mkObject :: [(MisoString, Value)] -> Value
+mkObject = Object . M.fromList
+-----------------------------------------------------------------------------
+objectAssocs :: Object -> [(MisoString, Value)]
+objectAssocs = M.toList
+#endif
+#endif
+-----------------------------------------------------------------------------
 -- | Convert a Miso JSON 'Value' to a raw JavaScript value via FFI.
 #ifdef GHCJS_BOTH
 toJSVal_Value :: Value -> IO JSVal
@@ -1293,14 +1508,14 @@ toJSVal_Value = \case
   Bool bool_ ->
     Marshal.toJSVal bool_
   String string ->
-    Marshal.toJSVal string
+    Marshal.toJSVal (stringToMiso string)
   Number double ->
-    Marshal.toJSVal double
+    Marshal.toJSVal (numberToDouble double)
   Array arr ->
-    toJSVal_List =<< mapM toJSVal_Value arr
+    toJSVal_List =<< mapM toJSVal_Value (toList arr)
   Object hms -> do
     o <- create_ffi
-    forM_ (M.toList hms) $ \(k,v) -> do
+    forM_ (objectAssocs hms) $ \(k,v) -> do
       v' <- toJSVal_Value v
       setProp_ffi k v' o
     pure o
@@ -1313,15 +1528,15 @@ fromJSVal_Value :: JSVal -> IO (Maybe Value)
 fromJSVal_Value jsval_ = do
   typeof jsval_ >>= \case
     0 -> return (Just Null)
-    1 -> Just . Number <$> Marshal.fromJSValUnchecked jsval_
-    2 -> Just . String <$> Marshal.fromJSValUnchecked jsval_
+    1 -> Just . doubleToNumber <$> Marshal.fromJSValUnchecked jsval_
+    2 -> Just . mkString <$> Marshal.fromJSValUnchecked jsval_
     3 -> fromJSValUnchecked_Int jsval_ >>= \case
       0 -> pure $ Just (Bool False)
       1 -> pure $ Just (Bool True)
       _ -> pure Nothing
     4 -> do xs <- Marshal.fromJSValUnchecked jsval_
             values <- forM xs fromJSVal_Value
-            pure (Array <$> sequence values)
+            pure (mkArray <$> sequence values)
     5 -> do keys <- Marshal.fromJSValUnchecked =<< listProps_ffi jsval_
             result <-
               runMaybeT $ forM keys $ \k -> do
@@ -1332,7 +1547,7 @@ fromJSVal_Value jsval_ = do
             pure (toObject <$> result)
     _ -> error "fromJSVal_Value: Unknown JSON type"
   where
-    toObject = Object . M.fromList
+    toObject = mkObject
 #endif
 -----------------------------------------------------------------------------
 #ifdef WASM
@@ -1340,15 +1555,15 @@ fromJSVal_Value :: JSVal -> IO (Maybe Value)
 fromJSVal_Value jsval = do
   typeof jsval >>= \case
     0 -> return (Just Null)
-    1 -> Just . Number <$> fromJSValUnchecked_Double jsval
-    2 -> pure $ Just $ String $ (JSString jsval)
+    1 -> Just . doubleToNumber <$> fromJSValUnchecked_Double jsval
+    2 -> pure $ Just $ mkString $ (JSString jsval)
     3 -> fromJSValUnchecked_Int jsval >>= \case
       0 -> pure $ Just (Bool False)
       1 -> pure $ Just (Bool True)
       _ -> pure Nothing
     4 -> do xs <- fromJSValUnchecked_List jsval
             values <- forM xs fromJSVal_Value
-            pure (Array <$> sequence values)
+            pure (mkArray <$> sequence values)
     5 -> do keys <- fromJSValUnchecked_List =<< listProps_ffi jsval
             result <-
               runMaybeT $ forM keys $ \k -> do
@@ -1359,7 +1574,7 @@ fromJSVal_Value jsval = do
             pure (toObject <$> result)
     _ -> error "fromJSVal_Value: Unknown JSON type"
   where
-    toObject = Object . M.fromList
+    toObject = mkObject
 #endif
 -----------------------------------------------------------------------------
 #ifdef VANILLA
@@ -1400,14 +1615,14 @@ toJSVal_Value = \case
   Bool bool_ ->
     toJSVal_Bool bool_
   String string ->
-    toJSVal_JSString string
+    toJSVal_JSString (stringToMiso string)
   Number double ->
-    toJSVal_Double double
+    toJSVal_Double (numberToDouble double)
   Array arr ->
-    toJSVal_List =<< mapM toJSVal_Value arr
+    toJSVal_List =<< mapM toJSVal_Value (toList arr)
   Object hms -> do
     o <- create_ffi
-    forM_ (M.toList hms) $ \(k,v) -> do
+    forM_ (objectAssocs hms) $ \(k,v) -> do
       v' <- toJSVal_Value v
       setProp_ffi k v' o
     pure o

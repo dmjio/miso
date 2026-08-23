@@ -162,7 +162,7 @@ instance FromJSON ListEventSource where
     0 -> pure DIFF
     1 -> pure LAYOUT
     2 -> pure SCROLL
-    x -> typeMismatch "ListEventSource" (Number x)
+    x -> typeMismatch "ListEventSource" (toJSON x)
 -----------------------------------------------------------------------------
 -- | The scroll state a @<list>@ has just entered — at rest, under the
 -- user's finger, coasting, or animating to a snap point.
@@ -195,7 +195,7 @@ instance FromJSON ScrollStateChange where
     2 -> pure Dragging
     3 -> pure InertialScrolling
     4 -> pure SmoothAnimationScrolling
-    x -> typeMismatch "ScrollStateChange" (Number x)
+    x -> typeMismatch "ScrollStateChange" (toJSON x)
 -----------------------------------------------------------------------------
 scrollStateDecoder :: Decoder ScrollStateChange
 scrollStateDecoder = ["detail"] `at` withObject "ScrollStateChange" (.: "state")

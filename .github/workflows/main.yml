@@ -97,6 +97,12 @@ jobs:
      - name: Nix garbage collection
        run: cabal clean && nix-collect-garbage -d
 
+     - name: (WASM) Miso integration tests (aeson)
+       run: nix-build -A playwright-wasm-aeson && ./result/bin/playwright
+
+     - name: Nix garbage collection
+       run: cabal clean && nix-collect-garbage -d
+
      - name: (GHCJS) Miso integration tests
        run: nix-build -A playwright-ghcjs && ./result/bin/playwright
 
@@ -183,6 +189,9 @@ jobs:
 
      - name: (WASM) Miso integration tests
        run: nix-build -A playwright-wasm && ./result/bin/playwright
+
+     - name: (WASM) Miso integration tests (aeson)
+       run: nix-build -A playwright-wasm-aeson && ./result/bin/playwright
 
      - name: (x86) Miso GHC (GHC 9.12.2) test suite
        run: nix develop --command bash -c 'cabal build exe:component-tests'

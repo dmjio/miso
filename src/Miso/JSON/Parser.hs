@@ -35,8 +35,22 @@
 -- * "Miso.JSON.Types" — 'Miso.JSON.Types.Value' and 'Miso.JSON.Types.Result' types
 -- * "Miso.Util.Parser" — the underlying parser combinator library
 ----------------------------------------------------------------------------
+{-# LANGUAGE CPP #-}
+----------------------------------------------------------------------------
 module Miso.JSON.Parser (decodePure) where
 ----------------------------------------------------------------------------
+#ifdef AESON
+import qualified Data.Aeson as Aeson
+----------------------------------------------------------------------------
+import           Miso.JSON.Types (Value)
+import           Miso.String (MisoString, fromMisoString)
+----------------------------------------------------------------------------
+-- | Parses JSON text into a t'Value' purely, returning a message on failure.
+--
+-- Defined in terms of aeson's pure parser when the @aeson@ flag is enabled.
+decodePure :: MisoString -> Either String Value
+decodePure = Aeson.eitherDecode . fromMisoString
+#else
 import           Data.Bifunctor (Bifunctor(first))
 import           Data.Functor (void)
 import           Data.Map.Strict (Map)
@@ -105,4 +119,5 @@ decodePure = first show
   . either (Left . LexicalError) (parse value . fst)
   . runLexer tokens
   . mkStream
+#endif
 ----------------------------------------------------------------------------
