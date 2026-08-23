@@ -1398,18 +1398,17 @@
 --
 -- == Multiline literals
 --
--- "Miso.String.QQ" provides a QuasiQuoter for multiline t'MisoString' literals:
+-- With GHC's @MultilineStrings@ extension, multiline t'MisoString' literals
+-- work out of the box:
 --
 -- @
--- {-# LANGUAGE QuasiQuotes #-}
---
--- import "Miso.String.QQ" ('Miso.String.QQ.misoString')
+-- {-# LANGUAGE MultilineStrings #-}
 --
 -- snippet :: 'MisoString'
--- snippet = ['Miso.String.QQ.misoString'|
+-- snippet = """
 --   line one
 --   line two
--- |]
+-- """
 -- @
 --
 -- t'MisoString' is also the element type used throughout "Miso.Util.Lexer" and

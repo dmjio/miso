@@ -293,7 +293,6 @@ library
   if flag(template-haskell)
     exposed-modules:
       Miso.Lens.TH
-      Miso.String.QQ
       Miso.FFI.QQ
     build-depends:
       template-haskell >= 2.21 && < 2.25
