@@ -1396,6 +1396,21 @@
 -- t'Data.Text.Lazy.Text', t'Data.ByteString.ByteString', 'Int', 'Word',
 -- 'Double', and 'Float'.
 --
+-- == Multiline literals
+--
+-- With GHC's @MultilineStrings@ extension, multiline t'MisoString' literals
+-- work out of the box:
+--
+-- @
+-- {-# LANGUAGE MultilineStrings #-}
+--
+-- snippet :: 'MisoString'
+-- snippet = """
+--   line one
+--   line two
+-- """
+-- @
+--
 -- t'MisoString' is also the element type used throughout "Miso.Util.Lexer" and
 -- "Miso.Util.Parser".
 --
