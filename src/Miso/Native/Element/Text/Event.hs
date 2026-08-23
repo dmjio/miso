@@ -183,7 +183,7 @@ instance FromJSON Direction where
   parseJSON = withText "Direction" $ \case
     "forward" -> pure Forward
     "backward" -> pure Backward
-    x -> typeMismatch "Direction" (String x)
+    x -> typeMismatch "Direction" (toJSON x)
 -----------------------------------------------------------------------------
 -- | Payload of a @<text>@ layout event: how many lines were laid out,
 -- per-line detail, and the resulting size.

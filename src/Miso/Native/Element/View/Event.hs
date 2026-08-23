@@ -194,7 +194,7 @@ instance FromJSON AnimationType where
   parseJSON = withText "animation-type" $ \case
     "keyframe-animation" -> pure KeyFrameAnimation
     "transition-animation" -> pure TransitionAnimation
-    x -> typeMismatch "animation-type" (String x)
+    x -> typeMismatch "animation-type" (toJSON x)
 ----------------------------------------------------------------------------
 -- | Animation decoder for use with events like 'onAnimationStart'
 animationDecoder :: Decoder AnimationEvent
@@ -266,7 +266,7 @@ instance FromJSON UIAppearanceDetailEventType where
   parseJSON = withText "UIAppearanceDetailEventType" $ \case
     "uiappear" -> pure UIAppear
     "uidisappear" -> pure UIDisappear
-    x -> typeMismatch "UIAppearanceDetailEventType" (String x)
+    x -> typeMismatch "UIAppearanceDetailEventType" (toJSON x)
 -----------------------------------------------------------------------------
 -- | Payload of a @<view>@ appearance event: whether the element appeared
 -- or disappeared, plus the exposure identifiers Lynx assigns it.

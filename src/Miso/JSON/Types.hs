@@ -57,9 +57,13 @@ module Miso.JSON.Types
 ----------------------------------------------------------------------------
 import Control.Applicative (Alternative (..))
 import Control.Monad (MonadPlus(..), ap)
+#ifdef AESON
+import Data.Aeson.Types (Value (..), Pair, Object)
+#else
 import Data.Map.Strict (Map)
-----------------------------------------------------------------------------
 import Data.String (IsString(fromString))
+#endif
+----------------------------------------------------------------------------
 import Miso.String (MisoString, toMisoString)
 ----------------------------------------------------------------------------
 #if __GLASGOW_HASKELL__ <= 881
@@ -67,6 +71,7 @@ import Prelude hiding (fail)
 import Control.Monad.Fail (MonadFail (..))
 #endif
 ----------------------------------------------------------------------------
+#ifndef AESON
 -- | A parsed JSON value.
 --
 -- The JSON data model: numbers are 'Double', objects are keyed by
@@ -90,6 +95,7 @@ type Pair = (MisoString, Value)
 ----------------------------------------------------------------------------
 -- | A JSON object: its members keyed by name.
 type Object = Map MisoString Value
+#endif
 ----------------------------------------------------------------------------
 -- | The outcome of decoding a t'Value' into a Haskell type.
 --
