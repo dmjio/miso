@@ -36,6 +36,16 @@ All notable changes to `miso` are documented here.
   secure context (HTTPS or `localhost`); on browsers without the API
   (e.g. Firefox) the error callback fires and `cookieChangeSub` is a no-op.
 
+- **`Miso.Trace`.** A browser-console analogue of `Debug.Trace` for
+  debugging pure code such as `view` functions or helpers called from
+  `update`. `trace`, `traceId`, `traceWith`, `traceShow`, `traceShowId`,
+  `traceShowWith`, `traceM` and `traceShowM` log with `console.log`; the
+  `traceWarn*` and `traceError*` families log with `console.warn` and
+  `console.error` respectively, gaining the browser's severity filtering
+  and stack traces. `traceTo` generalises over any `MisoString -> IO ()`
+  console function from `Miso.FFI`. Like `Debug.Trace`, these are built on
+  `unsafePerformIO` and are a debugging aid only.
+
 - **Synchronous `Miso.Fetch` variants.** `_`-suffixed counterparts for the
   whole surface — `getJSON_`, `postJSON_`, `postJSON'_`, `putJSON_`,
   `getText_`, `postText_`, `putText_`, `getBlob_`, `postBlob_`, `putBlob_`,
