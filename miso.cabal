@@ -202,6 +202,7 @@ library
     Miso.CSS
     Miso.CSS.Color
     Miso.CSS.Types
+    Miso.Trace
     Miso.Types
     Miso.Util
     Miso.Util.Lexer
