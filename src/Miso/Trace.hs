@@ -279,6 +279,7 @@ traceTo
   -> a
   -- ^ Value to return
   -> a
+{-# NOINLINE traceTo #-}
 traceTo f s a = unsafePerformIO $ do
   f (toMisoString s)
   pure a
