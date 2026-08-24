@@ -33,8 +33,8 @@ All notable changes to `miso` are documented here.
   `cookieDelete`, `cookieDeleteWith`, the `Cookie` record and `defaultCookie`
   constructor, plus `_`-suffixed synchronous variants. `Miso.Subscription.Cookie`
   adds `cookieChangeSub` for subscribing to `CookieChangeEvent`s. Requires a
-  secure context (HTTPS or `localhost`); the error callback fires when the
-  API is unavailable.
+  secure context (HTTPS or `localhost`); on browsers without the API
+  (e.g. Firefox) the error callback fires and `cookieChangeSub` is a no-op.
 
 - **Synchronous `Miso.Fetch` variants.** `_`-suffixed counterparts for the
   whole surface — `getJSON_`, `postJSON_`, `postJSON'_`, `putJSON_`,
@@ -189,6 +189,13 @@ All notable changes to `miso` are documented here.
   `asyncCallback`, fixing a `schedule: re-entered unsafely` crash when a
   component unmounted mid-diff.
 
+- **Non-bubbling media events are registered in the capture phase.**
+  `durationchange`, `loadeddata`, `loadedmetadata` and `loadstart` do not
+  bubble, so their delegated listeners — registered in the bubble phase —
+  never received them and `onLoadedMetadata` and friends silently never
+  fired. They are now registered with capture, like the other non-bubbling
+  entries in `mediaEvents`.
+
 - **`autocorrect_` and `spellcheck_` wrote to the wrong attribute.** Both
   emitted `autocomplete` instead of their own attribute name. `spellcheck_`
   additionally now emits `"true"` / `"false"` rather than `"on"` / `"off"`.
@@ -208,6 +215,17 @@ All notable changes to `miso` are documented here.
   normally.
 
 ### Performance
+
+- **Short-lived `JSVal` handles are freed eagerly in the WASM runtime.**
+  On the WASM backend every `JSVal` carries a weak pointer with a C
+  finalizer, and the RTS copies all of them at every GC — so the hundreds of
+  scratch handles `buildVTree` allocates per frame made GC pauses scale with
+  handle churn (~100 ms pauses with ~50 KB of live data in profiling). The
+  runtime now releases handles nothing else can reach via the new
+  `Miso.DSL.freeJSVal` (`GHC.Wasm.Prim.freeJSVal` on WASM, a no-op on other
+  backends), and event handler callbacks are freed when their vtree is
+  replaced. Measured on miso-mario, `C_FINALIZER_LIST` copied per GC dropped
+  from 7.3 MB to 2.3 MB. See Note [Freeing VTree handles] in `Miso.Runtime`.
 
 - **`StableName` dirty-checking extended to `context` and `props`.**
   `modelCheck` was generalised to `dirtyCheck :: Eq a => a -> a -> Bool` and
