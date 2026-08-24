@@ -31,7 +31,7 @@ module Miso.String
   , FromMisoString (..)
   , fromMisoString
   , MisoString
-#ifdef VANILLA
+#ifdef MISO_TEXT
   , module Data.Text
 #else
   , module Data.JSString
@@ -43,13 +43,11 @@ import           Control.Exception
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Builder as B
 import qualified Data.ByteString.Lazy as BL
-#ifdef VANILLA
+#ifdef MISO_TEXT
 import           Data.Text hiding (show, elem)
 #else
 import           Data.JSString
-#ifdef GHCJS_BOTH
 import           Data.JSString.Text
-#endif
 #endif
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
@@ -60,11 +58,14 @@ import           Miso.DSL.FFI
 ----------------------------------------------------------------------------
 -- | The primary string type in Miso applications.
 --
--- * @VANILLA@ (server\/SSR build): alias for 'Data.Text.Text'
--- * WASM \/ GHC JS backend: alias for @JSString@ — a zero-copy wrapper around
+-- * @VANILLA@ (server\/SSR build) and WASM: alias for 'Data.Text.Text'.
+--   On WASM strings live in the Haskell heap and are copied into JavaScript
+--   only when they cross the FFI, without allocating a @JSVal@ handle (see
+--   'Miso.DSL.freeJSVal' for why handles are costly there).
+-- * GHC JS backend: alias for @JSString@ — a zero-copy wrapper around
 --   a native JavaScript string, giving optimal interop with the DOM and JSON APIs
 --
-#ifdef VANILLA
+#ifdef MISO_TEXT
 type MisoString = Text
 #else
 type MisoString = JSString
@@ -108,7 +109,7 @@ instance ToMisoString Char where
 instance ToMisoString IOException where
   toMisoString = ms . show
 ----------------------------------------------------------------------------
-#ifndef VANILLA
+#ifndef MISO_TEXT
 instance ToMisoString MisoString where
   toMisoString = id
 #endif
@@ -123,7 +124,7 @@ instance ToMisoString LT.Text where
   toMisoString = ms . LT.toStrict
 ----------------------------------------------------------------------------
 instance ToMisoString T.Text where
-#ifdef VANILLA
+#ifdef MISO_TEXT
   toMisoString = id
 #else
   toMisoString = textToJSString
@@ -151,13 +152,13 @@ instance ToMisoString Int where
 instance ToMisoString Word where
   toMisoString = toString_Word
 ----------------------------------------------------------------------------
-#ifndef VANILLA
+#ifndef MISO_TEXT
 instance FromMisoString MisoString where
   fromMisoStringEither = Right
 #endif
 ----------------------------------------------------------------------------
 instance FromMisoString T.Text where
-#ifdef VANILLA
+#ifdef MISO_TEXT
   fromMisoStringEither = Right
 #else
   fromMisoStringEither = Right . textFromJSString
@@ -167,7 +168,7 @@ instance FromMisoString String where
   fromMisoStringEither = Right . unpack
 ----------------------------------------------------------------------------
 instance FromMisoString LT.Text where
-#ifdef VANILLA
+#ifdef MISO_TEXT
   fromMisoStringEither = Right . LT.fromStrict
 #else
   fromMisoStringEither = Right . LT.fromStrict . textFromJSString

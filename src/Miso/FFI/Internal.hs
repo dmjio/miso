@@ -117,6 +117,7 @@ module Miso.FFI.Internal
    , eventJSON
    -- * Object
    , set
+   , setText
    , setValue
    -- * DOM
    , getBody
@@ -236,6 +237,9 @@ import           Data.Maybe
 import           Prelude hiding ((!!))
 -----------------------------------------------------------------------------
 import           Miso.DSL
+#ifdef WASM
+import           Miso.DSL.FFI (setPropText_ffi, populateClass_ffi)
+#endif
 import           Miso.String
 -----------------------------------------------------------------------------
 -- | Set property on object
@@ -252,6 +256,17 @@ set
 set k v o = do
   v' <- toJSVal v
   setProp (fromMisoString k) v' o
+-----------------------------------------------------------------------------
+-- | Set a string-valued property of an 'Object'. On WASM this passes both
+-- key and value by pointer so no 'JSVal' handle is allocated for either;
+-- see Note [Passing strings by pointer] in "Miso.DSL.FFI".
+setText :: MisoString -> MisoString -> Object -> IO ()
+{-# INLINE setText #-}
+#ifdef WASM
+setText k v (Object o) = setPropText_ffi k v o
+#else
+setText = set
+#endif
 -----------------------------------------------------------------------------
 -- | Get a property of a 'JSVal'
 --
@@ -486,10 +501,17 @@ populateClass
     -- ^ classes
     -> IO ()
 {-# INLINABLE populateClass #-}
-populateClass domRef classes = do
-  moduleMiso <- jsg "miso"
-  freeJSVal =<< (moduleMiso # "populateClass" $ (domRef, classes))
-  freeJSVal moduleMiso
+populateClass domRef classes =
+#ifdef WASM
+  -- One pointer-passed string, no JSVal handles. See
+  -- Note [Passing strings by pointer] in "Miso.DSL.FFI".
+  populateClass_ffi domRef (Miso.String.unwords classes)
+#else
+  do
+    moduleMiso <- jsg "miso"
+    freeJSVal =<< (moduleMiso # "populateClass" $ (domRef, classes))
+    freeJSVal moduleMiso
+#endif
 -----------------------------------------------------------------------------
 -- | Retrieves a reference to document body.
 --

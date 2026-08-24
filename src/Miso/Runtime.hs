@@ -1256,14 +1256,14 @@ buildVTree events_ parentId_ vcompId hydrate snk logLevel_ model_ = \case
   VText key t -> do
     vtree <- create
     flip (FFI.set "type") vtree =<< toJSVal VTextType
-    forM_ key $ \k -> FFI.set "key" (ms k) vtree
-    FFI.set "ns" ("text" :: MisoString) vtree
-    FFI.set "text" t vtree
+    forM_ key $ \k -> FFI.setText "key" (ms k) vtree
+    FFI.setText "ns" "text" vtree
+    FFI.setText "text" t vtree
     pure (VTree vtree)
   VFrag maybeKey kids -> do
     frag <- create
     FFI.set "type" VFragType frag
-    forM_ maybeKey $ \(Key k) -> FFI.set "key" k frag
+    forM_ maybeKey $ \(Key k) -> FFI.setText "key" k frag
     children_ <- procreateFragChildren frag
     vchildren <- toJSVal (map snd children_)
     FFI.set "children" vchildren frag
@@ -1379,7 +1379,7 @@ createNode typ ns tag = do
   FFI.set "captures" captures eventsObj
   FFI.set "bubbles" bubbles eventsObj
   FFI.set "ns" ns vnode_
-  FFI.set "tag" tag vnode_
+  FFI.setText "tag" tag vnode_
   -- All five scratch objects are now reachable from the vnode on the JS
   -- side; release the Haskell handles. See Note [Freeing VTree handles].
   mapM_ (freeJSVal . unObject) [cssObj, propsObj, eventsObj, captures, bubbles]
@@ -1403,14 +1403,18 @@ setAttrs vnode_@(Object jval) attrs snk vcompId logLevel events model_ = do
       FFI.set "key" value vnode_
     ClassList classes ->
       FFI.populateClass jval classes
+    Property k (JSON.String v) -> do
+      -- Strings cross by pointer: no handle to create or free.
+      o <- getProp "props" vnode_
+      FFI.setText k v (Object o)
+      freeJSVal o
     Property k v -> do
       value <- toJSVal v
       o <- getProp "props" vnode_
       FFI.set k value (Object o)
       freeJSVal o
-      -- Only handles created by 'toJSVal' itself are ours to free: a
-      -- 'String' shares the handle of its 'MisoString' and 'Null' is a
-      -- shared constant. See Note [Freeing VTree handles].
+      -- Only handles created by 'toJSVal' itself are ours to free: 'Null'
+      -- is a shared constant. See Note [Freeing VTree handles].
       when (freshValue v) (freeJSVal value)
     On callback -> do
       -- Reset any 'pendingStaticKey' \/ 'pendingMainThread' left behind by an
@@ -1437,7 +1441,7 @@ setAttrs vnode_@(Object jval) attrs snk vcompId logLevel events model_ = do
     Styles styles -> do
       cssObj <- getProp "css" vnode_
       forM_ (M.toList styles) $ \(k,v) -> do
-        FFI.set k v (Object cssObj)
+        FFI.setText k v (Object cssObj)
       freeJSVal cssObj
   where
     freshValue :: Value -> Bool

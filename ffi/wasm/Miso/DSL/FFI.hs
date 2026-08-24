@@ -56,6 +56,9 @@ module Miso.DSL.FFI
   -- * DSL FFI
   , invokeFunction
   , setProp_ffi
+  , setPropText_ffi
+  , populateClass_ffi
+  , withTextPtr
   , new_ffi
   , getProp_ffi
   , eval_ffi
@@ -77,12 +80,22 @@ module Miso.DSL.FFI
   , parseDouble
   , parseWord
   , parseFloat
+  , toString_Int
+  , toString_Word
+  , toString_Float
+  , toString_Double
   , JSException
   ) where
 -----------------------------------------------------------------------------
 import           Data.Text (Text)
 import           Control.Monad
 import           Data.JSString (textFromJSString, textToJSString)
+import qualified Data.Text as T
+import qualified Data.Text.Foreign as TF
+import qualified Data.Text.Read as TR
+import           Data.Word (Word8)
+import           Foreign.Ptr (Ptr)
+import           Numeric (showFFloat)
 import           Prelude hiding (length, head, tail, unlines, concat, null, drop, replicate, concatMap)
 -----------------------------------------------------------------------------
 import           GHC.Wasm.Prim
@@ -352,16 +365,73 @@ foreign import javascript unsafe
     -- ^ Object
     -> IO ()
 -----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+-- Note [Passing strings by pointer]
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-- Every 'JSVal' handle on this backend carries a weak pointer that the GC
+-- must evacuate at every collection (see 'Miso.DSL.freeJSVal'), and a
+-- @JSString@ /is/ a 'JSVal'. Property keys, style values, text nodes and
+-- class names are the bulk of what crosses the FFI while building a vtree,
+-- so instead of minting a JavaScript string handle for each one we hand
+-- JavaScript a (pointer, length) pair into wasm linear memory and let
+-- @TextDecoder@ read the UTF-8 bytes directly. No handle is ever created,
+-- so there is nothing for the GC to track. 'Data.Text' is UTF-8 internally,
+-- so this is a copy into a pinned buffer and one decode.
+-----------------------------------------------------------------------------
+-- | Run an action with a pointer to the UTF-8 bytes of a 'Text'.
+withTextPtr :: Text -> (Ptr Word8 -> Int -> IO a) -> IO a
+withTextPtr t k = TF.useAsPtr t (\p n -> k p (fromIntegral n))
+{-# INLINE withTextPtr #-}
+-----------------------------------------------------------------------------
 foreign import javascript unsafe
-  "$3[$1]=$2"
-  setProp_ffi
-    :: JSString
+  "$4[(globalThis.__miso_td || (globalThis.__miso_td = new TextDecoder())).decode(new Uint8Array(__exports.memory.buffer, $1, $2))] = $3"
+  setPropPtr_ffi :: Ptr Word8 -> Int -> JSVal -> JSVal -> IO ()
+-----------------------------------------------------------------------------
+setProp_ffi
+    :: Text
     -- ^ Field
     -> JSVal
     -- ^ Value
     -> JSVal
     -- ^ Object
     -> IO ()
+setProp_ffi k v o = withTextPtr k $ \p n -> setPropPtr_ffi p n v o
+{-# INLINE setProp_ffi #-}
+-----------------------------------------------------------------------------
+foreign import javascript unsafe
+  """
+  const td = (globalThis.__miso_td || (globalThis.__miso_td = new TextDecoder()));
+  $5[td.decode(new Uint8Array(__exports.memory.buffer, $1, $2))] =
+    td.decode(new Uint8Array(__exports.memory.buffer, $3, $4));
+  """
+  setPropTextPtr_ffi :: Ptr Word8 -> Int -> Ptr Word8 -> Int -> JSVal -> IO ()
+-----------------------------------------------------------------------------
+-- | Set a string-valued property without allocating a 'JSVal' for either
+-- the key or the value. See Note [Passing strings by pointer].
+setPropText_ffi
+    :: Text
+    -- ^ Field
+    -> Text
+    -- ^ Value
+    -> JSVal
+    -- ^ Object
+    -> IO ()
+setPropText_ffi k v o =
+  withTextPtr k $ \kp kn ->
+    withTextPtr v $ \vp vn ->
+      setPropTextPtr_ffi kp kn vp vn o
+{-# INLINE setPropText_ffi #-}
+-----------------------------------------------------------------------------
+foreign import javascript unsafe
+  "globalThis.miso.populateClass($3, [(globalThis.__miso_td || (globalThis.__miso_td = new TextDecoder())).decode(new Uint8Array(__exports.memory.buffer, $1, $2))])"
+  populateClassPtr_ffi :: Ptr Word8 -> Int -> JSVal -> IO ()
+-----------------------------------------------------------------------------
+-- | Populate a vnode's class set from space-separated class names, without
+-- allocating a 'JSVal' for the string. See Note [Passing strings by pointer].
+populateClass_ffi :: JSVal -> Text -> IO ()
+populateClass_ffi node classes =
+  withTextPtr classes $ \p n -> populateClassPtr_ffi p n node
+{-# INLINE populateClass_ffi #-}
 -----------------------------------------------------------------------------
 -- | Regular FFIs
 -----------------------------------------------------------------------------
@@ -377,20 +447,28 @@ foreign import javascript unsafe
 -----------------------------------------------------------------------------
 foreign import javascript unsafe "return {}" create_ffi :: IO JSVal
 -----------------------------------------------------------------------------
-foreign import javascript unsafe "return $2[$1]"
-  getProp_ffi
-    :: JSString
+foreign import javascript unsafe
+  "return $3[(globalThis.__miso_td || (globalThis.__miso_td = new TextDecoder())).decode(new Uint8Array(__exports.memory.buffer, $1, $2))]"
+  getPropPtr_ffi :: Ptr Word8 -> Int -> JSVal -> IO JSVal
+-----------------------------------------------------------------------------
+getProp_ffi
+    :: Text
     -- ^ Key
     -> JSVal
     -- ^ Value
     -> IO JSVal
     -- ^ Return
+getProp_ffi k o = withTextPtr k $ \p n -> getPropPtr_ffi p n o
+{-# INLINE getProp_ffi #-}
 -----------------------------------------------------------------------------
 -- | Unsafe JS eval, use at your own risk! You have been warned
 foreign import javascript unsafe
-  """
-  return eval($1);
-  """ eval_ffi :: JSString -> IO JSVal
+  "return eval((globalThis.__miso_td || (globalThis.__miso_td = new TextDecoder())).decode(new Uint8Array(__exports.memory.buffer, $1, $2)))"
+  evalPtr_ffi :: Ptr Word8 -> Int -> IO JSVal
+-----------------------------------------------------------------------------
+eval_ffi :: Text -> IO JSVal
+eval_ffi src = withTextPtr src $ \p n -> evalPtr_ffi p n
+{-# INLINE eval_ffi #-}
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """
@@ -459,37 +537,57 @@ fromJSValUnchecked_Maybe jsval = do
     else pure (Just jsval)
 {-# INLINE fromJSValUnchecked_Maybe #-}
 -----------------------------------------------------------------------------
-foreign import javascript unsafe
-  """
-  return parseInt($1);
-  """
-  parseInt_Unchecked :: JSString -> Double
------------------------------------------------------------------------------
-parseWord :: JSString -> Maybe Word
-parseWord string = fromIntegral <$> parseInt string
-{-# INLINE parseWord #-}
------------------------------------------------------------------------------
-parseInt :: JSString -> Maybe Int
-parseInt string = do
-  case parseInt_Unchecked string of
-    double | isNaN double -> Nothing
-           | otherwise -> Just (round double)
+-- | Like JavaScript's @parseInt@: parses a leading (optionally signed)
+-- decimal integer and ignores any trailing garbage.
+parseInt :: Text -> Maybe Int
+parseInt t =
+  case TR.signed TR.decimal (T.stripStart t) of
+    Right (n, _) -> Just n
+    Left _ -> Nothing
 {-# INLINE parseInt #-}
 -----------------------------------------------------------------------------
-foreign import javascript unsafe
-  """
-  return parseFloat($1);
-  """
-  parseDouble_Unchecked :: JSString -> Double
+parseWord :: Text -> Maybe Word
+parseWord t =
+  case TR.decimal (T.stripStart t) of
+    Right (n, _) -> Just n
+    Left _ -> Nothing
+{-# INLINE parseWord #-}
 -----------------------------------------------------------------------------
-parseDouble :: JSString -> Maybe Double
-parseDouble string = do
-  case parseDouble_Unchecked string of
-    double | isNaN double -> Nothing
-           | otherwise -> Just double
+-- | Like JavaScript's @parseFloat@: parses a leading number and ignores any
+-- trailing garbage.
+parseDouble :: Text -> Maybe Double
+parseDouble t =
+  case TR.signed TR.double (T.stripStart t) of
+    Right (d, _) -> Just d
+    Left _ -> Nothing
 {-# INLINE parseDouble #-}
 -----------------------------------------------------------------------------
-parseFloat :: JSString -> Maybe Float
+parseFloat :: Text -> Maybe Float
 parseFloat string = realToFrac <$> parseDouble string
 {-# INLINE parseFloat #-}
+-----------------------------------------------------------------------------
+toString_Int :: Int -> Text
+toString_Int = T.pack . show
+{-# INLINE toString_Int #-}
+-----------------------------------------------------------------------------
+toString_Word :: Word -> Text
+toString_Word = T.pack . show
+{-# INLINE toString_Word #-}
+-----------------------------------------------------------------------------
+toString_Float :: Float -> Text
+toString_Float = toString_Double . realToFrac
+{-# INLINE toString_Float #-}
+-----------------------------------------------------------------------------
+-- | Formats like JavaScript's @Number.prototype.toString@ for the common
+-- cases: integral values print without a fractional part (@3@, not @3.0@)
+-- and non-integral values print in plain positional notation (@0.01@, not
+-- @1.0e-2@), which is what CSS and the DOM expect.
+toString_Double :: Double -> Text
+toString_Double d
+  | isNaN d = T.pack "NaN"
+  | isInfinite d = T.pack (if d > 0 then "Infinity" else "-Infinity")
+  | d == fromIntegral (truncate d :: Int) && abs d < 1e15 = T.pack (show (truncate d :: Int))
+  | abs d >= 1e-6 && abs d < 1e21 = T.pack (showFFloat Nothing d "")
+  | otherwise = T.pack (show d)
+{-# INLINE toString_Double #-}
 -----------------------------------------------------------------------------

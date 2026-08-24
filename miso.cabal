@@ -40,10 +40,10 @@ common cpp
       -DGHCJS_NEW
   elif arch(wasm32)
     cpp-options:
-      -DWASM
+      -DWASM -DMISO_TEXT
   else
     cpp-options:
-      -DVANILLA
+      -DVANILLA -DMISO_TEXT
 
   if flag(production)
     cpp-options:

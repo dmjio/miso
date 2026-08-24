@@ -248,6 +248,9 @@ import           GHC.Generics
 #endif
 ----------------------------------------------------------------------------
 import           Miso.DSL.FFI
+#ifdef WASM
+import           Foreign.Ptr (Ptr)
+#endif
 #ifdef AESON
 import           Miso.String (FromMisoString, ToMisoString, MisoString, ms, pack)
 #else
@@ -264,7 +267,9 @@ import           Numeric (showHex)
 import           Control.Monad.Trans.Maybe
 import           Data.Foldable (toList)
 import           System.IO.Unsafe (unsafePerformIO)
+#ifndef MISO_TEXT
 import qualified Data.Text as T
+#endif
 #endif
 
 ----------------------------------------------------------------------------
@@ -340,8 +345,8 @@ mv .!= def = fmap (fromMaybe def) mv
 #endif
 ----------------------------------------------------------------------------
 #ifdef AESON
-#ifndef VANILLA
--- On the JavaScript and WASM backends t'MisoString' is @JSString@, which
+#ifndef MISO_TEXT
+-- On the JavaScript backend t'MisoString' is @JSString@, which
 -- aeson does not know about; these orphans make it a first-class JSON
 -- citizen so code written against "Miso.JSON" keeps compiling.
 instance ToJSON MisoString where
@@ -661,7 +666,7 @@ instance (ToJSON a,ToJSON b,ToJSON c, ToJSON d) => ToJSON (a,b,c,d) where
 instance ToJSON MisoString where
   toJSON = String
 ----------------------------------------------------------------------------
-#ifndef VANILLA
+#ifndef MISO_TEXT
 instance ToJSON T.Text where
   toJSON = toJSON . ms
 #endif
@@ -967,7 +972,7 @@ instance FromJSON Bool where
 instance FromJSON MisoString where
   parseJSON = withText "MisoString" pure
 ----------------------------------------------------------------------------
-#ifndef VANILLA
+#ifndef MISO_TEXT
 instance FromJSON T.Text where
   parseJSON = withText "Text" go
     where
@@ -1338,7 +1343,14 @@ foreign import javascript unsafe
 #ifdef WASM
 foreign import javascript unsafe
   "return JSON.stringify($1, null, $2);"
-  encodePretty_ffi :: JSVal -> Int -> IO MisoString
+  encodePretty_ffi' :: JSVal -> Int -> IO JSVal
+
+encodePretty_ffi :: JSVal -> Int -> IO MisoString
+encodePretty_ffi v n = do
+  str <- encodePretty_ffi' v n
+  t <- fromJSValUnchecked_Text str
+  freeJSVal_ffi str
+  pure t
 #endif
 -----------------------------------------------------------------------------
 -- | Like 'encodePretty' but with a custom t'Config'.
@@ -1388,7 +1400,14 @@ foreign import javascript unsafe
 #ifdef WASM
 foreign import javascript unsafe
   "return JSON.stringify($1);"
-  jsonStringify :: JSVal -> IO MisoString
+  jsonStringify' :: JSVal -> IO JSVal
+
+jsonStringify :: JSVal -> IO MisoString
+jsonStringify v = do
+  str <- jsonStringify' v
+  t <- fromJSValUnchecked_Text str
+  freeJSVal_ffi str
+  pure t
 #endif
 -----------------------------------------------------------------------------
 #ifdef VANILLA
@@ -1411,8 +1430,12 @@ foreign import javascript unsafe
 -----------------------------------------------------------------------------
 #ifdef WASM
 foreign import javascript unsafe
-  "return JSON.parse($1);"
-  jsonParse :: MisoString -> IO JSVal
+  "return JSON.parse((globalThis.__miso_td || (globalThis.__miso_td = new TextDecoder())).decode(new Uint8Array(__exports.memory.buffer, $1, $2)));"
+  jsonParse' :: Ptr Word8 -> Int -> IO JSVal
+
+-- | See Note [Passing strings by pointer] in "Miso.DSL.FFI".
+jsonParse :: MisoString -> IO JSVal
+jsonParse s = withTextPtr s jsonParse'
 #endif
 -----------------------------------------------------------------------------
 #ifdef VANILLA
@@ -1556,7 +1579,7 @@ fromJSVal_Value jsval = do
   typeof jsval >>= \case
     0 -> return (Just Null)
     1 -> Just . doubleToNumber <$> fromJSValUnchecked_Double jsval
-    2 -> pure $ Just $ mkString $ (JSString jsval)
+    2 -> Just . mkString <$> fromJSValUnchecked_Text jsval
     3 -> fromJSValUnchecked_Int jsval >>= \case
       0 -> pure $ Just (Bool False)
       1 -> pure $ Just (Bool True)
@@ -1567,7 +1590,7 @@ fromJSVal_Value jsval = do
     5 -> do keys <- fromJSValUnchecked_List =<< listProps_ffi jsval
             result <-
               runMaybeT $ forM keys $ \k -> do
-                let key = JSString k
+                key <- MaybeT (Just <$> fromJSValUnchecked_Text k)
                 raw <- MaybeT $ Just <$> getProp_ffi key jsval
                 value <- MaybeT (fromJSVal_Value raw)
                 pure (key, value)
@@ -1615,7 +1638,7 @@ toJSVal_Value = \case
   Bool bool_ ->
     toJSVal_Bool bool_
   String string ->
-    toJSVal_JSString (stringToMiso string)
+    toJSVal_Text (stringToMiso string)
   Number double ->
     toJSVal_Double (numberToDouble double)
   Array arr ->

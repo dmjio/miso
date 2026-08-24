@@ -169,7 +169,7 @@ module Miso.DSL
   ) where
 -----------------------------------------------------------------------------
 import           Control.Applicative
-#ifndef VANILLA
+#ifndef MISO_TEXT
 import           Data.Text (Text)
 #endif
 import           Control.Monad
@@ -768,7 +768,7 @@ instance ToArgs MisoString where
   toArgs arg = (:[]) <$> toJSVal arg
   {-# INLINE toArgs #-}
 ----------------------------------------------------------------------------
-#ifndef VANILLA
+#ifndef MISO_TEXT
 ----------------------------------------------------------------------------
 instance ToJSVal MisoString where
   toJSVal = toJSVal_JSString
