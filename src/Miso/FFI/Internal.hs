@@ -1415,18 +1415,28 @@ cookieDeleteWith opts successful errorful = do
 -- | Register a listener for
 -- <https://developer.mozilla.org/en-US/docs/Web/API/CookieStore/change_event cookieStore change>
 -- events. Returns the t'Function' handle needed to remove the listener later.
+--
+-- When the CookieStore API is unavailable (e.g. Firefox, insecure contexts)
+-- no listener is registered and an inert t'Function' handle is returned.
 cookieStoreAddEventListener :: (JSVal -> IO ()) -> IO Function
 {-# INLINABLE cookieStoreAddEventListener #-}
 cookieStoreAddEventListener cb = do
   cs <- jsg "cookieStore"
-  addEventListener cs "change" cb
+  undef <- isUndefined cs
+  if undef
+    then pure (Function cs)
+    else addEventListener cs "change" cb
 -----------------------------------------------------------------------------
 -- | Remove a previously registered
 -- <https://developer.mozilla.org/en-US/docs/Web/API/CookieStore/change_event cookieStore change>
 -- listener.
+--
+-- When the CookieStore API is unavailable this is a no-op.
 cookieStoreRemoveEventListener :: Function -> IO ()
 {-# INLINABLE cookieStoreRemoveEventListener #-}
 cookieStoreRemoveEventListener cb = do
   cs <- jsg "cookieStore"
-  removeEventListener cs "change" cb
+  undef <- isUndefined cs
+  unless undef $
+    removeEventListener cs "change" cb
 -----------------------------------------------------------------------------
