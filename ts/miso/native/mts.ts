@@ -53,11 +53,22 @@ function initMainThreadProcessing () {
   globalThis['runtime'] = runtime;
 
   context.addEventListener("Miso.patches", (messages : MessageEvent<Array<PATCH>>) => {
+    /* Isolate each patch: one bad element PAPI call must not abandon the rest
+       of the batch (and the flush) — that leaves every later patch unapplied
+       and the affected subtrees frozen at their previous frame. */
     for (const m of messages.data) {
-       processMessage(m,runtime);
+       try {
+         processMessage(m,runtime);
+       } catch (e) {
+         console.error('[Miso.patches]: "' + m.type + '" patch failed', m, e);
+       }
     }
     if (messages.data.length > 0) {
-       drawingContext.flush();
+       try {
+         drawingContext.flush();
+       } catch (e) {
+         console.error('[Miso.patches]: flush failed', e);
+       }
     }
   });
 }
