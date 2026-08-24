@@ -36,6 +36,7 @@ module Miso.Runtime
     initialize
   , freshComponentId
   , buildVTree
+  , registerEventHandler
   , renderStyles
   , renderScripts
   , Hydrate(..)
@@ -256,12 +257,16 @@ initialize events _componentParentId hydrate isRoot initialProps maybeKey _compo
         newVTree <-
           buildVTree events _componentParentId _componentId Draw
             _componentSink logLevel newModel (view currentContext currentProps newModel)
+        newHandlers <- collectEventHandlers
         oldVTree <- readIORef _componentVTree
         _frame <- requestAnimationFrame rAFCallback
         _timestamp :: Double <- takeMVar frame
         Diff.diff (Just oldVTree) (Just newVTree) _componentDOMRef
         FFI.updateRef oldVTree newVTree
         atomicWriteIORef _componentVTree newVTree
+        -- The old tree can no longer dispatch; free its handler callbacks.
+        -- See Note [Freeing event handler callbacks].
+        swapEventHandlers _componentId newHandlers
         FFI.flush
 
 #ifdef NATIVE
@@ -497,6 +502,7 @@ initialDraw initializedModel events hydrate isRoot Component {..} ComponentState
   currentContext <- readIORef globalContext
   vtree <- buildVTree events _componentParentId _componentId hydrate _componentSink logLevel
     initializedModel (view currentContext _componentProps initializedModel)
+  vtreeHandlers0 <- collectEventHandlers
 #ifdef BENCH
   end <- FFI.now
   when isRoot $ FFI.consoleLog $ ms (printf "buildVTree: %.3f ms" (end - start) :: String)
@@ -505,6 +511,7 @@ initialDraw initializedModel events hydrate isRoot Component {..} ComponentState
     Draw -> do
       Diff.diff Nothing (Just vtree) _componentDOMRef
       atomicWriteIORef _componentVTree vtree
+      swapEventHandlers _componentId vtreeHandlers0
     Hydrate -> do
       if isRoot
         then do
@@ -512,14 +519,20 @@ initialDraw initializedModel events hydrate isRoot Component {..} ComponentState
           if hydrated
             then do
               atomicWriteIORef _componentVTree vtree
+              swapEventHandlers _componentId vtreeHandlers0
             else do
               newTree <-
                 buildVTree events _componentParentId _componentId Draw
                   _componentSink logLevel initializedModel (view currentContext _componentProps initializedModel)
+              newHandlers <- collectEventHandlers
+              -- the discarded hydration tree's callbacks are unreachable
+              mapM_ freeFunction vtreeHandlers0
               Diff.diff Nothing (Just newTree) _componentDOMRef
               atomicWriteIORef _componentVTree newTree
-        else
+              swapEventHandlers _componentId newHandlers
+        else do
           atomicWriteIORef _componentVTree vtree
+          swapEventHandlers _componentId vtreeHandlers0
 -----------------------------------------------------------------------------
 -- | Pulls the next Component for processing out of the queue, along with
 -- its events.
@@ -633,6 +646,67 @@ dequeueAt vcompId q =
 globalWaiter :: Waiter
 {-# NOINLINE globalWaiter #-}
 globalWaiter = unsafePerformIO waiter
+-----------------------------------------------------------------------------
+-- Note [Freeing event handler callbacks]
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-- Every 'On' attribute exports a fresh Haskell callback to JavaScript on
+-- every draw ('Miso.Event.onWithOptions'). On the WASM backend an exported
+-- callback pins its closure with a stable pointer that is only released
+-- when JavaScript's FinalizationRegistry notices the function is
+-- unreachable -- which requires a JavaScript GC and in practice lags far
+-- behind, so redrawing components leak callbacks (and everything their
+-- closures capture, including the model of the frame they were built in).
+--
+-- Instead we track ownership explicitly: 'Miso.Event.onWithOptions' calls
+-- 'registerEventHandler' for every callback it exports, collecting them
+-- into 'handlerCollector' for the duration of one 'buildVTree'. After the
+-- new tree has been diffed in, the previous tree's callbacks can never be
+-- dispatched again (event delegation always consults the current vtree),
+-- so 'swapEventHandlers' frees them and records the new set. Unmounting a
+-- component frees its recorded set.
+--
+-- Draws are serialized by the scheduler and the collector is harvested
+-- before the draw awaits the next animation frame, so a child component
+-- mounting synchronously mid-diff collects into an empty collector and
+-- harvests it before returning.
+-----------------------------------------------------------------------------
+-- | Callbacks exported to JavaScript during the current 'buildVTree'.
+{-# NOINLINE handlerCollector #-}
+handlerCollector :: IORef [Function]
+handlerCollector = unsafePerformIO (newIORef [])
+-----------------------------------------------------------------------------
+-- | Event handler callbacks owned by each mounted component's current vtree.
+{-# NOINLINE vtreeHandlers #-}
+vtreeHandlers :: IORef (IntMap [Function])
+vtreeHandlers = unsafePerformIO (newIORef mempty)
+-----------------------------------------------------------------------------
+-- | Called by 'Miso.Event.onWithOptions' for every callback it exports.
+-- See Note [Freeing event handler callbacks].
+registerEventHandler :: JSVal -> IO ()
+registerEventHandler cb =
+  atomicModifyIORef' handlerCollector $ \cbs -> (Function cb : cbs, ())
+-----------------------------------------------------------------------------
+-- | Take ownership of the callbacks exported by the 'buildVTree' that just
+-- finished. See Note [Freeing event handler callbacks].
+collectEventHandlers :: IO [Function]
+collectEventHandlers = atomicModifyIORef' handlerCollector (\cbs -> ([], cbs))
+-----------------------------------------------------------------------------
+-- | Record @new@ as the component's current handler set and free the
+-- previous one. Call only after the new vtree has replaced the old one.
+-- See Note [Freeing event handler callbacks].
+swapEventHandlers :: ComponentId -> [Function] -> IO ()
+swapEventHandlers vcompId newHandlers = do
+  oldHandlers <- atomicModifyIORef' vtreeHandlers $ \m ->
+    (IM.insert vcompId newHandlers m, IM.findWithDefault [] vcompId m)
+  mapM_ freeFunction oldHandlers
+-----------------------------------------------------------------------------
+-- | Free and forget a component's handler set (on unmount).
+-- See Note [Freeing event handler callbacks].
+freeEventHandlers :: ComponentId -> IO ()
+freeEventHandlers vcompId = do
+  oldHandlers <- atomicModifyIORef' vtreeHandlers $ \m ->
+    (IM.delete vcompId m, IM.findWithDefault [] vcompId m)
+  mapM_ freeFunction oldHandlers
 -----------------------------------------------------------------------------
 #ifdef NATIVE
 btsReady :: Waiter
@@ -1112,6 +1186,7 @@ unmountComponent cs@ComponentState {..} = do
   finalizeEventSources _componentId
   unloadScripts cs
   freeLifecycleHooks cs
+  freeEventHandlers _componentId
   modifyComponent _componentParentId $ do
     children.at _componentId .= Nothing
   atomicModifyIORef' components $ \m -> (IM.delete _componentId m, ())

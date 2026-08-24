@@ -216,6 +216,9 @@ onWithOptions phase options eventName Decoder{..} toAction =
                 FFI.consoleError ("[COMPONENT]: No component found at ID: " <> ms vcompId)
               Just ComponentState {..} ->
                 sink (toAction event _componentModel domRef)
+    -- The runtime frees this callback when the vtree that owns it is
+    -- replaced; see Note [Freeing event handler callbacks] in "Miso.Runtime".
+    registerEventHandler cb
     FFI.set "runEvent" cb eventHandlerObject
     FFI.set "options" jsOptions eventHandlerObject
     -- Only 'mainThread'-marked handlers carry their 'StaticKey' \/ @ComponentId@
