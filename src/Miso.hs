@@ -216,12 +216,12 @@
 -- data 'View' context model action
 --   = 'VNode' 'Namespace' 'Tag' ['Attribute' model action] ['View' context model action] 'DirectEvents'
 --   | 'VText' (Maybe t'Key') 'MisoString'
---   | VComp ('SomeComponent' context)
---   | forall props . VCompStatic (StaticPtr ('SomeStaticComponent' props context)) props
+--   | 'VComp' ('SomeComponent' context)
+--   | forall props . 'VCompStatic' (StaticPtr ('SomeStaticComponent' props context)) props
 --   | 'VFrag' (Maybe t'Key') ['View' context model action]
 -- @
 --
--- 'VNode' and 'VText' have a one-to-one mapping from the virtual DOM to the physical DOM. The @VComp@ and 'VFrag' constructors are abstract (live only on the virtual DOM) and do not contain a reference to the physical DOM. The existential t'SomeComponent' is what allows embedding polymorphic t'Miso.Types.Component' within a 'View'.
+-- 'VNode' and 'VText' have a one-to-one mapping from the virtual DOM to the physical DOM. The 'VComp' and 'VFrag' constructors are abstract (live only on the virtual DOM) and do not contain a reference to the physical DOM. The existential t'SomeComponent' is what allows embedding polymorphic t'Miso.Types.Component' within a 'View'.
 --
 -- @
 -- data t'SomeComponent' context
@@ -233,34 +233,11 @@
 --
 -- * 'node', 'vnode' — build a 'VNode'
 -- * 'Miso.Types.text', 'vtext' — build a 'VText'
--- * 'Miso.Types.component', 'vcomp' — build a @VComp@ ('vcomp' is a synonym for 'Miso.Types.component')
+-- * 'Miso.Types.component', 'vcomp' — build a 'VComp' ('vcomp' is a synonym for 'Miso.Types.component')
 -- * @fragment@, 'Miso.Types.vfrag', 'fragment_', 'vfrag_' — build a 'VFrag'
 -- * ('+>') — key and mount a child t'Miso.Types.Component'
 --
 -- A full list of element smart constructors built on 'node' (e.g. 'Miso.Html.Element.Miso.Html.Element.div_') can be found in "Miso.Html.Element".
---
--- = @VCompStatic@
---
--- @VCompStatic@ is for building native mobile apps with [LynxJS](https://lynxjs.org),
--- via miso's dual-thread (main-thread \/ background-thread) runtime. Unlike
--- @VComp@, it carries a @StaticPtr@ to its t'Miso.Types.Component' constructor,
--- giving the mount a stable, cross-thread-resolvable identity (a
--- 'GHC.StaticPtr.StaticKey') instead of relying on a manually-supplied t'Key'.
--- This is what lets the main thread (MTS) independently reconstruct a mirror
--- of a t'Miso.Types.Component' mounted on the background thread (BTS), including
--- ones mounted after the initial frame, and is also how @action@s dispatched
--- from a main-thread (@OnStatic@) handler get routed back to the correct
--- t'Miso.Types.Component' on the background thread.
---
--- The 'GHC.StaticPtr.StaticKey' itself serves as the mount's identity, so
--- there's no need for ('+>') or a manually-supplied t'Key' — use 'vcomp' \/
--- 'vcomp_' together with 'Miso.Types.mountStatic' (or
--- 'Miso.Types.mountStaticWithProps') to
--- build a @VCompStatic@.
---
--- See "Miso.Native" for the entry points ('Miso.Native.native',
--- 'Miso.Native.nativeWithContext') and full documentation of the dual-thread
--- architecture.
 --
 -- = The global @context@
 --
@@ -344,7 +321,7 @@
 -- (usually nested) components whose 'Miso.Types.view' depends on the @context@
 -- and must refresh when it changes.
 --
--- = @VComp@
+-- = 'VComp' (Component nodes)
 --
 -- == Composition
 --
@@ -359,7 +336,7 @@
 --   => 'MisoString'
 --   -> t'Miso.Types.Component' context () model action
 --   -> 'View' context model action
--- key '+>' comp = @VComp@ ('SomeComponent' (Just ('toKey' key)) () comp)
+-- key '+>' comp = 'VComp' ('SomeComponent' (Just ('toKey' key)) () comp)
 -- @
 --
 -- Practically, using this combinator looks like:
@@ -383,6 +360,29 @@
 --
 -- * 'Miso.Types.mount'
 -- * 'Miso.Types.unmount'
+--
+-- = 'VCompStatic' (Static component nodes)
+--
+-- 'VCompStatic' is for building native mobile apps with [LynxJS](https://lynxjs.org),
+-- via miso's dual-thread (main-thread \/ background-thread) runtime. Unlike
+-- 'VComp', it carries a @StaticPtr@ to its t'Miso.Types.Component' constructor,
+-- giving the mount a stable, cross-thread-resolvable identity (a
+-- 'GHC.StaticPtr.StaticKey') instead of relying on a manually-supplied t'Key'.
+-- This is what lets the main thread (MTS) independently reconstruct a mirror
+-- of a t'Miso.Types.Component' mounted on the background thread (BTS), including
+-- ones mounted after the initial frame, and is also how @action@s dispatched
+-- from a main-thread (@OnStatic@) handler get routed back to the correct
+-- t'Miso.Types.Component' on the background thread.
+--
+-- The 'GHC.StaticPtr.StaticKey' itself serves as the mount's identity, so
+-- there's no need for ('+>') or a manually-supplied t'Key' — use 'vcomp' \/
+-- 'vcomp_' together with 'Miso.Types.mountStatic' (or
+-- 'Miso.Types.mountStaticWithProps') to
+-- build a 'VCompStatic'.
+--
+-- See "Miso.Native" for the entry points ('Miso.Native.native',
+-- 'Miso.Native.nativeWithContext') and full documentation of the dual-thread
+-- architecture.
 --
 -- = 'VNode' (Element nodes)
 --
@@ -411,7 +411,7 @@
 -- SVG and MathML elements use the 'SVG' and 'MATHML' namespaces respectively,
 -- and are covered by the smart constructors in "Miso.Svg.Element" and "Miso.Mathml.Element".
 --
--- Unlike @VComp@ and 'VFrag', 'VNode' has a one-to-one correspondence with a physical DOM element:
+-- Unlike 'VComp' and 'VFrag', 'VNode' has a one-to-one correspondence with a physical DOM element:
 -- each 'VNode' in the virtual DOM maps to exactly one element in the browser.
 --
 -- The smart constructors for 'VNode' are:
@@ -461,7 +461,7 @@
 -- = 'VText' (Text nodes)
 --
 -- A 'VText' node represents a [DOM text node](https://developer.mozilla.org/en-US/docs/Web/API/Text).
--- Unlike @VComp@ and 'VFrag', 'VText' has a one-to-one correspondence with a physical DOM node:
+-- Unlike 'VComp' and 'VFrag', 'VText' has a one-to-one correspondence with a physical DOM node:
 -- each 'VText' in the virtual DOM maps to exactly one @Text@ node in the browser.
 --
 -- The simplest way to produce a 'VText' is via the @IsString@ instance on @'View' action@.
@@ -576,7 +576,7 @@
 --
 -- * Keys are used to compare two identical nodes.
 --
--- If two `VNode` are being compared (or two @VComp@) and their keys differ, the old node will be destroyed and a new one created. Otherwise, the underlying DOM node won't be removed, but its properties will be diffed. In the case of diffing two t'Miso.Types.Component' (the @VComp@ case), if the keys differ, the 'unmount' phase will be triggered for the old @VComp@ and the 'mount' phase will be triggered for the new t'Miso.Types.Component'. The underlying DOM reference will be replaced.
+-- If two `VNode` are being compared (or two 'VComp') and their keys differ, the old node will be destroyed and a new one created. Otherwise, the underlying DOM node won't be removed, but its properties will be diffed. In the case of diffing two t'Miso.Types.Component' (the 'VComp' case), if the keys differ, the 'unmount' phase will be triggered for the old 'VComp' and the 'mount' phase will be triggered for the new t'Miso.Types.Component'. The underlying DOM reference will be replaced.
 --
 -- * Keys preserve the DOM reference across updates.
 --
