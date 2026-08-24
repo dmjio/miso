@@ -435,11 +435,17 @@ blockNativeEventAreas_ = prop "block-native-event-areas"
 -- of Lynx, and can realize a front-end scrolling container similar to consuming
 -- the specified direction of sliding.
 --
--- > consumeSlideEvent_ []
+-- Each pair is a @(start, end)@ angle range in degrees (0° along the positive
+-- x-axis, valid range -180°–180°); slides at those angles are consumed by this
+-- node instead of the platform scroller. E.g. a horizontal pager inside a
+-- vertical @scroll-view@ (leftward slides sit at ±180°, so both flanks are
+-- needed):
+--
+-- > consumeSlideEvent_ [(-180, -135), (-45, 45), (135, 180)]
 --
 -- Default Value: []
 --
-consumeSlideEvent_ :: [Double] -> Attribute model action
+consumeSlideEvent_ :: [(Double, Double)] -> Attribute model action
 consumeSlideEvent_ = prop "consume-slide-event"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#event-through
