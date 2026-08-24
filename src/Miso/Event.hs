@@ -216,6 +216,9 @@ onWithOptions phase options eventName Decoder{..} toAction =
                 FFI.consoleError ("[COMPONENT]: No component found at ID: " <> ms vcompId)
               Just ComponentState {..} ->
                 sink (toAction event _componentModel domRef)
+    -- The runtime frees this callback when the vtree that owns it is
+    -- replaced; see Note [Freeing event handler callbacks] in "Miso.Runtime".
+    registerEventHandler cb
     FFI.set "runEvent" cb eventHandlerObject
     FFI.set "options" jsOptions eventHandlerObject
     -- Only 'mainThread'-marked handlers carry their 'StaticKey' \/ @ComponentId@
@@ -233,6 +236,10 @@ onWithOptions phase options eventName Decoder{..} toAction =
       mCid <- fromJSVal pendingCid :: IO (Maybe Int)
       maybe (pure ()) (\c -> FFI.set "componentId" (c :: Int) eventHandlerObject) mCid
     FFI.set eventName eo (Object eventObj)
+    -- The handler object is now reachable from the node; release the scratch
+    -- handles. @decodeAtVal@, @cb@ and @n@ are captured by the callback and
+    -- must stay alive. See Note [Freeing VTree handles] in "Miso.Runtime".
+    mapM_ freeJSVal [eventsVal, eventObj, eo, jsOptions, pendingMT]
 -----------------------------------------------------------------------------
 -- | Fire an action immediately after the DOM element is inserted into the document.
 --

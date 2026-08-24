@@ -146,6 +146,7 @@ module Miso.DSL
   , requestAnimationFrame
   , cancelAnimationFrame
   , freeFunction
+  , freeJSVal
   , (!!)
   , isUndefined
   , isNull
@@ -599,7 +600,9 @@ call o this args = do
   o' <- toJSVal =<< toObject o
   this' <- toJSVal =<< toObject this
   args' <- toJSVal =<< toArgs args
-  invokeFunction o' this' args'
+  result <- invokeFunction o' this' args'
+  freeJSVal args'
+  pure result
 {-# INLINABLE call #-}
 -----------------------------------------------------------------------------
 -- | Calls a JS function on an t'Object' at a field with specified arguments.
@@ -609,7 +612,13 @@ infixr 2 #
   o' <- toJSVal =<< toObject o
   func <- getProp_ffi k o'
   args' <- toJSVal =<< toArgs args
-  invokeFunction func o' args'
+  result <- invokeFunction func o' args'
+  -- @func@ and the argument array are temporaries nobody else can reach;
+  -- release them eagerly (see 'freeJSVal'). The argument elements may be the
+  -- caller's handles, so only the array itself is freed.
+  freeJSVal func
+  freeJSVal args'
+  pure result
 {-# INLINABLE (#) #-}
 -----------------------------------------------------------------------------
 -- | Calls a JavaScript t'Function' with the given arguments and marshals
@@ -641,7 +650,9 @@ new
 new constr args = do
   obj <- toJSVal =<< toObject constr
   argv <- toJSVal =<< toArgs args
-  new_ffi obj argv
+  result <- new_ffi obj argv
+  freeJSVal argv
+  pure result
 {-# INLINABLE new #-}
 -----------------------------------------------------------------------------
 -- | Creates a new JS t'Object'
@@ -847,6 +858,30 @@ instance (ToJSVal arg1, ToJSVal arg2, ToJSVal arg3, ToJSVal arg4, ToJSVal arg5, 
 freeFunction :: Function -> IO ()
 freeFunction (Function x) = freeFunction_ffi x
 {-# INLINABLE freeFunction #-}
+-----------------------------------------------------------------------------
+-- | Eagerly release a 'JSVal' handle.
+--
+-- On the WASM backend every 'JSVal' carries a weak pointer and a C finalizer
+-- so that the JavaScript value can be released once the handle is garbage
+-- collected. The RTS must evacuate every such weak pointer on every GC (dead
+-- or alive) before it can run the finalizer, so short-lived handles created
+-- in bulk (e.g. while building a virtual DOM) make each GC pause scale with
+-- the number of handles allocated since the last one. 'freeJSVal' unlinks
+-- the weak pointer and releases the JavaScript side immediately, so the
+-- handle costs the GC nothing.
+--
+-- Only the Haskell handle is released: the JavaScript value itself stays
+-- alive for as long as something on the JavaScript side references it.
+--
+-- Using a 'JSVal' after it has been freed is undefined behaviour, so only
+-- free handles that no other Haskell code (including callbacks that close
+-- over them) can reach. Note that on WASM a 'JSString' /is/ a 'JSVal', so
+-- never free a handle obtained from 'toJSVal' on a string you do not own.
+--
+-- No-op on the GHCJS and native backends.
+freeJSVal :: JSVal -> IO ()
+freeJSVal = freeJSVal_ffi
+{-# INLINABLE freeJSVal #-}
 -----------------------------------------------------------------------------
 instance FromJSVal Function where
   fromJSVal = pure . Just . Function

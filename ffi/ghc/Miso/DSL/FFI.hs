@@ -105,6 +105,9 @@ isUndefined_ffi = undefined
 -----------------------------------------------------------------------------
 freeFunction_ffi :: JSVal -> IO ()
 freeFunction_ffi = undefined
+
+freeJSVal_ffi :: JSVal -> IO ()
+freeJSVal_ffi _ = pure ()
 -----------------------------------------------------------------------------
 -- | Schedules a callback to run before the next repaint.
 --

@@ -441,7 +441,8 @@ updateRef
 {-# INLINABLE updateRef #-}
 updateRef jsval1 jsval2 = do
   moduleMiso <- jsg "miso"
-  void $ moduleMiso # "updateRef" $ (jsval1, jsval2)
+  freeJSVal =<< (moduleMiso # "updateRef" $ (jsval1, jsval2))
+  freeJSVal moduleMiso
 -----------------------------------------------------------------------------
 -- | Convenience function to write inline javascript.
 --
@@ -487,7 +488,8 @@ populateClass
 {-# INLINABLE populateClass #-}
 populateClass domRef classes = do
   moduleMiso <- jsg "miso"
-  void $ moduleMiso # "populateClass" $ (domRef, classes)
+  freeJSVal =<< (moduleMiso # "populateClass" $ (domRef, classes))
+  freeJSVal moduleMiso
 -----------------------------------------------------------------------------
 -- | Retrieves a reference to document body.
 --
@@ -512,7 +514,11 @@ getDocument = jsg "document"
 --
 getDrawingContext :: IO JSVal
 {-# INLINABLE getDrawingContext #-}
-getDrawingContext = jsg "miso" ! "drawingContext"
+getDrawingContext = do
+  moduleMiso <- jsg "miso"
+  context <- moduleMiso ! "drawingContext"
+  freeJSVal moduleMiso
+  pure context
 -----------------------------------------------------------------------------
 -- | Retrieves a reference to the event context.
 --
@@ -577,7 +583,9 @@ diff
 diff (Object a) (Object b) c = do
   moduleMiso <- jsg "miso"
   context <- getDrawingContext
-  void $ moduleMiso # "diff" $ [a,b,c,context]
+  freeJSVal =<< (moduleMiso # "diff" $ [a,b,c,context])
+  freeJSVal moduleMiso
+  freeJSVal context
 -----------------------------------------------------------------------------
 -- | Initialize event delegation from a mount point.
 delegator :: JSVal -> JSVal -> Bool -> IO JSVal -> IO ()
@@ -863,7 +871,8 @@ flush :: IO ()
 {-# INLINABLE flush #-}
 flush = do
   context <- getDrawingContext
-  void $ context # "flush" $ ([] :: [JSVal])
+  freeJSVal =<< (context # "flush" $ ([] :: [JSVal]))
+  freeJSVal context
 -----------------------------------------------------------------------------
 -- | Type that holds an [Image](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/img).
 newtype Image = Image JSVal

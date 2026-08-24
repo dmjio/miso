@@ -36,6 +36,7 @@ module Miso.Runtime
     initialize
   , freshComponentId
   , buildVTree
+  , registerEventHandler
   , renderStyles
   , renderScripts
   , Hydrate(..)
@@ -130,6 +131,7 @@ import           Control.Exception (SomeException, catch)
 import           Control.Monad (forM, forM_, when, void, (<=<), zipWithM_, forever, foldM, unless)
 import           Control.Monad.Reader (ask, asks)
 import           Control.Monad.State hiding (state)
+import qualified Miso.JSON as JSON
 import           Miso.JSON (FromJSON, ToJSON, Result(..), Value, encode, fromJSON, jsonStringify, toJSON, parseEither)
 import           Miso.Event.Decoder (Decoder(decoder, decodeAt))
 
@@ -255,12 +257,16 @@ initialize events _componentParentId hydrate isRoot initialProps maybeKey _compo
         newVTree <-
           buildVTree events _componentParentId _componentId Draw
             _componentSink logLevel newModel (view currentContext currentProps newModel)
+        newHandlers <- collectEventHandlers
         oldVTree <- readIORef _componentVTree
         _frame <- requestAnimationFrame rAFCallback
         _timestamp :: Double <- takeMVar frame
         Diff.diff (Just oldVTree) (Just newVTree) _componentDOMRef
         FFI.updateRef oldVTree newVTree
         atomicWriteIORef _componentVTree newVTree
+        -- The old tree can no longer dispatch; free its handler callbacks.
+        -- See Note [Freeing event handler callbacks].
+        swapEventHandlers _componentId newHandlers
         FFI.flush
 
 #ifdef NATIVE
@@ -496,6 +502,7 @@ initialDraw initializedModel events hydrate isRoot Component {..} ComponentState
   currentContext <- readIORef globalContext
   vtree <- buildVTree events _componentParentId _componentId hydrate _componentSink logLevel
     initializedModel (view currentContext _componentProps initializedModel)
+  vtreeHandlers0 <- collectEventHandlers
 #ifdef BENCH
   end <- FFI.now
   when isRoot $ FFI.consoleLog $ ms (printf "buildVTree: %.3f ms" (end - start) :: String)
@@ -504,6 +511,7 @@ initialDraw initializedModel events hydrate isRoot Component {..} ComponentState
     Draw -> do
       Diff.diff Nothing (Just vtree) _componentDOMRef
       atomicWriteIORef _componentVTree vtree
+      swapEventHandlers _componentId vtreeHandlers0
     Hydrate -> do
       if isRoot
         then do
@@ -511,14 +519,20 @@ initialDraw initializedModel events hydrate isRoot Component {..} ComponentState
           if hydrated
             then do
               atomicWriteIORef _componentVTree vtree
+              swapEventHandlers _componentId vtreeHandlers0
             else do
               newTree <-
                 buildVTree events _componentParentId _componentId Draw
                   _componentSink logLevel initializedModel (view currentContext _componentProps initializedModel)
+              newHandlers <- collectEventHandlers
+              -- the discarded hydration tree's callbacks are unreachable
+              mapM_ freeFunction vtreeHandlers0
               Diff.diff Nothing (Just newTree) _componentDOMRef
               atomicWriteIORef _componentVTree newTree
-        else
+              swapEventHandlers _componentId newHandlers
+        else do
           atomicWriteIORef _componentVTree vtree
+          swapEventHandlers _componentId vtreeHandlers0
 -----------------------------------------------------------------------------
 -- | Pulls the next Component for processing out of the queue, along with
 -- its events.
@@ -632,6 +646,67 @@ dequeueAt vcompId q =
 globalWaiter :: Waiter
 {-# NOINLINE globalWaiter #-}
 globalWaiter = unsafePerformIO waiter
+-----------------------------------------------------------------------------
+-- Note [Freeing event handler callbacks]
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-- Every 'On' attribute exports a fresh Haskell callback to JavaScript on
+-- every draw ('Miso.Event.onWithOptions'). On the WASM backend an exported
+-- callback pins its closure with a stable pointer that is only released
+-- when JavaScript's FinalizationRegistry notices the function is
+-- unreachable -- which requires a JavaScript GC and in practice lags far
+-- behind, so redrawing components leak callbacks (and everything their
+-- closures capture, including the model of the frame they were built in).
+--
+-- Instead we track ownership explicitly: 'Miso.Event.onWithOptions' calls
+-- 'registerEventHandler' for every callback it exports, collecting them
+-- into 'handlerCollector' for the duration of one 'buildVTree'. After the
+-- new tree has been diffed in, the previous tree's callbacks can never be
+-- dispatched again (event delegation always consults the current vtree),
+-- so 'swapEventHandlers' frees them and records the new set. Unmounting a
+-- component frees its recorded set.
+--
+-- Draws are serialized by the scheduler and the collector is harvested
+-- before the draw awaits the next animation frame, so a child component
+-- mounting synchronously mid-diff collects into an empty collector and
+-- harvests it before returning.
+-----------------------------------------------------------------------------
+-- | Callbacks exported to JavaScript during the current 'buildVTree'.
+{-# NOINLINE handlerCollector #-}
+handlerCollector :: IORef [Function]
+handlerCollector = unsafePerformIO (newIORef [])
+-----------------------------------------------------------------------------
+-- | Event handler callbacks owned by each mounted component's current vtree.
+{-# NOINLINE vtreeHandlers #-}
+vtreeHandlers :: IORef (IntMap [Function])
+vtreeHandlers = unsafePerformIO (newIORef mempty)
+-----------------------------------------------------------------------------
+-- | Called by 'Miso.Event.onWithOptions' for every callback it exports.
+-- See Note [Freeing event handler callbacks].
+registerEventHandler :: JSVal -> IO ()
+registerEventHandler cb =
+  atomicModifyIORef' handlerCollector $ \cbs -> (Function cb : cbs, ())
+-----------------------------------------------------------------------------
+-- | Take ownership of the callbacks exported by the 'buildVTree' that just
+-- finished. See Note [Freeing event handler callbacks].
+collectEventHandlers :: IO [Function]
+collectEventHandlers = atomicModifyIORef' handlerCollector (\cbs -> ([], cbs))
+-----------------------------------------------------------------------------
+-- | Record @new@ as the component's current handler set and free the
+-- previous one. Call only after the new vtree has replaced the old one.
+-- See Note [Freeing event handler callbacks].
+swapEventHandlers :: ComponentId -> [Function] -> IO ()
+swapEventHandlers vcompId newHandlers = do
+  oldHandlers <- atomicModifyIORef' vtreeHandlers $ \m ->
+    (IM.insert vcompId newHandlers m, IM.findWithDefault [] vcompId m)
+  mapM_ freeFunction oldHandlers
+-----------------------------------------------------------------------------
+-- | Free and forget a component's handler set (on unmount).
+-- See Note [Freeing event handler callbacks].
+freeEventHandlers :: ComponentId -> IO ()
+freeEventHandlers vcompId = do
+  oldHandlers <- atomicModifyIORef' vtreeHandlers $ \m ->
+    (IM.delete vcompId m, IM.findWithDefault [] vcompId m)
+  mapM_ freeFunction oldHandlers
 -----------------------------------------------------------------------------
 #ifdef NATIVE
 btsReady :: Waiter
@@ -1111,6 +1186,7 @@ unmountComponent cs@ComponentState {..} = do
   finalizeEventSources _componentId
   unloadScripts cs
   freeLifecycleHooks cs
+  freeEventHandlers _componentId
   modifyComponent _componentParentId $ do
     children.at _componentId .= Nothing
   atomicModifyIORef' components $ \m -> (IM.delete _componentId m, ())
@@ -1151,15 +1227,22 @@ buildVTree events_ parentId_ vcompId hydrate snk logLevel_ model_ = \case
     -- never reads it (all HTML/SVG/MathML nodes carry an empty set anyway).
     FFI.set "directEvents" (Set.toList _directEvents) vnode_
 #endif
-    vchildren <- toJSVal =<< procreate vnode_
+    children_ <- procreate vnode_
+    vchildren <- toJSVal (map snd children_)
     FFI.set "children" vchildren vnode_
-    flip (FFI.set "type") vnode_ =<< toJSVal VNodeType
+    nodeType <- toJSVal VNodeType
+    FFI.set "type" nodeType vnode_
+    -- The children are now linked into the tree on the JS side; release the
+    -- handles we no longer need. See Note [Freeing VTree handles].
+    freeJSVal nodeType
+    freeJSVal vchildren
+    mapM_ freeKid children_
     pure (VTree vnode_)
       where
         procreate parentVTree = do
           kidsViews <- foldM (buildKid parentVTree) [] kids
           let ordered = reverse kidsViews
-          setNextSibling ordered
+          setNextSibling (map snd ordered)
           pure ordered
             where
               setNextSibling xs =
@@ -1169,7 +1252,7 @@ buildVTree events_ parentId_ vcompId hydrate snk logLevel_ model_ = \case
               buildKid p acc kid = do
                 VTree child <- buildVTree events_ parentId_ vcompId hydrate snk logLevel_ model_ kid
                 FFI.set "parent" p child
-                pure (child : acc)
+                pure ((kid, child) : acc)
   VText key t -> do
     vtree <- create
     flip (FFI.set "type") vtree =<< toJSVal VTextType
@@ -1181,22 +1264,58 @@ buildVTree events_ parentId_ vcompId hydrate snk logLevel_ model_ = \case
     frag <- create
     FFI.set "type" VFragType frag
     forM_ maybeKey $ \(Key k) -> FFI.set "key" k frag
-    vchildren <- toJSVal =<< procreateFragChildren frag
+    children_ <- procreateFragChildren frag
+    vchildren <- toJSVal (map snd children_)
     FFI.set "children" vchildren frag
+    freeJSVal vchildren
+    mapM_ freeKid children_
     pure (VTree frag)
       where
         procreateFragChildren parentVTree = do
           kidsViews <- foldM buildKid [] kids
           let ordered = reverse kidsViews
-          zipWithM_ (flip setField "nextSibling") ordered (drop 1 ordered)
+          zipWithM_ (flip setField "nextSibling") (map snd ordered) (drop 1 (map snd ordered))
           pure ordered
             where
               buildKid acc (VFrag _ []) = pure acc
               buildKid acc kid = do
                 VTree child <- buildVTree events_ parentId_ vcompId hydrate snk logLevel_ model_ kid
                 FFI.set "parent" parentVTree child
-                pure (child : acc)
+                pure ((kid, child) : acc)
   where
+    -- Note [Freeing VTree handles]
+    -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    -- On WASM each 'JSVal' handle carries a weak pointer that every GC must
+    -- evacuate before it can discover the handle is dead, so the hundreds of
+    -- short-lived handles created per frame while building a vtree make GC
+    -- pauses scale with the size of the tree (see 'freeJSVal'). Once a child
+    -- has been linked into its parent on the JS side the JavaScript object is
+    -- kept alive by the tree and the Haskell handle is dead weight, so we free
+    -- it -- unless something on the Haskell side can still reach it:
+    --
+    --  * Nodes with event handlers: the handler closure captures the node
+    --    ('onWithOptions' reads @pendingComponentId@ from it at event time).
+    --  * Components: 'buildComp' installs callbacks that close over the
+    --    component object.
+    --
+    -- The root handle is returned to the caller and is never freed here.
+    freeKid :: (View context model action, Object) -> IO ()
+    freeKid (kid, Object child) = when (freeable kid) (freeJSVal child)
+
+    freeable :: View context model action -> Bool
+    freeable = \case
+      VNode _ _ attrs _ _ -> not (any isEvent attrs)
+      VText {} -> True
+      VFrag {} -> True
+      VComp {} -> False
+      VCompStatic {} -> False
+
+    isEvent :: Attribute model action -> Bool
+    isEvent = \case
+      On {} -> True
+      OnStatic {} -> True
+      _ -> False
+
     -- Shared construction for @VComp@ and @VCompStatic@. The only difference is
     -- the 'StaticKey' passed to 'initialize': 'Nothing' for dynamic components,
     -- @Just (staticKey ptr)@ for statically-referenced ones.
@@ -1261,6 +1380,9 @@ createNode typ ns tag = do
   FFI.set "bubbles" bubbles eventsObj
   FFI.set "ns" ns vnode_
   FFI.set "tag" tag vnode_
+  -- All five scratch objects are now reachable from the vnode on the JS
+  -- side; release the Haskell handles. See Note [Freeing VTree handles].
+  mapM_ (freeJSVal . unObject) [cssObj, propsObj, eventsObj, captures, bubbles]
   pure vnode_
 -----------------------------------------------------------------------------
 -- | Helper function for populating "props" and "css" fields on a virtual
@@ -1285,6 +1407,11 @@ setAttrs vnode_@(Object jval) attrs snk vcompId logLevel events model_ = do
       value <- toJSVal v
       o <- getProp "props" vnode_
       FFI.set k value (Object o)
+      freeJSVal o
+      -- Only handles created by 'toJSVal' itself are ours to free: a
+      -- 'String' shares the handle of its 'MisoString' and 'Null' is a
+      -- shared constant. See Note [Freeing VTree handles].
+      when (freshValue v) (freeJSVal value)
     On callback -> do
       -- Reset any 'pendingStaticKey' \/ 'pendingMainThread' left behind by an
       -- earlier 'OnStatic' attribute on this same node — otherwise a plain
@@ -1311,6 +1438,13 @@ setAttrs vnode_@(Object jval) attrs snk vcompId logLevel events model_ = do
       cssObj <- getProp "css" vnode_
       forM_ (M.toList styles) $ \(k,v) -> do
         FFI.set k v (Object cssObj)
+      freeJSVal cssObj
+  where
+    freshValue :: Value -> Bool
+    freshValue = \case
+      JSON.String {} -> False
+      JSON.Null -> False
+      _ -> True
 -----------------------------------------------------------------------------
 -- | Registers components in the global state
 registerComponent :: MonadIO m => ComponentState context props model action -> m ()
