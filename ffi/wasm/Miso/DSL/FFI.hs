@@ -89,7 +89,7 @@ module Miso.DSL.FFI
   , JSException
   ) where
 -----------------------------------------------------------------------------
-import           Data.Text (Text)
+import           Data.Text (Text, pack)
 import           Control.Monad
 import           Data.JSString (textFromJSString, textToJSString)
 #ifdef MISO_TEXT
@@ -534,8 +534,11 @@ parseFloat string = realToFrac <$> parseDouble string
 {-# INLINE parseFloat #-}
 -----------------------------------------------------------------------------
 #ifdef MISO_TEXT
+-- | 'show' agrees with JS's native number formatting for 'Int', so this
+-- avoids allocating a throwaway 'JSVal' via the FFI just to convert it
+-- straight back to 'Text'.
 toString_Int :: Int -> Text
-toString_Int = textFromJSString . JSS.toString_Int
+toString_Int = pack . show
 {-# INLINE toString_Int #-}
 -----------------------------------------------------------------------------
 toString_Double :: Double -> Text
@@ -546,8 +549,9 @@ toString_Float :: Float -> Text
 toString_Float = textFromJSString . JSS.toString_Float
 {-# INLINE toString_Float #-}
 -----------------------------------------------------------------------------
+-- | See 'toString_Int': 'show' matches JS formatting for 'Word' too.
 toString_Word :: Word -> Text
-toString_Word = textFromJSString . JSS.toString_Word
+toString_Word = pack . show
 {-# INLINE toString_Word #-}
 #endif
 -----------------------------------------------------------------------------
