@@ -446,11 +446,16 @@ foreign import javascript unsafe
 #endif
   toString_Double :: Double -> JSString
 -----------------------------------------------------------------------------
+-- Note: GHCJS narrows Float ops via Math.fround, so $1 already holds the
+-- f64 expansion of the f32 value (e.g. 3.140000104904175 for 3.14f). A
+-- plain `.toString()` would print that expansion; search increasing
+-- precisions until re-parsing (narrowed back to f32) recovers the
+-- original value, giving the shortest round-tripping decimal.
 foreign import javascript unsafe
 #if GHCJS_NEW
-  "(($1) => { return ($1).toString(); })"
+  "(($1) => { for (var p = 1; p <= 9; p++) { var s = $1.toPrecision(p); if (Math.fround(parseFloat(s)) === $1) return String(parseFloat(s)); } return String($1); })"
 #else
-  "$r = String($1);"
+  "var floatVal = $1; var floatStr; for (var floatPrec = 1; floatPrec <= 9; floatPrec++) { floatStr = floatVal.toPrecision(floatPrec); if (Math.fround(parseFloat(floatStr)) === floatVal) break; } $r = String(parseFloat(floatStr));"
 #endif
   toString_Float :: Float -> JSString
 -----------------------------------------------------------------------------

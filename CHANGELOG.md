@@ -140,6 +140,26 @@ All notable changes to `miso` are documented here.
   `camelTo2` are re-exported instead. CI runs the WASM integration suite in
   both modes.
 
+- **`text` cabal flag on WASM.** When enabled (`-ftext`, off by default),
+  `MisoString` is `Data.Text.Text` instead of `JSString` on the WASM
+  backend too (previously this was only possible on the `VANILLA` / SSR
+  build). `Data.JSString` remains the FFI boundary type, so DOM writes
+  still convert `Text -> JSString` on the way out. Number formatting and
+  parsing take advantage of this to avoid unnecessary FFI round trips:
+  `toMisoString` on `Int` / `Word` / `Double` / `Float` builds `Text`
+  directly via `Data.Text.Lazy.Builder` (`decimal` / `realFloat`) instead
+  of allocating a throwaway `JSVal` via JS's `.toString()`, since GHC's
+  `Show` formatting is what these functions target on this backend
+  regardless. Likewise,
+  `fromMisoString` on `Int` / `Word` / `Double` / `Float` parses directly
+  with `Data.Text.Read` instead of round-tripping through
+  `JSString`/`parseInt`/`parseFloat`, while reproducing the JS parsers'
+  semantics: leading/trailing whitespace and trailing garbage are
+  ignored, a leading `+`/`-` is accepted, and integers with a `0x`/`0X`
+  prefix parse as hexadecimal. CI gained a `playwright-wasm-aeson-text`
+  target that runs the WASM integration suite with both the `aeson` and
+  `text` flags enabled together.
+
 ### Changed
 
 - **Breaking: `View` and `Attribute` gained type parameters.**

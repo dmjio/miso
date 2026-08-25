@@ -178,6 +178,25 @@ rec {
     exit "$exit_code"
   '';
 
+  # Same as playwright-wasm, but miso is built with the 'aeson' and 'text'
+  # cabal flags (Miso.JSON defined in terms of Data.Aeson, Miso.String
+  # backed by Data.Text).
+  playwright-wasm-aeson-text = pkgs.writeScriptBin "playwright" ''
+    #!${pkgs.stdenv.shell}
+    export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
+    export PATH="${pkgs.lib.makeBinPath [ pkgs.http-server pkgs.bun ]}:$PATH"
+    bun install playwright@1.53
+    cd tests
+    nix develop .#wasm --command bash -c 'make aeson-text'
+    http-server ./public &
+    bun run ../ts/echo-server.ts &
+    bun run ../ts/playwright.ts
+    exit_code=$?
+    pkill http-server
+    pkill -f echo-server
+    exit "$exit_code"
+  '';
+
   inherit (pkgs)
     nurl;
 

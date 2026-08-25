@@ -816,7 +816,7 @@ class ToKey key where
 -- | Identity instance
 instance ToKey Key where toKey = id
 -----------------------------------------------------------------------------
-#ifndef VANILLA
+#if !defined(VANILLA) && !defined(MISO_TEXT)
 -- | Convert 'MisoString' to t'Key'
 instance ToKey MisoString where toKey = Key
 #endif

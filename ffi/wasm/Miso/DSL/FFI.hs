@@ -1,4 +1,5 @@
 -----------------------------------------------------------------------------
+{-# LANGUAGE CPP                      #-}
 {-# LANGUAGE LambdaCase               #-}
 {-# LANGUAGE TemplateHaskell          #-}
 {-# LANGUAGE MultilineStrings         #-}
@@ -77,12 +78,28 @@ module Miso.DSL.FFI
   , parseDouble
   , parseWord
   , parseFloat
+#ifdef MISO_TEXT
+  , toString_Int
+  , toString_Double
+  , toString_Float
+  , toString_Word
+#endif
+  , textFromJSString
+  , textToJSString
   , JSException
   ) where
 -----------------------------------------------------------------------------
 import           Data.Text (Text)
 import           Control.Monad
 import           Data.JSString (textFromJSString, textToJSString)
+#ifdef MISO_TEXT
+import qualified Data.Text as T
+import qualified Data.Text.Lazy as TL
+import qualified Data.Text.Lazy.Builder as TB
+import qualified Data.Text.Lazy.Builder.Int as TBI
+import qualified Data.Text.Lazy.Builder.RealFloat as TBR
+import qualified Data.Text.Read as TR
+#endif
 import           Prelude hiding (length, head, tail, unlines, concat, null, drop, replicate, concatMap)
 -----------------------------------------------------------------------------
 import           GHC.Wasm.Prim
@@ -459,23 +476,54 @@ fromJSValUnchecked_Maybe jsval = do
     else pure (Just jsval)
 {-# INLINE fromJSValUnchecked_Maybe #-}
 -----------------------------------------------------------------------------
+#ifdef MISO_TEXT
+-- | Parses using 'Data.Text.Read' directly (no JS FFI round trip),
+-- matching JS's @parseInt@ semantics: leading\/trailing whitespace and
+-- trailing garbage are ignored, a leading @+\/-@ is allowed, and a
+-- @0x@\/@0X@ prefix is read as hexadecimal.
+parseInt :: Text -> Maybe Int
+parseInt input =
+  case T.stripPrefix (T.pack "0x") stripped `mplus` T.stripPrefix (T.pack "0X") stripped of
+    Just hex -> hush (TR.hexadecimal hex)
+    Nothing  -> hush (TR.signed TR.decimal stripped)
+  where
+    stripped = T.strip input
+{-# INLINE parseInt #-}
+#else
 foreign import javascript unsafe
   """
   return parseInt($1);
   """
   parseInt_Unchecked :: JSString -> Double
 -----------------------------------------------------------------------------
-parseWord :: JSString -> Maybe Word
-parseWord string = fromIntegral <$> parseInt string
-{-# INLINE parseWord #-}
------------------------------------------------------------------------------
 parseInt :: JSString -> Maybe Int
-parseInt string = do
+parseInt string =
   case parseInt_Unchecked string of
     double | isNaN double -> Nothing
            | otherwise -> Just (round double)
 {-# INLINE parseInt #-}
+#endif
 -----------------------------------------------------------------------------
+#ifdef MISO_TEXT
+parseWord :: Text -> Maybe Word
+#else
+parseWord :: JSString -> Maybe Word
+#endif
+parseWord string = fromIntegral <$> parseInt string
+{-# INLINE parseWord #-}
+-----------------------------------------------------------------------------
+#ifdef MISO_TEXT
+-- | Parses using 'Data.Text.Read' directly (no JS FFI round trip),
+-- matching JS's @parseFloat@ semantics: leading\/trailing whitespace and
+-- trailing garbage are ignored, and a leading @+\/-@ is allowed.
+parseDouble :: Text -> Maybe Double
+parseDouble = hush . TR.double . T.strip
+{-# INLINE parseDouble #-}
+-----------------------------------------------------------------------------
+hush :: Either String (a, Text) -> Maybe a
+hush = either (const Nothing) (Just . fst)
+{-# INLINE hush #-}
+#else
 foreign import javascript unsafe
   """
   return parseFloat($1);
@@ -483,13 +531,41 @@ foreign import javascript unsafe
   parseDouble_Unchecked :: JSString -> Double
 -----------------------------------------------------------------------------
 parseDouble :: JSString -> Maybe Double
-parseDouble string = do
+parseDouble string =
   case parseDouble_Unchecked string of
     double | isNaN double -> Nothing
            | otherwise -> Just double
 {-# INLINE parseDouble #-}
+#endif
 -----------------------------------------------------------------------------
+#ifdef MISO_TEXT
+parseFloat :: Text -> Maybe Float
+#else
 parseFloat :: JSString -> Maybe Float
+#endif
 parseFloat string = realToFrac <$> parseDouble string
 {-# INLINE parseFloat #-}
+-----------------------------------------------------------------------------
+#ifdef MISO_TEXT
+-- | 'show' agrees with JS's native number formatting for 'Int', so this
+-- avoids allocating a throwaway 'JSVal' via the FFI just to convert it
+-- straight back to 'Text'. Built via 'Data.Text.Lazy.Builder' rather than
+-- @pack . show@ to skip the intermediate 'String'.
+toString_Int :: Int -> Text
+toString_Int = TL.toStrict . TB.toLazyText . TBI.decimal
+{-# INLINE toString_Int #-}
+-----------------------------------------------------------------------------
+toString_Double :: Double -> Text
+toString_Double = TL.toStrict . TB.toLazyText . TBR.realFloat
+{-# INLINE toString_Double #-}
+-----------------------------------------------------------------------------
+toString_Float :: Float -> Text
+toString_Float = TL.toStrict . TB.toLazyText . TBR.realFloat
+{-# INLINE toString_Float #-}
+-----------------------------------------------------------------------------
+-- | See 'toString_Int': 'show' matches JS formatting for 'Word' too.
+toString_Word :: Word -> Text
+toString_Word = TL.toStrict . TB.toLazyText . TBI.decimal
+{-# INLINE toString_Word #-}
+#endif
 -----------------------------------------------------------------------------
