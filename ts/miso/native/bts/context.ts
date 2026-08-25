@@ -1,11 +1,11 @@
-import {
+import { getDOMRef } from '../../../miso/util';
+import { delegateEvent } from '../../../miso/event';
+import { VTreeType } from '../../../miso/types';
+import type {
   NodeId,
-  getDOMRef,
-  VComp,
   DrawingContext,
   EventContext,
   EventCapture,
-  delegateEvent,
   VTree,
   AddClass,
   AddEvent,
@@ -26,7 +26,7 @@ import {
   SetInlineStyle,
   RemoveAttribute,
   RemoveClass,
-} from '../../../miso';
+} from '../../../miso/types';
 
 function nextNodeId () : number {
   'background only'
@@ -115,8 +115,22 @@ const drawingContext : DrawingContext<NodeId> = {
     addPatch(patch);
     return;
   },
-  nextSibling : (x : VComp<NodeId>) => {
-    return getDOMRef(x.nextSibling);
+  nextSibling : (x : VTree<NodeId>) => {
+    let sibling = x.nextSibling;
+    while (sibling) {
+      switch (sibling.type) {
+        case VTreeType.VComp:
+        case VTreeType.VFrag: {
+          const ref = getDOMRef(sibling);
+          if (ref) return ref;
+          sibling = sibling.nextSibling;
+          break;
+        }
+        default:
+          return sibling.domRef;
+      }
+    }
+    return null;
   },
   createTextNode : (text: string) => {
     const nodeId: number = nextNodeId ();
