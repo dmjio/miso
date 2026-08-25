@@ -312,7 +312,10 @@ initialize events _componentParentId hydrate isRoot initialProps maybeKey _compo
 
   when isRoot (delegator _componentDOMRef _componentVTree events (logLevel `elem` [DebugEvents, DebugAll]))
   registerComponent vcomponent
-  initSubs subs _componentSubThreads _componentSink
+  -- dmj: This is safe to do because component model presence is an invariant during Sub lifetime
+  -- Sub lifetime is totally eclipsed by Component lifetime. Sub get killed before a Component unmounts.
+  let getModel = (_componentModel . (IM.! _componentId)) <$> readIORef components
+  initSubs getModel subs _componentSubThreads _componentSink
   -- Runs on every thread. On Lynx the MTS paints the initial frame directly
   -- (fast first frame) while the BTS builds the same VTree but suppresses its
   -- create-patches (deterministic nodeId parity keeps both trees addressable) —
@@ -345,10 +348,10 @@ initialize events _componentParentId hydrate isRoot initialProps maybeKey _compo
 #endif
   pure vcomponent
 -----------------------------------------------------------------------------
-initSubs :: [Sub action] -> IORef (Map MisoString ThreadId) -> Sink action -> IO ()
-initSubs subs_ _componentSubThreads _componentSink = do
+initSubs :: IO model -> [Sub model action] -> IORef (Map MisoString ThreadId) -> Sink action -> IO ()
+initSubs getModel subs_ _componentSubThreads _componentSink = do
   forM_ subs_ $ \sub_ -> do
-    threadId <- forkIO (sub_ _componentSink)
+    threadId <- forkIO (sub_ _componentSink getModel)
     subKey <- freshSubId
     atomicModifyIORef' _componentSubThreads $ \m ->
       (M.insert subKey threadId m, ())
@@ -1505,7 +1508,7 @@ startSub
   :: ToMisoString subKey
   => subKey
   -- ^ The key used to track the 'Sub'
-  -> Sub action
+  -> Sub model action
   -- ^ The 'Sub'
   -> Effect context props model action
 startSub subKey sub = do
@@ -1525,10 +1528,17 @@ startSub subKey sub = do
               ThreadDied -> startThread compState
               _ -> pure ()
   where
-    startThread ComponentState {..} = do
-      tid <- forkIO (sub _componentSink)
-      atomicModifyIORef' _componentSubThreads $ \m ->
-        (M.insert (ms subKey) tid m, ())
+    startThread ComponentState
+      { _componentId = vcompId
+      , _componentSink = vcompSink
+      , _componentSubThreads = subThreads
+      } = do
+        -- dmj: same invariant as initSubs, the Sub lifetime is eclipsed by the
+        -- Component lifetime, so the model is always present during lookup.
+        let getModel = (_componentModel . (IM.! vcompId)) <$> readIORef components
+        tid <- forkIO (sub vcompSink getModel)
+        atomicModifyIORef' subThreads $ \m ->
+          (M.insert (ms subKey) tid m, ())
 -----------------------------------------------------------------------------
 -- | Stops a named 'Sub' dynamically, during the life of a t'Miso.Types.Component'.
 -- All 'Sub' started will be stopped automatically if a t'Miso.Types.Component' is unmounted.

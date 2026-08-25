@@ -185,10 +185,11 @@ library
     Miso.Runtime.Internal
     Miso.State
     Miso.Subscription
+    Miso.Subscription.Canvas
+    Miso.Subscription.Cookie
     Miso.Subscription.History
     Miso.Subscription.Keyboard
     Miso.Subscription.Mouse
-    Miso.Subscription.Cookie
     Miso.Subscription.OnLine
     Miso.Subscription.RAF
     Miso.Subscription.Util

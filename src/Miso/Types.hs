@@ -267,7 +267,7 @@ data Component context props model action
   --   Defaults to @False@.
   --
   -- @since 1.9.0.0
-  , subs :: [ Sub action ]
+  , subs :: [ Sub model action ]
   -- ^ Subscriptions to run during application lifetime
   , styles :: [CSS]
   -- ^ CSS styles expressed as either a URL ('Href') or as 'Style' text.

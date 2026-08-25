@@ -75,7 +75,7 @@ import           Miso.Subscription.Util (createSub)
 rAFSub
   :: (Double -> action)
   -- ^ Callback fired each frame with a @DOMHighResTimeStamp@ in milliseconds
-  -> Sub action
+  -> Sub model action
 rAFSub toAction sink = createSub acquire release sink
   where
     acquire = do
@@ -113,7 +113,7 @@ rAFSubElapsed
   -- ^ Minimum interval between ticks in milliseconds (e.g. @175@ for ~6 fps)
   -> action
   -- ^ Action to dispatch each time the interval elapses
-  -> Sub action
+  -> Sub model action
 rAFSubElapsed interval action sink = createSub acquire release sink
   where
     acquire = do

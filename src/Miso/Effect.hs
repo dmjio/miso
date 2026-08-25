@@ -325,7 +325,7 @@ type ComponentId = Int
 -- For example usage see "Miso.Subscription"
 --
 -- The 'Sink' function is used to write to the global event queue.
-type Sub action = Sink action -> IO ()
+type Sub model action = Sink action -> IO model -> IO ()
 -----------------------------------------------------------------------------
 -- | Function to write to the global event queue for processing by the scheduler.
 type Sink action = action -> IO ()
@@ -470,10 +470,10 @@ runEffect = execRWS
 mapSub
   :: (a -> b)
   -- ^ Function to map actions produced by the subscription
-  -> Sub a
+  -> Sub m a
   -- ^ Source subscription delivering @a@ actions
-  -> Sub b
-mapSub f sub = \g -> sub (g . f)
+  -> Sub m b
+mapSub f sub = \g m -> sub (g . f) m
 -----------------------------------------------------------------------------
 -- | Schedule a single 'IO' action, executed synchronously. For asynchronous
 -- execution, see 'io'.

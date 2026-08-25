@@ -45,6 +45,7 @@
 -- ['onLineSub'] @online@ \/ @offline@ change — "Miso.Subscription.OnLine"
 -- ['rAFSub'] every @requestAnimationFrame@ tick — "Miso.Subscription.RAF"
 -- ['cookieChangeSub'] @cookieStore change@ events — "Miso.Subscription.Cookie"
+-- ['canvasSub'] canvas support — "Miso.Subscription.Canvas"
 --
 -- = History helpers
 --
@@ -77,6 +78,8 @@ module Miso.Subscription
   , module Miso.Subscription.RAF
     -- ** Cookie Store
   , module Miso.Subscription.Cookie
+    -- ** Canvas
+  , module Miso.Subscription.Canvas
   ) where
 -----------------------------------------------------------------------------
 import Miso.Subscription.Mouse
@@ -86,4 +89,5 @@ import Miso.Subscription.Window
 import Miso.Subscription.OnLine
 import Miso.Subscription.RAF
 import Miso.Subscription.Cookie
+import Miso.Subscription.Canvas
 -----------------------------------------------------------------------------
