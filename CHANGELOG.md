@@ -247,6 +247,18 @@ All notable changes to `miso` are documented here.
   fired. They are now registered with capture, like the other non-bubbling
   entries in `mediaEvents`.
 
+- **Native: the layout custom event is recognised under its released name.**
+  Released Lynx engines (e.g. LynxExplorer apps) emit it as `layout`, while
+  newer Lynx sources emit `layoutchange`; miso only listened for the latter,
+  so `onLayoutChange` never fired on released engines. `onLayout` /
+  `onLayoutMainWith` are added as aliases so apps can bind both when the
+  host engine version is unknown.
+
+- **Native: `consumeSlideEvent_` sends the shape Lynx expects.** Lynx parses
+  `consume-slide-event` as `[start, end]` angle-range pairs (degrees,
+  -180..180), but the binding serialised a flat list of angles instead of
+  paired ranges, a shape the engine silently ignores.
+
 - **`autocorrect_` and `spellcheck_` wrote to the wrong attribute.** Both
   emitted `autocomplete` instead of their own attribute name. `spellcheck_`
   additionally now emits `"true"` / `"false"` rather than `"on"` / `"off"`.
