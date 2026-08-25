@@ -3,7 +3,8 @@
 // several `type`s as values, which the bun test runtime can't resolve (see
 // ts/spec/native-mts.spec.ts). This also drops an unnecessary coupling.
 import { getDOMRef } from '../../../miso/util';
-import type { NodeId, VComp, DrawingContext, EventContext, EventCapture, EventKey, ProcessEvent } from '../../../miso/types';
+import { VTreeType } from '../../../miso/types';
+import type { VTree, DrawingContext, EventContext, EventCapture, EventKey, ProcessEvent } from '../../../miso/types';
 import type { ElementRef } from '@lynx-js/type-element-api';
 
 function buildStack(root: ElementRef, target: ElementRef, ctx: EventContext<ElementRef>): Array<number> {
@@ -235,8 +236,22 @@ export const drawingContext : DrawingContext<ElementRef> = {
       const phase = capture ? 'captures' : 'bubbles';
       delete reg[phase][name];
   },
-  nextSibling : (x : VComp<NodeId>) => {
-      return getDOMRef(x.nextSibling);
+  nextSibling : (x : VTree<ElementRef>) => {
+      let sibling = x.nextSibling;
+      while (sibling) {
+        switch (sibling.type) {
+          case VTreeType.VComp:
+          case VTreeType.VFrag: {
+            const ref = getDOMRef(sibling);
+            if (ref) return ref;
+            sibling = sibling.nextSibling;
+            break;
+          }
+          default:
+            return sibling.domRef;
+        }
+      }
+      return null;
   },
   createTextNode : (s: string) => {
     const node = __CreateRawText(s) as ElementRef;

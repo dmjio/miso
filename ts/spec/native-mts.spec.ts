@@ -6,7 +6,8 @@
    build they don't exist, which is exactly why this code has no other coverage. */
 import { test, expect, describe, beforeEach, afterAll, beforeAll } from 'bun:test';
 import { routeEvent, destroyNodeEvents, drawingContext } from '../miso/native/mts/context';
-import type { EventContext } from '../miso/types';
+import { vnode, vfrag, vcomp, vtext } from '../miso/smart';
+import type { EventContext, NodeId } from '../miso/types';
 
 /* silence the module's console.error diagnostics */
 beforeAll(() => { console.error = () => {}; console.log = () => {}; });
@@ -150,5 +151,74 @@ describe('destroyNodeEvents — registry teardown', () => {
 
     expect(mtsDispatches.length).toBe(0);     // registry entry gone
     expect(btsDispatches.length).toBe(1);     // now treated as a background event
+  });
+});
+
+describe('drawingContext.nextSibling — MTS', () => {
+
+  test('returns the domRef of a plain VNode sibling', () => {
+    const sibling = vnode<NodeId>({ tag: 'view', domRef: { nodeId: 1 } });
+    const node = vnode<NodeId>({ tag: 'view', nextSibling: sibling });
+    expect(drawingContext.nextSibling(node)).toBe(sibling.domRef);
+  });
+
+  test('drills into a VComp sibling to find its child domRef', () => {
+    const inner = vnode<NodeId>({ tag: 'text', domRef: { nodeId: 2 } });
+    const sibling = vcomp<NodeId>({});
+    sibling.child = inner;
+    const node = vnode<NodeId>({ tag: 'view', nextSibling: sibling });
+    expect(drawingContext.nextSibling(node)).toBe(inner.domRef);
+  });
+
+  test('walks past an empty VFrag sibling to the one after it', () => {
+    // node -> emptyFrag -> real. An empty VFrag renders nothing, so the
+    // search must continue past it to the next sibling.
+    const real = vnode<NodeId>({ tag: 'view', domRef: { nodeId: 3 } });
+    const emptyFrag = vfrag<NodeId>([]);
+    emptyFrag.nextSibling = real;
+    const node = vnode<NodeId>({ tag: 'view', nextSibling: emptyFrag });
+    expect(drawingContext.nextSibling(node)).toBe(real.domRef);
+  });
+
+  test('walks past an empty VComp (unmounted child) sibling to the one after it', () => {
+    const real = vnode<NodeId>({ tag: 'view', domRef: { nodeId: 4 } });
+    const emptyComp = vcomp<NodeId>({});
+    emptyComp.child = null as any;
+    emptyComp.nextSibling = real;
+    const node = vnode<NodeId>({ tag: 'view', nextSibling: emptyComp });
+    expect(drawingContext.nextSibling(node)).toBe(real.domRef);
+  });
+
+  test('returns null when every remaining sibling is empty', () => {
+    const emptyFrag1 = vfrag<NodeId>([]);
+    const emptyFrag2 = vfrag<NodeId>([]);
+    emptyFrag1.nextSibling = emptyFrag2;
+    const node = vnode<NodeId>({ tag: 'view', nextSibling: emptyFrag1 });
+    expect(drawingContext.nextSibling(node)).toBeNull();
+  });
+
+  test('returns null with no next sibling at all', () => {
+    const node = vnode<NodeId>({ tag: 'view' });
+    expect(drawingContext.nextSibling(node)).toBeNull();
+  });
+
+  test('a VNode sibling with a null domRef halts the search — it is NOT skipped like an empty fragment', () => {
+    // node -> notYetCreated(VNode, domRef: null) -> real. Unlike a VFrag/VComp,
+    // a VNode/VText is not something the search walks past: dom.ts's reference
+    // implementation returns the sibling's domRef directly in this case
+    // (null), rather than continuing on to `real`.
+    const real = vnode<NodeId>({ tag: 'view', domRef: { nodeId: 5 } });
+    const notYetCreated = vnode<NodeId>({ tag: 'view', domRef: null });
+    notYetCreated.nextSibling = real;
+    const node = vnode<NodeId>({ tag: 'view', nextSibling: notYetCreated });
+    expect(drawingContext.nextSibling(node)).toBeNull();
+  });
+
+  test('a VText sibling with a null domRef halts the search the same way', () => {
+    const real = vnode<NodeId>({ tag: 'view', domRef: { nodeId: 6 } });
+    const notYetCreated = vtext<NodeId>('hi'); // domRef: null by construction
+    notYetCreated.nextSibling = real;
+    const node = vnode<NodeId>({ tag: 'view', nextSibling: notYetCreated });
+    expect(drawingContext.nextSibling(node)).toBeNull();
   });
 });
