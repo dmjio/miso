@@ -45,6 +45,8 @@ module Miso.Native.Element.View.Event
   , onLayoutChangeWith
   , onLayoutChangeMain
   , onLayoutChangeMainWith
+  , onLayout
+  , onLayoutMainWith
   , onAppear
   , onAppearWith
   , onAppearMain
@@ -122,6 +124,7 @@ viewEvents = M.fromList
   , ("tap", BUBBLE)
   , ("longpress", BUBBLE)
   , ("layoutchange", BUBBLE)
+  , ("layout", BUBBLE)   -- released engines' name for layoutchange
   , ("uiappear", BUBBLE)
   , ("uidisappear", BUBBLE)
   , ("animationstart", BUBBLE)
@@ -498,6 +501,13 @@ onLongPress action = on "longpress" touchDecoder (\x _ _ -> action x)
 --
 onLayoutChange :: (LayoutChangeDetailEvent -> action) -> Attribute model action
 onLayoutChange action = on "layoutchange" layoutChangeDetailDecoder (\x _ _ -> action x)
+----------------------------------------------------------------------------
+-- | Like 'onLayoutChange', but for engines that name the event @layout@:
+-- released Lynx builds (e.g. the LynxExplorer apps) emit the layout custom
+-- event as @layout@, while newer sources emit @layoutchange@. Bind both when
+-- the host engine version is not known.
+onLayout :: (LayoutChangeDetailEvent -> action) -> Attribute model action
+onLayout action = on "layout" layoutChangeDetailDecoder (\x _ _ -> action x)
 ----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#uiappear
 --
@@ -886,6 +896,11 @@ onLayoutChangeMain action = onMain "layoutchange" layoutChangeDetailDecoder (\x 
 --
 onLayoutChangeMainWith :: (LayoutChangeDetailEvent -> model -> DOMRef -> action) -> EventHandler model action
 onLayoutChangeMainWith action = onMain "layoutchange" layoutChangeDetailDecoder action
+-----------------------------------------------------------------------------
+-- | Like 'onLayoutChangeMainWith', but for engines that name the event
+-- @layout@ (see 'onLayout').
+onLayoutMainWith :: (LayoutChangeDetailEvent -> model -> DOMRef -> action) -> EventHandler model action
+onLayoutMainWith action = onMain "layout" layoutChangeDetailDecoder action
 -----------------------------------------------------------------------------
 -- | Like 'onAppear', but dispatched on the Lynx __main thread__ (@MTS@).
 --
