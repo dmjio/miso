@@ -136,12 +136,11 @@ All notable changes to `miso` are documented here.
   build). `Data.JSString` remains the FFI boundary type, so DOM writes
   still convert `Text -> JSString` on the way out. Number formatting and
   parsing take advantage of this to avoid unnecessary FFI round trips:
-  `toMisoString` on `Int` / `Word` goes straight from `Text.pack . show`
-  rather than allocating a throwaway `JSVal` via JS's `.toString()`, since
-  the two formatters already agree for those types; `Double` / `Float`
-  still go through JS's native formatter, since GHC's `Show` and JS's
-  `.toString()` disagree on scientific-notation thresholds, trailing
-  zeros, and `Float`'s widened-to-`f64` round-tripping. Likewise,
+  `toMisoString` on `Int` / `Word` / `Double` / `Float` builds `Text`
+  directly via `Data.Text.Lazy.Builder` (`decimal` / `realFloat`) instead
+  of allocating a throwaway `JSVal` via JS's `.toString()`, since GHC's
+  `Show` formatting is what these functions target on this backend
+  regardless. Likewise,
   `fromMisoString` on `Int` / `Word` / `Double` / `Float` parses directly
   with `Data.Text.Read` instead of round-tripping through
   `JSString`/`parseInt`/`parseFloat`, while reproducing the JS parsers'
