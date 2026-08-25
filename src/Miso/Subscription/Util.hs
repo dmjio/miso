@@ -80,8 +80,8 @@ createSub
   -- ^ Acquire resource
   -> (a -> IO b)
   -- ^ Release resource
-  -> Sub action
-createSub acquire release = \_ ->
+  -> Sub model action
+createSub acquire release = \_ _ ->
   bracket acquire release (\_ -> forever (threadDelay (secs 10000)))
     where
       secs :: Int -> Int

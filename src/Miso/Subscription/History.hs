@@ -145,7 +145,7 @@ go n = void $ getHistory # "go" $ [n]
 uriSub
   :: (URI -> action)
   -- ^ Callback fired with the new t'URI' on every URL change
-  -> Sub action
+  -> Sub model action
 uriSub f sink = createSub acquire release sink
   where
     release = FFI.windowRemoveEventListener "popstate"
@@ -158,7 +158,7 @@ routerSub
   :: Router route
   => (Either RoutingError route -> action)
   -- ^ Callback fired with the decoded route (or 'RoutingError') on every URL change
-  -> Sub action
+  -> Sub model action
 routerSub f = uriSub $ \uri -> f (route uri)
 -----------------------------------------------------------------------------
 -- | Retrieves the current relative URI by inspecting @pathname@, @search@

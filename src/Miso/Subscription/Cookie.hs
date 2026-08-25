@@ -77,7 +77,7 @@ import qualified Miso.FFI.Internal as FFI
 cookieChangeSub
   :: (CookieChangeEvent -> action)
   -- ^ Callback: receives the change event on every cookie modification
-  -> Sub action
+  -> Sub model action
 cookieChangeSub f sink = createSub acquire release sink
   where
     acquire = FFI.cookieStoreAddEventListener $ \ev ->

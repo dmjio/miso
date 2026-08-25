@@ -61,7 +61,7 @@ import qualified Miso.FFI.Internal as FFI
 onLineSub
   :: (Bool -> action)
   -- ^ Callback: 'True' when going online, @False@ when going offline
-  -> Sub action
+  -> Sub model action
 onLineSub f sink = createSub acquire release sink
   where
     release (cb1, cb2) = do

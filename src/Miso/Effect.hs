@@ -61,19 +61,20 @@
 --
 -- = Subscriptions
 --
--- A 'Sub' is a function that receives a 'Sink' and runs forever (typically
--- on a forked thread). Register subscriptions in 'Miso.Types.subs':
+-- A 'Sub' is a function that receives a 'Sink' and an @IO model@ (a snapshot
+-- of the owning component's current model) and runs forever (typically on a
+-- forked thread). Register subscriptions in 'Miso.Types.subs':
 --
 -- @
--- tickSub :: 'Sub' Action
--- tickSub sink = forever $ do
+-- tickSub :: 'Sub' Model Action
+-- tickSub sink _getModel = forever $ do
 --   threadDelay 16667
 --   sink Tick
 --
 -- myComponent = ('Miso.component' model update view) { 'Miso.Types.subs' = [tickSub] }
 -- @
 --
--- Use 'mapSub' to adapt a @Sub a@ into a @Sub b@ with a mapping function.
+-- Use 'mapSub' to adapt a @Sub model a@ into a @Sub model b@ with a mapping function.
 --
 -- = Component metadata
 --
@@ -325,7 +326,12 @@ type ComponentId = Int
 -- For example usage see "Miso.Subscription"
 --
 -- The 'Sink' function is used to write to the global event queue.
-type Sub action = Sink action -> IO ()
+--
+-- The @IO model@ action returns a snapshot of the owning
+-- t'Miso.Types.Component'\'s current model, and is safe to call for the
+-- lifetime of the 'Sub'. Subscriptions that don't need the model can
+-- simply ignore it.
+type Sub model action = Sink action -> IO model -> IO ()
 -----------------------------------------------------------------------------
 -- | Function to write to the global event queue for processing by the scheduler.
 type Sink action = action -> IO ()
@@ -470,10 +476,10 @@ runEffect = execRWS
 mapSub
   :: (a -> b)
   -- ^ Function to map actions produced by the subscription
-  -> Sub a
+  -> Sub m a
   -- ^ Source subscription delivering @a@ actions
-  -> Sub b
-mapSub f sub = \g -> sub (g . f)
+  -> Sub m b
+mapSub f sub = \g m -> sub (g . f) m
 -----------------------------------------------------------------------------
 -- | Schedule a single 'IO' action, executed synchronously. For asynchronous
 -- execution, see 'io'.

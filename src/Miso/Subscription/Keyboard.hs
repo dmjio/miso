@@ -107,11 +107,11 @@ toArrows (up, down, left, right) set' = Arrows
       check = any (`S.member` set')
 -----------------------------------------------------------------------------
 -- | Maps t'Arrows' onto a Keyboard subscription.
-arrowsSub :: (Arrows -> action) -> Sub action
+arrowsSub :: (Arrows -> action) -> Sub model action
 arrowsSub = directionSub ([38], [40], [37], [39])
 -----------------------------------------------------------------------------
 -- | Maps t'Arrows' onto a Keyboard subscription for directions (W+A+S+D keys).
-wasdSub :: (Arrows -> action) -> Sub action
+wasdSub :: (Arrows -> action) -> Sub model action
 wasdSub = directionSub ([87], [83], [65], [68])
 -----------------------------------------------------------------------------
 -- | Maps a specified list of keys to directions (up, down, left, right).
@@ -121,12 +121,12 @@ directionSub
   -- ^ @(up, down, left, right)@ keyCode lists for each direction
   -> (Arrows -> action)
   -- ^ Callback fired with the current t'Arrows' state on every key change
-  -> Sub action
+  -> Sub model action
 directionSub dirs = keyboardSub . (. toArrows dirs)
 -----------------------------------------------------------------------------
 -- | Returns 'Sub' for keyboard events.
 -- The callback will be called with the Set of currently pressed @keyCode@s.
-keyboardSub :: (IntSet -> action) -> Sub action
+keyboardSub :: (IntSet -> action) -> Sub model action
 keyboardSub f sink = createSub acquire release sink
   where
     release (cb1, cb2, cb3) = do

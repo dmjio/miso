@@ -60,6 +60,6 @@ import Miso.Effect (Sub)
 mouseSub
   :: (PointerEvent -> action)
   -- ^ Callback fired with the full 'PointerEvent' on every @pointermove@
-  -> Sub action
+  -> Sub model action
 mouseSub = windowSub "pointermove" pointerDecoder
 -----------------------------------------------------------------------------

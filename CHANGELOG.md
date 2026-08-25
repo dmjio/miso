@@ -36,6 +36,16 @@ All notable changes to `miso` are documented here.
   secure context (HTTPS or `localhost`); on browsers without the API
   (e.g. Firefox) the error callback fires and `cookieChangeSub` is a no-op.
 
+- **`canvasSub`.** New `Miso.Subscription.Canvas` module. `canvasSub` drives
+  a `<canvas>` in a tight `requestAnimationFrame` loop, bypassing virtual DOM
+  construction entirely — unlike `Miso.Canvas`, whose `draw` runs during the
+  diffing process on discrete events. Pair it with `onCreatedWith` /
+  `onDestroyed` and `startSub` / `stopSub` to start the loop when the canvas
+  mounts and stop it on unmount. The draw callback receives each frame's
+  high-resolution timestamp and a snapshot of the component's current model
+  (see the `Sub` change below), and the queued frame is cancelled before the
+  callback is freed on teardown.
+
 - **`Miso.Trace`.** A browser-console analogue of `Debug.Trace` for
   debugging pure code such as `view` functions or helpers called from
   `update`. `trace`, `traceId`, `traceWith`, `traceShow`, `traceShowId`,
@@ -139,6 +149,17 @@ All notable changes to `miso` are documented here.
   key moved into `SomeComponent (Maybe Key) …`, and `VComp` / `VCompStatic` /
   `SomeStaticComponent` were restructured. Downstream `view` and attribute
   signatures must be updated accordingly.
+
+- **Breaking: `Sub` gained a `model` type parameter.** `Sub action` is now
+  `Sub model action`, and a subscription receives a second argument — an
+  `IO model` that returns a snapshot of the component's current model:
+  `type Sub model action = Sink action -> IO model -> IO ()`. This lets
+  long-running subscriptions (like `canvasSub`) read the latest model
+  without threading it through actions. All bundled subscriptions were
+  updated; user-defined subscriptions that ignore the model need only accept
+  (and discard) the extra argument, e.g.
+  `tickSub sink _ = forever (threadDelay delay >> sink Tick)`. `mapSub`,
+  `createSub`, and `startSub` were updated accordingly.
 
 - **Breaking: `Miso.Binding` was removed.** The experimental lens-based
   parent/child model synchronisation mechanism (`Binding`, `Bindings`,

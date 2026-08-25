@@ -312,7 +312,8 @@ initialize events _componentParentId hydrate isRoot initialProps maybeKey _compo
 
   when isRoot (delegator _componentDOMRef _componentVTree events (logLevel `elem` [DebugEvents, DebugAll]))
   registerComponent vcomponent
-  initSubs subs _componentSubThreads _componentSink
+  getModel <- mkGetModel _componentId initializedModel
+  initSubs getModel subs _componentSubThreads _componentSink
   -- Runs on every thread. On Lynx the MTS paints the initial frame directly
   -- (fast first frame) while the BTS builds the same VTree but suppresses its
   -- create-patches (deterministic nodeId parity keeps both trees addressable) —
@@ -345,13 +346,30 @@ initialize events _componentParentId hydrate isRoot initialProps maybeKey _compo
 #endif
   pure vcomponent
 -----------------------------------------------------------------------------
-initSubs :: [Sub action] -> IORef (Map MisoString ThreadId) -> Sink action -> IO ()
-initSubs subs_ _componentSubThreads _componentSink = do
+initSubs :: IO model -> [Sub model action] -> IORef (Map MisoString ThreadId) -> Sink action -> IO ()
+initSubs getModel subs_ _componentSubThreads _componentSink = do
   forM_ subs_ $ \sub_ -> do
-    threadId <- forkIO (sub_ _componentSink)
+    threadId <- forkIO (sub_ _componentSink getModel)
     subKey <- freshSubId
     atomicModifyIORef' _componentSubThreads $ \m ->
       (M.insert subKey threadId m, ())
+-----------------------------------------------------------------------------
+-- | Builds the @IO model@ handed to each 'Sub': a total lookup of the
+-- component's current model. A 'Sub' is normally killed before its component
+-- is deleted from 'components', but teardown is not atomic — 'killThread'
+-- returns on exception delivery, before the 'Sub' finalizer has run, so e.g.
+-- a still-queued requestAnimationFrame callback can fire after the component
+-- is gone. In that window the last observed model is returned rather than
+-- crashing on a missing key.
+mkGetModel :: ComponentId -> model -> IO (IO model)
+mkGetModel vcompId initialModel = do
+  lastModel <- newIORef initialModel
+  pure $
+    IM.lookup vcompId <$> readIORef components >>= \case
+      Nothing -> readIORef lastModel
+      Just ComponentState { _componentModel = currentModel } -> do
+        atomicWriteIORef lastModel currentModel
+        pure currentModel
 -----------------------------------------------------------------------------
 -- | Diffs two values (models, props, context), returning True if they differ
 -- and a redraw / propagation is necessary. Pointer equality via 'StableName'
@@ -1505,7 +1523,7 @@ startSub
   :: ToMisoString subKey
   => subKey
   -- ^ The key used to track the 'Sub'
-  -> Sub action
+  -> Sub model action
   -- ^ The 'Sub'
   -> Effect context props model action
 startSub subKey sub = do
@@ -1525,10 +1543,16 @@ startSub subKey sub = do
               ThreadDied -> startThread compState
               _ -> pure ()
   where
-    startThread ComponentState {..} = do
-      tid <- forkIO (sub _componentSink)
-      atomicModifyIORef' _componentSubThreads $ \m ->
-        (M.insert (ms subKey) tid m, ())
+    startThread ComponentState
+      { _componentId = vcompId
+      , _componentSink = vcompSink
+      , _componentSubThreads = subThreads
+      , _componentModel = currentModel
+      } = do
+        getModel <- mkGetModel vcompId currentModel
+        tid <- forkIO (sub vcompSink getModel)
+        atomicModifyIORef' subThreads $ \m ->
+          (M.insert (ms subKey) tid m, ())
 -----------------------------------------------------------------------------
 -- | Stops a named 'Sub' dynamically, during the life of a t'Miso.Types.Component'.
 -- All 'Sub' started will be stopped automatically if a t'Miso.Types.Component' is unmounted.

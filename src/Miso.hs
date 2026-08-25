@@ -961,7 +961,9 @@
 -- = Subscriptions
 --
 -- A t'Sub' is any long-running operation that is external to a t'Miso.Types.Component', but that can write
--- to a t'Miso.Types.Component' 'Sink'. 'Sub' come in two flavors, a dynamic 'Sub' (via 'startSub' / 'stopSub') and 'subs'.
+-- to a t'Miso.Types.Component' 'Sink'. Along with the 'Sink', a 'Sub' receives an @IO model@ action
+-- returning a snapshot of its t'Miso.Types.Component'\'s current model (ignore it if unneeded).
+-- 'Sub' come in two flavors, a dynamic 'Sub' (via 'startSub' / 'stopSub') and 'subs'.
 --
 -- * 'subs'
 --
@@ -969,8 +971,8 @@
 -- main :: t'IO' ()
 -- main = 'startApp' 'Miso.Event.Types.defaultEvents' app { 'subs' = [ timerSub ] }
 --
--- timerSub :: 'Sub' Action
--- timerSub sink = 'Control.Monad.forever' $ ('Control.Concurrent.threadDelay' 100000) >> sink Log
+-- timerSub :: 'Sub' Model Action
+-- timerSub sink _getModel = 'Control.Monad.forever' $ ('Control.Concurrent.threadDelay' 100000) >> sink Log
 --
 -- data Action = Log
 -- @
@@ -979,7 +981,7 @@
 -- When a t'Miso.Types.Component' unmounts, these 'Sub' will be stopped, and their resources finalized.
 --
 -- @
--- 'onLineSub' :: ('Bool' -> action) -> 'Sub' action
+-- 'onLineSub' :: ('Bool' -> action) -> 'Sub' model action
 -- 'onLineSub' f sink = 'Miso.Subscription.Util.createSub' acquire release sink
 --   where
 --     release (cb1, cb2) = do
@@ -1002,8 +1004,8 @@
 --   StopTimer -> 'stopSub' "timer"
 --   Log -> 'io_' ('Miso.FFI.consoleLog' "log")
 --     where
---       timerSub :: 'Sub' Action
---       timerSub sink = 'Control.Monad.forever' $ ('Control.Concurrent.threadDelay' 100000) >> sink Log
+--       timerSub :: 'Sub' Model Action
+--       timerSub sink _getModel = 'Control.Monad.forever' $ ('Control.Concurrent.threadDelay' 100000) >> sink Log
 --
 -- data Action = Log
 -- @

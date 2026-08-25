@@ -88,7 +88,7 @@ import           Miso.Canvas (Coord)
 windowCoordsSub
   :: (Coord -> action)
   -- ^ Callback fired with @(clientX, clientY)@ on every @pointermove@ event
-  -> Sub action
+  -> Sub model action
 windowCoordsSub f = windowPointerMoveSub (f . client)
 -----------------------------------------------------------------------------
 -- | @windowSub eventName decoder toAction@ provides a subscription
@@ -100,7 +100,7 @@ windowSub
   -- ^ t'Decoder' for extracting a value from the raw event object
   -> (r -> action)
   -- ^ Callback fired with the decoded value on each event
-  -> Sub action
+  -> Sub model action
 windowSub = windowSubWithOptions defaultOptions
 -----------------------------------------------------------------------------
 -- | @windowSubWithOptions options eventName decoder toAction@ provides a
@@ -114,7 +114,7 @@ windowSubWithOptions
   -- ^ t'Decoder' for extracting a value from the raw event object
   -> (result -> action)
   -- ^ Callback fired with the decoded value on each event
-  -> Sub action
+  -> Sub model action
 windowSubWithOptions Options{..} eventName Decoder {..} toAction sink =
   createSub acquire release sink
     where
@@ -137,6 +137,6 @@ windowSubWithOptions Options{..} eventName Decoder {..} toAction sink =
 windowPointerMoveSub
   :: (PointerEvent -> action)
   -- ^ Callback fired with the full t'PointerEvent' on every @pointermove@
-  -> Sub action
+  -> Sub model action
 windowPointerMoveSub = windowSub "pointermove" pointerDecoder
 -----------------------------------------------------------------------------
