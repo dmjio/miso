@@ -5,7 +5,11 @@
 module Miso.DSL.FFI where
 -----------------------------------------------------------------------------
 import           Control.Exception (Exception)
-import           Data.Text (Text, pack, unpack)
+import           Data.Text (Text, unpack)
+import qualified Data.Text.Lazy as TL
+import qualified Data.Text.Lazy.Builder as TB
+import qualified Data.Text.Lazy.Builder.Int as TBI
+import qualified Data.Text.Lazy.Builder.RealFloat as TBR
 import           Text.Read (readMaybe)
 -----------------------------------------------------------------------------
 -- | A type that represents any JS value
@@ -216,14 +220,14 @@ parseFloat :: Text -> Maybe Float
 parseFloat = readMaybe . unpack
 -----------------------------------------------------------------------------
 toString_Int :: Int -> Text
-toString_Int = pack . show
+toString_Int = TL.toStrict . TB.toLazyText . TBI.decimal
 -----------------------------------------------------------------------------
 toString_Word :: Word -> Text
-toString_Word = pack . show
+toString_Word = TL.toStrict . TB.toLazyText . TBI.decimal
 -----------------------------------------------------------------------------
 toString_Float :: Float -> Text
-toString_Float = pack . show
+toString_Float = TL.toStrict . TB.toLazyText . TBR.realFloat
 -----------------------------------------------------------------------------
 toString_Double :: Double -> Text
-toString_Double = pack . show
+toString_Double = TL.toStrict . TB.toLazyText . TBR.realFloat
 -----------------------------------------------------------------------------

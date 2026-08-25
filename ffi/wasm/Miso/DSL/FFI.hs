@@ -89,12 +89,15 @@ module Miso.DSL.FFI
   , JSException
   ) where
 -----------------------------------------------------------------------------
-import           Data.Text (Text, pack)
+import           Data.Text (Text)
 import           Control.Monad
 import           Data.JSString (textFromJSString, textToJSString)
 #ifdef MISO_TEXT
-import qualified Data.JSString as JSS
 import qualified Data.Text as T
+import qualified Data.Text.Lazy as TL
+import qualified Data.Text.Lazy.Builder as TB
+import qualified Data.Text.Lazy.Builder.Int as TBI
+import qualified Data.Text.Lazy.Builder.RealFloat as TBR
 import qualified Data.Text.Read as TR
 #endif
 import           Prelude hiding (length, head, tail, unlines, concat, null, drop, replicate, concatMap)
@@ -546,22 +549,23 @@ parseFloat string = realToFrac <$> parseDouble string
 #ifdef MISO_TEXT
 -- | 'show' agrees with JS's native number formatting for 'Int', so this
 -- avoids allocating a throwaway 'JSVal' via the FFI just to convert it
--- straight back to 'Text'.
+-- straight back to 'Text'. Built via 'Data.Text.Lazy.Builder' rather than
+-- @pack . show@ to skip the intermediate 'String'.
 toString_Int :: Int -> Text
-toString_Int = pack . show
+toString_Int = TL.toStrict . TB.toLazyText . TBI.decimal
 {-# INLINE toString_Int #-}
 -----------------------------------------------------------------------------
 toString_Double :: Double -> Text
-toString_Double = pack . show
+toString_Double = TL.toStrict . TB.toLazyText . TBR.realFloat
 {-# INLINE toString_Double #-}
 -----------------------------------------------------------------------------
 toString_Float :: Float -> Text
-toString_Float = pack . show
+toString_Float = TL.toStrict . TB.toLazyText . TBR.realFloat
 {-# INLINE toString_Float #-}
 -----------------------------------------------------------------------------
 -- | See 'toString_Int': 'show' matches JS formatting for 'Word' too.
 toString_Word :: Word -> Text
-toString_Word = pack . show
+toString_Word = TL.toStrict . TB.toLazyText . TBI.decimal
 {-# INLINE toString_Word #-}
 #endif
 -----------------------------------------------------------------------------
