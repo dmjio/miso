@@ -542,11 +542,11 @@ toString_Int = pack . show
 {-# INLINE toString_Int #-}
 -----------------------------------------------------------------------------
 toString_Double :: Double -> Text
-toString_Double = textFromJSString . JSS.toString_Double
+toString_Double = pack . show
 {-# INLINE toString_Double #-}
 -----------------------------------------------------------------------------
 toString_Float :: Float -> Text
-toString_Float = textFromJSString . JSS.toString_Float
+toString_Float = pack . show
 {-# INLINE toString_Float #-}
 -----------------------------------------------------------------------------
 -- | See 'toString_Int': 'show' matches JS formatting for 'Word' too.
