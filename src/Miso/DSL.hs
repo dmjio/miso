@@ -562,7 +562,13 @@ setField
 setField o k v = do
   o' <- toJSVal =<< toObject o
   v' <- toJSVal v
-  setProp_ffi k v' o'
+  setProp_ffi
+#ifdef MISO_TEXT
+    (textToJSString k)
+#else
+    k
+#endif
+    v' o'
 {-# INLINABLE setField #-}
 -----------------------------------------------------------------------------
 -- | Sets a field on an Object at a specified index
@@ -610,7 +616,13 @@ infixr 2 #
 (#) :: (ToObject object, ToArgs args) => object -> MisoString -> args -> IO JSVal
 (#) o k args = do
   o' <- toJSVal =<< toObject o
-  func <- getProp_ffi k o'
+  func <- getProp_ffi
+#ifdef MISO_TEXT
+    (textToJSString k)
+#else
+    k
+#endif
+    o'
   args' <- toJSVal =<< toArgs args
   result <- invokeFunction func o' args'
   -- @func@ and the argument array are temporaries nobody else can reach;
@@ -689,7 +701,13 @@ setProp
   -> Object
   -- ^ Target JavaScript object
   -> IO ()
-setProp k v (Object o) = flip (setProp_ffi k) o =<< toJSVal v
+setProp k v (Object o) = flip (setProp_ffi
+#ifdef MISO_TEXT
+    (textToJSString k)
+#else
+    k
+#endif
+    ) o =<< toJSVal v
 {-# INLINABLE setProp #-}
 -----------------------------------------------------------------------------
 -- | Retrieves a property from a JS t'Object'
@@ -700,7 +718,13 @@ getProp
   -> o
   -- ^ JavaScript object to read from
   -> IO JSVal
-getProp k v = getProp_ffi k =<< toJSVal (toObject v)
+getProp k v = getProp_ffi
+#ifdef MISO_TEXT
+    (textToJSString k)
+#else
+    k
+#endif
+    =<< toJSVal (toObject v)
 {-# INLINABLE getProp #-}
 -----------------------------------------------------------------------------
 -- | Dynamically evaluates a JS string. See [eval](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/eval)
@@ -711,7 +735,12 @@ getProp k v = getProp_ffi k =<< toJSVal (toObject v)
 -- Consider using the more performant and secure (isolated) `inline` function.
 --
 eval :: MisoString -> IO JSVal
-eval = eval_ffi
+eval =
+#ifdef MISO_TEXT
+  eval_ffi . textToJSString
+#else
+  eval_ffi
+#endif
 {-# INLINABLE eval #-}
 -----------------------------------------------------------------------------
 instance FromJSVal Bool where
@@ -768,7 +797,7 @@ instance ToArgs MisoString where
   toArgs arg = (:[]) <$> toJSVal arg
   {-# INLINE toArgs #-}
 ----------------------------------------------------------------------------
-#ifndef VANILLA
+#if !defined(VANILLA) && !defined(MISO_TEXT)
 ----------------------------------------------------------------------------
 instance ToJSVal MisoString where
   toJSVal = toJSVal_JSString

@@ -1,15 +1,21 @@
-.PHONY= update build build-aeson optim aeson
+.PHONY= update build build-aeson build-aeson-text optim aeson aeson-text
 
 all: update build optim
 
 # Same as 'all', but with miso built against aeson (the 'aeson' cabal flag)
 aeson: update build-aeson optim
 
+# Same as 'all', but with miso built against aeson + text (the 'aeson' and 'text' cabal flags)
+aeson-text: update build-aeson-text optim
+
 update:
 	wasm32-wasi-cabal update
 
 build-aeson: CABAL_OPTS = --constraint="miso +aeson"
 build-aeson: build
+
+build-aeson-text: CABAL_OPTS = --constraint="miso +aeson +text"
+build-aeson-text: build
 
 build:
 	wasm32-wasi-cabal build component-tests $(CABAL_OPTS)

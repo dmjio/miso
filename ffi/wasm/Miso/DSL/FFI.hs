@@ -1,4 +1,5 @@
 -----------------------------------------------------------------------------
+{-# LANGUAGE CPP                      #-}
 {-# LANGUAGE LambdaCase               #-}
 {-# LANGUAGE TemplateHaskell          #-}
 {-# LANGUAGE MultilineStrings         #-}
@@ -77,12 +78,23 @@ module Miso.DSL.FFI
   , parseDouble
   , parseWord
   , parseFloat
+#ifdef MISO_TEXT
+  , toString_Int
+  , toString_Double
+  , toString_Float
+  , toString_Word
+#endif
+  , textFromJSString
+  , textToJSString
   , JSException
   ) where
 -----------------------------------------------------------------------------
 import           Data.Text (Text)
 import           Control.Monad
 import           Data.JSString (textFromJSString, textToJSString)
+#ifdef MISO_TEXT
+import qualified Data.JSString as JSS
+#endif
 import           Prelude hiding (length, head, tail, unlines, concat, null, drop, replicate, concatMap)
 -----------------------------------------------------------------------------
 import           GHC.Wasm.Prim
@@ -465,16 +477,30 @@ foreign import javascript unsafe
   """
   parseInt_Unchecked :: JSString -> Double
 -----------------------------------------------------------------------------
-parseWord :: JSString -> Maybe Word
-parseWord string = fromIntegral <$> parseInt string
-{-# INLINE parseWord #-}
------------------------------------------------------------------------------
-parseInt :: JSString -> Maybe Int
-parseInt string = do
+parseInt_JSString :: JSString -> Maybe Int
+parseInt_JSString string =
   case parseInt_Unchecked string of
     double | isNaN double -> Nothing
            | otherwise -> Just (round double)
+{-# INLINE parseInt_JSString #-}
+-----------------------------------------------------------------------------
+#ifdef MISO_TEXT
+parseInt :: Text -> Maybe Int
+parseInt = parseInt_JSString . textToJSString
 {-# INLINE parseInt #-}
+#else
+parseInt :: JSString -> Maybe Int
+parseInt = parseInt_JSString
+{-# INLINE parseInt #-}
+#endif
+-----------------------------------------------------------------------------
+#ifdef MISO_TEXT
+parseWord :: Text -> Maybe Word
+#else
+parseWord :: JSString -> Maybe Word
+#endif
+parseWord string = fromIntegral <$> parseInt string
+{-# INLINE parseWord #-}
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """
@@ -482,14 +508,46 @@ foreign import javascript unsafe
   """
   parseDouble_Unchecked :: JSString -> Double
 -----------------------------------------------------------------------------
-parseDouble :: JSString -> Maybe Double
-parseDouble string = do
+parseDouble_JSString :: JSString -> Maybe Double
+parseDouble_JSString string =
   case parseDouble_Unchecked string of
     double | isNaN double -> Nothing
            | otherwise -> Just double
-{-# INLINE parseDouble #-}
+{-# INLINE parseDouble_JSString #-}
 -----------------------------------------------------------------------------
+#ifdef MISO_TEXT
+parseDouble :: Text -> Maybe Double
+parseDouble = parseDouble_JSString . textToJSString
+{-# INLINE parseDouble #-}
+#else
+parseDouble :: JSString -> Maybe Double
+parseDouble = parseDouble_JSString
+{-# INLINE parseDouble #-}
+#endif
+-----------------------------------------------------------------------------
+#ifdef MISO_TEXT
+parseFloat :: Text -> Maybe Float
+#else
 parseFloat :: JSString -> Maybe Float
+#endif
 parseFloat string = realToFrac <$> parseDouble string
 {-# INLINE parseFloat #-}
+-----------------------------------------------------------------------------
+#ifdef MISO_TEXT
+toString_Int :: Int -> Text
+toString_Int = textFromJSString . JSS.toString_Int
+{-# INLINE toString_Int #-}
+-----------------------------------------------------------------------------
+toString_Double :: Double -> Text
+toString_Double = textFromJSString . JSS.toString_Double
+{-# INLINE toString_Double #-}
+-----------------------------------------------------------------------------
+toString_Float :: Float -> Text
+toString_Float = textFromJSString . JSS.toString_Float
+{-# INLINE toString_Float #-}
+-----------------------------------------------------------------------------
+toString_Word :: Word -> Text
+toString_Word = textFromJSString . JSS.toString_Word
+{-# INLINE toString_Word #-}
+#endif
 -----------------------------------------------------------------------------

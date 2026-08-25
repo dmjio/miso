@@ -31,7 +31,7 @@ module Miso.String
   , FromMisoString (..)
   , fromMisoString
   , MisoString
-#ifdef VANILLA
+#if defined(VANILLA) || defined(MISO_TEXT)
   , module Data.Text
 #else
   , module Data.JSString
@@ -43,7 +43,7 @@ import           Control.Exception
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Builder as B
 import qualified Data.ByteString.Lazy as BL
-#ifdef VANILLA
+#if defined(VANILLA) || defined(MISO_TEXT)
 import           Data.Text hiding (show, elem)
 #else
 import           Data.JSString
@@ -64,7 +64,7 @@ import           Miso.DSL.FFI
 -- * WASM \/ GHC JS backend: alias for @JSString@ — a zero-copy wrapper around
 --   a native JavaScript string, giving optimal interop with the DOM and JSON APIs
 --
-#ifdef VANILLA
+#if defined(VANILLA) || defined(MISO_TEXT)
 type MisoString = Text
 #else
 type MisoString = JSString
@@ -108,7 +108,7 @@ instance ToMisoString Char where
 instance ToMisoString IOException where
   toMisoString = ms . show
 ----------------------------------------------------------------------------
-#ifndef VANILLA
+#if !defined(VANILLA) && !defined(MISO_TEXT)
 instance ToMisoString MisoString where
   toMisoString = id
 #endif
@@ -123,7 +123,7 @@ instance ToMisoString LT.Text where
   toMisoString = ms . LT.toStrict
 ----------------------------------------------------------------------------
 instance ToMisoString T.Text where
-#ifdef VANILLA
+#if defined(VANILLA) || defined(MISO_TEXT)
   toMisoString = id
 #else
   toMisoString = textToJSString
@@ -139,8 +139,7 @@ instance ToMisoString B.Builder where
   toMisoString = ms . B.toLazyByteString
 ----------------------------------------------------------------------------
 instance ToMisoString Float where
-  -- dmj: issue where Float shows additional digits (affects both JS & WASM)
-  toMisoString = toString_Double . realToFrac
+  toMisoString = toString_Float
 ----------------------------------------------------------------------------
 instance ToMisoString Double where
   toMisoString = toString_Double
@@ -151,13 +150,13 @@ instance ToMisoString Int where
 instance ToMisoString Word where
   toMisoString = toString_Word
 ----------------------------------------------------------------------------
-#ifndef VANILLA
+#if !defined(VANILLA) && !defined(MISO_TEXT)
 instance FromMisoString MisoString where
   fromMisoStringEither = Right
 #endif
 ----------------------------------------------------------------------------
 instance FromMisoString T.Text where
-#ifdef VANILLA
+#if defined(VANILLA) || defined(MISO_TEXT)
   fromMisoStringEither = Right
 #else
   fromMisoStringEither = Right . textFromJSString
@@ -167,7 +166,7 @@ instance FromMisoString String where
   fromMisoStringEither = Right . unpack
 ----------------------------------------------------------------------------
 instance FromMisoString LT.Text where
-#ifdef VANILLA
+#if defined(VANILLA) || defined(MISO_TEXT)
   fromMisoStringEither = Right . LT.fromStrict
 #else
   fromMisoStringEither = Right . LT.fromStrict . textFromJSString

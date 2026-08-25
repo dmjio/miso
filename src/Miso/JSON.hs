@@ -340,7 +340,7 @@ mv .!= def = fmap (fromMaybe def) mv
 #endif
 ----------------------------------------------------------------------------
 #ifdef AESON
-#ifndef VANILLA
+#if !defined(VANILLA) && !defined(MISO_TEXT)
 -- On the JavaScript and WASM backends t'MisoString' is @JSString@, which
 -- aeson does not know about; these orphans make it a first-class JSON
 -- citizen so code written against "Miso.JSON" keeps compiling.
@@ -661,7 +661,7 @@ instance (ToJSON a,ToJSON b,ToJSON c, ToJSON d) => ToJSON (a,b,c,d) where
 instance ToJSON MisoString where
   toJSON = String
 ----------------------------------------------------------------------------
-#ifndef VANILLA
+#if !defined(VANILLA) && !defined(MISO_TEXT)
 instance ToJSON T.Text where
   toJSON = toJSON . ms
 #endif
@@ -967,7 +967,7 @@ instance FromJSON Bool where
 instance FromJSON MisoString where
   parseJSON = withText "MisoString" pure
 ----------------------------------------------------------------------------
-#ifndef VANILLA
+#if !defined(VANILLA) && !defined(MISO_TEXT)
 instance FromJSON T.Text where
   parseJSON = withText "Text" go
     where
@@ -1336,9 +1336,17 @@ foreign import javascript unsafe
 #endif
 -----------------------------------------------------------------------------
 #ifdef WASM
+#ifdef MISO_TEXT
+foreign import javascript unsafe
+  "return JSON.stringify($1, null, $2);"
+  encodePretty_ffi_JSString :: JSVal -> Int -> IO JSString
+encodePretty_ffi :: JSVal -> Int -> IO MisoString
+encodePretty_ffi jsval n = textFromJSString <$> encodePretty_ffi_JSString jsval n
+#else
 foreign import javascript unsafe
   "return JSON.stringify($1, null, $2);"
   encodePretty_ffi :: JSVal -> Int -> IO MisoString
+#endif
 #endif
 -----------------------------------------------------------------------------
 -- | Like 'encodePretty' but with a custom t'Config'.
@@ -1386,9 +1394,17 @@ foreign import javascript unsafe
 #endif
 -----------------------------------------------------------------------------
 #ifdef WASM
+#ifdef MISO_TEXT
+foreign import javascript unsafe
+  "return JSON.stringify($1);"
+  jsonStringify_JSString :: JSVal -> IO JSString
+jsonStringify :: JSVal -> IO MisoString
+jsonStringify jsval = textFromJSString <$> jsonStringify_JSString jsval
+#else
 foreign import javascript unsafe
   "return JSON.stringify($1);"
   jsonStringify :: JSVal -> IO MisoString
+#endif
 #endif
 -----------------------------------------------------------------------------
 #ifdef VANILLA
@@ -1410,9 +1426,17 @@ foreign import javascript unsafe
 #endif
 -----------------------------------------------------------------------------
 #ifdef WASM
+#ifdef MISO_TEXT
+foreign import javascript unsafe
+  "return JSON.parse($1);"
+  jsonParse_JSString :: JSString -> IO JSVal
+jsonParse :: MisoString -> IO JSVal
+jsonParse = jsonParse_JSString . textToJSString
+#else
 foreign import javascript unsafe
   "return JSON.parse($1);"
   jsonParse :: MisoString -> IO JSVal
+#endif
 #endif
 -----------------------------------------------------------------------------
 #ifdef VANILLA
@@ -1556,7 +1580,12 @@ fromJSVal_Value jsval = do
   typeof jsval >>= \case
     0 -> return (Just Null)
     1 -> Just . doubleToNumber <$> fromJSValUnchecked_Double jsval
-    2 -> pure $ Just $ mkString $ (JSString jsval)
+    2 -> pure $ Just $ mkString $
+#ifdef MISO_TEXT
+           textFromJSString (JSString jsval)
+#else
+           (JSString jsval)
+#endif
     3 -> fromJSValUnchecked_Int jsval >>= \case
       0 -> pure $ Just (Bool False)
       1 -> pure $ Just (Bool True)
@@ -1570,7 +1599,14 @@ fromJSVal_Value jsval = do
                 let key = JSString k
                 raw <- MaybeT $ Just <$> getProp_ffi key jsval
                 value <- MaybeT (fromJSVal_Value raw)
-                pure (key, value)
+                pure
+                  (
+#ifdef MISO_TEXT
+                    textFromJSString key
+#else
+                    key
+#endif
+                  , value)
             pure (toObject <$> result)
     _ -> error "fromJSVal_Value: Unknown JSON type"
   where
@@ -1615,7 +1651,11 @@ toJSVal_Value = \case
   Bool bool_ ->
     toJSVal_Bool bool_
   String string ->
+#ifdef MISO_TEXT
+    toJSVal_Text (stringToMiso string)
+#else
     toJSVal_JSString (stringToMiso string)
+#endif
   Number double ->
     toJSVal_Double (numberToDouble double)
   Array arr ->
@@ -1624,7 +1664,13 @@ toJSVal_Value = \case
     o <- create_ffi
     forM_ (objectAssocs hms) $ \(k,v) -> do
       v' <- toJSVal_Value v
-      setProp_ffi k v' o
+      setProp_ffi
+#ifdef MISO_TEXT
+        (textToJSString k)
+#else
+        k
+#endif
+        v' o
     pure o
 #endif
 -----------------------------------------------------------------------------

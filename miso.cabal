@@ -61,6 +61,10 @@ common cpp
     cpp-options:
       -DAESON
 
+  if flag(text)
+    cpp-options:
+      -DMISO_TEXT
+
 common client
   if impl(ghcjs) || arch(javascript) || arch(wasm32)
     if flag(native) && flag(production)
@@ -129,6 +133,14 @@ flag aeson
     of aeson (Data.Aeson), and its types (Value, Object, Parser) become
     aeson's. Miso's own Generic deriving machinery is not exported in this
     mode; aeson provides its own.
+
+flag text
+  manual:
+    True
+  default:
+    False
+  description:
+    When enabled, this force MisoString to be Text.
 
 library
   import:

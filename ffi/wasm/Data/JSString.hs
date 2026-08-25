@@ -911,7 +911,20 @@ foreign import javascript unsafe "return ($1).toString()"
 foreign import javascript unsafe "return ($1).toString()"
   toString_Double :: Double -> JSString
 -----------------------------------------------------------------------------
-foreign import javascript unsafe "return ($1).toString()"
+-- Note: $1 arrives widened to a JS (f64) Number, so a plain `.toString()`
+-- prints the full f64 expansion of the f32 value (e.g. "3.140000104904175"
+-- for 3.14f) rather than the shortest decimal that round-trips through
+-- float32. Search increasing precisions until re-parsing (narrowed back to
+-- f32 via Math.fround) recovers the original value.
+foreign import javascript unsafe
+  """
+  var x = $1;
+  for (var p = 1; p <= 9; p++) {
+    var s = x.toPrecision(p);
+    if (Math.fround(parseFloat(s)) === x) return String(parseFloat(s));
+  }
+  return String(x);
+  """
   toString_Float :: Float -> JSString
 -----------------------------------------------------------------------------
 toString_Word :: Word -> JSString
