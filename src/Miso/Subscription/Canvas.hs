@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Miso.Subscription.Cookie
+-- Module      :  Miso.Subscription.Canvas
 -- Copyright   :  (C) 2016-2026 David M. Johnson
 -- License     :  BSD3-style (see the file LICENSE)
 -- Maintainer  :  David M. Johnson <code@dmj.io>
@@ -58,7 +58,7 @@ import Miso.Subscription.Util
 -- @
 --
 -- 'canvasSub' is meant to bypass virtual DOM creation, creating a more efficient canvas
--- draw. This works by calling requestForAnimationFrame in a tight loop around a freshly
+-- draw. This works by calling requestAnimationFrame in a tight loop around a freshly
 -- initialized canvas (per 'onCreated').
 --
 -- The difference between 'canvasSub' and "Miso.Canvas" is that this operates in a tight
@@ -69,7 +69,7 @@ canvasSub
   :: DOMRef
   -- ^ The canvas 'JSVal' (meant to be consumed from 'onCreatedWith')
   -> MisoString
-  -- ^ "2d" or "3d"
+  -- ^ "2d", "webgpu", "webgl2"
   -> (Double -> model -> Canvas state)
   -- ^ Canvas callback in 60fps, high precision timestamp, model snapshot
   -- as args to Canvas DSL templating
@@ -79,7 +79,7 @@ canvasSub canvasRef dim builder snk getModel = do
     where
       acquire = do
         ctx <- canvasRef # "getContext" $ dim
-        cbRef <- newIORef (error "rAFSub: uninitialized, impossible")
+        cbRef <- newIORef (error "canvasSub: uninitialized, impossible")
         idRef <- newIORef (0 :: Int)
         callback <-
           syncCallback1 $ \jsval -> do

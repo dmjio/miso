@@ -312,9 +312,7 @@ initialize events _componentParentId hydrate isRoot initialProps maybeKey _compo
 
   when isRoot (delegator _componentDOMRef _componentVTree events (logLevel `elem` [DebugEvents, DebugAll]))
   registerComponent vcomponent
-  -- dmj: This is safe to do because component model presence is an invariant during Sub lifetime
-  -- Sub lifetime is totally eclipsed by Component lifetime. Sub get killed before a Component unmounts.
-  let getModel = (_componentModel . (IM.! _componentId)) <$> readIORef components
+  getModel <- mkGetModel _componentId initializedModel
   initSubs getModel subs _componentSubThreads _componentSink
   -- Runs on every thread. On Lynx the MTS paints the initial frame directly
   -- (fast first frame) while the BTS builds the same VTree but suppresses its
@@ -355,6 +353,23 @@ initSubs getModel subs_ _componentSubThreads _componentSink = do
     subKey <- freshSubId
     atomicModifyIORef' _componentSubThreads $ \m ->
       (M.insert subKey threadId m, ())
+-----------------------------------------------------------------------------
+-- | Builds the @IO model@ handed to each 'Sub': a total lookup of the
+-- component's current model. A 'Sub' is normally killed before its component
+-- is deleted from 'components', but teardown is not atomic — 'killThread'
+-- returns on exception delivery, before the 'Sub' finalizer has run, so e.g.
+-- a still-queued requestAnimationFrame callback can fire after the component
+-- is gone. In that window the last observed model is returned rather than
+-- crashing on a missing key.
+mkGetModel :: ComponentId -> model -> IO (IO model)
+mkGetModel vcompId initialModel = do
+  lastModel <- newIORef initialModel
+  pure $
+    IM.lookup vcompId <$> readIORef components >>= \case
+      Nothing -> readIORef lastModel
+      Just ComponentState { _componentModel = currentModel } -> do
+        atomicWriteIORef lastModel currentModel
+        pure currentModel
 -----------------------------------------------------------------------------
 -- | Diffs two values (models, props, context), returning True if they differ
 -- and a redraw / propagation is necessary. Pointer equality via 'StableName'
@@ -1532,10 +1547,9 @@ startSub subKey sub = do
       { _componentId = vcompId
       , _componentSink = vcompSink
       , _componentSubThreads = subThreads
+      , _componentModel = currentModel
       } = do
-        -- dmj: same invariant as initSubs, the Sub lifetime is eclipsed by the
-        -- Component lifetime, so the model is always present during lookup.
-        let getModel = (_componentModel . (IM.! vcompId)) <$> readIORef components
+        getModel <- mkGetModel vcompId currentModel
         tid <- forkIO (sub vcompSink getModel)
         atomicModifyIORef' subThreads $ \m ->
           (M.insert (ms subKey) tid m, ())
