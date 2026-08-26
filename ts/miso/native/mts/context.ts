@@ -374,7 +374,11 @@ export const drawingContext : DrawingContext<ElementRef> = {
     return __SetAttribute(node,key,value);
   },
   removeAttribute : (node : ElementRef, key: string) => {
-    return __SetAttribute(node, key, '');
+    // The engine's Element::SetAttribute only takes the removal branch when
+    // the value is lepus-empty (null/undefined) — an empty string is a
+    // regular string value and gets stored in updated_attr_map_ instead of
+    // being removed from it.
+    return __SetAttribute(node, key, null);
   },
   setAttributeNS : (node, ns, key, value) => {
     return __SetAttribute(node,key,value);

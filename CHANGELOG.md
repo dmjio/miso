@@ -239,6 +239,16 @@ All notable changes to `miso` are documented here.
   variant that discards the response body (`postJSON`, `postJSON_`, `putText`,
   `putBlob_`, etc.) dispatched its success action twice per request.
 
+- **Native: attribute removal actually removes the attribute.** The MTS
+  drawing context's `removeAttribute` called `__SetAttribute(node, key, '')`.
+  The engine's `Element::SetAttribute` (`lynx/core/renderer/dom/element.cc`)
+  only takes the removal branch when the value is lepus-empty
+  (`null`/`undefined`) — an empty string is an ordinary string value, so it
+  was stored in `updated_attr_map_` instead of being removed. Every prop
+  diffed off a native element (`dom.ts`'s `diffProps`, which routes native
+  removals through this path) was setting it to `''` rather than clearing
+  it. Now passes `null`.
+
 - **`rAFSub` now cancels the pending animation frame on unsubscribe.**
   Release freed the `requestAnimationFrame` callback without cancelling the
   frame already queued in the browser; the next frame then invoked a freed
