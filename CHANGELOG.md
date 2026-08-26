@@ -232,6 +232,13 @@ All notable changes to `miso` are documented here.
 
 ### Fixed
 
+- **`Miso.Fetch`'s `none` response type no longer double-fires the success
+  callback.** `fetchCore` called the success callback directly for
+  `responseType == "none"` and then fell through into a second, unconditional
+  `.then` that called it again with `body: undefined`. Every `post*`/`put*`
+  variant that discards the response body (`postJSON`, `postJSON_`, `putText`,
+  `putBlob_`, etc.) dispatched its success action twice per request.
+
 - **`rAFSub` now cancels the pending animation frame on unsubscribe.**
   Release freed the `requestAnimationFrame` callback without cancelling the
   frame already queued in the browser; the next frame then invoked a freed

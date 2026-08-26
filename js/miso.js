@@ -67,7 +67,7 @@ function fetchCore(url, method, body, requestHeaders, successful, errorful, resp
       } else if (responseType === "formData") {
         return response.formData();
       } else if (responseType === "none") {
-        return successful({ error: null, body: null, headers, status });
+        return null;
       }
     }).then((body2) => successful({ error: null, body: body2, headers, status })).catch((body2) => errorful({ error: null, body: body2, headers, status }));
   } catch (err) {

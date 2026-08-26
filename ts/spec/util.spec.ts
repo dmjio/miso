@@ -246,7 +246,7 @@ describe('Fetch tests', () => {
   });
 
   test('Should handle none response type', async () => {
-    let successCalled = false;
+    let successCallCount = 0;
 
     global.fetch = mock(() =>
       Promise.resolve({
@@ -267,7 +267,7 @@ describe('Fetch tests', () => {
       null,
       {},
       (response) => {
-        successCalled = true;
+        successCallCount++;
         expect(response.body).toBeNull();
         expect(response.status).toBe(204);
       },
@@ -277,7 +277,7 @@ describe('Fetch tests', () => {
 
     await new Promise(resolve => setTimeout(resolve, 50));
 
-    expect(successCalled).toBe(true);
+    expect(successCallCount).toBe(1);
   });
 
   test('Should handle POST with body', async () => {
