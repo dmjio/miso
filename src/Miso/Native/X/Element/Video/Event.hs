@@ -91,7 +91,7 @@ videoEvents
   ]
 -----------------------------------------------------------------------------
 -- | Payload of the @bindfirstframe@ event.
-data VideoFirstFrameEvent
+newtype VideoFirstFrameEvent
   = VideoFirstFrameEvent
   { firstFrameDuration :: Double
     -- ^ Total video duration, in seconds.
@@ -116,7 +116,7 @@ data VideoErrorEvent
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
 -- | Payload of the @bindbuffering@ event.
-data VideoBufferingEvent
+newtype VideoBufferingEvent
   = VideoBufferingEvent
   { buffering :: Double
     -- ^ Buffered end position on the timeline, in seconds (i.e. the maximum
