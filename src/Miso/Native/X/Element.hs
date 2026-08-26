@@ -13,8 +13,8 @@
 -- [XElement](https://lynxjs.org/api/elements/built-in.html) family — the
 -- extended, opt-in built-in elements (@\<input\>@, @\<textarea\>@,
 -- @\<overlay\>@, @\<svg\>@, @\<refresh\>@, @\<viewpager\>@,
--- @\<scroll-coordinator\>@, @\<blur-view\>@, @\<webview\>@ and
--- @\<title-bar-view\>@).
+-- @\<scroll-coordinator\>@, @\<blur-view\>@, @\<webview\>@,
+-- @\<title-bar-view\>@ and @\<video\>@).
 --
 -- Attributes, events and methods for each element live in the corresponding
 -- @Miso.Native.X.Element.\<Name\>@ modules.
@@ -47,6 +47,8 @@ module Miso.Native.X.Element
   , webview_
     -- ** Title Bar View
   , titleBarView_
+    -- ** Video
+  , video_
   ) where
 -----------------------------------------------------------------------------
 import           Miso.Native.Element (lynx_, lynxDirect_)
@@ -175,4 +177,13 @@ webview_ attrs = lynxDirect_
 --
 titleBarView_ :: [Attribute model action] -> [View context model action] -> View context model action
 titleBarView_ = lynx_ "title-bar-view"
+-----------------------------------------------------------------------------
+-- | <https://lynxjs.org/next/api/elements/built-in/video.html>
+--
+-- Experimental video playback element. Does not support children.
+--
+video_ :: [Attribute model action] -> View context model action
+video_ attrs = lynxDirect_
+  [ "firstframe", "playing", "paused", "stopped", "timeupdate", "ended", "looped", "error", "buffering" ]
+  "video" attrs []
 -----------------------------------------------------------------------------
