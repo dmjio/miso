@@ -89,7 +89,7 @@ export function fetchCore (
           } else if (responseType === 'formData') {
             return response.formData();
           } else if (responseType === 'none') {
-            return successful({error:null, body: null, headers, status});
+            return null;
           }
         })
         .then((body) => successful({error: null, body, headers, status}))
