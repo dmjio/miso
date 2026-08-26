@@ -222,3 +222,23 @@ describe('drawingContext.nextSibling — MTS', () => {
     expect(drawingContext.nextSibling(node)).toBeNull();
   });
 });
+
+describe('drawingContext.removeAttribute — MTS', () => {
+
+  test('passes null, not an empty string, so the engine takes the removal branch', () => {
+    // Element::SetAttribute (lynx/core/renderer/dom/element.cc) only removes
+    // an attribute when the value is lepus-empty (null/undefined); an empty
+    // string is a normal string value and gets stored instead of removed.
+    let setAttributeCalls: Array<any[]> = [];
+    (globalThis as any).__SetAttribute = (...args: any[]) => { setAttributeCalls.push(args); };
+
+    const node: El = { nodeId: 300 };
+    drawingContext.removeAttribute(node as any, 'disabled');
+
+    expect(setAttributeCalls.length).toBe(1);
+    expect(setAttributeCalls[0][1]).toBe('disabled');
+    expect(setAttributeCalls[0][2]).toBeNull();
+
+    delete (globalThis as any).__SetAttribute;
+  });
+});
