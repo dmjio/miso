@@ -123,7 +123,7 @@
 --                       |  |  |  * - The type of the action that updates the @model@
 --                       |  |  |  |
 -- counter :: t'Miso.Types.Component' () () 'Int' Action
--- counter = 'vcomp' m u v
+-- counter = 'Miso.Types.component' m u v
 --   where
 --     -- | Initial @model@ value
 --     m :: 'Int'
@@ -233,9 +233,10 @@
 --
 -- * 'node', 'vnode' — build a 'VNode'
 -- * 'Miso.Types.text', 'vtext' — build a 'VText'
--- * 'Miso.Types.component', 'vcomp' — build a 'VComp' ('vcomp' is a synonym for 'Miso.Types.component')
+-- * 'Miso.Types.component' — build a 'VComp'
 -- * @fragment@, 'Miso.Types.vfrag', 'fragment_', 'vfrag_' — build a 'VFrag'
 -- * ('+>') — key and mount a child t'Miso.Types.Component'
+-- * 'vcomp', 'vcomp_' — build a 'VCompStatic' (see below)
 --
 -- A full list of element smart constructors built on 'node' (e.g. 'Miso.Html.Element.Miso.Html.Element.div_') can be found in "Miso.Html.Element".
 --
@@ -939,7 +940,7 @@
 --   | MailError   'MisoString'
 --
 -- myComp :: t'Miso.Types.Component' context props model Action
--- myComp = ('vcomp' m u v) { 'mailbox' = 'checkMail' ReceivedMsg MailError }
+-- myComp = ('Miso.Types.component' m u v) { 'mailbox' = 'checkMail' ReceivedMsg MailError }
 -- @
 --
 -- === Looking up a @ComponentId@
