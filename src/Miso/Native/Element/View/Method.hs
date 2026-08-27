@@ -79,7 +79,7 @@ instance ToJSVal BoundingClientRect where
 defaultBoundingClientRect :: BoundingClientRect
 defaultBoundingClientRect
   = BoundingClientRect
-  { androidEnableTransformProps = True
+  { androidEnableTransformProps = False
   , relativeTo = Nothing
   }
 -----------------------------------------------------------------------------
@@ -168,8 +168,8 @@ takeScreenshot = invokeExec "takeScreenshot"
 defaultTakeScreenshot :: TakeScreenshot
 defaultTakeScreenshot
   = TakeScreenshot
-  { scale = 0.5
-  , format = ".png"
+  { scale = 1
+  , format = "jpeg"
   }
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#requestaccessibilityfocus

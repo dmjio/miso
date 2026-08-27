@@ -1,4 +1,5 @@
 -----------------------------------------------------------------------------
+{-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
 -----------------------------------------------------------------------------
 -- |
@@ -36,6 +37,7 @@ module Miso.Native.X.Element.Overlay.Event
     -- *** Types
   , OverlayErrorEvent (..)
   , OverlayTouchEvent (..)
+  , OverlayTouchState (..)
     -- *** Decoders
   , overlayErrorDecoder
   , overlayTouchDecoder
@@ -69,16 +71,37 @@ overlayEvents
 -- | Payload of the @binderror@ event.
 data OverlayErrorEvent
   = OverlayErrorEvent
-  { errorCode :: MisoString
+  { errorCode :: Int
     -- ^ The error code
   , errorMsg :: MisoString
     -- ^ The error message
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
+-- | Touch phase of a @bindoverlaytouch@ event, mirrored from Lynx's
+-- @OverlayTouchState@ enum.
+--
+-- @since 1.13.0.0
+data OverlayTouchState
+  = OverlayTouchDown
+  | OverlayTouchMove
+  | OverlayTouchUp
+  | OverlayTouchCancel
+  deriving (Show, Eq)
+-----------------------------------------------------------------------------
+-- | Numbering matches Lynx's @OverlayTouchState@ enum (@OverlayTouchStateDown
+-- = 0@ … @OverlayTouchStateCancel = 3@), the shape the wire actually sends.
+instance FromJSON OverlayTouchState where
+  parseJSON = withNumber "OverlayTouchState" $ \case
+    0 -> pure OverlayTouchDown
+    1 -> pure OverlayTouchMove
+    2 -> pure OverlayTouchUp
+    3 -> pure OverlayTouchCancel
+    x -> typeMismatch "OverlayTouchState" (toJSON x)
+-----------------------------------------------------------------------------
 -- | Payload of the @bindoverlaytouch@ event.
 data OverlayTouchEvent
   = OverlayTouchEvent
-  { touchState :: MisoString
+  { touchState :: OverlayTouchState
     -- ^ The @OverlayTouchState@
   , touchX :: Double
     -- ^ The horizontal position of the touch

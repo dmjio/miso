@@ -1,4 +1,5 @@
 -----------------------------------------------------------------------------
+{-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
 -----------------------------------------------------------------------------
 -- |
@@ -28,6 +29,7 @@ module Miso.Native.X.Element.Refresh.Event
     -- *** Types
   , HeaderOffsetEvent (..)
   , RefreshStateChangeEvent (..)
+  , RefreshState (..)
   , StartRefreshEvent (..)
     -- *** Decoders
   , headerOffsetDecoder
@@ -41,7 +43,6 @@ import qualified Data.Map as M
 -----------------------------------------------------------------------------
 import           Miso.Event
 import           Miso.JSON
-import           Miso.String (MisoString)
 import           Miso.Types (Attribute, EventHandler, DOMRef)
 -----------------------------------------------------------------------------
 -- | The 'Events' map for the Lynx @<refresh>@ element.
@@ -67,10 +68,28 @@ data HeaderOffsetEvent
     -- ^ Ratio of the pull-down distance to the header's own height
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
+-- | The state of a \<refresh-header\>, mirrored from Lynx's @RefreshState@ enum.
+--
+-- @since 1.13.0.0
+data RefreshState
+  = Idle
+  | OverDragRelease
+  | Refreshing
+  deriving (Show, Eq)
+-----------------------------------------------------------------------------
+-- | Numbering matches Lynx's @RefreshState@ enum (@IDLE = 0@ … @REFRESHING
+-- = 2@), the shape the wire actually sends.
+instance FromJSON RefreshState where
+  parseJSON = withNumber "RefreshState" $ \case
+    0 -> pure Idle
+    1 -> pure OverDragRelease
+    2 -> pure Refreshing
+    x -> typeMismatch "RefreshState" (toJSON x)
+-----------------------------------------------------------------------------
 -- | Payload of the @bindrefreshstatechange@ event.
 newtype RefreshStateChangeEvent
   = RefreshStateChangeEvent
-  { state :: MisoString
+  { state :: RefreshState
     -- ^ The @RefreshState@ of the \<refresh-header\>
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------

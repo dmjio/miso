@@ -106,7 +106,7 @@ import Control.Applicative (liftA2)
 import qualified Data.Map as M
 import           Miso.Event (on, onMain, Decoder(..), DecodeTarget(..), Events, emptyDecoder, Phase(BUBBLE))
 import           Miso.JSON
-import           Miso.String (MisoString)
+import           Miso.String (MisoString, isPrefixOf)
 import           Miso.Types (Attribute, EventHandler, DOMRef)
 ----------------------------------------------------------------------------
 -- | The 'Events' map for the Lynx @<view>@ element.
@@ -176,12 +176,18 @@ data AnimationEvent
     -- ^ The type of the animation. If it is a keyframe animation,
     -- this value is `keyframe-animation`; if it is a transition animation,
     -- this value is `transition-animation`.
-  , animationName :: MisoString
+  , animationName :: Maybe MisoString
     -- ^ The name of the animation. If it is a keyframe animation, it
     -- is the name of `@keyframes` in CSS; if it is a transition animation,
-    -- it is the name of `transition-property` in CSS.
+    -- it is the name of `transition-property` in CSS. 'Nothing' for
+    -- 'LegacyTransitionAnimation', whose property name is folded into
+    -- 'animationType' instead.
   , newAnimator :: Bool
-    -- ^ Default value 'True'
+    -- ^ 'True' only when the engine's new animator explicitly reports it
+    -- (always @true@ when present, on both keyframe and transition events);
+    -- pre-"new animator" engines never send this field at all, for
+    -- keyframe animations as well as 'LegacyTransitionAnimation', so
+    -- 'False' whenever the field is absent.
   } deriving (Show, Eq)
 ----------------------------------------------------------------------------
 -- | Which animation kind raised the event: a @\@keyframes@ animation or a
@@ -191,13 +197,19 @@ data AnimationEvent
 data AnimationType
   = KeyFrameAnimation
   | TransitionAnimation
+  | LegacyTransitionAnimation MisoString
+    -- ^ Pre-"new animator" engines report a CSS transition as
+    -- @transition-\<property\>@ (e.g. @transition-width@) instead of
+    -- @transition-animation@, and send no @animation_name@\/@new_animator@
+    -- alongside it. This carries the raw wire value (e.g. @transition-width@).
   deriving (Show, Eq)
 ----------------------------------------------------------------------------
 instance FromJSON AnimationType where
   parseJSON = withText "animation-type" $ \case
     "keyframe-animation" -> pure KeyFrameAnimation
     "transition-animation" -> pure TransitionAnimation
-    x -> typeMismatch "animation-type" (toJSON x)
+    x | "transition-" `isPrefixOf` x -> pure (LegacyTransitionAnimation x)
+      | otherwise -> typeMismatch "animation-type" (toJSON x)
 ----------------------------------------------------------------------------
 -- | Animation decoder for use with events like 'onAnimationStart'
 animationDecoder :: Decoder AnimationEvent
@@ -205,11 +217,13 @@ animationDecoder = Decoder {..}
   where
     decodeAt = DecodeTarget mempty
     decoder = withObject "animationDecoder" $ \o -> do
-      d <- o .: "detail"
-      AnimationEvent
-        <$> d .: "animation_type"
-        <*> d .: "animation_name"
-        <*> d .: "new_animator"
+      d <- o .: "params"
+      aType <- d .: "animation_type"
+      name <- case aType of
+        LegacyTransitionAnimation _ -> pure Nothing
+        _ -> Just <$> d .: "animation_name"
+      newAnim <- d .:? "new_animator" .!= False
+      pure (AnimationEvent aType name newAnim)
 -----------------------------------------------------------------------------
 -- | Payload of a @<view>@ layout-change event: the target's id, its new
 -- box, and its @dataset@.

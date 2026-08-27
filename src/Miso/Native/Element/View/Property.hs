@@ -316,9 +316,9 @@ accessibilityElementsA11y_ = textProp "accessibility-elements-a11y"
 --
 -- Marks the current node and all its child nodes as non-accessible nodes.
 --
--- > accessibilityExclusiveHidden_ True
+-- > accessibilityElementsHidden_ True
 --
--- Default Value: 'True'
+-- Default Value: 'False'
 --
 accessibilityElementsHidden_ :: Bool -> Attribute model action
 accessibilityElementsHidden_ = boolProp "accessibility-elements-hidden"
@@ -329,7 +329,7 @@ accessibilityElementsHidden_ = boolProp "accessibility-elements-hidden"
 --
 -- > accessibilityExclusiveFocus_ True
 --
--- Default Value: 'True'
+-- Default Value: 'False'
 --
 accessibilityExclusiveFocus_ :: Bool -> Attribute model action
 accessibilityExclusiveFocus_ = boolProp "accessibility-exclusive-focus"
@@ -511,8 +511,8 @@ hitSlop_ = textProp "hit-slop"
 --
 -- Default Value: 'False
 --
-ignoreFocus_ :: MisoString -> Attribute model action
-ignoreFocus_ = textProp "ignore-focus"
+ignoreFocus_ :: Bool -> Attribute model action
+ignoreFocus_ = boolProp "ignore-focus"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#ios-enable-simultaneous-touch
 --
