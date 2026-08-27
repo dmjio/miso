@@ -294,6 +294,33 @@ All notable changes to `miso` are documented here.
 - **`JSException` derives `Exception`,** so it can be `throw`n and `catch`ed
   normally.
 
+- **Non-bubbling `mouseleave`/`pointerleave` are registered in the capture
+  phase.** Neither event bubbles per the DOM spec (unlike `mouseout` /
+  `pointerout`, which correctly bubble), but the delegated listener was
+  registered in the bubble phase, so `onMouseLeave` / `onPointerLeave`
+  handlers on any non-root element silently never fired. Same bug class as
+  the non-bubbling media events fix above, extended to these two.
+
+- **`vcomp` was misused as a synonym for `component` in `Miso.hs`'s
+  documentation.** `vcomp` builds a `VCompStatic` from a `StaticPtr` (the
+  static-component feature), not a `Component` from `model` / `update` /
+  `view` functions. The module's own "Your first Component" example and two
+  other doc snippets used `vcomp` where `component` was meant, so copying
+  them verbatim would not typecheck.
+
+- **`MisoString`'s `drop` is code-point-based on WASM, matching `take` /
+  `length`.** `take` / `length` were made code-point-based to fix
+  astral-character (e.g. emoji) miscounting, but `drop` was left on raw
+  UTF-16 slicing. Since `splitAt` is defined as `(take n xs, drop n xs)`,
+  the two disagreed on where position `n` falls for any string containing
+  an astral character before it, corrupting the split.
+
+- **`-ftext` `parseInt` mis-parses negative hex.** `"-0x1A"` checked for a
+  `0x` / `0X` prefix before stripping a sign, so it never matched and fell
+  through to a decimal parse of `"0x1A"`, silently returning `0` instead of
+  `-26`. The sign is now stripped first, then the remainder is checked for
+  a hex prefix.
+
 ### Performance
 
 - **Short-lived `JSVal` handles are freed eagerly in the WASM runtime.**
