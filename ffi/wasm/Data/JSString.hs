@@ -777,7 +777,7 @@ foreign import javascript unsafe
 foreign import javascript unsafe
   """
   if ($1 < 1 || $2.length === 0) return $2;
-  return $2.slice($1, $2.length);
+  return Array.from($2).slice($1).join('');
   """ drop :: Int -> JSString -> JSString
 -----------------------------------------------------------------------------
 foldl' :: (a -> Char -> a) -> a -> JSString -> a
