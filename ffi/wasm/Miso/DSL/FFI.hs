@@ -483,11 +483,17 @@ fromJSValUnchecked_Maybe jsval = do
 -- @0x@\/@0X@ prefix is read as hexadecimal.
 parseInt :: Text -> Maybe Int
 parseInt input =
-  case T.stripPrefix (T.pack "0x") stripped `mplus` T.stripPrefix (T.pack "0X") stripped of
-    Just hex -> hush (TR.hexadecimal hex)
-    Nothing  -> hush (TR.signed TR.decimal stripped)
+  applySign <$>
+    case T.stripPrefix (T.pack "0x") unsigned `mplus` T.stripPrefix (T.pack "0X") unsigned of
+      Just hex -> hush (TR.hexadecimal hex)
+      Nothing  -> hush (TR.decimal unsigned)
   where
     stripped = T.strip input
+    (isNegative, unsigned) = case T.uncons stripped of
+      Just ('-', rest) -> (True, rest)
+      Just ('+', rest) -> (False, rest)
+      _                -> (False, stripped)
+    applySign = if isNegative then negate else id
 {-# INLINE parseInt #-}
 #else
 foreign import javascript unsafe
