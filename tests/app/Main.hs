@@ -1557,6 +1557,16 @@ main = withJS $ do
         S.fromMisoStringEither "3" `shouldBe` Right (3 :: Word)
         S.fromMisoStringEither @Word "foo" `shouldSatisfy` isLeft
 
+      -- Regression test: parseInt used to check for a "0x"/"0X" prefix
+      -- before stripping a leading sign, so a negative hex literal never
+      -- matched the hex branch and fell through to decimal parsing, which
+      -- read only the leading "0" and silently returned 0 instead of -26.
+      it "Should parse signed hexadecimal integers via parseInt" $ do
+        S.fromMisoStringEither "-0x1A" `shouldBe` Right (-26 :: Int)
+        S.fromMisoStringEither "+0x1A" `shouldBe` Right (26 :: Int)
+        S.fromMisoStringEither "0x1A"  `shouldBe` Right (26 :: Int)
+        S.fromMisoStringEither "-0X1A" `shouldBe` Right (-26 :: Int)
+
     describe "JS DSL tests" $ do
       it "Should get an set a property on an Object" $ do
         c <- liftIO create
