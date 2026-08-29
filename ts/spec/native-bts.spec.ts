@@ -12,8 +12,9 @@
    blanket "walk past any falsy domRef regardless of type" loop that
    incorrectly skipped past a VNode/VText with a null domRef instead of
    stopping there. */
-import { test, expect, describe } from 'bun:test';
+import { test, expect, describe, beforeEach, afterEach } from 'bun:test';
 import { drawingContext } from '../miso/native/bts/context';
+import { diff } from '../miso/dom';
 import { vnode, vfrag, vcomp, vtext } from '../miso/smart';
 import type { NodeId } from '../miso/types';
 
@@ -83,5 +84,43 @@ describe('drawingContext.nextSibling — BTS', () => {
     notYetCreated.nextSibling = real;
     const node = vnode<NodeId>({ tag: 'view', nextSibling: notYetCreated });
     expect(drawingContext.nextSibling(node)).toBeNull();
+  });
+});
+
+describe('drawingContext.insertBefore — BTS', () => {
+  beforeEach(() => {
+    (globalThis as any).nodeId = 1;
+    (globalThis as any).patches = [];
+  });
+  afterEach(() => {
+    delete (globalThis as any).nodeId;
+    delete (globalThis as any).patches;
+  });
+
+  test('a null anchor degrades to an appendChild patch instead of crashing on `null.nodeId`', () => {
+    const parent: NodeId = { nodeId: 100 }, child: NodeId = { nodeId: 101 };
+    expect(() => drawingContext.insertBefore(parent, child, null as any)).not.toThrow();
+    const recorded = (globalThis as any).patches;
+    expect(recorded).toEqual([{ type: 'appendChild', parent: 100, child: 101 }]);
+  });
+
+  test('a real anchor still records an insertBefore patch', () => {
+    const parent: NodeId = { nodeId: 110 }, child: NodeId = { nodeId: 111 }, anchor: NodeId = { nodeId: 112 };
+    drawingContext.insertBefore(parent, child, anchor);
+    const recorded = (globalThis as any).patches;
+    expect(recorded).toEqual([{ type: 'insertBefore', parent: 110, child: 112, node: 111 }]);
+  });
+
+  test('mounting a VNode containing a non-empty VFrag child does not crash', () => {
+    // dom.ts's `create` always mounts fresh content via createElement with a
+    // null "replacing" anchor; a VFrag forwards that anchor unchanged to each
+    // child's insertBefore call. Regression test for the crash this produced
+    // before insertBefore learned to degrade a null anchor to appendChild.
+    const tree = vnode<NodeId>({
+      tag: 'view',
+      children: [vfrag<NodeId>([vtext('a'), vtext('b')])],
+    });
+    const parent: NodeId = { nodeId: 0 };
+    expect(() => diff(null as any, tree, parent, drawingContext)).not.toThrow();
   });
 });

@@ -112,7 +112,7 @@ export const drawingContext : DrawingContext<DOMRef> = {
      VDOM, not by key, so there is no per-node event registry to update. */
   addEvent : (_node: DOMRef, _name: string, _key: EventKey) => {},
   removeEvent : (_node: DOMRef, _name: string, _capture: boolean) => {},
-  insertBefore : (parent: DOMRef, child: DOMRef, node: DOMRef) => {
+  insertBefore : (parent: DOMRef, child: DOMRef, node: DOMRef | null) => {
     return parent.insertBefore(child, node);
   },
   swapDOMRefs : (oLast: DOMRef, oFirst: DOMRef, p: DOMRef) => {

@@ -190,7 +190,15 @@ const drawingContext : DrawingContext<NodeId> = {
     addPatch(patch);
     return;
   },
-  insertBefore : (parent: NodeId, node: NodeId, child: NodeId) => {
+  insertBefore : (parent: NodeId, node: NodeId, child: NodeId | null) => {
+    // A null anchor means "insert at the end" (mirrors DOM `insertBefore(node,
+    // null)`), but the wire protocol's `insertBefore` patch has no null anchor
+    // representation — degrade to `appendChild` here rather than crash on
+    // `child.nodeId` below.
+    if (child === null) {
+      drawingContext.appendChild(parent, node);
+      return;
+    }
     let patch : InsertBefore = {
         type: "insertBefore",
         parent : parent.nodeId,
