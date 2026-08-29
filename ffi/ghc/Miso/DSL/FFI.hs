@@ -119,6 +119,10 @@ freeJSVal_ffi _ = pure ()
 requestAnimationFrame :: JSVal -> IO Int
 requestAnimationFrame = undefined
 -----------------------------------------------------------------------------
+-- | High-resolution timestamp where one exists, wall clock where it does not.
+now_ffi :: IO Double
+now_ffi = undefined
+-----------------------------------------------------------------------------
 -- | Cancels a frame previously scheduled with 'requestAnimationFrame'.
 --
 -- @since 1.13.0.0
