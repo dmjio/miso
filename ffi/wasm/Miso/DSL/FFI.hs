@@ -12,6 +12,7 @@ module Miso.DSL.FFI
   ( -- ** Types
     JSVal
   , JSString (..)
+  , now_ffi
     -- ** Serialization FFI
     -- *** ToJSVal
   , toJSVal_Char
@@ -446,6 +447,14 @@ foreign import javascript unsafe
   """
   return requestAnimationFrame($1);
   """ requestAnimationFrame :: JSVal -> IO Int
+-----------------------------------------------------------------------------
+-- | High-resolution timestamp where one exists, wall clock where it does not.
+foreign import javascript unsafe
+  """
+  return (typeof performance !== 'undefined' && performance && typeof performance.now === 'function')
+    ? performance.now()
+    : Date.now();
+  """ now_ffi :: IO Double
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """

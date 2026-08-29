@@ -376,9 +376,15 @@ windowInnerWidth =
 -- | Retrieve high resolution time stamp
 --
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/Performance/now>
+-- Lynx's *background* thread realm has no @performance@ global at all - only
+-- the main thread does - so the obvious @performance.now()@ throws
+-- @cannot read property 'now' of undefined@ there. Everything that timestamps
+-- from the BTS goes through here, including gesture handling like
+-- double-tap detection, so that throw took real features down rather than
+-- merely losing precision. Falls back to @Date.now()@, which every realm has.
 now :: IO Double
 {-# INLINABLE now #-}
-now = fromJSValUnchecked =<< (jsg "performance" # "now" $ ())
+now = now_ffi
 -----------------------------------------------------------------------------
 -- | Outputs a message to the web console
 --

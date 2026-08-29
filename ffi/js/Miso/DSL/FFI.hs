@@ -9,6 +9,7 @@ module Miso.DSL.FFI
   ( -- ** Types
     JSVal
   , JSString
+  , now_ffi
     -- ** Serialization FFI
     -- *** ToJSVal
   , toJSVal_Char
@@ -466,4 +467,16 @@ foreign import javascript unsafe
   "$r = String($1);"
 #endif
   toString_Word :: Word -> JSString
+-----------------------------------------------------------------------------
+-- | High-resolution timestamp where one exists, wall clock where it does not.
+--
+-- @performance@ is absent on Lynx's background-thread realm, so this cannot be
+-- a bare @performance.now()@; see 'Miso.FFI.Internal.now'.
+foreign import javascript unsafe
+#if GHCJS_NEW
+  "(() => (typeof performance !== 'undefined' && performance && typeof performance.now === 'function') ? performance.now() : Date.now())"
+#else
+  "$r = (typeof performance !== 'undefined' && performance && typeof performance.now === 'function') ? performance.now() : Date.now();"
+#endif
+  now_ffi :: IO Double
 -----------------------------------------------------------------------------
