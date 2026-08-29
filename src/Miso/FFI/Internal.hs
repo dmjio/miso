@@ -384,11 +384,7 @@ windowInnerWidth =
 -- merely losing precision. Falls back to @Date.now()@, which every realm has.
 now :: IO Double
 {-# INLINABLE now #-}
-#ifdef WASM
-now = fromJSValUnchecked =<< (jsg "performance" # "now" $ ())
-#else
 now = now_ffi
-#endif
 -----------------------------------------------------------------------------
 -- | Outputs a message to the web console
 --

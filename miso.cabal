@@ -79,6 +79,9 @@ common client
     else
       js-sources:
         js/miso.js
+    if arch(wasm32)
+      js-sources:
+        ffi/wasm/js/now.js
 
 flag native
   manual:
