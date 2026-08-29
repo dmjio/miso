@@ -143,7 +143,9 @@ module Miso.DSL
   , setProp
   , getProp
   , eval
+#ifndef WASM
   , now_ffi
+#endif
   , requestAnimationFrame
   , cancelAnimationFrame
   , freeFunction
