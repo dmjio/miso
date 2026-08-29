@@ -449,10 +449,11 @@ foreign import javascript unsafe
   """ requestAnimationFrame :: JSVal -> IO Int
 -----------------------------------------------------------------------------
 -- | High-resolution timestamp where one exists, wall clock where it does not.
--- Backed by 'misoNow' in @ffi/wasm/js/now.js@.
 foreign import javascript unsafe
   """
-  return misoNow();
+  return (typeof performance !== 'undefined' && performance && typeof performance.now === 'function')
+    ? performance.now()
+    : Date.now();
   """ now_ffi :: IO Double
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
