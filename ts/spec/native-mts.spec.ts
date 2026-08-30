@@ -4,8 +4,9 @@
    and per-node event-registry teardown. The Lynx PAPI globals (`__GetConfig`,
    `__AddEvent`) and the `runtime`/`lynx` host objects are stubbed here — in a web
    build they don't exist, which is exactly why this code has no other coverage. */
-import { test, expect, describe, beforeEach, afterAll, beforeAll } from 'bun:test';
-import { routeEvent, destroyNodeEvents, drawingContext } from '../miso/native/mts/context';
+import { test, expect, describe, beforeEach, afterEach, afterAll, beforeAll } from 'bun:test';
+import { routeEvent, destroyNodeEvents, drawingContext, listStates, destroyListState } from '../miso/native/mts/context';
+import { dropChildren } from '../miso/native/mts';
 import { vnode, vfrag, vcomp, vtext } from '../miso/smart';
 import type { EventContext, NodeId } from '../miso/types';
 
@@ -240,5 +241,65 @@ describe('drawingContext.removeAttribute — MTS', () => {
     expect(setAttributeCalls[0][2]).toBeNull();
 
     delete (globalThis as any).__SetAttribute;
+  });
+});
+
+// Regression: dropChildren (ts/miso/native/mts.ts) recursively tears down a
+// removed subtree's event state via destroyNodeEvents, but previously never
+// touched listStates (ts/miso/native/mts/context.ts) -- so a <list> removed
+// via an ancestor wrapper (rather than directly) kept its {node, items,
+// known} entry, and every ElementRef in it, in that Map forever.
+describe('destroyListState / dropChildren — <list> virtualization teardown', () => {
+
+  afterEach(() => {
+    for (const g of ['__GetElementUniqueID', '__FirstElement', '__NextElement'])
+      delete (globalThis as any)[g];
+  });
+
+  test('destroyListState clears a node\'s own list state', () => {
+    const node: El = { nodeId: 72 };
+    (globalThis as any).__GetElementUniqueID = (n: El) => n.nodeId;
+
+    listStates.set(72, { node: node as any, items: [{} as any], known: 1 });
+    expect(listStates.has(72)).toBeTrue();
+
+    destroyListState(node as any);
+    expect(listStates.has(72)).toBeFalse();
+  });
+
+  test('destroyListState on a node with no list state is a harmless no-op', () => {
+    const node: El = { nodeId: 73 };
+    (globalThis as any).__GetElementUniqueID = (n: El) => n.nodeId;
+    expect(() => destroyListState(node as any)).not.toThrow();
+  });
+
+  test('dropChildren clears the listStates entry of a <list> nested under a removed wrapper', () => {
+    // tree: wrapper(70) -> list(71), removed as a unit via the wrapper --
+    // the list itself is never the direct argument to removeChild/replaceChild.
+    const wrapper: El = { nodeId: 70 };
+    const list: El = { nodeId: 71 };
+
+    (globalThis as any).__GetElementUniqueID = (n: El) => n.nodeId;
+    const childrenOf = new Map<number, El[]>([[70, [list]], [71, []]]);
+    (globalThis as any).__FirstElement = (n: El) => childrenOf.get(n.nodeId)?.[0] ?? null;
+    (globalThis as any).__NextElement = (n: El) => {
+      for (const kids of childrenOf.values()) {
+        const i = kids.indexOf(n);
+        if (i >= 0 && i + 1 < kids.length) return kids[i + 1];
+      }
+      return null;
+    };
+
+    listStates.set(71, { node: list as any, items: [{} as any, {} as any], known: 2 });
+    expect(listStates.has(71)).toBeTrue();
+
+    const nodeMap: Record<number, El> = { 70: wrapper, 71: list };
+    dropChildren(nodeMap as any, wrapper as any);
+
+    // the list's virtualization state (and every ElementRef it held) is gone,
+    // not just its runtime.nodes entry
+    expect(listStates.has(71)).toBeFalse();
+    expect(nodeMap[70]).toBeUndefined();
+    expect(nodeMap[71]).toBeUndefined();
   });
 });

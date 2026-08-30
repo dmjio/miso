@@ -36,7 +36,9 @@ function nextNodeId () : number {
 // hold each list's item elements and serve them back by index — one element per
 // cell, with no reuse pool (that's the "full recycler" upgrade path).
 type ListState = { node: ElementRef; items: Array<ElementRef>; known: number };
-const listStates = new Map<number, ListState>();
+// Exported (read/write) for test introspection only -- production code should
+// go through listStateOf/destroyListState, not touch this Map directly.
+export const listStates = new Map<number, ListState>();
 
 // Main-thread event routing registry, keyed by the element's `nodeId`.
 // NOT stored in element config directly: Lynx __SetConfig/__GetConfig round-trips
@@ -73,6 +75,17 @@ export function destroyNodeEvents(node : ElementRef, nodeId : number) : void {
     directBindings.delete(nodeId);
   }
   mainThreadKeys.delete(nodeId);
+}
+
+// Drop a node's <list> virtualization state, if it has any. Keyed by
+// __GetElementUniqueID (not nodeId, unlike destroyNodeEvents -- see
+// listStateOf) so this must be called independently, not folded into
+// destroyNodeEvents. Called from `dropChildren` (ts/miso/native/mts.ts) for
+// every node in a removed subtree -- without this, a <list> removed via an
+// ancestor wrapper (rather than directly) keeps its {node, items, known}
+// entry, and every ElementRef in it, in this Map forever.
+export function destroyListState(node : ElementRef) : void {
+  listStates.delete(__GetElementUniqueID(node));
 }
 
 function nodeIdOf(node : ElementRef) : number | undefined {
