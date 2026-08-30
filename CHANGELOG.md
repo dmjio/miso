@@ -321,6 +321,16 @@ All notable changes to `miso` are documented here.
   `-26`. The sign is now stripped first, then the remainder is checked for
   a hex prefix.
 
+- **`freeLifecycleHooks` frees a component's `mount`/`unmount` callbacks
+  again.** It read the `mount`/`unmount` fields off the component's own
+  rendered content root instead of the `VComp` wrapper node that actually
+  holds them (reachable one hop up, via the content root's `parent` link),
+  so `fromJSVal` always failed and `freeFunction` was never called. Every
+  non-root `Component` unmount — normal teardown and every GHCi hot-reload
+  cycle — leaked the closures `mountCallback`/`unmountCallback` capture,
+  which includes the whole `initialize` closure (`app`, `events`, `sink`,
+  `model`). See Note [Freeing event handler callbacks] in `Miso.Runtime`.
+
 ### Performance
 
 - **Short-lived `JSVal` handles are freed eagerly in the WASM runtime.**
