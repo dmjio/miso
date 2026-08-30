@@ -1025,7 +1025,9 @@ function eventJSON(at, obj) {
     return ret;
   }
   for (const a of at)
-    obj = obj[a];
+    obj = obj == null ? undefined : obj[a];
+  if (obj === null || obj === undefined)
+    return null;
   var newObj;
   if (obj instanceof Array || "length" in obj && obj["localName"] !== "select") {
     newObj = [];

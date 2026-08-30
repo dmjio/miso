@@ -224,7 +224,12 @@ export function eventJSON(at: string | Array<string>, obj: any): Object[] {
     }
     return ret;
   }
-  for (const a of at) obj = obj[a];
+  // A step landing on null/undefined (e.g. relatedTarget, currentTarget,
+  // form, list -- all legitimately null on many real events) must not throw
+  // on the next property read; once obj goes nullish, stay nullish through
+  // the rest of the walk instead of crashing dispatch.
+  for (const a of at) obj = obj == null ? undefined : obj[a];
+  if (obj === null || obj === undefined) return null;
   /* If obj is a list-like object */
   var newObj;
   if (obj instanceof Array || ('length' in obj && obj['localName'] !== 'select')) {

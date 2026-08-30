@@ -321,6 +321,14 @@ All notable changes to `miso` are documented here.
   `-26`. The sign is now stripped first, then the remainder is checked for
   a hex prefix.
 
+- **`eventJSON` decodes a null/undefined path as `null` instead of
+  crashing.** A decoder path landing on `null`/`undefined` — `relatedTarget`,
+  `currentTarget`, `form`, `list`, etc. are all legitimately null/undefined
+  on many real DOM events — hit `'length' in obj` on the nullish value and
+  threw `TypeError`, crashing event dispatch instead of decoding the field
+  as `null`. An intermediate nullish step one segment earlier had the same
+  problem; both are now handled.
+  
 - **`freeLifecycleHooks` frees a component's `mount`/`unmount` callbacks
   again.** It read the `mount`/`unmount` fields off the component's own
   rendered content root instead of the `VComp` wrapper node that actually

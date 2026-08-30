@@ -64,4 +64,33 @@ describe('eventJSON', () => {
     expect(res[0]).toEqual([{ k: 1 }, { k: 2 }]);
     expect(res[1]).toEqual({ p: true });
   });
+
+  // Regression: a path landing on null/undefined (relatedTarget, currentTarget,
+  // form, list, etc. are all legitimately null/undefined on real DOM events)
+  // used to throw `'length' in obj` on the final null/undefined value instead
+  // of decoding it as null.
+  test('decodes a path whose final value is null as null, without throwing', () => {
+    const obj = { target: { relatedTarget: null } };
+    expect(eventJSON(['target', 'relatedTarget'], obj)).toBeNull();
+  });
+
+  test('decodes a path whose final value is undefined as null, without throwing', () => {
+    const obj = { target: {} } as any;
+    expect(eventJSON(['target', 'missing'], obj)).toBeNull();
+  });
+
+  // A path can also go nullish *before* the last step (e.g. `at.form` is null
+  // on an input not inside a <form>, and the decoder still asks for a field
+  // past it) -- the walk must not dereference a property off that null.
+  test('does not throw when an intermediate path segment is null', () => {
+    const obj = { target: { form: null } };
+    expect(() => eventJSON(['target', 'form', 'id'], obj)).not.toThrow();
+    expect(eventJSON(['target', 'form', 'id'], obj)).toBeNull();
+  });
+
+  test('still decodes a present path normally after the null-safety change', () => {
+    const obj = { target: { form: { id: 'my-form' } } };
+    const res: any = eventJSON(['target', 'form'], obj);
+    expect(res).toEqual({ id: 'my-form' });
+  });
 });
