@@ -99,7 +99,7 @@ instance ToJSVal AutoScroll where
 --
 -- @since 1.13.0.0
 defaultAutoScroll :: AutoScroll
-defaultAutoScroll = AutoScroll 120 True
+defaultAutoScroll = AutoScroll 120 False
 -----------------------------------------------------------------------------
 -- | Invokes the Lynx @autoScroll@ method on a @<scroll-view>@ element.
 --

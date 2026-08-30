@@ -57,13 +57,13 @@ defaultScrollToPosition
   { stpPosition = 10
   , stpOffset = 100
   , stpAlignTo = "top"
-  , stpSmooth = True
+  , stpSmooth = False
   }
 -----------------------------------------------------------------------------
 instance ToJSVal ScrollToPosition where
   toJSVal ScrollToPosition {..} = do
     object <- create
-    set "position" stpPosition object
+    set "index" stpPosition object
     set "offset" stpOffset object
     set "alignTo" stpAlignTo object
     set "smooth" stpSmooth object
@@ -125,7 +125,7 @@ instance ToJSVal AutoScroll where
 defaultAutoScroll :: AutoScroll
 defaultAutoScroll = AutoScroll
   { rate = "60"
-  , start = True
+  , start = False
   , autoStop = True
   }
 --------------------------------------------------------------------
