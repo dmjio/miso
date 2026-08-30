@@ -55,7 +55,7 @@ import           Miso.Html
 import           Miso.JSON.Parser (decodePure)
 import           Miso.Html.Property
 import           Miso.Cookie (Cookie (..), cookieValue, defaultCookie, cookieSet_, cookieGet_, cookieDelete_, cookieDeleteWith_, cookieGetAll_)
-import           Miso.Runtime.Internal (ComponentState (..), components, componentIds)
+import           Miso.Runtime.Internal (ComponentState (..), components, componentIds, unmountComponent)
 -----------------------------------------------------------------------------
 -- | Clears the component state and DOM between each test
 clearComponentState :: IO ()
@@ -1695,6 +1695,44 @@ main = withJS $ do
           ((component (0 :: Int) noop $ \_ _ _ ->
             div_ [] (replicate 999 (mount_ testComponent))) :: Component () () Int ())
         mountedComponents >>= (`shouldBe` 1000)
+
+      it "Should free mount/unmount lifecycle hooks on unmount, not silently skip them" $ do
+        -- Regression for fc321053: freeLifecycleHooks used to read "mount"/
+        -- "unmount" off a Component's own rendered content root, which never
+        -- carries those fields -- only the VComp wrapper node built by
+        -- buildComp does, reachable one hop up via the content root's
+        -- "parent" link. The lookup silently found nothing (fromJSVal on
+        -- undefined), so freeFunction was never called and every non-root
+        -- Component unmount leaked the mount/unmount closures.
+        liftIO $ startApp mempty $
+          ((component (0 :: Int) noop $ \_ _ _ ->
+            div_ [] [ mount_ testComponent ]) :: Component () () Int ())
+        mountedComponents >>= (`shouldBe` 2)
+        childState@ComponentState {..} <-
+          liftIO $ ((IM.! 2) <$> readIORef components :: IO (ComponentState () () Int ()))
+        VTree (Object contentRoot) <- liftIO (readIORef _componentVTree)
+        -- The content root itself has no "mount"/"unmount" fields ...
+        (`shouldBe` True) =<< liftIO (isUndefined =<< contentRoot ! "mount")
+        -- ... only the wrapper reachable via "parent" does, and it's real
+        -- callbacks that freeLifecycleHooks must find and free.
+        wrapper <- liftIO (fromJSValUnchecked =<< contentRoot ! "parent")
+        (`shouldBe` False) =<< liftIO (isUndefined =<< (wrapper :: Object) ! "mount")
+        (`shouldBe` False) =<< liftIO (isUndefined =<< wrapper ! "unmount")
+        -- Unmounting must reach freeLifecycleHooks via the correct object and
+        -- run to completion (no silent skip, no crash), removing the child.
+        liftIO (unmountComponent childState)
+        mountedComponents >>= (`shouldBe` 1)
+
+      it "Should free lifecycle hooks on the root component without crashing" $ do
+        -- The root Component's VTree never gets a "parent" link (only
+        -- buildComp sets one, for a mounted child's content root), so
+        -- freeLifecycleHooks must not blindly dereference "mount"/"unmount"
+        -- off whatever "parent" resolves to -- doing so throws on undefined.
+        liftIO (startApp mempty testComponent)
+        mountedComponents >>= (`shouldBe` 1)
+        rootState <- liftIO $ ((IM.! 1) <$> readIORef components :: IO (ComponentState () () Int Action))
+        liftIO (unmountComponent rootState)
+        mountedComponents >>= (`shouldBe` 0)
 
       it "On after OnStatic on the same node must not inherit a stale staticKey" $ do
         -- Regression for: an 'OnStatic' handler stashes 'pendingStaticKey' /
