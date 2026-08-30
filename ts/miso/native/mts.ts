@@ -25,6 +25,7 @@ import type { ElementRef } from "@lynx-js/type-element-api";
 import
   { drawingContext
   , destroyNodeEvents
+  , destroyListState
   } from './mts/context';
 
 export function mts () {
@@ -145,7 +146,7 @@ function processMessage (m : PATCH, runtime) {
    native handle (no `.children`/`.nodeId` JS properties), so read the id from
    Config and walk children via the element PAPI. `node` is captured before
    detachment, so its subtree is still intact here. */
-function dropChildren (nodeMap: Record<number, ElementRef>, node: ElementRef) {
+export function dropChildren (nodeMap: Record<number, ElementRef>, node: ElementRef) {
    const nodeId = __GetConfig(node)?.nodeId as number | undefined;
    if (nodeId !== undefined) {
       delete nodeMap[nodeId];
@@ -153,6 +154,11 @@ function dropChildren (nodeMap: Record<number, ElementRef>, node: ElementRef) {
       // direct-bind listeners), else each destroyed node leaks its entries.
       destroyNodeEvents(node, nodeId);
    }
+   // Keyed by __GetElementUniqueID rather than nodeId, so this runs
+   // unconditionally (not gated on nodeId being set) -- a removed <list>,
+   // wherever it sits in this subtree, must not keep its virtualization
+   // state (and every ElementRef it holds) alive forever.
+   destroyListState(node);
    for (let child = __FirstElement(node) as ElementRef; child; child = __NextElement(child) as ElementRef) {
       dropChildren(nodeMap, child);
    }
