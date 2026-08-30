@@ -95,6 +95,8 @@ module Miso.Runtime
   , rootComponentId
   , componentId
   , modifyComponent
+  , unmountComponent
+  , freeLifecycleHooks
   , componentModel
   -- ** Scheduler
   , scheduler
@@ -1189,6 +1191,10 @@ unloadScripts ComponentState {..} = do
 freeLifecycleHooks :: ComponentState context props model action -> IO ()
 freeLifecycleHooks ComponentState {..} = do
   VTree (Object vtree) <- readIORef _componentVTree
+  -- The root Component's VTree never gets a "parent" link (only buildComp
+  -- sets one, for a mounted child's content root) -- mirrors the "at root,
+  -- do nothing" guard in ts/miso/util.ts's updateRef. FromJSVal Object
+  -- returns Nothing for undefined/null, so this naturally skips the root.
   maybeComp <- fromJSVal =<< vtree ! ("parent" :: MisoString)
   forM_ maybeComp $ \(Object comp) -> do
     mapM_ freeFunction =<< fromJSVal =<< comp ! ("mount" :: MisoString)

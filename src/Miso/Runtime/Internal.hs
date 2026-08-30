@@ -31,6 +31,10 @@
 --   other per-component runtime fields.
 -- * 'schedulerThread' — 'Data.IORef.IORef' holding the 'Control.Concurrent.ThreadId'
 --   of the event-loop scheduler thread.
+-- * 'unmountComponent' / 'freeLifecycleHooks' — teardown functions normally
+--   only invoked internally, exposed here so tests can exercise unmounting a
+--   specific t'ComponentState' directly instead of going through a full
+--   diff-driven removal.
 --
 -- = See also
 --
@@ -43,9 +47,11 @@ module Miso.Runtime.Internal
   , ComponentState(..)
   , ComponentIds
   , schedulerThread
+  , unmountComponent
+  , freeLifecycleHooks
   , module FFI
   ) where
 ----------------------------------------------------------------------------
-import Miso.Runtime (components, ComponentState(..), ComponentIds, componentIds, rootComponentId, schedulerThread)
+import Miso.Runtime (components, ComponentState(..), ComponentIds, componentIds, rootComponentId, schedulerThread, unmountComponent, freeLifecycleHooks)
 import Miso.FFI.Internal as FFI
 ----------------------------------------------------------------------------

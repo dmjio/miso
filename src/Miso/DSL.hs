@@ -914,11 +914,15 @@ freeJSVal = freeJSVal_ffi
 {-# INLINABLE freeJSVal #-}
 -----------------------------------------------------------------------------
 instance FromJSVal Function where
-  fromJSVal = pure . Just . Function
+  fromJSVal x = do
+    missing <- (||) <$> isUndefined x <*> isNull x
+    pure $ if missing then Nothing else Just (Function x)
   {-# INLINE fromJSVal #-}
 -----------------------------------------------------------------------------
 instance FromJSVal Object where
-  fromJSVal = pure . Just . Object
+  fromJSVal x = do
+    missing <- (||) <$> isUndefined x <*> isNull x
+    pure $ if missing then Nothing else Just (Object x)
   {-# INLINE fromJSVal #-}
 -----------------------------------------------------------------------------
 -- | Lookup a property based on its index
