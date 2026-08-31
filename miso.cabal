@@ -280,6 +280,10 @@ library
       Miso.Native.X.Element.Textarea.Property
       Miso.Native.X.Element.TitleBarView
       Miso.Native.X.Element.TitleBarView.Property
+      Miso.Native.X.Element.Video
+      Miso.Native.X.Element.Video.Event
+      Miso.Native.X.Element.Video.Method
+      Miso.Native.X.Element.Video.Property
       Miso.Native.X.Element.Viewpager
       Miso.Native.X.Element.Viewpager.Event
       Miso.Native.X.Element.Viewpager.Method
