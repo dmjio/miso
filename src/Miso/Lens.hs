@@ -795,11 +795,11 @@ review = _up
 ----------------------------------------------------------------------------
 -- | Try to extract a value from a sum type using a t'Prism' inside 'MonadReader'.
 preview :: MonadReader r m => Prism r a -> m (Maybe a)
-preview = asks . preview
+preview = asks . _down
 ----------------------------------------------------------------------------
 -- | Try to extract a value from a sum type using a t'Prism' inside 'MonadState'.
 preuse :: MonadState s m => Prism s a -> m (Maybe a)
-preuse = gets . preview
+preuse = gets . _down
 ----------------------------------------------------------------------------
 -- | t'Prism' for the 'Left' constructor of 'Either'.
 _Left :: Prism (Either a b) a
@@ -814,8 +814,10 @@ _Just :: Prism (Maybe a) a
 _Just = prism Just Prelude.id
 ----------------------------------------------------------------------------
 -- | t'Prism' that matches a 'Nothing' value.
-_Nothing :: Prism (Maybe a) a
-_Nothing = prism (const Nothing) Prelude.id
+_Nothing :: Prism (Maybe a) ()
+_Nothing = prism (const Nothing) $ \case
+  Nothing -> Just ()
+  Just _  -> Nothing
 ----------------------------------------------------------------------------
 -- | Infix alias for 'preview'. Try to extract a value using a t'Prism'.
 --
