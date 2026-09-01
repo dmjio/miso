@@ -1071,6 +1071,26 @@ main = withJS $ do
           ([0..10::Int] & Miso.Lens.at (-100) .~ Just 5) `shouldBe` [0..10]
           ([0..10::Int] & Miso.Lens.at 100 .~ Nothing) `shouldBe` [0..10]
           ([0..10::Int] & Miso.Lens.at (-100) .~ Nothing) `shouldBe` [0..10]
+      it "Should review" $ do
+        (review _Left 5 :: Either Int String) `shouldBe` Left 5
+        (review _Right "x" :: Either Int String) `shouldBe` Right "x"
+        (review _Just 5 :: Maybe Int) `shouldBe` Just 5
+      it "Should ^?" $ do
+        ((Left 5 :: Either Int String) ^? _Left) `shouldBe` Just 5
+        ((Right "x" :: Either Int String) ^? _Left) `shouldBe` Nothing
+        ((Right "x" :: Either Int String) ^? _Right) `shouldBe` Just "x"
+        ((Left 5 :: Either Int String) ^? _Right) `shouldBe` Nothing
+        ((Just 5 :: Maybe Int) ^? _Just) `shouldBe` Just 5
+        ((Nothing :: Maybe Int) ^? _Nothing) `shouldBe` Just ()
+        ((Just 5 :: Maybe Int) ^? _Nothing) `shouldBe` Nothing
+      it "Should preview" $ do
+        (runReader (preview _Left) (Left 5 :: Either Int String)) `shouldBe` Just 5
+        (runReader (preview _Left) (Right "x" :: Either Int String)) `shouldBe` Nothing
+        (runReader (preview _Right) (Right "x" :: Either Int String)) `shouldBe` Just "x"
+      it "Should preuse" $ do
+        (evalState (preuse _Left) (Left 5 :: Either Int String)) `shouldBe` Just 5
+        (evalState (preuse _Left) (Right "x" :: Either Int String)) `shouldBe` Nothing
+        (evalState (preuse _Right) (Right "x" :: Either Int String)) `shouldBe` Just "x"
     describe "Inline JS tests" $ do
      it "Should use inline js" $ do
        (`shouldBe` 42) =<< liftIO (getAge (Person "larry" 42))
