@@ -41,3 +41,6 @@ haddocks/
 sample-app-native/android/app/src/main/assets/main.lynx.bundle
 sample-app-native/android/app/src/main/assets/main.lynx.bundle.sha256
 
+
+# Lynxtron desktop host (hand-written, not TS output)
+!sample-app-native/desktop/*.js

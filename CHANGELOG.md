@@ -2,6 +2,19 @@
 
 All notable changes to `miso` are documented here.
 
+## Unreleased
+
+### Added
+
+- **Lynxtron desktop bridge.** New `Miso.Native.Lynxtron` module binding the
+  card ↔ Node.js bridge of [Lynxtron](https://github.com/lynx-family/lynxtron),
+  the Electron-style desktop host for Lynx bundles: `invokeNode` / `sendNode`
+  (card → main process), `nodeEventSub` (`sendGlobalEvent` → `Sub`),
+  `callExposed` (`contextBridge.exposeInLynxBTS` functions, Promise-aware), and
+  `isLynxtron`. Bundles built with `mkLynxBundle` load in Lynxtron unchanged.
+  Sample: `app-native-lynxtron` + `sample-app-native/desktop/` host, built
+  with `nix build .#sample-app-native-lynxtron-bundle`.
+
 ## 1.13.0.0
 
 ### Added

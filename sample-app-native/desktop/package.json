@@ -1,0 +1,16 @@
+{
+  "name": "miso-lynxtron-sample",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Lynxtron desktop host for the miso `app-native-lynxtron` bundle",
+  "main": "main.js",
+  "scripts": {
+    "start": "lynxtron ."
+  },
+  "devDependencies": {
+    "@lynx-js/lynxtron": "^0.0.15"
+  },
+  "trustedDependencies": [
+    "@lynx-js/lynxtron"
+  ]
+}

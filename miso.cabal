@@ -252,6 +252,7 @@ library
       Miso.Native.Element.View.Property
       Miso.Native.Event
       Miso.Native.FFI
+      Miso.Native.Lynxtron
       Miso.Native.Module
       Miso.Native.X.Element
       Miso.Native.X.Element.BlurView

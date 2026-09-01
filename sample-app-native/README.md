@@ -18,3 +18,22 @@ Both bundle derivations produce `main.lynx.bundle` and
 `main.lynx.bundle.sha256`. To run either with the Android host, copy both files
 from the same derivation into `android/app/src/main/assets/`; the Gradle
 `preBuild` gate rejects a missing or mismatched pair.
+
+## Lynxtron (desktop)
+
+`app-native-lynxtron` is a desktop sample for
+[Lynxtron](https://github.com/lynx-family/lynxtron), an Electron-style host
+that runs ordinary Lynx bundles in Node-managed windows. It exercises every
+channel of `Miso.Native.Lynxtron` (request/reply, fire-and-forget, Node → card
+events, and `contextBridge.exposeInLynxBTS` functions).
+
+```bash
+nix build .#sample-app-native-lynxtron-bundle     # => ./result/main.lynx.bundle
+cd sample-app-native/desktop
+npm install   # or: bun install — pulls @lynx-js/lynxtron + binary (macOS / Windows)
+npm start     # or: bun run start — loads ../../result/main.lynx.bundle
+```
+
+`desktop/main.js` is the main process (`LynxWindow`, `lynxBridge.handle`,
+`sendGlobalEvent`); `desktop/preload.js` exposes Node functions to the card.
+Point `MISO_BUNDLE` at another bundle to host it instead.
