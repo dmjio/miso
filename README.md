@@ -417,7 +417,7 @@ Become a [financial contributor](https://opencollective.com/miso/contribute) to 
 [miso](https://haskell-miso.org) was initiated in 2016 as a research project exploring two directions:
 
 - Expressing the [Elm architecture](https://elm-lang.org) in [GHCJS](https://github.com/ghcjs/ghcjs) as an [embedded domain-specific language](https://wiki.haskell.org/Embedded_domain_specific_language)
-- Implementing [reconciliation](https://legacy.reactjs.org/docs/reconciliation.html#the-diffing-algorithm) and [isomorphic](https://en.wikipedia.org/wiki/Isomorphic_JavaScript) rendering techniques from the JavaScript ecosystem, within a purely functional setting.
+- Implementing [reconciliation](https://legacy.reactjs.org/docs/reconciliation.html#the-diffing-algorithm) and [hydration](https://18.react.dev/reference/react-dom/client/hydrateRoot) rendering techniques from the JavaScript ecosystem, within a purely functional setting.
 
 The project addresses the [JavaScript problem](https://wiki.haskell.org/The_JavaScript_Problem) in Haskell by providing component abstractions and rendering primitives familiar to practitioners of frameworks such as [React](https://reactjs.org) and [Vue.js](https://vuejs.org). The library has since expanded to include multiple rendering backends and native mobile support for [iOS](https://www.apple.com/ios/), [Android](https://www.android.com/), and [HarmonyOS](https://device.harmonyos.com/en/) via [LynxJS](https://lynxjs.org).
 
