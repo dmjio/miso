@@ -200,6 +200,10 @@ initialize
   -> Hydrate
   -> Bool
   -- ^ Is the root node being rendered?
+  -> Bool
+  -- ^ Is live-reload mode active? Gates key-based model recovery — outside
+  -- hot reload, a keyed component must never inherit a previous (possibly
+  -- unrelated) component's model just because it shares a t'Key'.
   -> props
   -- ^ Initial props for this component
   -> Maybe Key
@@ -210,7 +214,7 @@ initialize
   -> IO DOMRef
   -- ^ Callback function is used for obtaining the t'Miso.Types.Component' @DOMRef@.
   -> IO (ComponentState context props model action)
-initialize events _componentParentId hydrate isRoot initialProps maybeKey _componentStaticKey comp@Component {..} getComponentMountPoint = do
+initialize events _componentParentId hydrate isRoot live initialProps maybeKey _componentStaticKey comp@Component {..} getComponentMountPoint = do
   _componentId <- freshComponentId
   let
     _componentProps = initialProps
@@ -221,8 +225,7 @@ initialize events _componentParentId hydrate isRoot initialProps maybeKey _compo
   initializedModel <-
     case (hydrate, hydrateModel) of
       (Hydrate, Just m) -> m
-      (Draw, _) -> do
-        live <- readIORef liveMode
+      (Draw, _) ->
         case (live, maybeKey) of
           (True, Just k) -> do
             vcomps <- readIORef components
@@ -257,7 +260,7 @@ initialize events _componentParentId hydrate isRoot initialProps maybeKey _compo
         currentProps <- (^. componentProps) . (IM.! _componentId) <$> readIORef components
         currentContext <- readIORef globalContext
         newVTree <-
-          buildVTree events _componentParentId _componentId Draw
+          buildVTree events _componentParentId _componentId Draw live
             _componentSink logLevel newModel (view currentContext currentProps newModel)
         newHandlers <- collectEventHandlers
         oldVTree <- readIORef _componentVTree
@@ -322,7 +325,7 @@ initialize events _componentParentId hydrate isRoot initialProps maybeKey _compo
   -- both governed by the global 'initialDraw' latch in the drawing contexts,
   -- which 'initComponent' clears ONCE the whole root mount finishes (see the note
   -- there).
-  initialDraw initializedModel events hydrate isRoot comp vcomponent
+  initialDraw initializedModel events hydrate isRoot live comp vcomponent
   forM_ mount _componentSink
 #ifdef NATIVE
   -- Ship the child's initial @props@ so the MTS can rebuild the mirror
@@ -348,7 +351,12 @@ initialize events _componentParentId hydrate isRoot initialProps maybeKey _compo
 #endif
   pure vcomponent
 -----------------------------------------------------------------------------
-initSubs :: IO model -> [Sub model action] -> IORef (Map MisoString ThreadId) -> Sink action -> IO ()
+initSubs
+  :: IO model
+  -> [Sub model action]
+  -> IORef (Map MisoString ThreadId)
+  -> Sink action
+  -> IO ()
 initSubs getModel subs_ _componentSubThreads _componentSink = do
   forM_ subs_ $ \sub_ -> do
     threadId <- forkIO (sub_ _componentSink getModel)
@@ -512,15 +520,18 @@ initialDraw
   -> Events
   -> Hydrate
   -> Bool
+  -> Bool
+  -- ^ Is live-reload mode active? Threaded into 'buildVTree' for child
+  -- component initialization.
   -> Component context props m a
   -> ComponentState context props m a
   -> IO ()
-initialDraw initializedModel events hydrate isRoot Component {..} ComponentState {..} = do
+initialDraw initializedModel events hydrate isRoot live Component {..} ComponentState {..} = do
 #ifdef BENCH
   start <- FFI.now
 #endif
   currentContext <- readIORef globalContext
-  vtree <- buildVTree events _componentParentId _componentId hydrate _componentSink logLevel
+  vtree <- buildVTree events _componentParentId _componentId hydrate live _componentSink logLevel
     initializedModel (view currentContext _componentProps initializedModel)
   vtreeHandlers0 <- collectEventHandlers
 #ifdef BENCH
@@ -542,7 +553,7 @@ initialDraw initializedModel events hydrate isRoot Component {..} ComponentState
               swapEventHandlers _componentId vtreeHandlers0
             else do
               newTree <-
-                buildVTree events _componentParentId _componentId Draw
+                buildVTree events _componentParentId _componentId Draw live
                   _componentSink logLevel initializedModel (view currentContext _componentProps initializedModel)
               newHandlers <- collectEventHandlers
               -- the discarded hydration tree's callbacks are unreachable
@@ -1131,14 +1142,6 @@ components :: IORef (IntMap (ComponentState context props model action))
 {-# NOINLINE components #-}
 components = unsafePerformIO (newIORef mempty)
 -----------------------------------------------------------------------------
--- | Set once in 'initComponent' from its @live@ argument. Gates key-based
--- model recovery in 'initialize' — outside hot reload, a keyed component
--- must never inherit a previous (possibly unrelated) component's model just
--- because it shares a t'Key'.
-liveMode :: IORef Bool
-{-# NOINLINE liveMode #-}
-liveMode = unsafePerformIO (newIORef False)
------------------------------------------------------------------------------
 -- | This function evaluates effects according to 'Synchronicity'.
 evalScheduled :: Synchronicity -> IO () -> IO ()
 evalScheduled Sync x = x `catch` (void . exception)
@@ -1234,12 +1237,15 @@ buildVTree
   -> ComponentId
   -> ComponentId
   -> Hydrate
+  -> Bool
+  -- ^ Is live-reload mode active? Passed through to 'initialize' when
+  -- mounting child components.
   -> Sink action
   -> LogLevel
   -> model
   -> View context model action
   -> IO VTree
-buildVTree events_ parentId_ vcompId hydrate snk logLevel_ model_ = \case
+buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ model_ = \case
   VComp someComp -> buildComp Nothing someComp
 
   VCompStatic ptr props -> case deRefStaticPtr ptr of
@@ -1276,7 +1282,7 @@ buildVTree events_ parentId_ vcompId hydrate snk logLevel_ model_ = \case
                   xs (drop 1 xs)
               buildKid _ acc (VFrag _ []) = pure acc
               buildKid p acc kid = do
-                VTree child <- buildVTree events_ parentId_ vcompId hydrate snk logLevel_ model_ kid
+                VTree child <- buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ model_ kid
                 FFI.set "parent" p child
                 pure ((kid, child) : acc)
   VText key t -> do
@@ -1305,7 +1311,7 @@ buildVTree events_ parentId_ vcompId hydrate snk logLevel_ model_ = \case
             where
               buildKid acc (VFrag _ []) = pure acc
               buildKid acc kid = do
-                VTree child <- buildVTree events_ parentId_ vcompId hydrate snk logLevel_ model_ kid
+                VTree child <- buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ model_ kid
                 FFI.set "parent" parentVTree child
                 pure ((kid, child) : acc)
   where
@@ -1350,7 +1356,7 @@ buildVTree events_ parentId_ vcompId hydrate snk logLevel_ model_ = \case
       comp <- create
       mountCallback <- do
         syncCallback1' $ \parent_ -> do
-          ComponentState {..} <- initialize events_ vcompId hydrate False newProps maybeKey maybeStaticKey app (pure parent_)
+          ComponentState {..} <- initialize events_ vcompId hydrate False live newProps maybeKey maybeStaticKey app (pure parent_)
           modifyComponent vcompId (children %= IS.insert _componentId)
           vtree <- toJSVal =<< readIORef _componentVTree
           FFI.set "parent" comp (Object vtree)
@@ -2278,16 +2284,15 @@ initComponent events hydrate live initialContext comp_@Component {..} key props 
           void $ forkIO (sendReadyUntilAcked sk)
         when mts $ do
           effectListener proxy =<< getBTSContext
-          componentListener proxy =<< getBTSContext
+          componentListener proxy live =<< getBTSContext
           registerMainThreadDispatch
 #endif
-        atomicWriteIORef liveMode live
         root <- Diff.mountElement (getMountPoint mountPoint)
         when web (cleanup proxy live root)
         atomicWriteIORef globalContext initialContext
         -- dmj: top-level Component always responsive to Context changes
         let comp_' = comp_ { useContext = True }
-        void $ initialize events rootComponentId hydrate True props key sk comp_' (pure root)
+        void $ initialize events rootComponentId hydrate True live props key sk comp_' (pure root)
 #ifdef NATIVE
         -- The root mount (root + every nested component drawn synchronously above)
         -- is now complete on this thread, so clear the global 'initialDraw' latch
@@ -2422,8 +2427,8 @@ resolveNodeRef domRef = do
   nodes  <- jsg "runtime" >>= (! "nodes")
   nodes ! ms nodeId
 -----------------------------------------------------------------------------
-componentListener :: forall context . Eq context => Proxy context -> BTS -> IO ()
-componentListener Proxy (BTS ctx) = void $ do
+componentListener :: forall context . Eq context => Proxy context -> Bool -> BTS -> IO ()
+componentListener Proxy live (BTS ctx) = void $ do
   FFI.addEventListener ctx "Miso.components" $ \msgEvent ->
     flip catch (\(e :: SomeException) ->
         FFI.consoleError ("[componentListener]: exception in callback: " <> ms (show e))) $ do
@@ -2485,7 +2490,7 @@ componentListener Proxy (BTS ctx) = void $ do
                                 -- them on @MOUNT@), decoded at the @props@ type recovered above.
                                 case componentComponentPayload of
                                   Just pv | Success initProps <- (fromJSON pv :: Result props) ->
-                                    void $ initialize mempty componentComponentId Draw False initProps
+                                    void $ initialize mempty componentComponentId Draw False live initProps
                                       Nothing (Just (staticKey ptr)) comp_ (pure parent_)
                                   _ ->
                                     FFI.consoleError "[COMPONENT]: MOUNT missing/invalid props payload"
