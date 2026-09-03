@@ -247,6 +247,7 @@ initialize events _componentParentId hydrate isRoot live initialProps maybeKey _
 
   _componentDOMRef <- getComponentMountPoint
   _componentVTree <- newIORef (VTree (Object jsNull))
+  _componentView <- newIORef view
   _componentSubThreads <- newIORef M.empty
 
   frame <- newEmptyMVar :: IO (MVar Double)
@@ -256,16 +257,20 @@ initialize events _componentParentId hydrate isRoot live initialProps maybeKey _
     asyncCallback1 $ \jsval -> do
       putMVar frame =<< fromJSValUnchecked jsval
 
-  let _componentDraw = \newModel -> do
+  let drawWith = \awaitFrame newModel -> do
         currentProps <- (^. componentProps) . (IM.! _componentId) <$> readIORef components
         currentContext <- readIORef globalContext
+        -- Not the @view@ bound above: a parent re-render can replace it.
+        currentView <- readIORef _componentView
         newVTree <-
           buildVTree events _componentParentId _componentId Draw live
-            _componentSink logLevel newModel (view currentContext currentProps newModel)
+            _componentSink logLevel newModel (currentView currentContext currentProps newModel)
         newHandlers <- collectEventHandlers
         oldVTree <- readIORef _componentVTree
-        _frame <- requestAnimationFrame rAFCallback
-        _timestamp :: Double <- takeMVar frame
+        when awaitFrame $ do
+          _frame <- requestAnimationFrame rAFCallback
+          _timestamp :: Double <- takeMVar frame
+          pure ()
         Diff.diff (Just oldVTree) (Just newVTree) _componentDOMRef
         FFI.updateRef oldVTree newVTree
         atomicWriteIORef _componentVTree newVTree
@@ -273,6 +278,8 @@ initialize events _componentParentId hydrate isRoot live initialProps maybeKey _
         -- See Note [Freeing event handler callbacks].
         swapEventHandlers _componentId newHandlers
         FFI.flush
+      _componentDraw = drawWith True
+      _componentRedraw = drawWith False
 
 #ifdef NATIVE
   -- N.B. all three cross-thread dispatch functions below wrap their FFI call
@@ -390,6 +397,24 @@ dirtyCheck c n = unsafePerformIO $ do
   updatedName <- n `seq` makeStableName n
   pure (currentName /= updatedName && c /= n)
 -----------------------------------------------------------------------------
+-- | Whether two values are distinct heap objects: the 'Eq'-free counterpart
+-- to 'dirtyCheck', for comparing @view@ functions. 'False' is exact; 'True' is
+-- conservative (a redundant redraw, never incorrect).
+pointerChanged :: a -> a -> IO Bool
+pointerChanged current latest = do
+  currentName <- current `seq` makeStableName current
+  latestName <- latest `seq` makeStableName latest
+  pure (currentName /= latestName)
+-----------------------------------------------------------------------------
+-- | Writes a value into a cell if it is a different heap object, reporting
+-- whether it did.
+refreshRef :: IORef a -> a -> IO Bool
+refreshRef ref latest = do
+  current <- readIORef ref
+  changed <- pointerChanged current latest
+  when changed (atomicWriteIORef ref latest)
+  pure changed
+-----------------------------------------------------------------------------
 -- | Checks if the Component is mounted before executing actions
 isMounted :: ComponentId -> IO Bool
 isMounted vcompId = isJust . IM.lookup vcompId <$> readIORef components
@@ -408,17 +433,25 @@ scheduler Proxy =
     getBatch >>= \case
       Nothing -> wait globalWaiter
       Just (vcompId, S.Empty)
-        | vcompId == minBound -> do
-            -- context propagation, 'minBound' sentinel indicates a global
+        | vcompId == contextSentinel -> do
+            -- context propagation, 'contextSentinel' indicates a global
             -- context change: re-render every t'Miso.Types.Component' with 'useContext' set.
-            -- 'minBound' is the one 'Int' that can be neither a real (positive)
-            -- @ComponentId@ nor a negated one, so it never collides.
             vcomps <- readIORef components
             forM_ (IM.elems vcomps) $ \ComponentState {..} ->
               -- On the MTS, context-driven redraws are suppressed: the BTS ships
               -- DOM patches via the JS patch protocol, so drawing here would be a
               -- redundant second paint.
               when (_componentUseContext && not mts) (_componentDraw _componentModel)
+        | vcompId == redrawSentinel -> do
+            -- targeted redraw: the components whose @view@ a parent re-render
+            -- replaced. Each reflags its own children, so the cascade walks
+            -- down to the leaves.
+            redraws <- atomicModifyIORef' pendingRedraws $ \pending ->
+              (IS.empty, pending)
+            vcomps <- readIORef components
+            forM_ (IS.toList redraws) $ \redrawId ->
+              forM_ (IM.lookup redrawId vcomps) $ \ComponentState {..} ->
+                when (not mts) (_componentRedraw _componentModel)
         | vcompId < 0 -> do
             -- props propagation, negated @ComponentId@ indicates render-phase only.
             vcomps <- readIORef components
@@ -621,14 +654,35 @@ enqueueSchedule vcompId =
   atomicModifyIORef' globalQueue $ \q ->
      (q & queueSchedule %~ (S.|> negate vcompId), ())
 -----------------------------------------------------------------------------
--- | Enqueues the context-propagation sentinel (@'minBound' :: 'Int'@). When the
+-- | Enqueues the context-propagation sentinel ('contextSentinel'). When the
 -- scheduler dequeues it, every t'Miso.Types.Component' with @useContext@ enabled
 -- is re-rendered against the updated global context. Used by the @context@
 -- feature (see 'Miso.Effect.modifyContext').
 enqueueContextPropagation :: IO ()
 enqueueContextPropagation =
   atomicModifyIORef' globalQueue $ \q ->
-     (q & queueSchedule %~ (S.|> minBound), ())
+     (q & queueSchedule %~ (S.|> contextSentinel), ())
+-----------------------------------------------------------------------------
+-- | Flags a t'Miso.Types.Component' for redraw after a parent re-render
+-- replaced its @view@ (see '_componentView').
+--
+-- Not 'enqueueSchedule': that runs the props phase, firing @onPropsChanged@
+-- for unchanged @props@. Not 'enqueueContextPropagation': redrawing every
+-- @useContext@ component rebuilds their children's closures, reflagging them,
+-- forever. Targeted, so the cascade terminates at the leaves.
+enqueueRedraw :: ComponentId -> IO ()
+enqueueRedraw vcompId = do
+  atomicModifyIORef' pendingRedraws $ \redraws ->
+     (IS.insert vcompId redraws, ())
+  atomicModifyIORef' globalQueue $ \q ->
+     (q & queueSchedule %~ (S.|> redrawSentinel), ())
+-----------------------------------------------------------------------------
+-- | Scheduler sentinels: a global @context@ change, and a targeted redraw.
+-- 'minBound' and its successor are neither a real (positive) @ComponentId@ nor
+-- a negated one, so they never collide with a queued component.
+contextSentinel, redrawSentinel :: ComponentId
+contextSentinel = minBound
+redrawSentinel = minBound + 1
 -----------------------------------------------------------------------------
 -- | Case on queue schedule, get first item, span on the rest of queueSchedule, get length.
 -- set schedule with whatever remains.
@@ -770,6 +824,12 @@ globalQueue :: IORef (Queue action)
 {-# NOINLINE globalQueue #-}
 globalQueue = unsafePerformIO (newIORef emptyQueue)
 -----------------------------------------------------------------------------
+-- | t'Miso.Effect.ComponentId's flagged by 'enqueueRedraw', drained by the
+-- scheduler on 'redrawSentinel'.
+pendingRedraws :: IORef IntSet
+{-# NOINLINE pendingRedraws #-}
+pendingRedraws = unsafePerformIO (newIORef IS.empty)
+-----------------------------------------------------------------------------
 -- | The global React-style @context@. Seeded in 'initComponent' (via
 -- 'Miso.startAppWithContext', defaulting to @()@) and mutated by
 -- 'Miso.Effect.modifyContext' during the scheduler's commit phase.
@@ -836,6 +896,11 @@ data ComponentState context props model action
   -- ^ The DOM reference the t'Miso.Types.Component' is mounted on
   , _componentVTree :: IORef VTree
   -- ^ A reference to the current virtual DOM (i.e. t'VTree')
+  , _componentView :: IORef (context -> props -> model -> View context model action)
+  -- ^ The @view@ to render with. A parent re-render reuses a mounted child
+  -- so it keeps its @model@, but rebuilds its @view@ closure, which may capture
+  -- different parent-side data; so the @view@ cannot be baked into '_componentDraw'.
+  -- Refreshed by 'buildComp'\'s @diffProps@.
   , _componentSink :: action -> IO ()
   -- ^ t'Miso.Types.Component' t'Sink' used to enter events into the system
   , _componentPostEffect :: Sink action
@@ -856,6 +921,9 @@ data ComponentState context props model action
   -- ^ Mailbox for asynchronous t'Miso.Types.Component' communication
   , _componentDraw :: model -> IO ()
   -- ^ Helper function for t'Miso.Types.Component' rendering
+  , _componentRedraw :: model -> IO ()
+  -- ^ '_componentDraw' without the animation-frame wait, for the redraw
+  -- cascade ('enqueueRedraw'): a frame each would take one per component.
   , _componentHydrate :: model -> IO ()
   -- ^ Posts the model to the MTS for cross-thread (Lynx) hydration via
   -- @MODEL_HYDRATE@. Captures the t'Miso.Types.Component''s 'ToJSON' instance at
@@ -1372,18 +1440,26 @@ buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ model_ = \case
             Just componentState -> do
               forM_ (unmount app) (_componentSink componentState)
               unmountComponent @context componentState
-      -- When props are present, install a diffProps callback.
-      -- Comparison happens in Haskell against _componentLastProps — no round-trip.
-      -- TypeScript calls diffProps() unconditionally; Haskell decides whether to dispatch.
+      -- The "parent re-rendered me" callback: TypeScript calls diffProps() on
+      -- every reuse of a mounted component, Haskell decides what must change.
       diffPropsCallback <- toJSVal =<< do
         syncCallback $ do
           componentId_ <- fromJSValUnchecked =<< comp ! ("componentId" :: MisoString)
-          currentProps <- _componentProps . (IM.! componentId_) <$> readIORef components
-          when (dirtyCheck currentProps newProps) $ do
-            modifyComponent componentId_ $ do
-              componentProps .= newProps
-              prevComponentProps .= currentProps
-            enqueueSchedule componentId_
+          componentState <- (IM.! componentId_) <$> readIORef components
+          -- Adopt this render's @view@: reuse keeps the component and its model,
+          -- but @app@ is freshly built and its closure may capture different
+          -- parent-side data. See '_componentView'.
+          viewChanged <- refreshRef (_componentView componentState) (view app)
+          let currentProps = _componentProps componentState
+          if dirtyCheck currentProps newProps
+            then do
+              modifyComponent componentId_ $ do
+                componentProps .= newProps
+                prevComponentProps .= currentProps
+              enqueueSchedule componentId_
+            else
+              -- @props@ unchanged, so the props phase must not run.
+              when viewChanged (enqueueRedraw componentId_)
       FFI.set "diffProps" diffPropsCallback comp
       FFI.set "child" jsNull comp
       forM_ maybeKey (\key -> FFI.set "key" key comp)

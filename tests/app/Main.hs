@@ -1782,6 +1782,22 @@ main = withJS $ do
         clickStaticKeyUndefined <- liftIO (isUndefined clickStaticKey)
         clickStaticKeyUndefined `shouldBe` False
 
+      it "Should redraw a reused Component when its view changes but its props do not" $ do
+        let childText :: Test MisoString
+            childText = liftIO $ fromJSValUnchecked =<< eval ("document.getElementById('child').textContent" :: MisoString)
+        liftIO $ startApp mempty $
+          ((component (0 :: Int) noop $ \_ _ n ->
+            div_ [] [ div_ [ id_ "child" ] [ mount_ (component () noop (\_ () () -> text ("n: " <> ms n)) :: Component () () () ()) ] ])
+            :: Component () () Int ())
+        childText >>= (`shouldBe` "n: 0")
+        ComponentState { _componentRedraw = rootRedraw } <-
+          liftIO ((IM.! 1) <$> readIORef components :: IO (ComponentState () () Int ()))
+        liftIO (rootRedraw 1)
+        ComponentState { _componentRedraw = childRedraw } <-
+          liftIO ((IM.! 2) <$> readIORef components :: IO (ComponentState () () () ()))
+        liftIO (childRedraw ())
+        childText >>= (`shouldBe` "n: 1")
+
     describe "Miso.DSL `await` tests" $ do
       it "Successful Promise resolution should result in a value" $ do
         -- Create a Promise and immediately resolve it with `42`
