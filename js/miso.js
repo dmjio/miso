@@ -449,7 +449,7 @@ function callDestroyedRecursive(c) {
 }
 function callDestroyed(c) {
   if (c.type === 1 /* VNode */ && c.onDestroyed)
-    c.onDestroyed();
+    c.onDestroyed(c.domRef);
   if (c.type === 0 /* VComp */)
     unmountComponent(c);
 }
@@ -459,7 +459,7 @@ function callBeforeDestroyed(c) {
       break;
     case 1 /* VNode */:
       if (c.onBeforeDestroyed)
-        c.onBeforeDestroyed();
+        c.onBeforeDestroyed(c.domRef);
       break;
     default:
       break;

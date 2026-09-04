@@ -155,7 +155,7 @@ function callDestroyedRecursive<T>(c: VNode<T> | VComp<T> | VFrag<T>): void {
 }
 
 function callDestroyed<T>(c: VNode<T> | VComp<T>): void {
-  if (c.type === VTreeType.VNode && c.onDestroyed) c.onDestroyed();
+  if (c.type === VTreeType.VNode && c.onDestroyed) c.onDestroyed(c.domRef);
   if (c.type === VTreeType.VComp) unmountComponent(c);
 }
 
@@ -164,7 +164,7 @@ function callBeforeDestroyed<T>(c: VNode<T> | VComp<T>): void {
       case VTreeType.VComp:
           break;
       case VTreeType.VNode:
-          if (c.onBeforeDestroyed) c.onBeforeDestroyed();
+          if (c.onBeforeDestroyed) c.onBeforeDestroyed(c.domRef);
           break;
       default:
           break;
