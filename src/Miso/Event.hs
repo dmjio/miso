@@ -40,6 +40,7 @@ module Miso.Event
    , onCreatedWith
    , onBeforeCreated
    , onDestroyed
+   , onDestroyedWith
    , onBeforeDestroyed
    , onBeforeDestroyedWith
     -- *** Exports
@@ -285,6 +286,25 @@ onDestroyed
 onDestroyed action =
   On $ \_model sink (VTree object) _ _ -> do
     callback <- FFI.syncCallback (sink action)
+    FFI.set "onDestroyed" callback object
+-----------------------------------------------------------------------------
+-- | Like 'onDestroyed' but also receives the element's 'DOMRef'.
+--
+-- The element has already been detached from the DOM when this fires: the
+-- 'DOMRef' has no parent and reports a zero bounding rect. Use it to clean
+-- up out-of-band references to the element (unregister it from a JS
+-- library, drop it from a lookup table) — for teardown that needs the
+-- element still live in the document, use 'onBeforeDestroyedWith'.
+--
+-- @since 1.13.0.0
+--
+onDestroyedWith
+  :: (DOMRef -> action)
+  -- ^ Callback receiving the element's (detached) 'DOMRef' after it is removed from the DOM
+  -> Attribute model action
+onDestroyedWith action =
+  On $ \_model sink (VTree object) _ _ -> do
+    callback <- FFI.syncCallback1 (sink . action)
     FFI.set "onDestroyed" callback object
 -----------------------------------------------------------------------------
 -- | Fire an action just before the DOM element is removed from the document.
