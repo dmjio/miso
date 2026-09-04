@@ -58,8 +58,8 @@ export type VNode<T> = {
    *  component events that don't bubble). Absent on browser/WASM. */
   directEvents?: Array<string>;
   children: Array<VTree<T>>;
-  onDestroyed: () => void;
-  onBeforeDestroyed: () => void;
+  onDestroyed: (domRef: T) => void;
+  onBeforeDestroyed: (domRef: T) => void;
   onCreated: (domRef: T) => void;
   onBeforeCreated: () => void;
   draw?: (T) => void;

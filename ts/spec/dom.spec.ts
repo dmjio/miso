@@ -468,6 +468,27 @@ describe('DOM tests', () => {
     expect(destroy).toBe(1);
   });
 
+  test('Should pass the domRef to onDestroyed and onBeforeDestroyed', () => {
+    let beforeRef: DOMRef | undefined;
+    let destroyedRef: DOMRef | undefined;
+    const currentNode = vnode<DOMRef>({
+      onBeforeDestroyed: (domRef) => {
+        beforeRef = domRef;
+      },
+      onDestroyed: (domRef) => {
+        destroyedRef = domRef;
+      },
+    });
+
+    diff<DOMRef>(null, currentNode, document.body, drawingContext);
+    const el = currentNode.domRef;
+    expect(el).not.toBeNull();
+
+    diff<DOMRef>(currentNode, null, document.body, drawingContext);
+    expect(beforeRef).toBe(el);
+    expect(destroyedRef).toBe(el);
+  });
+
   test('Should call onDestroyed recursively', () => {
     let destroy = 0,
       childDestroy = 0;
