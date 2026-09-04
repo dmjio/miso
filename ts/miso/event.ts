@@ -28,6 +28,15 @@ export function delegator<T> (
 /* the event listener shared by both delegator and undelegator */
 function listener<T>(e: Event | [Event], mount: T, getVTree: ((callback: (vtree: VTree<T>) => void) => void), debug: boolean, context: EventContext<T>): void {
   getVTree(function (vtree: VTree<T>) {
+      /* The delegator's listeners attach before the initial draw / hydration
+         has stored the vtree, so events raised in that window see a null
+         vtree. Drop them: there is nothing to dispatch on yet. */
+      if (!vtree) {
+        if (debug) {
+          console.warn('Event received before vtree was mounted, dropping', e);
+        }
+        return;
+      }
       if (Array.isArray(e)) {
           for (const key of e) {
             dispatch (key, vtree, mount, debug, context);
