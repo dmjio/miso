@@ -45,6 +45,15 @@ const eventContext : EventContext<NodeId> = {
     context.addEventListener('Miso.events', (m : MessageEvent<ProcessEvent>) => {
       let stack : Array<NodeId> = m.data.stack.map (function (x) { return { nodeId : x }});
       getVTree((vtree: VTree<NodeId>) => {
+        /* The delegator's listeners attach before the initial draw has stored
+           the vtree, so events raised in that window see a null vtree. Drop
+           them: there is nothing to dispatch on yet. */
+        if (!vtree) {
+          if (debug) {
+            console.warn('Event received before vtree was mounted, dropping', m.data.event);
+          }
+          return;
+        }
         return delegateEvent(m.data.event as Event, vtree, stack, debug, eventContext);
       });
     });

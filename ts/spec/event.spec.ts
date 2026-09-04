@@ -73,6 +73,31 @@ describe ('Event tests', () => {
 
   });
 
+  test('Should drop events raised before the vtree is mounted (hydration race)', () => {
+    const body = document.body;
+    /* server-rendered markup exists before hydration has produced a vtree */
+    body.innerHTML = '<div><button></button></div>';
+
+    /* exceptions in event listeners don't propagate to the dispatching
+       click(), they surface as 'error' events on window, so capture those */
+    const errors: Array<string> = [];
+    const onError = (e: any) => { errors.push(e.message); };
+    window.addEventListener('error', onError);
+
+    /* the delegator is installed before initialDraw / hydration has written
+       the vtree ref, so getVTree yields null for events in that window */
+    const getVTree = (cb: any) => cb(null);
+    const delegatedEvents: Array<EventCapture> = [{ name: 'click', capture: true }];
+    delegator(body, delegatedEvents, getVTree, true, eventContext);
+
+    (body.querySelector('button') as HTMLElement).click();
+
+    window.removeEventListener('error', onError);
+    /* without the null-vtree guard this captures:
+       "Cannot read properties of null (reading 'type')" */
+    expect(errors).toEqual([]);
+  });
+
   test('Should warn when clicking mount with no target handler (empty stack)', () => {
     const body = document.body;
     const parent = vnode({ tag: 'div', children: [vnode({ tag: 'span' })], events: { captures: {}, bubbles: {} } });

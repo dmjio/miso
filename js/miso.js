@@ -865,6 +865,12 @@ function delegator(mount, events, getVTree, debug, context) {
 }
 function listener(e, mount, getVTree, debug, context) {
   getVTree(function(vtree) {
+    if (!vtree) {
+      if (debug) {
+        console.warn("Event received before vtree was mounted, dropping", e);
+      }
+      return;
+    }
     if (Array.isArray(e)) {
       for (const key of e) {
         dispatch(key, vtree, mount, debug, context);
