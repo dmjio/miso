@@ -56,8 +56,8 @@
 -- * __'Miso.Types.VContext'__ — resolved against the app-global @context@
 --   (read from 'globalContext') and the result rendered in its place.
 -- * __'Miso.Types.VProps'__ — resolved against the @props@ of the enclosing
---   component (@()@ for a bare 'Miso.Types.View') and the result rendered
---   in its place.
+--   component (@()@ for a bare 'Miso.Types.View' under 'toHtml'; the value
+--   given to 'toHtmlWith' otherwise) and the result rendered in its place.
 -- * __Event handlers__ (@'Miso.Types.On'@) — silently dropped; they have
 --   no meaning in a static HTML string.
 -- * __Boolean properties__ (@disabled@, @checked@, @required@, …) — rendered
@@ -80,6 +80,8 @@
 module Miso.Html.Render
   ( -- *** Classes
     ToHtml (..)
+    -- *** Functions
+  , toHtmlWith
   ) where
 ----------------------------------------------------------------------------
 import qualified Data.Set as S
@@ -120,7 +122,21 @@ instance (props ~ ()) => ToHtml [View context props model action] where
   toHtml = foldMap renderView
 ----------------------------------------------------------------------------
 renderView :: View context () model action -> L.ByteString
-renderView = toLazyByteString . renderBuilder ()
+renderView = toHtmlWith ()
+----------------------------------------------------------------------------
+-- | Render a 'View' to a @L.ByteString@, supplying the @props@ that any
+-- 'Miso.Types.VProps' node in it resolves against.
+--
+-- This is the general form of 'toHtml', for a 'View' whose @props@ type is
+-- not @()@ — e.g. a component's 'Miso.Types.view' applied directly:
+--
+-- @
+-- toHtmlWith props (view comp ctx props model)
+-- @
+--
+-- @since 1.14.0.0
+toHtmlWith :: props -> View context props model action -> L.ByteString
+toHtmlWith props = toLazyByteString . renderBuilder props
 ----------------------------------------------------------------------------
 intercalate :: Builder -> [Builder] -> Builder
 intercalate _ [] = ""
@@ -216,19 +232,7 @@ renderBuilder _ (VComp someComp) =
 #endif
 renderBuilder _ (VCompStatic (StaticMount ptr props0)) =
   case deRefStaticPtr ptr of
-   SomeStaticComponent mk -> case mk props0 of
-    SomeComponent _key props comp_ ->
-      -- The app-global @context@ is read from 'globalContext'. For the common
-      -- @context ~ ()@ case the 'Miso.Lens.view' ignores it, so the initial @undefined@ is
-      -- never forced. But if a 'Miso.Lens.view' here inspects a non-trivial @context@,
-      -- SSR must seed the cell with 'Miso.setContext' before serializing, or
-      -- forcing @ctx@ raises an exception. See 'Miso.setContext' for details.
-      let ctx = unsafePerformIO (readIORef globalContext) in
-#ifdef SSR
-      renderBuilder props (view comp_ ctx props (getInitialComponentModel comp_))
-#else
-      renderBuilder props (view comp_ ctx props (model comp_))
-#endif
+    SomeStaticComponent mk -> renderBuilder () (VComp (mk props0))
 renderBuilder props_ (VFrag _ kids) = foldMap (renderBuilder props_) kids
 renderBuilder props_ (VContext f) =
   let ctx = unsafePerformIO (readIORef globalContext) in

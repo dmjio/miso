@@ -14,6 +14,7 @@
 module Miso.Native.X.Element.Svg.Property
   ( -- *** Property
     content_
+  , contentWith_
   , contentRaw_
   , src_
   ) where
@@ -21,7 +22,7 @@ module Miso.Native.X.Element.Svg.Property
 import           Miso.String (MisoString, ms)
 import           Miso.Types (Attribute, View)
 import           Miso.Property
-import           Miso.Html.Render (toHtml)
+import           Miso.Html.Render (toHtmlWith)
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/svg.html#content
 --
@@ -41,7 +42,18 @@ contentRaw_ = textProp "content"
 -- N.B. Must use "Miso.Svg" and 'Miso.Svg.Element.svg_' combinator.
 --
 content_ :: View context () model action -> Attribute model action
-content_ = textProp "content" . ms . toHtml
+content_ = contentWith_ ()
+-----------------------------------------------------------------------------
+-- | Like 'content_', but for a 'Miso.Types.View' whose @props@ type is not
+-- @()@ — e.g. one containing a 'Miso.Types.vprops' node. The @props@ value
+-- is what those nodes resolve against; the caller is always inside
+-- 'Miso.Types.view', where it is in scope.
+--
+-- > contentWith_ props (svg_ [] [ vprops $ \Props { color } -> circle_ [ fill_ color ] [] ])
+--
+-- @since 1.14.0.0
+contentWith_ :: props -> View context props model action -> Attribute model action
+contentWith_ props = textProp "content" . ms . toHtmlWith props
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/svg.html#src
 --

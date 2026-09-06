@@ -1282,9 +1282,13 @@ buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ props_ model_ = 
               setNextSibling xs =
                 zipWithM_ (flip setField "nextSibling")
                   xs (drop 1 xs)
+              -- Resolve wrapper nodes first so 'freeable' (and the empty
+              -- fragment skip below) see the constructor they resolve to.
+              buildKid p acc (VProps f) = buildKid p acc (f props_)
+              buildKid p acc (VContext f) = buildKid p acc . f =<< readIORef @context globalContext
               buildKid _ acc (VFrag _ []) = pure acc
               buildKid p acc kid = do
-                VTree child <- buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ props_ model_ kid
+                VTree child <- go kid
                 FFI.set "parent" p child
                 pure ((kid, child) : acc)
   VText key t -> do
@@ -1311,19 +1315,22 @@ buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ props_ model_ = 
           zipWithM_ (flip setField "nextSibling") (map snd ordered) (drop 1 (map snd ordered))
           pure ordered
             where
+              buildKid acc (VProps f) = buildKid acc (f props_)
+              buildKid acc (VContext f) = buildKid acc . f =<< readIORef @context globalContext
               buildKid acc (VFrag _ []) = pure acc
               buildKid acc kid = do
-                VTree child <- buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ props_ model_ kid
+                VTree child <- go kid
                 FFI.set "parent" parentVTree child
                 pure ((kid, child) : acc)
 
-  VContext f -> do
-    ctx <- readIORef @context globalContext
-    buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ props_ model_ (f ctx)
+  VContext f -> go . f =<< readIORef @context globalContext
 
-  VProps f ->
-    buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ props_ model_ (f props_)
+  VProps f -> go (f props_)
   where
+    -- Recurse with every argument but the 'View' unchanged.
+    go :: View context props model action -> IO VTree
+    go = buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ props_ model_
+
     -- Note [Freeing VTree handles]
     -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     -- On WASM each 'JSVal' handle carries a weak pointer that every GC must

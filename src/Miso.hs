@@ -144,7 +144,7 @@
 --          |     |      |           * - The global @context@ threaded into the 'View' (@'View' context props model action@)
 --          |     |      |           |  * - The type of the action that updates t'Miso.Types.Component' @model@
 --          |     |      |           |  |
---     v :: () -> () -> 'Int' -> 'View' () 'Int' Action
+--     v :: () -> () -> 'Int' -> 'View' () () 'Int' Action
 --     v _context _props x = 'Miso.Types.vfrag'
 --       [ H.'Miso.Html.Element.button_' [ HE.'Miso.Html.Event.onClick' Add, HP.'Miso.Html.Property.id_' "add" ] [ "+" ]
 --       , 'Miso.Types.text' ('ms' x)
@@ -867,7 +867,7 @@
 -- Top-level applications have no parent, so @props@ is always @()@:
 --
 -- @
--- view :: () -> () -> model -> 'View' () model action
+-- view :: () -> () -> model -> 'View' () () model action
 -- view _context _props model = …
 -- @
 --
@@ -938,7 +938,7 @@
 -- child :: t'Miso.Types.Component' ()      Greeting ()     ChildAction
 -- child = 'Miso.Types.component' () updateChild viewChild
 --   where
---     viewChild :: () -> Greeting -> () -> 'View' () () ChildAction
+--     viewChild :: () -> Greeting -> () -> 'View' () Greeting () ChildAction
 --     viewChild _ (Greeting g) _ =
 --       'Miso.Html.Element.div_' [] [ 'Miso.Types.text' ("Hello, " <> g <> "!") ]
 --
@@ -952,7 +952,7 @@
 -- parentComp :: 'App' ParentModel ParentAction
 -- parentComp = 'Miso.Types.component' (ParentModel \"World\") 'noop' viewParent
 --   where
---     viewParent :: () -> () -> ParentModel -> 'View' () ParentModel ParentAction
+--     viewParent :: () -> () -> ParentModel -> 'View' () () ParentModel ParentAction
 --     viewParent _ _ (ParentModel g) = 'mountWithProps_' "child" (Greeting g) child
 -- -----------------------------------------------------------------------------
 -- newtype ParentModel = ParentModel 'MisoString' deriving ('Eq')
@@ -1239,13 +1239,23 @@
 --   'Miso.Html.ToHtml.toHtml' :: a -> 'Data.ByteString.Lazy.ByteString'
 -- @
 --
--- Instances are provided for @'View' c m a@ and @['View' c m a]@:
+-- Instances are provided for @'View' c () m a@ and @['View' c () m a]@ — a
+-- bare 'View' has no enclosing component to supply @props@, so they are
+-- fixed to @()@ (a 'View' left polymorphic in @props@ resolves to this):
 --
 -- @
 -- import "Miso.Html.Render" ('Miso.Html.Render.toHtml')
 --
 -- pageHtml :: 'Data.ByteString.Lazy.ByteString'
 -- pageHtml = 'Miso.Html.Render.toHtml' $ 'Miso.Html.Element.div_' [ 'Miso.Html.Property.id_' "root" ] [ "Hello, world!" ]
+-- @
+--
+-- To render a 'View' whose @props@ type is something else — e.g. a
+-- component's 'Miso.Types.view' applied directly, or a subtree containing
+-- 'vprops' — pass the @props@ value with 'Miso.Html.Render.toHtmlWith':
+--
+-- @
+-- 'Miso.Html.Render.toHtmlWith' props ('Miso.Types.view' comp ctx props model)
 -- @
 --
 -- This is typically wired into a Servant handler on the server using the
@@ -1723,7 +1733,7 @@
 -- in a @\<script\>@ tag alongside the rendered HTML:
 --
 -- @
--- serverView :: context -> props -> Model -> 'View' context Action
+-- serverView :: context -> props -> Model -> 'View' context props Model Action
 -- serverView _ _ m =
 --   'Miso.Html.Element.div_' []
 --     [ 'Miso.Html.Element.script_' [] [ 'textRaw' ("window.__initialModel__ = " \<\> 'Miso.JSON.encode' m) ]
