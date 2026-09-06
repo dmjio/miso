@@ -14,7 +14,6 @@
 module Miso.Native.X.Element.Svg.Property
   ( -- *** Property
     content_
-  , contentWith_
   , contentRaw_
   , src_
   ) where
@@ -22,7 +21,7 @@ module Miso.Native.X.Element.Svg.Property
 import           Miso.String (MisoString, ms)
 import           Miso.Types (Attribute, View)
 import           Miso.Property
-import           Miso.Html.Render (toHtmlWith)
+import           Miso.Html.Render (toHtml)
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/svg.html#content
 --
@@ -35,25 +34,23 @@ contentRaw_ = textProp "content"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/svg.html#content
 --
--- Inline SVG XML content using 'Miso.miso' 'Miso.Typess.View' Syntax.
+-- Inline SVG XML content using 'Miso.miso' 'Miso.Types.View' Syntax.
 --
 -- > content_ (svg_ [] [])
 --
 -- N.B. Must use "Miso.Svg" and 'Miso.Svg.Element.svg_' combinator.
 --
+-- The content is serialised to a string when the attribute is built, so the
+-- 'Miso.Types.View' has no enclosing component to take @props@ from and its
+-- @props@ are fixed to @()@. To draw from the component's @props@, lift
+-- 'Miso.Types.withProps' above the element instead of using
+-- 'Miso.Types.vprops' inside the content:
+--
+-- > withProps $ \Props { color } ->
+-- >   svg_ [ content_ (circle_ [ fill_ color ] []) ] []
+--
 content_ :: View context () model action -> Attribute model action
-content_ = contentWith_ ()
------------------------------------------------------------------------------
--- | Like 'content_', but for a 'Miso.Types.View' whose @props@ type is not
--- @()@ — e.g. one containing a 'Miso.Types.vprops' node. The @props@ value
--- is what those nodes resolve against; the caller is always inside
--- 'Miso.Types.view', where it is in scope.
---
--- > contentWith_ props (svg_ [] [ vprops $ \Props { color } -> circle_ [ fill_ color ] [] ])
---
--- @since 1.14.0.0
-contentWith_ :: props -> View context props model action -> Attribute model action
-contentWith_ props = textProp "content" . ms . toHtmlWith props
+content_ = textProp "content" . ms . toHtml
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/svg.html#src
 --

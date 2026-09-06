@@ -14,11 +14,9 @@ All notable changes to `miso` are documented here.
   component's current `props` whenever the enclosing `View` is built or
   rendered (`toHtml` on a bare `View` uses `()`). `withProps` is a synonym
   for `vprops`.
-- **`toHtmlWith` / `contentWith_`.** `toHtmlWith :: props -> View context
-  props model action -> ByteString` renders a `View` whose `props` type is
-  not `()`, supplying the value a `VProps` node resolves against. The Lynx
-  SVG `contentWith_` is the same for the `content` attribute; `content_` is
-  `contentWith_ ()`.
+- **`toHtmlWith`.** `toHtmlWith :: props -> View context props model action
+  -> ByteString` renders a `View` whose `props` type is not `()`, supplying
+  the value a `VProps` node resolves against.
 - **`VContext` / `vcontext` / `withContext`.** A `View` constructor that
   embeds a subtree built from a `context -> View context props model action`
   function, so a helper deep in a view tree can read the app-global
@@ -45,7 +43,8 @@ All notable changes to `miso` are documented here.
   that leaves it polymorphic needs no other change. `ToHtml (View …)` now
   requires `props ~ ()` (use `toHtmlWith` otherwise). `content_` in
   `Miso.Native.X.Element.Svg.Property` now takes a
-  `View context () model action` (use `contentWith_` otherwise).
+  `View context () model action`; lift `withProps` above the element to
+  draw from the component's `props`.
 
 ## 1.13.0.0
 
