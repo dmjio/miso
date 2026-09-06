@@ -217,7 +217,7 @@
 --   = 'VNode' 'Namespace' 'Tag' ['Attribute' model action] ['View' context props model action] 'DirectEvents'
 --   | 'VText' (Maybe t'Key') 'MisoString'
 --   | 'VComp' ('SomeComponent' context)
---   | forall childProps . 'VCompStatic' (StaticPtr ('SomeStaticComponent' childProps context)) childProps
+--   | 'VCompStatic' ('StaticMount' context)
 --   | 'VFrag' (Maybe t'Key') ['View' context props model action]
 --   | 'VContext' (context -> 'View' context props model action)
 --   | 'VProps' (props -> 'View' context props model action)
@@ -229,6 +229,9 @@
 -- data t'SomeComponent' context
 --   = forall model action props . ('Eq' context, 'Eq' model, 'Eq' props)
 --   => t'SomeComponent' (Maybe t'Key') props ('Miso.Types.Component' context props model action)
+--
+-- data t'StaticMount' context
+--   = forall props . t'StaticMount' (StaticPtr (t'SomeStaticComponent' props context)) props
 -- @
 --
 -- The smart constructors:

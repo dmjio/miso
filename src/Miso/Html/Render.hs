@@ -213,7 +213,7 @@ renderBuilder _ (VComp someComp) =
 #else
       renderBuilder props (view comp_ ctx props (model comp_))
 #endif
-renderBuilder _ (VCompStatic ptr props0) =
+renderBuilder _ (VCompStatic (StaticMount ptr props0)) =
   case deRefStaticPtr ptr of
    SomeStaticComponent mk -> case mk props0 of
     SomeComponent _key props comp_ ->
