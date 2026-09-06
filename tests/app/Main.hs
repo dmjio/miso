@@ -2,6 +2,7 @@
 {-# LANGUAGE CPP                 #-}
 {-# LANGUAGE DataKinds           #-}
 {-# LANGUAGE LambdaCase          #-}
+{-# LANGUAGE NamedFieldPuns      #-}
 {-# LANGUAGE DeriveGeneric       #-}
 {-# LANGUAGE DeriveAnyClass      #-}
 {-# LANGUAGE RecordWildCards     #-}
@@ -16,9 +17,9 @@
 -----------------------------------------------------------------------------
 module Main where
 -----------------------------------------------------------------------------
-import           Control.Concurrent (newEmptyMVar, putMVar, takeMVar)
+import           Control.Concurrent (newEmptyMVar, putMVar, takeMVar, threadDelay, killThread)
 import           Control.Monad.Reader
-import           Control.Exception (try, evaluate)
+import           Control.Exception (try, evaluate, SomeException)
 import qualified Data.Map.Strict as M
 import           Data.Map.Strict (Map)
 import qualified Data.IntMap.Strict as IM
@@ -55,13 +56,18 @@ import           Miso.Html
 import           Miso.JSON.Parser (decodePure)
 import           Miso.Html.Property
 import           Miso.Cookie (Cookie (..), cookieValue, defaultCookie, cookieSet_, cookieGet_, cookieDelete_, cookieDeleteWith_, cookieGetAll_)
-import           Miso.Runtime.Internal (ComponentState (..), components, componentIds, unmountComponent)
+import           Miso.Runtime.Internal (ComponentState (..), components, componentIds, schedulerThread, unmountComponent)
 -----------------------------------------------------------------------------
--- | Clears the component state and DOM between each test
+-- | Clears the component state and DOM between each test.
+--
+-- Also kills the scheduler thread the just-finished test's 'startApp' \/
+-- 'startAppWithContext' forked ('Miso.Reload' does the same before remounting).
 clearComponentState :: IO ()
 clearComponentState = do
   writeIORef components mempty
   writeIORef componentIds initialComponentId
+  _ <- try @SomeException (readIORef schedulerThread >>= killThread)
+  pure ()
 -----------------------------------------------------------------------------
 clearBody :: IO ()
 clearBody = void $ eval ("document.body.innerHTML = '';" :: MisoString)
@@ -121,6 +127,15 @@ retryFetch n action
 mountedComponents :: Test Int
 mountedComponents = IM.size <$> liftIO (readIORef components)
 -----------------------------------------------------------------------------
+-- | Polls @check@ every 20ms until it returns 'True' or @n@ attempts have
+-- elapsed. Used to observe an effect of the async scheduler (e.g. a
+-- context-propagation redraw) without a fixed, guessed sleep duration.
+pollFor :: Int -> IO Bool -> IO Bool
+pollFor 0 check = check
+pollFor n check = do
+  ok <- check
+  if ok then pure True else threadDelay 20000 >> pollFor (n - 1) check
+-----------------------------------------------------------------------------
 testComponent :: Component () () Int Action
 testComponent = component (0 :: Int) update_ $ \_ _ _ -> button_ [ id_ "foo", onClick AddOne ] [ "click me " ]
   where
@@ -128,6 +143,12 @@ testComponent = component (0 :: Int) update_ $ \_ _ _ -> button_ [ id_ "foo", on
       AddOne -> this += 1
 -----------------------------------------------------------------------------
 data Action = AddOne
+  deriving stock (Show, Eq, Generic)
+  deriving anyclass (JSON.FromJSON, JSON.ToJSON)
+-----------------------------------------------------------------------------
+-- | Increments the app-global @context@ (an 'Int'); used to test that
+-- 'useContext' gates whether a 'vcontext' subtree observes the change.
+data ContextAction = BumpContext
   deriving stock (Show, Eq, Generic)
   deriving anyclass (JSON.FromJSON, JSON.ToJSON)
 -----------------------------------------------------------------------------
@@ -1781,6 +1802,53 @@ main = withJS $ do
         clickStaticKey <- liftIO (clickHandler ! "staticKey")
         clickStaticKeyUndefined <- liftIO (isUndefined clickStaticKey)
         clickStaticKeyUndefined `shouldBe` False
+
+    describe "VContext tests" $ do
+      let contextProbe :: Component Int () () Action
+          contextProbe = component () noop $ \_ _ _ ->
+            div_ [ id_ "ctx-probe" ] [ vcontext (text . ms) ]
+
+          contextRoot :: Bool -> Component Int () () ContextAction
+          contextRoot useContext = component () (\BumpContext -> modifyContext (+1)) $ \_ _ _ ->
+            div_ [] [ mount_ contextProbe { useContext } ]
+
+          readProbe :: IO MisoString
+          readProbe = fromJSValUnchecked =<< eval ("document.getElementById('ctx-probe').textContent" :: MisoString)
+
+      it "vcontext resolves the app-global context at initial mount" $ do
+        liftIO $ startAppWithContext mempty (100 :: Int) contextProbe
+        txt <- liftIO readProbe
+        txt `shouldBe` ("100" :: MisoString)
+
+      it "vcontext re-resolves against an updated context when the component redraws" $ do
+        liftIO $ startAppWithContext mempty (1 :: Int) contextProbe
+        ComponentState {..} <- liftIO $
+          ((IM.! 1) <$> readIORef components :: IO (ComponentState Int () () Action))
+        liftIO $ setContext (2 :: Int)
+        liftIO (_componentDraw _componentModel)
+        txt <- liftIO readProbe
+        txt `shouldBe` ("2" :: MisoString)
+
+      let contextPropagationAttempts = 100 -- 100 * 20ms = 2s
+
+      it "useContext = True redraws vcontext when the context changes" $ do
+        liftIO $ startAppWithContext mempty (1 :: Int) (contextRoot True)
+        ComponentState {..} <- liftIO $
+          ((IM.! 1) <$> readIORef components :: IO (ComponentState Int () () ContextAction))
+        liftIO (_componentSink BumpContext)
+        updated <- liftIO $ pollFor contextPropagationAttempts ((== ("2" :: MisoString)) <$> readProbe)
+        updated `shouldBe` True
+
+      it "useContext = False does not redraw vcontext when the context changes" $ do
+        liftIO $ startAppWithContext mempty (1 :: Int) (contextRoot False)
+        ComponentState {..} <- liftIO $
+          ((IM.! 1) <$> readIORef components :: IO (ComponentState Int () () ContextAction))
+        liftIO (_componentSink BumpContext)
+        -- Same total budget as the positive test above, so a non-change here
+        -- isn't just "didn't wait long enough".
+        _ <- liftIO $ pollFor contextPropagationAttempts (pure False)
+        txt <- liftIO readProbe
+        txt `shouldBe` ("1" :: MisoString)
 
     describe "Miso.DSL `await` tests" $ do
       it "Successful Promise resolution should result in a value" $ do

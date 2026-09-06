@@ -1314,6 +1314,10 @@ buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ model_ = \case
                 VTree child <- buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ model_ kid
                 FFI.set "parent" parentVTree child
                 pure ((kid, child) : acc)
+
+  VContext f -> do
+    ctx <- readIORef @context globalContext
+    buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ model_ (f ctx)
   where
     -- Note [Freeing VTree handles]
     -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1341,6 +1345,7 @@ buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ model_ = \case
       VFrag {} -> True
       VComp {} -> False
       VCompStatic {} -> False
+      VContext {} -> False
 
     isEvent :: Attribute model action -> Bool
     isEvent = \case

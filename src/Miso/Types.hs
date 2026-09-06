@@ -69,8 +69,8 @@
 --
 -- = The View type
 --
--- @'View' context model action@ is miso's virtual DOM tree. Its five
--- constructors map to the five node kinds the runtime handles:
+-- @'View' context model action@ is miso's virtual DOM tree. Its six
+-- constructors map to the four node kinds the runtime handles:
 --
 -- * 'VNode' — a regular DOM element (@\<div\>@, @\<svg\>@, …)
 -- * 'VText' — a text node
@@ -78,6 +78,7 @@
 -- * @VCompStatic@ — an embedded child t'Component' behind a 'GHC.StaticPtr.StaticPtr',
 --   so it can cross the Lynx dual-thread boundary (see 'vcomp' \/ 'mountStatic')
 -- * 'VFrag' — a group of siblings with no wrapper element, optionally keyed
+-- * 'VContext' — a subtree resolved against the app-global @context@
 --
 -- = Key types at a glance
 --
@@ -189,6 +190,9 @@ module Miso.Types
   , fragment_
   , vfrag
   , vfrag_
+  -- ** Context combinator
+  , vcontext
+  , withContext
   -- ** Utils
   , getMountPoint
   , optionalAttrs
@@ -448,6 +452,10 @@ data View context model action
     -- closedness restriction. See 'vcomp'. This is necessary for lynx dual-thread
     -- in order to transfer context, props, event handlers etc.
   | VFrag (Maybe Key) [View context model action]
+  | VContext (context -> View context model action)
+    -- ^ A subtree resolved against the app-global @context@ at the point this
+    -- 'View' is built or rendered, letting a helper read @context@ without
+    -- threading it through as an extra argument. See 'vcontext'.
 -----------------------------------------------------------------------------
 -- | Existential wrapper allowing nesting of t'Miso.Types.Component' in t'Miso.Types.Component'.
 --
@@ -774,6 +782,34 @@ mountUseContext
 {-# WARNING mountUseContext "[NATIVE] 'mountUseContext' has no StaticKey; a component mounted with it after the initial frame silently drops OnStatic handlers inside it. Use 'vcomp_' with 'mountStatic' on a component with useContext = True instead." #-}
 #endif
 mountUseContext comp = VComp (SomeComponent Nothing () comp { useContext = True })
+
+-----------------------------------------------------------------------------
+-- | Create a new 'Miso.Types.VContext'.
+--
+-- Embeds a subtree that is resolved against the app-global @context@ at the
+-- point the enclosing 'View' is built or rendered, so a helper deep in a
+-- view tree can read @context@ without needing it threaded through as an
+-- explicit argument.
+--
+-- @
+-- vcontext $ \\theme -> div_ [] [ text (themeLabel theme) ]
+-- @
+--
+-- __Note:__ this does not opt the enclosing t'Component' into context-driven
+-- redraws — that is still governed solely by 'Miso.Types.useContext'. A
+-- 'VContext' only ever sees a fresh @context@ when the surrounding 'View' is
+-- (re)built for some other, already-scheduled reason.
+--
+-- @since 1.14.0.0
+vcontext :: (context -> View context model action) -> View context model action
+vcontext = VContext
+
+-----------------------------------------------------------------------------
+-- | Synonym for 'vcontext'.
+--
+-- @since 1.14.0.0
+withContext :: (context -> View context model action) -> View context model action
+withContext = vcontext
 -----------------------------------------------------------------------------
 -- | DOM element namespace.
 data Namespace
