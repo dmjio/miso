@@ -191,14 +191,14 @@ import           Miso.CSS (Color, renderColor)
 -- useful when building applications with three.js, or other libraries where
 -- explicit context is not necessary.
 canvas_
-  :: forall context model action canvasState
+  :: forall context props model action canvasState
    . (FromJSVal canvasState, ToJSVal canvasState)
   => [ Attribute model action ]
   -> (DOMRef -> IO canvasState)
   -- ^ Init function, takes @DOMRef@ as arg, returns canvas init. state.
   -> (canvasState -> IO ())
   -- ^ Callback to render graphics using this canvas' context, takes init state as arg.
-  -> View context model action
+  -> View context props model action
 canvas_ attributes initialize_ draw_ = node HTML "canvas" attrs []
   where
     attrs :: [ Attribute model action ]
@@ -220,14 +220,14 @@ canvas_ attributes initialize_ draw_ = node HTML "canvas" attrs []
 -- This function abstracts over the context and interpret callback,
 -- including dimension ("2d" or "3d") canvas.
 canvas
-  :: forall context model action canvasState
+  :: forall context props model action canvasState
    . (FromJSVal canvasState, ToJSVal canvasState)
   => [ Attribute model action ]
   -> (DOMRef -> Canvas canvasState)
   -- ^ Init function, takes @DOMRef@ as arg, returns canvas init. state.
   -> (canvasState -> Canvas ())
   -- ^ Callback to render graphics using this canvas' context, takes init state as arg.
-  -> View context model action
+  -> View context props model action
 canvas attributes initialize draw = node HTML "canvas" attrs []
   where
     attrs :: [ Attribute model action ]

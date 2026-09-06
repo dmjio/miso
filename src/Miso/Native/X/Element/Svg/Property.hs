@@ -40,7 +40,7 @@ contentRaw_ = textProp "content"
 --
 -- N.B. Must use "Miso.Svg" and 'Miso.Svg.Element.svg_' combinator.
 --
-content_ :: View context model action -> Attribute model action
+content_ :: View context () model action -> Attribute model action
 content_ = textProp "content" . ms . toHtml
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/svg.html#src

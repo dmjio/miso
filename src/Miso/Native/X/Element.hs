@@ -57,14 +57,14 @@ import           Miso.Types (View, Attribute)
 --
 -- Single-line text input element. Does not support children.
 --
-input_ :: [Attribute model action] -> View context model action
+input_ :: [Attribute model action] -> View context props model action
 input_ attrs = lynxDirect_ inputDirectEvents "input" attrs []
 -----------------------------------------------------------------------------
 -- | <https://lynxjs.org/api/elements/built-in/textarea.html>
 --
 -- Multi-line text input element. Does not support children.
 --
-textarea_ :: [Attribute model action] -> View context model action
+textarea_ :: [Attribute model action] -> View context props model action
 textarea_ attrs = lynxDirect_ inputDirectEvents "textarea" attrs []
 -----------------------------------------------------------------------------
 -- | Events that @input@ and @textarea@ dispatch directly on the element (Lynx
@@ -76,7 +76,7 @@ inputDirectEvents = [ "blur", "confirm", "focus", "input", "selection" ]
 --
 -- Renders its children on an independent layer above the page.
 --
-overlay_ :: [Attribute model action] -> [View context model action] -> View context model action
+overlay_ :: [Attribute model action] -> [View context props model action] -> View context props model action
 overlay_ = lynxDirect_
   [ "dismissoverlay", "error", "overlaytouch", "requestclose", "showoverlay" ]
   "overlay"
@@ -86,7 +86,7 @@ overlay_ = lynxDirect_
 -- Displays SVG content, supplied either inline via @content_@ or by URL via
 -- @src_@.
 --
-svg_ :: [Attribute model action] -> [View context model action] -> View context model action
+svg_ :: [Attribute model action] -> [View context props model action] -> View context props model action
 svg_ = lynxDirect_ [ "load" ] "svg"
 -----------------------------------------------------------------------------
 -- | <https://lynxjs.org/api/elements/built-in/refresh.html>
@@ -94,7 +94,7 @@ svg_ = lynxDirect_ [ "load" ] "svg"
 -- Pull-to-refresh container. Wraps a @refreshHeader_@ and a vertically
 -- scrollable child.
 --
-refresh_ :: [Attribute model action] -> [View context model action] -> View context model action
+refresh_ :: [Attribute model action] -> [View context props model action] -> View context props model action
 refresh_ = lynxDirect_
   [ "headeroffset", "refreshstatechange", "startrefresh" ]
   "refresh"
@@ -103,21 +103,21 @@ refresh_ = lynxDirect_
 --
 -- Customizable header revealed during the pull gesture of a @refresh_@.
 --
-refreshHeader_ :: [Attribute model action] -> [View context model action] -> View context model action
+refreshHeader_ :: [Attribute model action] -> [View context props model action] -> View context props model action
 refreshHeader_ = lynx_ "refresh-header"
 -----------------------------------------------------------------------------
 -- | <https://lynxjs.org/api/elements/built-in/viewpager.html>
 --
 -- Horizontally paged container. Each page is a @viewpagerItem_@.
 --
-viewpager_ :: [Attribute model action] -> [View context model action] -> View context model action
+viewpager_ :: [Attribute model action] -> [View context props model action] -> View context props model action
 viewpager_ = lynxDirect_ [ "change", "offsetchange", "willchange" ] "viewpager"
 -----------------------------------------------------------------------------
 -- | <https://lynxjs.org/api/elements/built-in/viewpager.html>
 --
 -- A single page within a @viewpager_@.
 --
-viewpagerItem_ :: [Attribute model action] -> [View context model action] -> View context model action
+viewpagerItem_ :: [Attribute model action] -> [View context props model action] -> View context props model action
 viewpagerItem_ = lynx_ "viewpager-item"
 -----------------------------------------------------------------------------
 -- | <https://lynxjs.org/api/elements/built-in/scroll-coordinator.html>
@@ -125,7 +125,7 @@ viewpagerItem_ = lynx_ "viewpager-item"
 -- Coordinates nested scrolling, typically used with sticky headers and
 -- tabbed layouts.
 --
-scrollCoordinator_ :: [Attribute model action] -> [View context model action] -> View context model action
+scrollCoordinator_ :: [Attribute model action] -> [View context props model action] -> View context props model action
 scrollCoordinator_ = lynxDirect_ [ "offset" ] "scroll-coordinator"
 -----------------------------------------------------------------------------
 -- | <https://lynxjs.org/api/elements/built-in/scroll-coordinator.html>
@@ -133,7 +133,7 @@ scrollCoordinator_ = lynxDirect_ [ "offset" ] "scroll-coordinator"
 -- The collapsing header of a @scrollCoordinator_@. Folds away as the slot
 -- content scrolls. Required (together with @scrollCoordinatorSlot_@).
 --
-scrollCoordinatorHeader_ :: [Attribute model action] -> [View context model action] -> View context model action
+scrollCoordinatorHeader_ :: [Attribute model action] -> [View context props model action] -> View context props model action
 scrollCoordinatorHeader_ = lynx_ "scroll-coordinator-header"
 -----------------------------------------------------------------------------
 -- | <https://lynxjs.org/api/elements/built-in/scroll-coordinator.html>
@@ -142,7 +142,7 @@ scrollCoordinatorHeader_ = lynx_ "scroll-coordinator-header"
 -- header fold. Holds the scrollable child (e.g. a @scrollView_@). Required
 -- (together with @scrollCoordinatorHeader_@).
 --
-scrollCoordinatorSlot_ :: [Attribute model action] -> [View context model action] -> View context model action
+scrollCoordinatorSlot_ :: [Attribute model action] -> [View context props model action] -> View context props model action
 scrollCoordinatorSlot_ = lynx_ "scroll-coordinator-slot"
 -----------------------------------------------------------------------------
 -- | <https://lynxjs.org/api/elements/built-in/scroll-coordinator.html>
@@ -150,21 +150,21 @@ scrollCoordinatorSlot_ = lynx_ "scroll-coordinator-slot"
 -- An optional sticky bar of a @scrollCoordinator_@ that stays pinned while the
 -- header folds (e.g. tabs above the content).
 --
-scrollCoordinatorToolbar_ :: [Attribute model action] -> [View context model action] -> View context model action
+scrollCoordinatorToolbar_ :: [Attribute model action] -> [View context props model action] -> View context props model action
 scrollCoordinatorToolbar_ = lynx_ "scroll-coordinator-toolbar"
 -----------------------------------------------------------------------------
 -- | <https://lynxjs.org/api/elements/built-in/blur-view.html>
 --
 -- Applies a Gaussian blur / material effect to the content behind it.
 --
-blurView_ :: [Attribute model action] -> [View context model action] -> View context model action
+blurView_ :: [Attribute model action] -> [View context props model action] -> View context props model action
 blurView_ = lynx_ "blur-view"
 -----------------------------------------------------------------------------
 -- | <https://lynxjs.org/api/elements/built-in/webview.html>
 --
 -- Embeds a web page. Does not support children.
 --
-webview_ :: [Attribute model action] -> View context model action
+webview_ :: [Attribute model action] -> View context props model action
 webview_ attrs = lynxDirect_
   [ "error", "load", "locationchange", "message", "openwindow" ]
   "webview" attrs []
@@ -173,6 +173,6 @@ webview_ attrs = lynxDirect_
 --
 -- Defines a custom draggable window region (Clay Windows / macOS).
 --
-titleBarView_ :: [Attribute model action] -> [View context model action] -> View context model action
+titleBarView_ :: [Attribute model action] -> [View context props model action] -> View context props model action
 titleBarView_ = lynx_ "title-bar-view"
 -----------------------------------------------------------------------------

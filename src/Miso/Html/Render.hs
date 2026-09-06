@@ -2,6 +2,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE CPP                   #-}
 #ifdef SSR
@@ -53,6 +54,9 @@
 -- * __'Miso.Types.VFrag'__ — renders all children inline, no wrapper tag.
 -- * __'Miso.Types.VContext'__ — resolved against the app-global @context@
 --   (read from 'globalContext') and the result rendered in its place.
+-- * __'Miso.Types.VProps'__ — resolved against the @props@ of the enclosing
+--   component (@()@ for a bare 'Miso.Types.View') and the result rendered
+--   in its place.
 -- * __Event handlers__ (@'Miso.Types.On'@) — silently dropped; they have
 --   no meaning in a static HTML string.
 -- * __Boolean properties__ (@disabled@, @checked@, @required@, …) — rendered
@@ -101,15 +105,21 @@ class ToHtml a where
   toHtml :: a -> L.ByteString
 ----------------------------------------------------------------------------
 -- | Render a @Miso.Types.View@ to a @L.ByteString@
-instance ToHtml (View context model action) where
+--
+-- A bare 'View' has no enclosing t'Component' to supply @props@, so its
+-- @props@ are fixed to @()@ (the @props ~ ()@ constraint lets a 'View' that is
+-- polymorphic in @props@ still resolve this instance). A 'Miso.Types.VProps'
+-- node at this level therefore sees @()@; one nested inside a mounted
+-- component sees that component's real @props@.
+instance (props ~ ()) => ToHtml (View context props model action) where
   toHtml = renderView
 ----------------------------------------------------------------------------
 -- | Render a @[Miso.Types.View]@ to a @L.ByteString@
-instance ToHtml [View context model action] where
+instance (props ~ ()) => ToHtml [View context props model action] where
   toHtml = foldMap renderView
 ----------------------------------------------------------------------------
-renderView :: View context model action -> L.ByteString
-renderView = toLazyByteString . renderBuilder
+renderView :: View context () model action -> L.ByteString
+renderView = toLazyByteString . renderBuilder ()
 ----------------------------------------------------------------------------
 intercalate :: Builder -> [Builder] -> Builder
 intercalate _ [] = ""
@@ -154,11 +164,13 @@ booleanProperties = S.fromList
   , "truespeed"
   ]
 ----------------------------------------------------------------------------
-renderBuilder :: View context model action -> Builder
-renderBuilder (VText _ "")    = fromMisoString " "
-renderBuilder (VText _ s)     = fromMisoString s
-renderBuilder (VNode _ "doctype" [] [] _) = "<!doctype html>"
-renderBuilder (VNode ns tag attrs children _) = mconcat
+-- | Serialise a 'View' given the @props@ of the t'Component' it belongs to.
+-- Entering a @VComp@ \/ @VCompStatic@ switches to that child's @props@.
+renderBuilder :: props -> View context props model action -> Builder
+renderBuilder _ (VText _ "")    = fromMisoString " "
+renderBuilder _ (VText _ s)     = fromMisoString s
+renderBuilder _ (VNode _ "doctype" [] [] _) = "<!doctype html>"
+renderBuilder props_ (VNode ns tag attrs children _) = mconcat
   [ "<"
   , fromMisoString tag
   , mconcat [ " " <> intercalate " " (renderAttrs <$> attrs)
@@ -167,7 +179,7 @@ renderBuilder (VNode ns tag attrs children _) = mconcat
   , if tag `elem` selfClosing then "/>" else ">"
   , mconcat
     [ mconcat
-      [ foldMap renderBuilder (collapseSiblingTextNodes children)
+      [ foldMap (renderBuilder props_) (collapseSiblingTextNodes children)
       , "</" <> fromMisoString tag <> ">"
       ]
     | tag `notElem` selfClosing
@@ -187,7 +199,7 @@ renderBuilder (VNode ns tag attrs children _) = mconcat
               | ns == MATHML
               , x <- ["mglyph", "mprescripts", "none", "maligngroup", "malignmark" ]
               ]
-renderBuilder (VComp someComp) =
+renderBuilder _ (VComp someComp) =
   case someComp of
     SomeComponent _key props comp_ ->
       -- The app-global @context@ is read from 'globalContext'. For the common
@@ -197,11 +209,11 @@ renderBuilder (VComp someComp) =
       -- forcing @ctx@ raises an exception. See 'Miso.setContext' for details.
       let ctx = unsafePerformIO (readIORef globalContext) in
 #ifdef SSR
-      renderBuilder (view comp_ ctx props (getInitialComponentModel comp_))
+      renderBuilder props (view comp_ ctx props (getInitialComponentModel comp_))
 #else
-      renderBuilder (view comp_ ctx props (model comp_))
+      renderBuilder props (view comp_ ctx props (model comp_))
 #endif
-renderBuilder (VCompStatic ptr props0) =
+renderBuilder _ (VCompStatic ptr props0) =
   case deRefStaticPtr ptr of
    SomeStaticComponent mk -> case mk props0 of
     SomeComponent _key props comp_ ->
@@ -212,14 +224,15 @@ renderBuilder (VCompStatic ptr props0) =
       -- forcing @ctx@ raises an exception. See 'Miso.setContext' for details.
       let ctx = unsafePerformIO (readIORef globalContext) in
 #ifdef SSR
-      renderBuilder (view comp_ ctx props (getInitialComponentModel comp_))
+      renderBuilder props (view comp_ ctx props (getInitialComponentModel comp_))
 #else
-      renderBuilder (view comp_ ctx props (model comp_))
+      renderBuilder props (view comp_ ctx props (model comp_))
 #endif
-renderBuilder (VFrag _ kids) = foldMap renderBuilder kids
-renderBuilder (VContext f) =
+renderBuilder props_ (VFrag _ kids) = foldMap (renderBuilder props_) kids
+renderBuilder props_ (VContext f) =
   let ctx = unsafePerformIO (readIORef globalContext) in
-  renderBuilder (f ctx)
+  renderBuilder props_ (f ctx)
+renderBuilder props_ (VProps f) = renderBuilder props_ (f props_)
 ----------------------------------------------------------------------------
 renderAttrs :: Attribute model action -> Builder
 renderAttrs (ClassList classes) =
@@ -267,7 +280,7 @@ renderAttrs (Styles styles_) =
 -- | The browser can't distinguish between multiple text nodes
 -- and a single text node. So it will always parse a single text node
 -- this means we must collapse adjacent text nodes during hydration.
-collapseSiblingTextNodes :: [View context model action] -> [View context model action]
+collapseSiblingTextNodes :: [View context props model action] -> [View context props model action]
 collapseSiblingTextNodes [] = []
 collapseSiblingTextNodes (VText _ x : VText k y : xs) =
   collapseSiblingTextNodes (VText k (x <> y) : xs)

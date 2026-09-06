@@ -152,6 +152,12 @@ data ContextAction = BumpContext
   deriving stock (Show, Eq, Generic)
   deriving anyclass (JSON.FromJSON, JSON.ToJSON)
 -----------------------------------------------------------------------------
+-- | Increments a parent's 'Int' model, which it forwards to a child as
+-- @props@; used to test that a 'vprops' subtree observes the props phase.
+data PropsAction = BumpProps
+  deriving stock (Show, Eq, Generic)
+  deriving anyclass (JSON.FromJSON, JSON.ToJSON)
+-----------------------------------------------------------------------------
 #ifdef WASM
 #ifndef INTERACTIVE
 foreign export javascript "hs_start" main :: IO ()
@@ -1849,6 +1855,69 @@ main = withJS $ do
         _ <- liftIO $ pollFor contextPropagationAttempts (pure False)
         txt <- liftIO readProbe
         txt `shouldBe` ("1" :: MisoString)
+
+    describe "VProps tests" $ do
+      let -- A child whose @props@ is an 'Int', displayed via 'vprops'.
+          propsProbe :: Component () Int () Action
+          propsProbe = component () noop $ \_ _ _ ->
+            div_ [ id_ "props-probe" ] [ vprops (text . ms) ]
+
+          -- A root that forwards its own 'Int' model to 'propsProbe' as @props@.
+          propsRoot :: Component () () Int PropsAction
+          propsRoot = component (1 :: Int) (\BumpProps -> this += 1) $ \_ _ m ->
+            div_ [] [ mountWithProps m propsProbe ]
+
+          readText :: MisoString -> IO MisoString
+          readText elemId = fromJSValUnchecked =<< eval
+            ("document.getElementById('" <> elemId <> "').textContent")
+
+          propsPropagationAttempts = 100 -- 100 * 20ms = 2s
+
+      it "vprops resolves the mounting component's props at initial mount" $ do
+        let root :: App () Action
+            root = component () noop $ \_ _ _ ->
+              div_ [] [ mountWithProps (100 :: Int) propsProbe ]
+        liftIO $ startApp mempty root
+        txt <- liftIO (readText "props-probe")
+        txt `shouldBe` ("100" :: MisoString)
+
+      it "vprops re-resolves when the parent redraws with new props" $ do
+        liftIO $ startApp mempty propsRoot
+        ComponentState {..} <- liftIO $
+          ((IM.! 1) <$> readIORef components :: IO (ComponentState () () Int PropsAction))
+        liftIO (_componentSink BumpProps)
+        updated <- liftIO $ pollFor propsPropagationAttempts ((== ("2" :: MisoString)) <$> readText "props-probe")
+        updated `shouldBe` True
+
+      it "nested components each see their own props type" $ do
+        -- The mount boundary forgets the child's @props@, so an 'Int'-props
+        -- parent can host a 'MisoString'-props child and each 'vprops' /
+        -- 'withProps' resolves against its own component.
+        let inner :: Component () MisoString () Action
+            inner = component () noop $ \_ _ _ ->
+              span_ [ id_ "props-inner" ] [ withProps text ]
+            outer :: Component () Int () Action
+            outer = component () noop $ \_ _ _ ->
+              div_ [ id_ "props-outer" ]
+                [ span_ [] [ vprops (text . ms) ]
+                , mountWithProps ("inner" :: MisoString) inner
+                ]
+            root :: App () Action
+            root = component () noop $ \_ _ _ ->
+              div_ [] [ mountWithProps (7 :: Int) outer ]
+        liftIO $ startApp mempty root
+        outerTxt <- liftIO (readText "props-outer")
+        innerTxt <- liftIO (readText "props-inner")
+        outerTxt `shouldBe` ("7inner" :: MisoString)
+        innerTxt `shouldBe` ("inner" :: MisoString)
+
+      it "toHtml resolves vprops against the mounted component's props" $ do
+        toHtml (div_ [] [ mountWithProps (7 :: Int) propsProbe ])
+          `shouldBe` "<div><div id=\"props-probe\">7</div></div>"
+
+      it "toHtml resolves a bare view's vprops against ()" $ do
+        toHtml (div_ [] [ vprops (\() -> "unit") ])
+          `shouldBe` "<div>unit</div>"
 
     describe "Miso.DSL `await` tests" $ do
       it "Successful Promise resolution should result in a value" $ do

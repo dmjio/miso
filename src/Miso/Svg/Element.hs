@@ -160,258 +160,258 @@ import           Miso.Types  hiding (text_)
 --
 -- > document.createElementNS('http://www.w3.org/2000/svg', 'circle');
 --
-nodeSvg :: MisoString -> [Attribute model action] -> [View context model action] -> View context model action
+nodeSvg :: MisoString -> [Attribute model action] -> [View context props model action] -> View context props model action
 nodeSvg nodeName = node SVG nodeName
 -----------------------------------------------------------------------------
 -- | [\<svg\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/svg)
-svg_ :: [Attribute model action] -> [View context model action] -> View context model action
+svg_ :: [Attribute model action] -> [View context props model action] -> View context props model action
 svg_ = nodeSvg "svg"
 -----------------------------------------------------------------------------
 -- | [\<foreignObject\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/foreignObject)
-foreignObject_ :: [Attribute model action] -> [View context model action] -> View context model action
+foreignObject_ :: [Attribute model action] -> [View context props model action] -> View context props model action
 foreignObject_ = nodeSvg "foreignObject"
 -----------------------------------------------------------------------------
 -- | [\<circle\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/circle)
-circle_ :: [Attribute model action] -> View context model action
+circle_ :: [Attribute model action] -> View context props model action
 circle_ = flip (nodeSvg "circle") []
 -----------------------------------------------------------------------------
 -- | [\<ellipse\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/ellipse)
-ellipse_ :: [Attribute model action] -> View context model action
+ellipse_ :: [Attribute model action] -> View context props model action
 ellipse_ = flip (nodeSvg "ellipse") []
 -----------------------------------------------------------------------------
 -- | [\<image\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/image)
-image_ :: [Attribute model action] -> View context model action
+image_ :: [Attribute model action] -> View context props model action
 image_ = flip (nodeSvg "image") []
 -----------------------------------------------------------------------------
 -- | [\<line\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/line)
-line_ :: [Attribute model action] -> View context model action
+line_ :: [Attribute model action] -> View context props model action
 line_ = flip (nodeSvg "line") []
 -----------------------------------------------------------------------------
 -- | [\<path\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/path)
-path_ :: [Attribute model action] -> View context model action
+path_ :: [Attribute model action] -> View context props model action
 path_ = flip (nodeSvg "path") []
 -----------------------------------------------------------------------------
 -- | [\<polygon\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/polygon)
-polygon_ :: [Attribute model action] -> View context model action
+polygon_ :: [Attribute model action] -> View context props model action
 polygon_ = flip (nodeSvg "polygon") []
 -----------------------------------------------------------------------------
 -- | [\<polyline\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/polyline)
-polyline_ :: [Attribute model action] -> View context model action
+polyline_ :: [Attribute model action] -> View context props model action
 polyline_ = flip (nodeSvg "polyline") []
 -----------------------------------------------------------------------------
 -- | [\<rect\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/rect)
-rect_ :: [Attribute model action] -> View context model action
+rect_ :: [Attribute model action] -> View context props model action
 rect_ = flip (nodeSvg "rect") []
 -----------------------------------------------------------------------------
 -- | [\<use\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/use)
-use_ :: [Attribute model action] -> View context model action
+use_ :: [Attribute model action] -> View context props model action
 use_ = flip (nodeSvg "use") []
 -----------------------------------------------------------------------------
 -- | [\<animate\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/animate)
-animate_ :: [Attribute model action] -> View context model action
+animate_ :: [Attribute model action] -> View context props model action
 animate_ = flip (nodeSvg "animate") []
 -----------------------------------------------------------------------------
 -- | [\<animateMotion\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/animateMotion)
-animateMotion_ :: [Attribute model action] -> View context model action
+animateMotion_ :: [Attribute model action] -> View context props model action
 animateMotion_ = flip (nodeSvg "animateMotion") []
 -----------------------------------------------------------------------------
 -- | [\<animateTransform\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/animateTransform)
-animateTransform_ :: [Attribute model action] -> View context model action
+animateTransform_ :: [Attribute model action] -> View context props model action
 animateTransform_ = flip (nodeSvg "animateTransform") []
 -----------------------------------------------------------------------------
 -- | [\<mpath\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/mpath)
-mpath_ :: [Attribute model action] -> View context model action
+mpath_ :: [Attribute model action] -> View context props model action
 mpath_ = flip (nodeSvg "mpath") []
 -----------------------------------------------------------------------------
 -- | [\<set\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/set)
-set_ :: [Attribute model action] -> View context model action
+set_ :: [Attribute model action] -> View context props model action
 set_ = flip (nodeSvg "set") []
 -----------------------------------------------------------------------------
 -- | [\<desc\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/desc)
-desc_ :: [Attribute model action] -> [View context model action] -> View context model action
+desc_ :: [Attribute model action] -> [View context props model action] -> View context props model action
 desc_ = nodeSvg "desc"
 -----------------------------------------------------------------------------
 -- | [\<metadata\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/metadata)
-metadata_ :: [Attribute model action] -> [View context model action] -> View context model action
+metadata_ :: [Attribute model action] -> [View context props model action] -> View context props model action
 metadata_ = nodeSvg "metadata"
 -----------------------------------------------------------------------------
 -- | [\<title\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/title)
-title_ :: [Attribute model action] -> [View context model action] -> View context model action
+title_ :: [Attribute model action] -> [View context props model action] -> View context props model action
 title_ = nodeSvg "title"
 -----------------------------------------------------------------------------
 -- | [\<defs\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/defs)
-defs_ :: [Attribute model action] -> [View context model action] -> View context model action
+defs_ :: [Attribute model action] -> [View context props model action] -> View context props model action
 defs_ = nodeSvg "defs"
 -----------------------------------------------------------------------------
 -- | [\<g\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/g)
-g_ :: [Attribute model action] -> [View context model action] -> View context model action
+g_ :: [Attribute model action] -> [View context props model action] -> View context props model action
 g_ = nodeSvg "g"
 -----------------------------------------------------------------------------
 -- | [\<marker\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/marker)
-marker_ :: [Attribute model action] -> [View context model action] -> View context model action
+marker_ :: [Attribute model action] -> [View context props model action] -> View context props model action
 marker_ = nodeSvg "marker"
 -----------------------------------------------------------------------------
 -- | [\<mask\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/mask)
-mask_ :: [Attribute model action] -> [View context model action] -> View context model action
+mask_ :: [Attribute model action] -> [View context props model action] -> View context props model action
 mask_ = nodeSvg "mask"
 -----------------------------------------------------------------------------
 -- | [\<pattern\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/pattern)
-pattern_ :: [Attribute model action] -> [View context model action] -> View context model action
+pattern_ :: [Attribute model action] -> [View context props model action] -> View context props model action
 pattern_ = nodeSvg "pattern"
 -----------------------------------------------------------------------------
 -- | [\<switch\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/switch)
-switch_ :: [Attribute model action] -> [View context model action] -> View context model action
+switch_ :: [Attribute model action] -> [View context props model action] -> View context props model action
 switch_ = nodeSvg "switch"
 -----------------------------------------------------------------------------
 -- | [\<symbol\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/symbol)
-symbol_ :: [Attribute model action] -> [View context model action] -> View context model action
+symbol_ :: [Attribute model action] -> [View context props model action] -> View context props model action
 symbol_ = nodeSvg "symbol"
 -----------------------------------------------------------------------------
 -- | [\<textPath\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/textPath)
-textPath_ :: [Attribute model action] -> [View context model action] -> View context model action
+textPath_ :: [Attribute model action] -> [View context props model action] -> View context props model action
 textPath_ = nodeSvg "textPath"
 -----------------------------------------------------------------------------
 -- | [\<text\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/text)
-text_ :: [Attribute model action] -> [View context model action] -> View context model action
+text_ :: [Attribute model action] -> [View context props model action] -> View context props model action
 text_ = nodeSvg "text"
 -----------------------------------------------------------------------------
 -- | [\<tspan\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/tspan)
-tspan_ :: [Attribute model action] -> [View context model action] -> View context model action
+tspan_ :: [Attribute model action] -> [View context props model action] -> View context props model action
 tspan_ = nodeSvg "tspan"
 -----------------------------------------------------------------------------
 -- | [\<linearGradient\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/linearGradient)
-linearGradient_ :: [Attribute model action] -> [View context model action] -> View context model action
+linearGradient_ :: [Attribute model action] -> [View context props model action] -> View context props model action
 linearGradient_ = nodeSvg "linearGradient"
 -----------------------------------------------------------------------------
 -- | [\<radialGradient\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/radialGradient)
-radialGradient_ :: [Attribute model action] -> [View context model action] -> View context model action
+radialGradient_ :: [Attribute model action] -> [View context props model action] -> View context props model action
 radialGradient_ = nodeSvg "radialGradient"
 -----------------------------------------------------------------------------
 -- | [\<stop\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/stop)
-stop_ :: [Attribute model action] -> View context model action
+stop_ :: [Attribute model action] -> View context props model action
 stop_ = flip (nodeSvg "stop") []
 -----------------------------------------------------------------------------
 -- | [\<feBlend\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feBlend)
-feBlend_ :: [Attribute model action] -> View context model action
+feBlend_ :: [Attribute model action] -> View context props model action
 feBlend_ = flip (nodeSvg "feBlend") []
 -----------------------------------------------------------------------------
 -- | [\<feColorMatrix\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feColorMatrix)
-feColorMatrix_ :: [Attribute model action] -> View context model action
+feColorMatrix_ :: [Attribute model action] -> View context props model action
 feColorMatrix_ = flip (nodeSvg "feColorMatrix") []
 -----------------------------------------------------------------------------
 -- | [\<feComponentTransfer\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feComponentTransfer)
-feComponentTransfer_ :: [Attribute model action] -> [View context model action] -> View context model action
+feComponentTransfer_ :: [Attribute model action] -> [View context props model action] -> View context props model action
 feComponentTransfer_ = nodeSvg "feComponentTransfer"
 -----------------------------------------------------------------------------
 -- | [\<feComposite\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feComposite)
-feComposite_ :: [Attribute model action] -> View context model action
+feComposite_ :: [Attribute model action] -> View context props model action
 feComposite_ = flip (nodeSvg "feComposite") []
 -----------------------------------------------------------------------------
 -- | [\<feConvolveMatrix\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feConvolveMatrix)
-feConvolveMatrix_ :: [Attribute model action] -> View context model action
+feConvolveMatrix_ :: [Attribute model action] -> View context props model action
 feConvolveMatrix_ = flip (nodeSvg "feConvolveMatrix") []
 -----------------------------------------------------------------------------
 -- | [\<feDiffuseLighting\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feDiffuseLighting)
-feDiffuseLighting_ :: [Attribute model action] -> [View context model action] -> View context model action
+feDiffuseLighting_ :: [Attribute model action] -> [View context props model action] -> View context props model action
 feDiffuseLighting_ = nodeSvg "feDiffuseLighting"
 -----------------------------------------------------------------------------
 -- | [\<feDisplacementMap\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feDisplacementMap)
-feDisplacementMap_ :: [Attribute model action] -> View context model action
+feDisplacementMap_ :: [Attribute model action] -> View context props model action
 feDisplacementMap_ = flip (nodeSvg "feDisplacementMap") []
 -----------------------------------------------------------------------------
 -- | [\<feDropShadow\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feDropShadow)
 --
 -- @since 1.9.0.0
-feDropShadow_ :: [Attribute model action] -> View context model action
+feDropShadow_ :: [Attribute model action] -> View context props model action
 feDropShadow_ = flip (nodeSvg "feDropShadow") []
 -----------------------------------------------------------------------------
 -- | [\<feFlood\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feFlood)
-feFlood_ :: [Attribute model action] -> View context model action
+feFlood_ :: [Attribute model action] -> View context props model action
 feFlood_ = flip (nodeSvg "feFlood") []
 -----------------------------------------------------------------------------
 -- | [\<feFuncA\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feFuncA)
-feFuncA_ :: [Attribute model action] -> [View context model action] -> View context model action
+feFuncA_ :: [Attribute model action] -> [View context props model action] -> View context props model action
 feFuncA_ = nodeSvg "feFuncA"
 -----------------------------------------------------------------------------
 -- | [\<feFuncB\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feFuncB)
-feFuncB_ :: [Attribute model action] -> [View context model action] -> View context model action
+feFuncB_ :: [Attribute model action] -> [View context props model action] -> View context props model action
 feFuncB_ = nodeSvg "feFuncB"
 -----------------------------------------------------------------------------
 -- | [\<feFuncG\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feFuncG)
-feFuncG_ :: [Attribute model action] -> [View context model action] -> View context model action
+feFuncG_ :: [Attribute model action] -> [View context props model action] -> View context props model action
 feFuncG_ = nodeSvg "feFuncG"
 -----------------------------------------------------------------------------
 -- | [\<feFuncR\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feFuncR)
-feFuncR_ :: [Attribute model action] -> [View context model action] -> View context model action
+feFuncR_ :: [Attribute model action] -> [View context props model action] -> View context props model action
 feFuncR_ = nodeSvg "feFuncR"
 -----------------------------------------------------------------------------
 -- | [\<feGaussianBlur\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feGaussianBlur)
-feGaussianBlur_ :: [Attribute model action] -> View context model action
+feGaussianBlur_ :: [Attribute model action] -> View context props model action
 feGaussianBlur_ = flip (nodeSvg "feGaussianBlur") []
 -----------------------------------------------------------------------------
 -- | [\<feImage\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feImage)
-feImage_ :: [Attribute model action] -> View context model action
+feImage_ :: [Attribute model action] -> View context props model action
 feImage_ = flip (nodeSvg "feImage") []
 -----------------------------------------------------------------------------
 -- | [\<feMerge\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feMerge)
-feMerge_ :: [Attribute model action] -> [View context model action] -> View context model action
+feMerge_ :: [Attribute model action] -> [View context props model action] -> View context props model action
 feMerge_ = nodeSvg "feMerge"
 -----------------------------------------------------------------------------
 -- | [\<feMergeNode\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feMergeNode)
-feMergeNode_ :: [Attribute model action] -> View context model action
+feMergeNode_ :: [Attribute model action] -> View context props model action
 feMergeNode_ = flip (nodeSvg "feMergeNode") []
 -----------------------------------------------------------------------------
 -- | [\<feMorphology\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feMorphology)
 --
 -- @since 1.9.0.0
-feMorphology_ :: [Attribute model action] -> View context model action
+feMorphology_ :: [Attribute model action] -> View context props model action
 feMorphology_ = flip (nodeSvg "feMorphology") []
 -----------------------------------------------------------------------------
 -- | [\<feOffset\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feOffset)
-feOffset_ :: [Attribute model action] -> View context model action
+feOffset_ :: [Attribute model action] -> View context props model action
 feOffset_ = flip (nodeSvg "feOffset") []
 -----------------------------------------------------------------------------
 -- | [\<feSpecularLighting\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feSpecularLighting)
-feSpecularLighting_ :: [Attribute model action] -> [View context model action] -> View context model action
+feSpecularLighting_ :: [Attribute model action] -> [View context props model action] -> View context props model action
 feSpecularLighting_ = nodeSvg "feSpecularLighting"
 -----------------------------------------------------------------------------
 -- | [\<feTile\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feTile)
-feTile_ :: [Attribute model action] -> View context model action
+feTile_ :: [Attribute model action] -> View context props model action
 feTile_ = flip (nodeSvg "feTile") []
 -----------------------------------------------------------------------------
 -- | [\<feTurbulence\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feTurbulence)
-feTurbulence_ :: [Attribute model action] -> View context model action
+feTurbulence_ :: [Attribute model action] -> View context props model action
 feTurbulence_ = flip (nodeSvg "feTurbulence") []
 -----------------------------------------------------------------------------
 -- | [\<feDistantLight\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feDistantLight)
-feDistantLight_ :: [Attribute model action] -> [View context model action] -> View context model action
+feDistantLight_ :: [Attribute model action] -> [View context props model action] -> View context props model action
 feDistantLight_ = nodeSvg "feDistantLight"
 -----------------------------------------------------------------------------
 -- | [\<fePointLight\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/fePointLight)
-fePointLight_ :: [Attribute model action] -> View context model action
+fePointLight_ :: [Attribute model action] -> View context props model action
 fePointLight_ = flip (nodeSvg "fePointLight") []
 -----------------------------------------------------------------------------
 -- | [\<feSpotLight\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feSpotLight)
-feSpotLight_ :: [Attribute model action] -> View context model action
+feSpotLight_ :: [Attribute model action] -> View context props model action
 feSpotLight_ = flip (nodeSvg "feSpotLight") []
 -----------------------------------------------------------------------------
 -- | [\<clipPath\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/clipPath)
-clipPath_ :: [Attribute model action] -> [View context model action] -> View context model action
+clipPath_ :: [Attribute model action] -> [View context props model action] -> View context props model action
 clipPath_ = nodeSvg "clipPath"
 -----------------------------------------------------------------------------
 -- | [\<filter\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/filter)
-filter_ :: [Attribute model action] -> [View context model action] -> View context model action
+filter_ :: [Attribute model action] -> [View context props model action] -> View context props model action
 filter_ = nodeSvg "filter"
 -----------------------------------------------------------------------------
 -- | [\<script\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/script)
-script_ :: [Attribute model action] -> [View context model action] -> View context model action
+script_ :: [Attribute model action] -> [View context props model action] -> View context props model action
 script_ = nodeSvg "script"
 -----------------------------------------------------------------------------
 -- | [\<style\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/style)
-style_ :: [Attribute model action] -> [View context model action] -> View context model action
+style_ :: [Attribute model action] -> [View context props model action] -> View context props model action
 style_ = nodeSvg "style"
 -----------------------------------------------------------------------------
 -- | [\<view\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/view)
-view_ :: [Attribute model action] -> View context model action
+view_ :: [Attribute model action] -> View context props model action
 view_ = flip (nodeSvg "view") []
 -----------------------------------------------------------------------------

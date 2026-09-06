@@ -261,7 +261,7 @@ initialize events _componentParentId hydrate isRoot live initialProps maybeKey _
         currentContext <- readIORef globalContext
         newVTree <-
           buildVTree events _componentParentId _componentId Draw live
-            _componentSink logLevel newModel (view currentContext currentProps newModel)
+            _componentSink logLevel currentProps newModel (view currentContext currentProps newModel)
         newHandlers <- collectEventHandlers
         oldVTree <- readIORef _componentVTree
         _frame <- requestAnimationFrame rAFCallback
@@ -532,7 +532,7 @@ initialDraw initializedModel events hydrate isRoot live Component {..} Component
 #endif
   currentContext <- readIORef globalContext
   vtree <- buildVTree events _componentParentId _componentId hydrate live _componentSink logLevel
-    initializedModel (view currentContext _componentProps initializedModel)
+    _componentProps initializedModel (view currentContext _componentProps initializedModel)
   vtreeHandlers0 <- collectEventHandlers
 #ifdef BENCH
   end <- FFI.now
@@ -554,7 +554,7 @@ initialDraw initializedModel events hydrate isRoot live Component {..} Component
             else do
               newTree <-
                 buildVTree events _componentParentId _componentId Draw live
-                  _componentSink logLevel initializedModel (view currentContext _componentProps initializedModel)
+                  _componentSink logLevel _componentProps initializedModel (view currentContext _componentProps initializedModel)
               newHandlers <- collectEventHandlers
               -- the discarded hydration tree's callbacks are unreachable
               mapM_ freeFunction vtreeHandlers0
@@ -1232,7 +1232,7 @@ unmountComponent cs@ComponentState {..} = do
 -- infrastructure for each sub-component. During this
 -- process we go between the Haskell heap and the JS heap.
 buildVTree
-  :: forall context model action . Eq context
+  :: forall context props model action . Eq context
   => Events
   -> ComponentId
   -> ComponentId
@@ -1242,10 +1242,12 @@ buildVTree
   -- mounting child components.
   -> Sink action
   -> LogLevel
+  -> props
+  -- ^ The mounting component's current @props@, resolved by 'VProps'.
   -> model
-  -> View context model action
+  -> View context props model action
   -> IO VTree
-buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ model_ = \case
+buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ props_ model_ = \case
   VComp someComp -> buildComp Nothing someComp
 
   VCompStatic ptr props -> case deRefStaticPtr ptr of
@@ -1282,7 +1284,7 @@ buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ model_ = \case
                   xs (drop 1 xs)
               buildKid _ acc (VFrag _ []) = pure acc
               buildKid p acc kid = do
-                VTree child <- buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ model_ kid
+                VTree child <- buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ props_ model_ kid
                 FFI.set "parent" p child
                 pure ((kid, child) : acc)
   VText key t -> do
@@ -1311,13 +1313,16 @@ buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ model_ = \case
             where
               buildKid acc (VFrag _ []) = pure acc
               buildKid acc kid = do
-                VTree child <- buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ model_ kid
+                VTree child <- buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ props_ model_ kid
                 FFI.set "parent" parentVTree child
                 pure ((kid, child) : acc)
 
   VContext f -> do
     ctx <- readIORef @context globalContext
-    buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ model_ (f ctx)
+    buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ props_ model_ (f ctx)
+
+  VProps f ->
+    buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ props_ model_ (f props_)
   where
     -- Note [Freeing VTree handles]
     -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1335,10 +1340,10 @@ buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ model_ = \case
     --    component object.
     --
     -- The root handle is returned to the caller and is never freed here.
-    freeKid :: (View context model action, Object) -> IO ()
+    freeKid :: (View context props model action, Object) -> IO ()
     freeKid (kid, Object child) = when (freeable kid) (freeJSVal child)
 
-    freeable :: View context model action -> Bool
+    freeable :: View context props model action -> Bool
     freeable = \case
       VNode _ _ attrs _ _ -> not (any isEvent attrs)
       VText {} -> True
@@ -1346,6 +1351,7 @@ buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ model_ = \case
       VComp {} -> False
       VCompStatic {} -> False
       VContext {} -> False
+      VProps {} -> False
 
     isEvent :: Attribute model action -> Bool
     isEvent = \case

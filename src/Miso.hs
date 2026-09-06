@@ -141,7 +141,7 @@
 --          * - The type of the global @context@
 --          |     * - The type of the @props@ inherited from the parent t'Miso.Types.Component'
 --          |     |      * - The type of the current t'Miso.Types.Component' @model@
---          |     |      |           * - The global @context@ threaded into the 'View' (@'View' context model action@)
+--          |     |      |           * - The global @context@ threaded into the 'View' (@'View' context props model action@)
 --          |     |      |           |  * - The type of the action that updates t'Miso.Types.Component' @model@
 --          |     |      |           |  |
 --     v :: () -> () -> 'Int' -> 'View' () 'Int' Action
@@ -213,16 +213,17 @@
 -- of nodes mutually recursive with t'Miso.Types.Component' via the 'Miso.Lens.view' function.
 --
 -- @
--- data 'View' context model action
---   = 'VNode' 'Namespace' 'Tag' ['Attribute' model action] ['View' context model action] 'DirectEvents'
+-- data 'View' context props model action
+--   = 'VNode' 'Namespace' 'Tag' ['Attribute' model action] ['View' context props model action] 'DirectEvents'
 --   | 'VText' (Maybe t'Key') 'MisoString'
 --   | 'VComp' ('SomeComponent' context)
---   | forall props . 'VCompStatic' (StaticPtr ('SomeStaticComponent' props context)) props
---   | 'VFrag' (Maybe t'Key') ['View' context model action]
---   | 'VContext' (context -> 'View' context model action)
+--   | forall childProps . 'VCompStatic' (StaticPtr ('SomeStaticComponent' childProps context)) childProps
+--   | 'VFrag' (Maybe t'Key') ['View' context props model action]
+--   | 'VContext' (context -> 'View' context props model action)
+--   | 'VProps' (props -> 'View' context props model action)
 -- @
 --
--- 'VNode' and 'VText' have a one-to-one mapping from the virtual DOM to the physical DOM. The 'VComp', 'VFrag' and 'VContext' constructors are abstract (live only on the virtual DOM) and do not contain a reference to the physical DOM. The existential t'SomeComponent' is what allows embedding polymorphic t'Miso.Types.Component' within a 'View'.
+-- 'VNode' and 'VText' have a one-to-one mapping from the virtual DOM to the physical DOM. The 'VComp', 'VFrag', 'VContext' and 'VProps' constructors are abstract (live only on the virtual DOM) and do not contain a reference to the physical DOM. The existential t'SomeComponent' is what allows embedding polymorphic t'Miso.Types.Component' within a 'View'.
 --
 -- @
 -- data t'SomeComponent' context
@@ -239,6 +240,7 @@
 -- * ('+>') — key and mount a child t'Miso.Types.Component'
 -- * 'vcomp', 'vcomp_' — build a 'VCompStatic' (see below)
 -- * 'vcontext' \/ 'withContext' — build a 'VContext'
+-- * 'vprops' \/ 'withProps' — build a 'VProps'
 --
 -- A full list of element smart constructors built on 'node' (e.g. 'Miso.Html.Element.Miso.Html.Element.div_') can be found in "Miso.Html.Element".
 --
@@ -255,7 +257,7 @@
 -- * __@context@__ — global; the same value is visible to the whole tree.
 --
 -- This is why @context@ is a type parameter on both t'Miso.Types.Component' and 'View'
--- (@'Miso.Types.Component' context props model action@, @'View' context model action@): the
+-- (@'Miso.Types.Component' context props model action@, @'View' context props model action@): the
 -- parameter is threaded through the entire view tree so that every nested
 -- t'Miso.Types.Component' — reachable via t'SomeComponent' — is statically guaranteed to
 -- agree on __one__ @context@ type. There is exactly one live @context@ value per
@@ -280,7 +282,7 @@
 -- nested — can read it synchronously during render:
 --
 -- @
--- view :: context -> props -> model -> 'View' context model action
+-- view :: context -> props -> model -> 'View' context props model action
 -- view ctx _props _model = ...
 -- @
 --
@@ -326,7 +328,7 @@
 --
 -- = 'VContext' (Context nodes)
 --
--- 'VContext' embeds a subtree built from a @context -> 'View' context model
+-- 'VContext' embeds a subtree built from a @context -> 'View' context props model
 -- action@ function, so a helper deep in a view tree can read the app-global
 -- @context@ without needing it threaded through as an explicit argument —
 -- unlike 'Miso.Types.view' itself, which already receives @context@ as its
@@ -344,6 +346,35 @@
 -- The smart constructors for 'VContext' are 'vcontext' and 'withContext'
 -- (a synonym).
 --
+-- = 'VProps' (Props nodes)
+--
+-- 'VProps' is the @props@ counterpart of 'VContext': it embeds a subtree
+-- built from a @props -> 'View' context props model action@ function, so a
+-- helper deep in a view tree can read the enclosing t'Miso.Types.Component'\'s
+-- @props@ without needing it threaded through as an explicit argument —
+-- unlike 'Miso.Types.view' itself, which already receives @props@ as its
+-- second parameter.
+--
+-- @
+-- 'vprops' $ \\Props { title } -> 'Miso.Html.Element.h1_' [] [ 'Miso.Types.text' title ]
+-- @
+--
+-- Unlike @context@, which is one global value, @props@ are per-component.
+-- That is why @props@ is a type parameter of 'View' (just like @model@): the
+-- @props@ a 'VProps' sees is statically the @props@ of the
+-- t'Miso.Types.Component' whose 'Miso.Types.view' contains it, and a mismatch
+-- is a compile-time error. A child mounted with 'mountWithProps' \/ 'vcomp'
+-- sees /its own/ @props@, never its parent's — the mount boundary forgets
+-- the child's @props@ type just as it forgets its @model@ and @action@.
+--
+-- The function is applied to the current @props@ whenever the enclosing
+-- 'View' is built or rendered. It adds no redraw logic of its own: a
+-- component is redrawn when its parent passes it different @props@ (the
+-- props phase), and the node is re-resolved as part of that redraw.
+--
+-- The smart constructors for 'VProps' are 'vprops' and 'withProps'
+-- (a synonym).
+--
 -- = 'VComp' (Component nodes)
 --
 -- == Composition
@@ -358,14 +389,14 @@
 --   :: ('Eq' context, 'Eq' model)
 --   => 'MisoString'
 --   -> t'Miso.Types.Component' context () model action
---   -> 'View' context model action
+--   -> 'View' context props model action
 -- key '+>' comp = 'VComp' ('SomeComponent' (Just ('toKey' key)) () comp)
 -- @
 --
 -- Practically, using this combinator looks like:
 --
 -- @
--- viewModel :: context -> props -> Int -> 'View' context model action
+-- viewModel :: context -> props -> Int -> 'View' context props model action
 -- viewModel _ _ _ = 'Miso.Html.Element.div_' [ 'Miso.Html.Property.id_' "container" ] [ "counter" '+>' counter ]
 -- @
 --
@@ -468,7 +499,7 @@
 --   Highlight domRef -> 'io_' $ do
 --     ['Miso.FFI.QQ.js'| hljs.highlight(${domRef}) |]
 --
--- view :: context -> props -> model -> 'View' context model Action
+-- view :: context -> props -> model -> 'View' context props model Action
 -- view _ _ x =
 --   'Miso.Html.Element.code_'
 --   [ 'onCreatedWith' Highlight
@@ -827,7 +858,7 @@
 -- its first argument and the @props@ as its second:
 --
 -- @
--- view :: context -> props -> model -> 'View' context model action
+-- view :: context -> props -> model -> 'View' context props model action
 -- @
 --
 -- Top-level applications have no parent, so @props@ is always @()@:
@@ -883,7 +914,7 @@
 --   => 'MisoString'
 --   -> props
 --   -> t'Miso.Types.Component' context props childModel childAction
---   -> 'View' context model action
+--   -> 'View' context props model action
 -- @
 --
 -- === Example: child reading parent-supplied props
@@ -1223,8 +1254,8 @@
 -- import Servant.Miso.Html (HTML)
 --
 -- type Home    = \"home\"    :\> Get '[HTML] ('Miso.Types.Component' context props model action)
--- type About   = \"about\"   :\> Get '[HTML] ('View' context model action)
--- type Contact = \"contact\" :\> Get '[HTML] ['View' context model action]
+-- type About   = \"about\"   :\> Get '[HTML] ('View' context props model action)
+-- type Contact = \"contact\" :\> Get '[HTML] ['View' context props model action]
 -- type API = Home :\<|\> About :\<|\> Contact
 -- @
 --
@@ -1756,6 +1787,8 @@ module Miso
   , fragment_
   , vcontext
   , withContext
+  , vprops
+  , withProps
     -- ** Sink
   , withSink
   , Sink
