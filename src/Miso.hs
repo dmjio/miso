@@ -219,9 +219,10 @@
 --   | 'VComp' ('SomeComponent' context)
 --   | forall props . 'VCompStatic' (StaticPtr ('SomeStaticComponent' props context)) props
 --   | 'VFrag' (Maybe t'Key') ['View' context model action]
+--   | 'VContext' (context -> 'View' context model action)
 -- @
 --
--- 'VNode' and 'VText' have a one-to-one mapping from the virtual DOM to the physical DOM. The 'VComp' and 'VFrag' constructors are abstract (live only on the virtual DOM) and do not contain a reference to the physical DOM. The existential t'SomeComponent' is what allows embedding polymorphic t'Miso.Types.Component' within a 'View'.
+-- 'VNode' and 'VText' have a one-to-one mapping from the virtual DOM to the physical DOM. The 'VComp', 'VFrag' and 'VContext' constructors are abstract (live only on the virtual DOM) and do not contain a reference to the physical DOM. The existential t'SomeComponent' is what allows embedding polymorphic t'Miso.Types.Component' within a 'View'.
 --
 -- @
 -- data t'SomeComponent' context
@@ -237,6 +238,7 @@
 -- * @fragment@, 'Miso.Types.vfrag', 'fragment_', 'vfrag_' — build a 'VFrag'
 -- * ('+>') — key and mount a child t'Miso.Types.Component'
 -- * 'vcomp', 'vcomp_' — build a 'VCompStatic' (see below)
+-- * 'vcontext' \/ 'withContext' — build a 'VContext'
 --
 -- A full list of element smart constructors built on 'node' (e.g. 'Miso.Html.Element.Miso.Html.Element.div_') can be found in "Miso.Html.Element".
 --
@@ -321,6 +323,26 @@
 -- changes it (or others) make. Set @useContext = True@ on precisely those
 -- (usually nested) components whose 'Miso.Types.view' depends on the @context@
 -- and must refresh when it changes.
+--
+-- = 'VContext' (Context nodes)
+--
+-- 'VContext' embeds a subtree built from a @context -> 'View' context model
+-- action@ function, so a helper deep in a view tree can read the app-global
+-- @context@ without needing it threaded through as an explicit argument —
+-- unlike 'Miso.Types.view' itself, which already receives @context@ as its
+-- first parameter.
+--
+-- @
+-- 'vcontext' $ \\theme -> 'Miso.Html.Element.span_' [] [ 'Miso.Types.text' (themeLabel theme) ]
+-- @
+--
+-- The function is applied to the current @context@ whenever the enclosing
+-- 'View' is built or rendered — it does not itself trigger a redraw. Whether
+-- a t'Miso.Types.Component' redraws at all on a context change is still
+-- decided solely by 'Miso.Types.useContext', same as everywhere else.
+--
+-- The smart constructors for 'VContext' are 'vcontext' and 'withContext'
+-- (a synonym).
 --
 -- = 'VComp' (Component nodes)
 --
@@ -1732,6 +1754,8 @@ module Miso
   , vfrag_
   , fragment
   , fragment_
+  , vcontext
+  , withContext
     -- ** Sink
   , withSink
   , Sink

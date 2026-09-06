@@ -2,6 +2,18 @@
 
 All notable changes to `miso` are documented here.
 
+## Unreleased
+
+### Added
+
+- **`VContext` / `vcontext` / `withContext`.** A `View` constructor that
+  embeds a subtree built from a `context -> View context model action`
+  function, so a helper deep in a view tree can read the app-global
+  `context` without needing it threaded through as an explicit argument.
+  Resolved against the current `context` whenever the enclosing `View` is
+  built or rendered; it does not itself trigger a redraw — that is still
+  governed solely by `useContext`. `withContext` is a synonym for `vcontext`.
+
 ## 1.13.0.0
 
 ### Added

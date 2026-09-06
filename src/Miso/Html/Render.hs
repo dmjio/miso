@@ -51,6 +51,8 @@
 -- * __'Miso.Types.VComp'__ — recursively renders the sub-component's view
 --   using its initial (or hydrated) model.
 -- * __'Miso.Types.VFrag'__ — renders all children inline, no wrapper tag.
+-- * __'Miso.Types.VContext'__ — resolved against the app-global @context@
+--   (read from 'globalContext') and the result rendered in its place.
 -- * __Event handlers__ (@'Miso.Types.On'@) — silently dropped; they have
 --   no meaning in a static HTML string.
 -- * __Boolean properties__ (@disabled@, @checked@, @required@, …) — rendered
@@ -215,6 +217,9 @@ renderBuilder (VCompStatic ptr props0) =
       renderBuilder (view comp_ ctx props (model comp_))
 #endif
 renderBuilder (VFrag _ kids) = foldMap renderBuilder kids
+renderBuilder (VContext f) =
+  let ctx = unsafePerformIO (readIORef globalContext) in
+  renderBuilder (f ctx)
 ----------------------------------------------------------------------------
 renderAttrs :: Attribute model action -> Builder
 renderAttrs (ClassList classes) =
