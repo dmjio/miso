@@ -35,6 +35,11 @@ All notable changes to `miso` are documented here.
   handle freed after linking like any other node. `toHtml` likewise
   resolves them before collapsing adjacent text nodes, matching the
   client's hydration-time tree.
+- **`VCompStatic` now carries a `StaticMount context`.** The
+  `StaticPtr (SomeStaticComponent props context)` / `props` pair that
+  `VCompStatic` held inline is now the `StaticMount` existential, mirroring
+  `VComp (SomeComponent context)`. `vcomp` / `vcomp_` are unchanged; only
+  code pattern-matching on `VCompStatic` directly needs updating.
 - **Breaking: `View` gained a `props` type parameter.** `View context model
   action` is now `View context props model action`, matching the order of
   `Component context props model action`. Unlike `context`, `props` are

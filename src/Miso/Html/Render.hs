@@ -219,7 +219,7 @@ renderBuilder props_ (VNode ns tag attrs children _) = mconcat
               , x <- ["mglyph", "mprescripts", "none", "maligngroup", "malignmark" ]
               ]
 renderBuilder _ (VComp someComp) = renderComp someComp
-renderBuilder _ (VCompStatic ptr props0) =
+renderBuilder _ (VCompStatic (StaticMount ptr props0)) =
   case deRefStaticPtr ptr of
     SomeStaticComponent mk -> renderComp (mk props0)
 renderBuilder props_ (VFrag _ kids) = foldMap (renderBuilder props_) kids
