@@ -41,10 +41,11 @@ contentRaw_ = textProp "content"
 -- N.B. Must use "Miso.Svg" and 'Miso.Svg.Element.svg_' combinator.
 --
 -- The content is serialised to a string when the attribute is built, so the
--- 'Miso.Types.View' has no enclosing component to take @props@ from and its
--- @props@ are fixed to @()@. To draw from the component's @props@, lift
--- 'Miso.Types.withProps' above the element instead of using
--- 'Miso.Types.vprops' inside the content:
+-- 'Miso.Types.View' has no enclosing component to take @props@ or @model@
+-- from: its @props@ are fixed to @()@, and a 'Miso.Types.vmodel' inside it
+-- raises when forced. To draw from the component's @props@ or @model@, lift
+-- 'Miso.Types.withProps' \/ 'Miso.Types.withModel' above the element instead
+-- of using 'Miso.Types.vprops' \/ 'Miso.Types.vmodel' inside the content:
 --
 -- > withProps $ \Props { color } ->
 -- >   svg_

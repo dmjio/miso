@@ -80,12 +80,13 @@
 --   so it can cross the Lynx dual-thread boundary (see 'vcomp' \/ 'mountStatic')
 -- * 'VFrag' — a group of siblings with no wrapper element, optionally keyed
 --
--- The remaining two are /ambient accessors/, not nodes. Each wraps a
+-- The remaining three are /ambient accessors/, not nodes. Each wraps a
 -- function that is applied — and the wrapper discarded — when the tree is
--- built or rendered, so neither ever appears in the virtual DOM:
+-- built or rendered, so none of them ever appears in the virtual DOM:
 --
 -- * 'VContext' — reads the app-global @context@
 -- * 'VProps' — reads the enclosing t'Component'\'s @props@
+-- * 'VModel' — reads the enclosing t'Component'\'s @model@
 --
 -- (@ImplicitParams@ or a @Reader@ could play the same role, at the cost of a
 -- GHC-specific extension or a monadic style for view code; see the
@@ -213,6 +214,9 @@ module Miso.Types
   -- ** Props combinator
   , vprops
   , withProps
+  -- ** Model combinator
+  , vmodel
+  , withModel
   -- ** Utils
   , getMountPoint
   , optionalAttrs
@@ -482,6 +486,11 @@ data View context props model action
     -- node. The function is applied, and this wrapper discarded, at the point
     -- the enclosing 'View' is built or rendered, letting a helper read
     -- @props@ without threading it through as an extra argument. See 'vprops'.
+  | VModel (model -> View context props model action)
+    -- ^ Ambient accessor for the enclosing t'Component'\'s @model@ — not a
+    -- node. The function is applied, and this wrapper discarded, at the point
+    -- the enclosing 'View' is built or rendered, letting a helper read
+    -- @model@ without threading it through as an extra argument. See 'vmodel'.
 -----------------------------------------------------------------------------
 -- | The dictionaries a t'Component' must carry to be mounted as a child:
 -- equality for dirty-checking, plus (under the @native@ flag) JSON for
@@ -862,6 +871,45 @@ vprops = VProps
 -- @since 1.14.0.0
 withProps :: (props -> View context props model action) -> View context props model action
 withProps = vprops
+
+-----------------------------------------------------------------------------
+-- | Create a new 'Miso.Types.VModel'.
+--
+-- Embeds a subtree that is resolved against the enclosing t'Component'\'s
+-- @model@ at the point the enclosing 'View' is built or rendered, so a helper
+-- deep in a view tree can read @model@ without needing it threaded through as
+-- an explicit argument — unlike 'view' itself, which already receives @model@
+-- as its third parameter.
+--
+-- @
+-- vmodel $ \\Model { count } -> span_ [] [ text (ms count) ]
+-- @
+--
+-- Because @model@ is a type parameter of 'View', the @model@ seen here is
+-- statically the @model@ of the t'Component' whose 'view' contains this
+-- node — a mismatch is a compile-time error. A child mounted with 'mount_' \/
+-- 'vcomp' sees /its own/ @model@, not its parent's.
+--
+-- __Note:__ a 'VModel' node adds no redraw logic of its own. A component is
+-- redrawn when its @model@ changes after an 'update', and the node is
+-- re-resolved against the new @model@ as part of that redraw.
+--
+-- When serialising with 'Miso.Html.Render.toHtml', a bare 'View' has no
+-- enclosing component to supply a @model@, so a 'VModel' at that level
+-- cannot be resolved and raises an exception if forced; pass the @model@
+-- with 'Miso.Html.Render.toHtmlWith' instead. One nested inside a mounted
+-- component always sees that component's initial (or hydrated) @model@.
+--
+-- @since 1.14.0.0
+vmodel :: (model -> View context props model action) -> View context props model action
+vmodel = VModel
+
+-----------------------------------------------------------------------------
+-- | Synonym for 'vmodel'.
+--
+-- @since 1.14.0.0
+withModel :: (model -> View context props model action) -> View context props model action
+withModel = vmodel
 -----------------------------------------------------------------------------
 -- | DOM element namespace.
 data Namespace

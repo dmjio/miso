@@ -6,6 +6,16 @@ All notable changes to `miso` are documented here.
 
 ### Added
 
+- **`VModel` / `vmodel` / `withModel`.** The `model` counterpart of
+  `VProps`: an ambient accessor (not a node) wrapping a
+  `model -> View context props model action` function, so a helper deep in a
+  view tree can read the enclosing component's `model` without needing it
+  threaded through as an explicit argument. Resolved against the mounting
+  component's current `model` whenever the enclosing `View` is built, and
+  against its initial (or hydrated) `model` when rendered with `toHtml`. A
+  bare `View` has no `model`, so a top-level `vmodel` under `toHtml` raises
+  when forced; pass one with `toHtmlWith`. `withModel` is a synonym for
+  `vmodel`.
 - **`VProps` / `vprops` / `withProps`.** The `props` counterpart of
   `VContext`: an ambient accessor (not a node) wrapping a
   `props -> View context props model action` function, so a helper deep in a
@@ -16,9 +26,10 @@ All notable changes to `miso` are documented here.
   component's current `props` whenever the enclosing `View` is built or
   rendered (`toHtml` on a bare `View` uses `()`). `withProps` is a synonym
   for `vprops`.
-- **`toHtmlWith`.** `toHtmlWith :: props -> View context props model action
-  -> ByteString` renders a `View` whose `props` type is not `()`, supplying
-  the value a `VProps` node resolves against.
+- **`toHtmlWith`.** `toHtmlWith :: props -> model -> View context props model
+  action -> ByteString` renders a `View` whose `props` type is not `()` or
+  that contains a `vmodel`, supplying the values `VProps` / `VModel`
+  accessors resolve against.
 - **`VContext` / `vcontext` / `withContext`.** An ambient accessor (not a
   node) wrapping a `context -> View context props model action` function, so a helper deep in a view tree can read the app-global
   `context` without needing it threaded through as an explicit argument.
@@ -45,7 +56,7 @@ All notable changes to `miso` are documented here.
   synonym declares the shared dictionary set once for `SomeComponent` and
   `SomeStaticComponent`. Call sites such as
   `vcomp_ (static (mountStatic comp))` are unchanged.
-- **`vcontext` / `vprops` children are resolved before being built.** The
+- **`vcontext` / `vprops` / `vmodel` children are resolved before being built.** The
   runtime now looks through these wrappers before deciding what to do with
   a child, so one that resolves to an empty fragment is skipped like an
   inline `fragment []`, and one that resolves to a plain node has its JS
