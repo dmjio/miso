@@ -268,9 +268,10 @@
 -- * 'startAppWithContext' — the client entry point, replaces 'startApp'.
 -- * 'misoWithContext' \/ 'prerenderWithContext' — the hydrating counterparts
 --   of 'miso' \/ 'prerender', for prerendered pages.
--- * 'setContext' — seeds the value directly. Needed for __server-side
---   rendering__, where a 'View' is serialized to HTML without ever starting
---   the runtime.
+-- * 'setContext' — overwrites the value held by every mounted component,
+--   without scheduling a redraw. For __server-side rendering__, where no
+--   runtime is started, pass the @context@ to 'Miso.Html.Render.toHtmlWith'
+--   instead.
 -- * 'Miso.Reload.liveWithContext' \/ 'Miso.Reload.reloadWithContext' — the
 --   context-aware variants of 'Miso.Reload.live' \/ 'Miso.Reload.reload' for
 --   interactive (GHCi) development.
@@ -1253,9 +1254,9 @@
 --   'Miso.Html.ToHtml.toHtml' :: a -> 'Data.ByteString.Lazy.ByteString'
 -- @
 --
--- Instances are provided for @'View' c () m a@ and @['View' c () m a]@ — a
--- bare 'View' has no enclosing component to supply @props@, so they are
--- fixed to @()@ (a 'View' left polymorphic in @props@ resolves to this):
+-- Instances are provided for @'View' () () m a@ and @['View' () () m a]@ — a
+-- bare 'View' has no running component to supply @context@ or @props@, so
+-- both are fixed to @()@ (a 'View' left polymorphic in them resolves to this):
 --
 -- @
 -- import "Miso.Html.Render" ('Miso.Html.Render.toHtml')
@@ -1264,12 +1265,12 @@
 -- pageHtml = 'Miso.Html.Render.toHtml' $ 'Miso.Html.Element.div_' [ 'Miso.Html.Property.id_' "root" ] [ "Hello, world!" ]
 -- @
 --
--- To render a 'View' whose @props@ type is something else — e.g. a
--- component's 'Miso.Types.view' applied directly, or a subtree containing
--- 'vprops' — pass the @props@ value with 'Miso.Html.Render.toHtmlWith':
+-- To render a 'View' whose @context@ or @props@ type is something else — e.g.
+-- a component's 'Miso.Types.view' applied directly, or a subtree containing
+-- 'vcontext' \/ 'vprops' — pass the values with 'Miso.Html.Render.toHtmlWith':
 --
 -- @
--- 'Miso.Html.Render.toHtmlWith' props ('Miso.Types.view' comp ctx props model)
+-- 'Miso.Html.Render.toHtmlWith' ctx props ('Miso.Types.view' comp ctx props model)
 -- @
 --
 -- This is typically wired into a Servant handler on the server using the
@@ -1771,27 +1772,22 @@ module Miso
   , App
   , startApp
   , startAppWithContext
-    -- | Seed the global React-style @context@ with a value, outside of the
-    -- normal 'startAppWithContext' flow.
+    -- | Overwrite the React-style @context@ held by every mounted component,
+    -- outside of the normal 'Miso.Effect.modifyContext' flow.
     --
-    -- 'startAppWithContext' already seeds the context before the first draw, so
-    -- client applications never call 'setContext' directly. It exists for
-    -- __server-side rendering__.
+    -- The @context@ is not a global cell: each mounted component carries its
+    -- own copy, seeded by 'startAppWithContext' and kept identical across the
+    -- tree by 'Miso.Effect.modifyContext'. 'setContext' rewrites all of those
+    -- copies at once but does not schedule a redraw, so client applications
+    -- normally never call it.
     --
-    -- During SSR you typically serialize a t'Miso.Types.View' to HTML with
-    -- 'Miso.Html.Render.toHtml' without ever starting the runtime. In that path
-    -- the global context cell is still @undefined@. For the common
-    -- @context ~ ()@ case this is harmless — 'Miso.Types.view' ignores its
-    -- @context@ argument, so the thunk is never forced. But if any
-    -- t'Miso.Types.VComp' in the tree has a 'Miso.Types.view' that inspects a
-    -- non-trivial @context@, forcing it during rendering raises an exception.
-    -- Call 'setContext' first to seed the value SSR should render against:
+    -- For __server-side rendering__ there is no runtime and nothing to write
+    -- to; pass the @context@ (and @props@) to 'Miso.Html.Render.toHtmlWith'
+    -- instead:
     --
     -- @
     -- main :: 'IO' ()
-    -- main = do
-    --   'setContext' Dark
-    --   Data.ByteString.Lazy.putStr ('Miso.Html.Render.toHtml' (view Dark () model))
+    -- main = Data.ByteString.Lazy.putStr ('Miso.Html.Render.toHtmlWith' Dark () (view Dark () model))
     -- @
   , setContext
   , renderApp
@@ -2080,8 +2076,8 @@ startApp events comp_ = initComponent events Draw False () comp_ Nothing () Noth
 -- data Theme = Light | Dark deriving (Show, Eq)
 -- @
 --
--- For server-side rendering (where the runtime is never started) seed the
--- context with 'setContext' before serializing the 'Miso.Types.View'.
+-- For server-side rendering (where the runtime is never started) pass the
+-- context to 'Miso.Html.Render.toHtmlWith' when serializing the 'Miso.Types.View'.
 --
 -- __Warning__: if compiling with the @native@ Cabal flag, use
 -- 'Miso.Native.nativeWithContext' instead of this — it mounts with no

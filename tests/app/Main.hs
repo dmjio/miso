@@ -1846,6 +1846,22 @@ main = withJS $ do
         updated <- liftIO $ pollFor propagationAttempts ((== ("2" :: MisoString)) <$> readProbe)
         updated `shouldBe` True
 
+      it "modifyContext writes the new context into every mounted component" $ do
+        liftIO $ startAppWithContext mempty (1 :: Int) (contextRoot False)
+        root <- liftIO $
+          ((IM.! 1) <$> readIORef components :: IO (ComponentState Int () () ContextAction))
+        liftIO (_componentSink root BumpContext)
+        synced <- liftIO $ pollFor propagationAttempts $ do
+          vcomps <- readIORef components
+          pure (all ((== (2 :: Int)) . _componentContext) (IM.elems vcomps))
+        synced `shouldBe` True
+        count <- liftIO (IM.size <$> readIORef components)
+        count `shouldBe` 2
+
+      it "toHtmlWith resolves vcontext against the supplied context" $ do
+        toHtmlWith (3 :: Int) () (div_ [] [ vcontext (text . ms) ])
+          `shouldBe` "<div>3</div>"
+
       it "useContext = False does not redraw vcontext when the context changes" $ do
         liftIO $ startAppWithContext mempty (1 :: Int) (contextRoot False)
         ComponentState {..} <- liftIO $
@@ -1926,7 +1942,7 @@ main = withJS $ do
         count `shouldBe` (2 :: Int)
 
       it "toHtmlWith resolves vprops against the supplied props" $ do
-        toHtmlWith (7 :: Int) (div_ [] [ vprops (text . ms) ])
+        toHtmlWith () (7 :: Int) (div_ [] [ vprops (text . ms) ])
           `shouldBe` "<div>7</div>"
 
     describe "Miso.DSL `await` tests" $ do

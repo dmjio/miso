@@ -28,6 +28,21 @@ All notable changes to `miso` are documented here.
 
 ### Changed
 
+- **Breaking: the app-global `context` lives in each `ComponentState`, not a
+  global `IORef`.** `globalContext` is gone. Every mounted component carries
+  `_componentContext` (lens `componentContext`), copied from the component
+  that mounts it (the root from `startAppWithContext`) and rewritten across
+  the whole tree by `modifyContext` / `setContext` (via the new
+  `modifyContextAll`). Draws and the commit phase read the copy in the
+  component's own record, and `buildVTree` receives the context as an
+  explicit argument, so `VContext` is resolved exactly like `VProps`. The
+  scheduler's propagation pass is unchanged. Consequences: `setContext` now
+  writes to every mounted component and is no longer used for SSR;
+  `toHtmlWith` takes the `context` first (`toHtmlWith ctx props view`) and
+  `ToHtml (View …)` requires `context ~ ()` as well as `props ~ ()`; the
+  Lynx SVG `content_` takes a `View () () model action`; `Miso.Reload`'s
+  stable pointer no longer carries a context cell and recovers the old
+  context from the root component's record.
 - **`vcontext` / `vprops` children are resolved before being built.** The
   runtime now looks through these wrappers before deciding what to do with
   a child, so one that resolves to an empty fragment is skipped like an

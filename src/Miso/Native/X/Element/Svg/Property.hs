@@ -41,10 +41,10 @@ contentRaw_ = textProp "content"
 -- N.B. Must use "Miso.Svg" and 'Miso.Svg.Element.svg_' combinator.
 --
 -- The content is serialised to a string when the attribute is built, so the
--- 'Miso.Types.View' has no enclosing component to take @props@ from and its
--- @props@ are fixed to @()@. To draw from the component's @props@, lift
--- 'Miso.Types.withProps' above the element instead of using
--- 'Miso.Types.vprops' inside the content:
+-- 'Miso.Types.View' has no running component to take @context@ or @props@
+-- from and both are fixed to @()@. To draw from the component's @context@
+-- or @props@, lift 'Miso.Types.withContext' \/ 'Miso.Types.withProps' above
+-- the element instead of using the accessors inside the content:
 --
 -- > withProps $ \Props { color } ->
 -- >   svg_
@@ -53,7 +53,7 @@ contentRaw_ = textProp "content"
 -- >     ]
 -- >     []
 --
-content_ :: View context () model action -> Attribute model action
+content_ :: View () () model action -> Attribute model action
 content_ = textProp "content" . ms . toHtml
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/svg.html#src

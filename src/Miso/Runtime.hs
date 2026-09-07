@@ -88,8 +88,8 @@ module Miso.Runtime
   , arrayBuffer
   -- ** Internal Component state
   , components
-  , globalContext
   , setContext
+  , modifyContextAll
   , schedulerThread
   , componentIds
   , rootComponentId
@@ -98,6 +98,7 @@ module Miso.Runtime
   , unmountComponent
   , freeLifecycleHooks
   , componentModel
+  , componentContext
   -- ** Scheduler
   , scheduler
 #ifdef WASM
@@ -204,6 +205,10 @@ initialize
   -- ^ Is live-reload mode active? Gates key-based model recovery — outside
   -- hot reload, a keyed component must never inherit a previous (possibly
   -- unrelated) component's model just because it shares a t'Key'.
+  -> context
+  -- ^ The app-global @context@ at mount time, copied into '_componentContext'.
+  -- Children receive the value held by the component building them; the root
+  -- receives the seed passed to 'initComponent'.
   -> props
   -- ^ Initial props for this component
   -> Maybe Key
@@ -214,7 +219,7 @@ initialize
   -> IO DOMRef
   -- ^ Callback function is used for obtaining the t'Miso.Types.Component' @DOMRef@.
   -> IO (ComponentState context props model action)
-initialize events _componentParentId hydrate isRoot live initialProps maybeKey _componentStaticKey comp@Component {..} getComponentMountPoint = do
+initialize events _componentParentId hydrate isRoot live _componentContext initialProps maybeKey _componentStaticKey comp@Component {..} getComponentMountPoint = do
   _componentId <- freshComponentId
   let
     _componentProps = initialProps
@@ -257,11 +262,12 @@ initialize events _componentParentId hydrate isRoot live initialProps maybeKey _
       putMVar frame =<< fromJSValUnchecked jsval
 
   let _componentDraw = \newModel -> do
-        currentProps <- (^. componentProps) . (IM.! _componentId) <$> readIORef components
-        currentContext <- readIORef globalContext
+        current <- (IM.! _componentId) <$> readIORef components
+        let currentProps = current ^. componentProps
+            currentContext = current ^. componentContext
         newVTree <-
           buildVTree events _componentParentId _componentId Draw live
-            _componentSink logLevel currentProps newModel (view currentContext currentProps newModel)
+            _componentSink logLevel currentContext currentProps newModel (view currentContext currentProps newModel)
         newHandlers <- collectEventHandlers
         oldVTree <- readIORef _componentVTree
         _frame <- requestAnimationFrame rAFCallback
@@ -449,9 +455,9 @@ scheduler Proxy =
     -- | Apply the actions across the model, evaluate async and sync IO.
     commit :: ComponentId -> Seq action -> IO (Maybe ComponentId)
     commit vcompId events = do
-      currentContext <- readIORef @context globalContext
       vcomps <- readIORef components
       let ComponentState {..} = vcomps IM.! vcompId
+          currentContext = _componentContext :: context
           (updatedModel, schedules) =
             _componentApplyActions events _componentModel _componentProps currentContext
       -- Route each scheduled effect. A plain t'Schedule' runs its 'IO' here, on
@@ -462,13 +468,12 @@ scheduler Proxy =
       -- crosses — sibling effects in the same @update@ stay put, so nothing is
       -- double-executed.
       forM_ schedules $ \case
-        ContextModify f ->
-          atomicModifyIORef' globalContext $ \ctx -> (f ctx, ())
+        ContextModify f -> modifyContextAll f
         CrossThread targetThread action
           | crossThread targetThread -> _componentPostEffect action
           | otherwise                -> _componentSink action
         Schedule synch effect -> evalScheduled synch (effect _componentSink)
-      updatedContext <- readIORef globalContext
+      updatedContext <- readContextOf vcompId currentContext
       -- 'not mts': the sentinel this enqueues is a no-op there (see the
       -- 'minBound' scheduler case) — MTS never draws context-driven changes
       -- itself (BTS ships DOM patches), so enqueueing from MTS would just be
@@ -530,9 +535,8 @@ initialDraw initializedModel events hydrate isRoot live Component {..} Component
 #ifdef BENCH
   start <- FFI.now
 #endif
-  currentContext <- readIORef globalContext
   vtree <- buildVTree events _componentParentId _componentId hydrate live _componentSink logLevel
-    _componentProps initializedModel (view currentContext _componentProps initializedModel)
+    _componentContext _componentProps initializedModel (view _componentContext _componentProps initializedModel)
   vtreeHandlers0 <- collectEventHandlers
 #ifdef BENCH
   end <- FFI.now
@@ -554,7 +558,7 @@ initialDraw initializedModel events hydrate isRoot live Component {..} Component
             else do
               newTree <-
                 buildVTree events _componentParentId _componentId Draw live
-                  _componentSink logLevel _componentProps initializedModel (view currentContext _componentProps initializedModel)
+                  _componentSink logLevel _componentContext _componentProps initializedModel (view _componentContext _componentProps initializedModel)
               newHandlers <- collectEventHandlers
               -- the discarded hydration tree's callbacks are unreachable
               mapM_ freeFunction vtreeHandlers0
@@ -770,27 +774,40 @@ globalQueue :: IORef (Queue action)
 {-# NOINLINE globalQueue #-}
 globalQueue = unsafePerformIO (newIORef emptyQueue)
 -----------------------------------------------------------------------------
--- | The global React-style @context@. Seeded in 'initComponent' (via
--- 'Miso.startAppWithContext', defaulting to @()@) and mutated by
--- 'Miso.Effect.modifyContext' during the scheduler's commit phase.
+-- | Overwrite the app-global @context@ held by every mounted component.
 --
--- N.B. like 'components', this holds a single value whose type is fixed for the
--- lifetime of the application; it is written before any draw occurs.
-globalContext :: IORef context
-{-# NOINLINE globalContext #-}
-globalContext = unsafePerformIO (newIORef undefined)
------------------------------------------------------------------------------
--- | Seed the global @context@ 'IORef' with a value.
+-- There is no global @context@ cell: each t'ComponentState' carries its own
+-- copy in '_componentContext', seeded from its parent at mount time (the root
+-- from 'initComponent') and kept identical across the tree by this function
+-- and by 'Miso.Effect.modifyContext' (via 'modifyContextAll'). Draws and the
+-- commit phase read the copy in the component's own record.
 --
--- 'Miso.startAppWithContext' seeds this before the first draw, so client
--- applications never call it. It exists for __server-side rendering__, where a
--- t'Miso.Types.View' is serialized to HTML without ever starting the runtime
--- and the global @context@ cell would otherwise still hold @undefined@. See
--- 'Miso.setContext' for the full explanation.
+-- This only writes the value; it does not schedule a redraw. The scheduler's
+-- context-propagation pass ('enqueueContextPropagation') is what redraws the
+-- components with @useContext@ set after 'Miso.Effect.modifyContext'.
+--
+-- Server-side rendering never starts the runtime and has no components to
+-- write to: pass the @context@ to 'Miso.Html.Render.toHtmlWith' instead.
 --
 -- @since 1.13.0.0
 setContext :: Eq context => context -> IO ()
-setContext = atomicWriteIORef globalContext
+setContext = modifyContextAll . const
+-----------------------------------------------------------------------------
+-- | Apply a function to the @context@ held by every mounted component, in
+-- one atomic update of the 'components' map. This is how
+-- 'Miso.Effect.modifyContext' takes effect during the commit phase.
+--
+-- @since 1.14.0.0
+modifyContextAll :: (context -> context) -> IO ()
+modifyContextAll f =
+  atomicModifyIORef' components $ \vcomps ->
+    (IM.map (\cs -> cs { _componentContext = f (_componentContext cs) }) vcomps, ())
+-----------------------------------------------------------------------------
+-- | The @context@ currently held by the given component's record. Returns
+-- the fallback if the component is no longer mounted (e.g. an effect in the
+-- same commit unmounted it).
+readContextOf :: ComponentId -> context -> IO context
+readContextOf cid fallback = maybe fallback _componentContext . IM.lookup cid <$> readIORef components
 -----------------------------------------------------------------------------
 componentId :: Lens (ComponentState context props model action) ComponentId
 componentId = lens _componentId $ \record field -> record { _componentId = field }
@@ -809,6 +826,9 @@ componentModel = lens _componentModel $ \record field -> record { _componentMode
 -----------------------------------------------------------------------------
 componentProps :: Lens (ComponentState context props model action) props
 componentProps = lens _componentProps $ \record field -> record { _componentProps = field }
+-----------------------------------------------------------------------------
+componentContext :: Lens (ComponentState context props model action) context
+componentContext = lens _componentContext $ \record field -> record { _componentContext = field }
 -----------------------------------------------------------------------------
 prevComponentProps :: Lens (ComponentState context props model action) props
 prevComponentProps = lens _prevComponentProps $ \record field -> record { _prevComponentProps = field }
@@ -852,6 +872,11 @@ data ComponentState context props model action
   , _componentUseContext :: Bool
   -- ^ Whether this t'Miso.Types.Component' re-renders when the global
   --   @context@ changes.
+  , _componentContext :: context
+  -- ^ This t'Miso.Types.Component'\'s copy of the app-global @context@. Every
+  --   mounted component holds the same value: it is copied from the parent
+  --   at mount time and rewritten across the whole tree by 'setContext' \/
+  --   'modifyContextAll'. Draws and the commit phase read this field.
   , _componentMailbox :: Value -> Maybe action
   -- ^ Mailbox for asynchronous t'Miso.Types.Component' communication
   , _componentDraw :: model -> IO ()
@@ -1159,7 +1184,7 @@ drain ComponentState {..} = do
   drainQueueAt _componentId >>= \case
     S.Empty -> pure ()
     actions -> do
-       currentContext <- readIORef @context globalContext
+       let currentContext = _componentContext
        case _componentApplyActions actions _componentModel _componentProps currentContext of
          (_, schedules) -> do
            forM_ schedules $ \case
@@ -1173,9 +1198,8 @@ drain ComponentState {..} = do
              Schedule _ effect ->
                effect _componentSink
                  `catch` exception
-             ContextModify f ->
-               atomicModifyIORef' globalContext $ \ctx -> (f ctx, ())
-           newContext <- readIORef globalContext
+             ContextModify f -> modifyContextAll f
+           newContext <- readContextOf _componentId currentContext
            when (not mts && dirtyCheck currentContext newContext) enqueueContextPropagation
            -- dmj: One last context propagation before aborting.
            -- Don't recurse on drain, we only fire-off the last set
@@ -1242,12 +1266,15 @@ buildVTree
   -- mounting child components.
   -> Sink action
   -> LogLevel
+  -> context
+  -- ^ The app-global @context@ as held by the mounting component, resolved by
+  -- 'VContext' and copied into any child component mounted here.
   -> props
   -- ^ The mounting component's current @props@, resolved by 'VProps'.
   -> model
   -> View context props model action
   -> IO VTree
-buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ props_ model_ = \case
+buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ ctx_ props_ model_ = \case
   VComp someComp -> buildComp Nothing someComp
 
   VCompStatic ptr props -> case deRefStaticPtr ptr of
@@ -1296,7 +1323,7 @@ buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ props_ model_ = 
   where
     -- Recurse with every argument but the 'View' unchanged.
     go :: View context props model action -> IO VTree
-    go = buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ props_ model_
+    go = buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ ctx_ props_ model_
 
     -- Look through the wrapper constructors ('VProps', 'VContext') to the
     -- node they resolve to. Every child goes through this before it is
@@ -1305,7 +1332,7 @@ buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ props_ model_ = 
     resolve :: View context props model action -> IO (View context props model action)
     resolve = \case
       VProps f -> resolve (f props_)
-      VContext f -> resolve . f =<< readIORef @context globalContext
+      VContext f -> resolve (f ctx_)
       v -> pure v
 
     -- Build @kids@ under @parent@ in order, link each to its next sibling,
@@ -1377,7 +1404,7 @@ buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ props_ model_ = 
       comp <- create
       mountCallback <- do
         syncCallback1' $ \parent_ -> do
-          ComponentState {..} <- initialize events_ vcompId hydrate False live newProps maybeKey maybeStaticKey app (pure parent_)
+          ComponentState {..} <- initialize events_ vcompId hydrate False live ctx_ newProps maybeKey maybeStaticKey app (pure parent_)
           modifyComponent vcompId (children %= IS.insert _componentId)
           vtree <- toJSVal =<< readIORef _componentVTree
           FFI.set "parent" comp (Object vtree)
@@ -2310,10 +2337,9 @@ initComponent events hydrate live initialContext comp_@Component {..} key props 
 #endif
         root <- Diff.mountElement (getMountPoint mountPoint)
         when web (cleanup proxy live root)
-        atomicWriteIORef globalContext initialContext
         -- dmj: top-level Component always responsive to Context changes
         let comp_' = comp_ { useContext = True }
-        void $ initialize events rootComponentId hydrate True live props key sk comp_' (pure root)
+        void $ initialize events rootComponentId hydrate True live initialContext props key sk comp_' (pure root)
 #ifdef NATIVE
         -- The root mount (root + every nested component drawn synchronously above)
         -- is now complete on this thread, so clear the global 'initialDraw' latch
@@ -2511,8 +2537,14 @@ componentListener Proxy live (BTS ctx) = void $ do
                                 -- them on @MOUNT@), decoded at the @props@ type recovered above.
                                 case componentComponentPayload of
                                   Just pv | Success initProps <- (fromJSON pv :: Result props) ->
-                                    void $ initialize mempty componentComponentId Draw False live initProps
-                                      Nothing (Just (staticKey ptr)) comp_ (pure parent_)
+                                    -- The child's @context@ is copied from its parent's record;
+                                    -- the MTS mounts parents before children, so it is present.
+                                    (fmap _componentContext . IM.lookup componentComponentParentId <$> readIORef components) >>= \case
+                                      Nothing ->
+                                        FFI.consoleError "[COMPONENT]: MOUNT parent component not mounted"
+                                      Just ctx ->
+                                        void $ initialize mempty componentComponentId Draw False live ctx initProps
+                                          Nothing (Just (staticKey ptr)) comp_ (pure parent_)
                                   _ ->
                                     FFI.consoleError "[COMPONENT]: MOUNT missing/invalid props payload"
                       UNMOUNT ->
