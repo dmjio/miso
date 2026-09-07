@@ -136,6 +136,16 @@ pollFor n check = do
   ok <- check
   if ok then pure True else threadDelay 20000 >> pollFor (n - 1) check
 -----------------------------------------------------------------------------
+-- | Budget for 'pollFor' when waiting on a scheduler-driven redraw
+-- (context \/ props propagation): 100 * 20ms = 2s.
+propagationAttempts :: Int
+propagationAttempts = 100
+-----------------------------------------------------------------------------
+-- | The @textContent@ of the element with the given @id@.
+readText :: MisoString -> IO MisoString
+readText elemId = fromJSValUnchecked =<< eval
+  ("document.getElementById('" <> elemId <> "').textContent")
+-----------------------------------------------------------------------------
 testComponent :: Component () () Int Action
 testComponent = component (0 :: Int) update_ $ \_ _ _ -> button_ [ id_ "foo", onClick AddOne ] [ "click me " ]
   where
@@ -1812,8 +1822,7 @@ main = withJS $ do
           contextRoot useContext = component () (\BumpContext -> modifyContext (+1)) $ \_ _ _ ->
             div_ [] [ mount_ contextProbe { useContext } ]
 
-          readProbe :: IO MisoString
-          readProbe = fromJSValUnchecked =<< eval ("document.getElementById('ctx-probe').textContent" :: MisoString)
+          readProbe = readText "ctx-probe"
 
       it "vcontext resolves the app-global context at initial mount" $ do
         liftIO $ startAppWithContext mempty (100 :: Int) contextProbe
@@ -1829,14 +1838,12 @@ main = withJS $ do
         txt <- liftIO readProbe
         txt `shouldBe` ("2" :: MisoString)
 
-      let contextPropagationAttempts = 100 -- 100 * 20ms = 2s
-
       it "useContext = True redraws vcontext when the context changes" $ do
         liftIO $ startAppWithContext mempty (1 :: Int) (contextRoot True)
         ComponentState {..} <- liftIO $
           ((IM.! 1) <$> readIORef components :: IO (ComponentState Int () () ContextAction))
         liftIO (_componentSink BumpContext)
-        updated <- liftIO $ pollFor contextPropagationAttempts ((== ("2" :: MisoString)) <$> readProbe)
+        updated <- liftIO $ pollFor propagationAttempts ((== ("2" :: MisoString)) <$> readProbe)
         updated `shouldBe` True
 
       it "useContext = False does not redraw vcontext when the context changes" $ do
@@ -1846,9 +1853,81 @@ main = withJS $ do
         liftIO (_componentSink BumpContext)
         -- Same total budget as the positive test above, so a non-change here
         -- isn't just "didn't wait long enough".
-        _ <- liftIO $ pollFor contextPropagationAttempts (pure False)
+        _ <- liftIO $ pollFor propagationAttempts (pure False)
         txt <- liftIO readProbe
         txt `shouldBe` ("1" :: MisoString)
+
+    describe "VProps tests" $ do
+      let -- A child whose @props@ is an 'Int', displayed via 'vprops'.
+          propsProbe :: Component () Int () Action
+          propsProbe = component () noop $ \_ _ _ ->
+            div_ [ id_ "props-probe" ] [ vprops (text . ms) ]
+
+          -- A root that forwards its own 'Int' model to 'propsProbe' as @props@.
+          propsRoot :: Component () () Int Action
+          propsRoot = component (1 :: Int) (\AddOne -> this += 1) $ \_ _ m ->
+            div_ [] [ mountWithProps m propsProbe ]
+
+      it "vprops resolves the mounting component's props at initial mount" $ do
+        let root :: App () Action
+            root = component () noop $ \_ _ _ ->
+              div_ [] [ mountWithProps (100 :: Int) propsProbe ]
+        liftIO $ startApp mempty root
+        txt <- liftIO (readText "props-probe")
+        txt `shouldBe` ("100" :: MisoString)
+
+      it "vprops re-resolves when the parent redraws with new props" $ do
+        liftIO $ startApp mempty propsRoot
+        ComponentState {..} <- liftIO $
+          ((IM.! 1) <$> readIORef components :: IO (ComponentState () () Int Action))
+        liftIO (_componentSink AddOne)
+        updated <- liftIO $ pollFor propagationAttempts ((== ("2" :: MisoString)) <$> readText "props-probe")
+        updated `shouldBe` True
+
+      it "nested components each see their own props type" $ do
+        -- The mount boundary forgets the child's @props@, so an 'Int'-props
+        -- parent can host a 'MisoString'-props child and each 'vprops' /
+        -- 'withProps' resolves against its own component.
+        let inner :: Component () MisoString () Action
+            inner = component () noop $ \_ _ _ ->
+              span_ [ id_ "props-inner" ] [ withProps text ]
+            outer :: Component () Int () Action
+            outer = component () noop $ \_ _ _ ->
+              div_ [ id_ "props-outer" ]
+                [ span_ [] [ vprops (text . ms) ]
+                , mountWithProps ("inner" :: MisoString) inner
+                ]
+            root :: App () Action
+            root = component () noop $ \_ _ _ ->
+              div_ [] [ mountWithProps (7 :: Int) outer ]
+        liftIO $ startApp mempty root
+        outerTxt <- liftIO (readText "props-outer")
+        innerTxt <- liftIO (readText "props-inner")
+        outerTxt `shouldBe` ("7inner" :: MisoString)
+        innerTxt `shouldBe` ("inner" :: MisoString)
+
+      it "toHtml resolves vprops against the mounted component's props" $ do
+        toHtml (div_ [] [ mountWithProps (7 :: Int) propsProbe ])
+          `shouldBe` "<div><div id=\"props-probe\">7</div></div>"
+
+      it "toHtml resolves a bare view's vprops against ()" $ do
+        -- 'const' leaves @props@ polymorphic, so this only compiles because
+        -- the ToHtml instance's @props ~ ()@ context pins it.
+        toHtml (div_ [] [ vprops (const "unit") ])
+          `shouldBe` "<div>unit</div>"
+
+      it "a vprops resolving to an empty fragment contributes no child" $ do
+        let root :: App () Action
+            root = component () noop $ \_ _ _ ->
+              div_ [ id_ "props-wrap" ] [ "a", vprops (\() -> vfrag []), "b" ]
+        liftIO $ startApp mempty root
+        count <- liftIO $ fromJSValUnchecked =<< eval
+          ("document.getElementById('props-wrap').childNodes.length" :: MisoString)
+        count `shouldBe` (2 :: Int)
+
+      it "toHtmlWith resolves vprops against the supplied props" $ do
+        toHtmlWith (7 :: Int) (div_ [] [ vprops (text . ms) ])
+          `shouldBe` "<div>7</div>"
 
     describe "Miso.DSL `await` tests" $ do
       it "Successful Promise resolution should result in a value" $ do

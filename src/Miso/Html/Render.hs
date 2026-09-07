@@ -2,6 +2,8 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE CPP                   #-}
 #ifdef SSR
@@ -51,8 +53,13 @@
 -- * __'Miso.Types.VComp'__ — recursively renders the sub-component's view
 --   using its initial (or hydrated) model.
 -- * __'Miso.Types.VFrag'__ — renders all children inline, no wrapper tag.
--- * __'Miso.Types.VContext'__ — resolved against the app-global @context@
---   (read from 'globalContext') and the result rendered in its place.
+-- * __'Miso.Types.VContext'__ (ambient accessor, not a node) — applied to
+--   the app-global @context@ (read from 'globalContext') and the result
+--   rendered in its place.
+-- * __'Miso.Types.VProps'__ (ambient accessor, not a node) — applied to the
+--   @props@ of the enclosing component (@()@ for a bare 'Miso.Types.View'
+--   under 'toHtml'; the value given to 'toHtmlWith' otherwise) and the
+--   result rendered in its place.
 -- * __Event handlers__ (@'Miso.Types.On'@) — silently dropped; they have
 --   no meaning in a static HTML string.
 -- * __Boolean properties__ (@disabled@, @checked@, @required@, …) — rendered
@@ -75,6 +82,8 @@
 module Miso.Html.Render
   ( -- *** Classes
     ToHtml (..)
+    -- *** Functions
+  , toHtmlWith
   ) where
 ----------------------------------------------------------------------------
 import qualified Data.Set as S
@@ -101,15 +110,35 @@ class ToHtml a where
   toHtml :: a -> L.ByteString
 ----------------------------------------------------------------------------
 -- | Render a @Miso.Types.View@ to a @L.ByteString@
-instance ToHtml (View context model action) where
+--
+-- A bare 'View' has no enclosing t'Component' to supply @props@, so its
+-- @props@ are fixed to @()@ (the @props ~ ()@ constraint lets a 'View' that is
+-- polymorphic in @props@ still resolve this instance). A 'Miso.Types.VProps'
+-- node at this level therefore sees @()@; one nested inside a mounted
+-- component sees that component's real @props@.
+instance (props ~ ()) => ToHtml (View context props model action) where
   toHtml = renderView
 ----------------------------------------------------------------------------
 -- | Render a @[Miso.Types.View]@ to a @L.ByteString@
-instance ToHtml [View context model action] where
+instance (props ~ ()) => ToHtml [View context props model action] where
   toHtml = foldMap renderView
 ----------------------------------------------------------------------------
-renderView :: View context model action -> L.ByteString
-renderView = toLazyByteString . renderBuilder
+renderView :: View context () model action -> L.ByteString
+renderView = toHtmlWith ()
+----------------------------------------------------------------------------
+-- | Render a 'View' to a @L.ByteString@, supplying the @props@ that any
+-- 'Miso.Types.VProps' node in it resolves against.
+--
+-- This is the general form of 'toHtml', for a 'View' whose @props@ type is
+-- not @()@ — e.g. a component's 'Miso.Types.view' applied directly:
+--
+-- @
+-- toHtmlWith props (view comp ctx props model)
+-- @
+--
+-- @since 1.14.0.0
+toHtmlWith :: props -> View context props model action -> L.ByteString
+toHtmlWith props = toLazyByteString . renderBuilder props
 ----------------------------------------------------------------------------
 intercalate :: Builder -> [Builder] -> Builder
 intercalate _ [] = ""
@@ -154,11 +183,13 @@ booleanProperties = S.fromList
   , "truespeed"
   ]
 ----------------------------------------------------------------------------
-renderBuilder :: View context model action -> Builder
-renderBuilder (VText _ "")    = fromMisoString " "
-renderBuilder (VText _ s)     = fromMisoString s
-renderBuilder (VNode _ "doctype" [] [] _) = "<!doctype html>"
-renderBuilder (VNode ns tag attrs children _) = mconcat
+-- | Serialise a 'View' given the @props@ of the t'Component' it belongs to.
+-- Entering a @VComp@ \/ @VCompStatic@ switches to that child's @props@.
+renderBuilder :: props -> View context props model action -> Builder
+renderBuilder _ (VText _ "")    = fromMisoString " "
+renderBuilder _ (VText _ s)     = fromMisoString s
+renderBuilder _ (VNode _ "doctype" [] [] _) = "<!doctype html>"
+renderBuilder props_ (VNode ns tag attrs children _) = mconcat
   [ "<"
   , fromMisoString tag
   , mconcat [ " " <> intercalate " " (renderAttrs <$> attrs)
@@ -167,7 +198,7 @@ renderBuilder (VNode ns tag attrs children _) = mconcat
   , if tag `elem` selfClosing then "/>" else ">"
   , mconcat
     [ mconcat
-      [ foldMap renderBuilder (collapseSiblingTextNodes children)
+      [ foldMap (renderBuilder props_) (collapseSiblingTextNodes props_ children)
       , "</" <> fromMisoString tag <> ">"
       ]
     | tag `notElem` selfClosing
@@ -187,39 +218,33 @@ renderBuilder (VNode ns tag attrs children _) = mconcat
               | ns == MATHML
               , x <- ["mglyph", "mprescripts", "none", "maligngroup", "malignmark" ]
               ]
-renderBuilder (VComp someComp) =
-  case someComp of
-    SomeComponent _key props comp_ ->
-      -- The app-global @context@ is read from 'globalContext'. For the common
-      -- @context ~ ()@ case the 'Miso.Lens.view' ignores it, so the initial @undefined@ is
-      -- never forced. But if a 'Miso.Lens.view' here inspects a non-trivial @context@,
-      -- SSR must seed the cell with 'Miso.setContext' before serializing, or
-      -- forcing @ctx@ raises an exception. See 'Miso.setContext' for details.
-      let ctx = unsafePerformIO (readIORef globalContext) in
-#ifdef SSR
-      renderBuilder (view comp_ ctx props (getInitialComponentModel comp_))
-#else
-      renderBuilder (view comp_ ctx props (model comp_))
-#endif
-renderBuilder (VCompStatic ptr props0) =
+renderBuilder _ (VComp someComp) = renderComp someComp
+renderBuilder _ (VCompStatic ptr props0) =
   case deRefStaticPtr ptr of
-   SomeStaticComponent mk -> case mk props0 of
-    SomeComponent _key props comp_ ->
-      -- The app-global @context@ is read from 'globalContext'. For the common
-      -- @context ~ ()@ case the 'Miso.Lens.view' ignores it, so the initial @undefined@ is
-      -- never forced. But if a 'Miso.Lens.view' here inspects a non-trivial @context@,
-      -- SSR must seed the cell with 'Miso.setContext' before serializing, or
-      -- forcing @ctx@ raises an exception. See 'Miso.setContext' for details.
-      let ctx = unsafePerformIO (readIORef globalContext) in
-#ifdef SSR
-      renderBuilder (view comp_ ctx props (getInitialComponentModel comp_))
-#else
-      renderBuilder (view comp_ ctx props (model comp_))
-#endif
-renderBuilder (VFrag _ kids) = foldMap renderBuilder kids
-renderBuilder (VContext f) =
+    SomeStaticComponent mk -> renderComp (mk props0)
+renderBuilder props_ (VFrag _ kids) = foldMap (renderBuilder props_) kids
+renderBuilder props_ (VContext f) =
   let ctx = unsafePerformIO (readIORef globalContext) in
-  renderBuilder (f ctx)
+  renderBuilder props_ (f ctx)
+renderBuilder props_ (VProps f) = renderBuilder props_ (f props_)
+----------------------------------------------------------------------------
+-- | Render a mounted child component: its 'view' applied to the app-global
+-- @context@, the @props@ it was mounted with, and its initial (or hydrated)
+-- @model@. The enclosing component's @props@ play no part, which is why the
+-- @VComp@ \/ @VCompStatic@ arms of 'renderBuilder' ignore theirs.
+renderComp :: SomeComponent context -> Builder
+renderComp (SomeComponent _key props comp_) =
+  -- The app-global @context@ is read from 'globalContext'. For the common
+  -- @context ~ ()@ case the 'Miso.Lens.view' ignores it, so the initial @undefined@ is
+  -- never forced. But if a 'Miso.Lens.view' here inspects a non-trivial @context@,
+  -- SSR must seed the cell with 'Miso.setContext' before serializing, or
+  -- forcing @ctx@ raises an exception. See 'Miso.setContext' for details.
+  let ctx = unsafePerformIO (readIORef globalContext) in
+#ifdef SSR
+  renderBuilder props (view comp_ ctx props (getInitialComponentModel comp_))
+#else
+  renderBuilder props (view comp_ ctx props (model comp_))
+#endif
 ----------------------------------------------------------------------------
 renderAttrs :: Attribute model action -> Builder
 renderAttrs (ClassList classes) =
@@ -267,12 +292,22 @@ renderAttrs (Styles styles_) =
 -- | The browser can't distinguish between multiple text nodes
 -- and a single text node. So it will always parse a single text node
 -- this means we must collapse adjacent text nodes during hydration.
-collapseSiblingTextNodes :: [View context model action] -> [View context model action]
-collapseSiblingTextNodes [] = []
-collapseSiblingTextNodes (VText _ x : VText k y : xs) =
-  collapseSiblingTextNodes (VText k (x <> y) : xs)
-collapseSiblingTextNodes (x:xs) =
-  x : collapseSiblingTextNodes xs
+collapseSiblingTextNodes
+  :: props
+  -> [View context props model action]
+  -> [View context props model action]
+collapseSiblingTextNodes props_ = go
+  where
+    -- Look through the wrapper constructors first, so a 'VProps' \/ 'VContext'
+    -- that resolves to text is collapsed with its neighbours exactly as the
+    -- client does after 'buildVTree' has resolved it. Otherwise an empty
+    -- 'VText' behind a wrapper renders as a lone space that hydration
+    -- cannot reconcile.
+    go (VProps f : xs) = go (f props_ : xs)
+    go (VContext f : xs) = go (f (unsafePerformIO (readIORef globalContext)) : xs)
+    go (VText _ x : VText k y : xs) = go (VText k (x <> y) : xs)
+    go (x : xs) = x : go xs
+    go [] = []
 ----------------------------------------------------------------------------
 -- | Helper for turning JSON into Text
 -- Object, Array and Null are kind of non-sensical here

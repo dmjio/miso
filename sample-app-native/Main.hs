@@ -177,7 +177,7 @@ updateModel = \case
 animId :: MisoString
 animId = "#anim-gif"
 -----------------------------------------------------------------------------
-viewModel :: Theme -> () -> Model -> View Theme Model Action
+viewModel :: Theme -> () -> Model -> View Theme () Model Action
 viewModel theme _ Model{..} = view_
   [ CSS.style_
     [ CSS.height "100vh"
@@ -228,7 +228,7 @@ txtLine :: CSS.Style
 txtLine = CSS.lineHeight "1.4"
 -----------------------------------------------------------------------------
 -- | Sticky header showing the latest events.
-logView :: [MisoString] -> View context Model Action
+logView :: [MisoString] -> View context props Model Action
 logView msgs = view_
   [ CSS.style_
     [ CSS.height "120px"
@@ -249,7 +249,7 @@ logView msgs = view_
     unlinesTake = foldr (\a b -> a <> "\n" <> b) "" . take 5
 -----------------------------------------------------------------------------
 -- | Wrap a demo in a labelled bordered card.
-section :: MisoString -> [View context Model Action] -> View context Model Action
+section :: MisoString -> [View context props Model Action] -> View context props Model Action
 section label kids = view_
   [ CSS.style_
     [ CSS.width "100%"
@@ -272,7 +272,7 @@ section label kids = view_
 -- @__AddClass@ against the global cssId 0 stylesheet the runtime scopes the
 -- page to. If @.foo@ applies you get a crimson, padded, rounded card; if the
 -- stylesheet wiring is broken you get plain unstyled text.
-classSection :: View context Model Action
+classSection :: View context props Model Action
 classSection = section "className \8212 .foo rule from styles.css"
   -- className is on the text element itself: Lynx does not cascade `color`
   -- from <view> to child <text>, and there is no inline color to override it,
@@ -286,7 +286,7 @@ classSection = section "className \8212 .foo rule from styles.css"
 -- @tap@ — "Lynx Send Tap Event failed, longpress consumed"), which only shows
 -- up on a physical device (a simulator "tap" is instantaneous and never engages
 -- the longpress path). So don't stack tap + longpress on the same node.
-viewSection :: View context Model Action
+viewSection :: View context props Model Action
 viewSection = section "<view> \8212 gestures (each on its own element)"
   [ gestureBox CSS.steelblue "tap me"
       [ VE.onTap (Log "view: tap")
@@ -316,7 +316,7 @@ viewSection = section "<view> \8212 gestures (each on its own element)"
 -- up (a spring cubic-bezier on @transform@). Liking also flips @burst@ on,
 -- which flings a ring of little hearts outward+up from the centre; the update
 -- schedules 'BurstOff' ~0.65s later so they retract — a one-shot pop.
-heartSection :: Bool -> Bool -> View context Model Action
+heartSection :: Bool -> Bool -> View context props Model Action
 heartSection isLiked isBurst = section "animation \8212 tap the heart (Rednote-style like)"
   [ view_
     [ CSS.style_
@@ -367,7 +367,7 @@ heartSection isLiked isBurst = section "animation \8212 tap the heart (Rednote-s
       [ text "\9829" ]
 -----------------------------------------------------------------------------
 -- | <text> — layout + selection, with selectable text.
-textSection :: View context Model Action
+textSection :: View context props Model Action
 textSection = section "<text> \8212 layout / selection"
   [ text_
     [ TP.textMaxLine_ 3
@@ -380,7 +380,7 @@ textSection = section "<text> \8212 layout / selection"
   ]
 -----------------------------------------------------------------------------
 -- | <image> — load / error, with a resize mode.
-imageSection :: View context Model Action
+imageSection :: View context props Model Action
 imageSection = section "<image> \8212 load / error"
   [ image_ "https://picsum.photos/300/120"
     [ IP.mode_ "aspectFill"
@@ -397,7 +397,7 @@ imageSection = section "<image> \8212 load / error"
 -- dispatches its method to the element selected by 'animId' and logs the result.
 -- 'startAnimation' maps to Lynx's deprecated @startAnimate@; the others are the
 -- current API.
-animationSection :: View context Model Action
+animationSection :: View context props Model Action
 animationSection = section "<image> animation \8212 startAnimate / pause / resume / stop (invokeExec)"
   [ image_ "https://upload.wikimedia.org/wikipedia/commons/2/2c/Rotating_earth_%28large%29.gif"
     [ id_ "anim-gif"
@@ -428,7 +428,7 @@ animationSection = section "<image> animation \8212 startAnimate / pause / resum
       [ text_ [ CSS.style_ [ CSS.color CSS.white, txtLine ] ] [ text lbl ] ]
 -----------------------------------------------------------------------------
 -- | <scroll-view> — nested horizontal scroll with edge + size events.
-nestedScrollSection :: View context Model Action
+nestedScrollSection :: View context props Model Action
 nestedScrollSection = section "<scroll-view> \8212 horizontal, scroll edges"
   [ scrollView_
     [ SP.scrollOrientation_ "horizontal"
@@ -457,7 +457,7 @@ nestedScrollSection = section "<scroll-view> \8212 horizontal, scroll edges"
 -- @scroll-coordinator-slot@ as children (a bare view/scroll-view is rejected
 -- with error 990100). The slot holds the scrollable content; scrolling it folds
 -- the header away, and the coordinator emits `offset` as it folds.
-scrollCoordinatorSection :: View context Model Action
+scrollCoordinatorSection :: View context props Model Action
 scrollCoordinatorSection = section "<scroll-coordinator> \8212 collapsing header + nested scroll"
   [ scrollCoordinator_
     [ ScP.enableScroll_ True
@@ -495,7 +495,7 @@ scrollCoordinatorSection = section "<scroll-coordinator> \8212 collapsing header
   ]
 -----------------------------------------------------------------------------
 -- | <list> — recycler with item-keys, snap, layout-complete.
-listSection :: View context Model Action
+listSection :: View context props Model Action
 listSection = section "<list> \8212 recycler, snap, layout-complete"
   [ list_ (ListOptions Single 1 Vertical)
     [ LE.onScroll (\_ -> Log "list: scroll")
@@ -518,7 +518,7 @@ listSection = section "<list> \8212 recycler, snap, layout-complete"
   ]
 -----------------------------------------------------------------------------
 -- | <input> — the full input event set.
-inputSection :: View context Model Action
+inputSection :: View context props Model Action
 inputSection = section "<input> \8212 input / focus / blur / confirm"
   [ input_
     [ placeholder_ "type here\8230"
@@ -534,7 +534,7 @@ inputSection = section "<input> \8212 input / focus / blur / confirm"
   ]
 -----------------------------------------------------------------------------
 -- | <textarea> — multiline input.
-textareaSection :: View context Model Action
+textareaSection :: View context props Model Action
 textareaSection = section "<textarea> \8212 multiline input / focus / blur"
   [ textarea_
     [ placeholder_ "multiline\8230"
@@ -549,7 +549,7 @@ textareaSection = section "<textarea> \8212 multiline input / focus / blur"
   ]
 -----------------------------------------------------------------------------
 -- | <viewpager> — paged container with change / offset events.
-viewpagerSection :: View context Model Action
+viewpagerSection :: View context props Model Action
 viewpagerSection = section "<viewpager> \8212 paged, change / offset"
   [ viewpager_
     [ VpP.bounces_ True
@@ -577,7 +577,7 @@ viewpagerSection = section "<viewpager> \8212 paged, change / offset"
 -- <scroll-view> (the web preview says otherwise, but native needs it). Pull
 -- down past the top to reveal the header and fire `startrefresh`; the update
 -- then adds rows and calls `finishRefresh` (selected by the element `id`).
-refreshSection :: Int -> View context Model Action
+refreshSection :: Int -> View context props Model Action
 refreshSection rows = section "<refresh> \8212 pull down from the top to load rows"
   [ refresh_
     [ id_ "refresh-demo"
@@ -618,7 +618,7 @@ refreshSection rows = section "<refresh> \8212 pull down from the top to load ro
 -- global, polyfilled for the Lynx runtime in @ts/miso-native.ts@. `toHtml`
 -- doesn't emit @xmlns@, so we add it explicitly to keep the content a
 -- well-formed standalone SVG document.
-svgSection :: View context Model Action
+svgSection :: View context props Model Action
 svgSection = section "<svg> \8212 inline content via Miso.Svg DSL / load"
   [ svg_
     [ SvP.content_ svgArt
@@ -628,7 +628,7 @@ svgSection = section "<svg> \8212 inline content via Miso.Svg DSL / load"
     []
   ]
   where
-    svgArt :: View context Model Action
+    svgArt :: View context props Model Action
     svgArt = Svg.svg_
       [ SvgP.viewBox_ "0 0 100 100"
       , textProp "xmlns" "http://www.w3.org/2000/svg"
@@ -638,7 +638,7 @@ svgSection = section "<svg> \8212 inline content via Miso.Svg DSL / load"
       ]
 -----------------------------------------------------------------------------
 -- | <blur-view> — material blur backdrop.
-blurViewSection :: View context Model Action
+blurViewSection :: View context props Model Action
 blurViewSection = section "<blur-view> \8212 material backdrop (blurs the image behind)"
   [ view_
     [ CSS.style_ [ CSS.width "100%", CSS.height "100px", CSS.position "relative" ] ]
@@ -660,7 +660,7 @@ blurViewSection = section "<blur-view> \8212 material backdrop (blurs the image 
   ]
 -----------------------------------------------------------------------------
 -- | <webview> — embedded web page.
-webviewSection :: View context Model Action
+webviewSection :: View context props Model Action
 webviewSection = section "<webview> \8212 embedded page, load / error"
   [ webview_
     [ WP.src_ "https://haskell-miso.org"
@@ -675,7 +675,7 @@ webviewSection = section "<webview> \8212 embedded page, load / error"
 -- | <overlay> — a full-screen layer above the page, toggled by a button.
 -- (An always-visible overlay would cover the whole gallery, so we gate it on
 -- @visible_@ and let the user open/close it.)
-overlaySection :: Bool -> View context Model Action
+overlaySection :: Bool -> View context props Model Action
 overlaySection open = section "<overlay> \8212 independent layer (tap to open)"
   [ view_
     [ VE.onTap ToggleOverlay
@@ -711,7 +711,7 @@ overlaySection open = section "<overlay> \8212 independent layer (tap to open)"
 -- and fades the scroll-view itself based on scroll offset. Each mutates only
 -- a property the declarative 'CSS.style_' below never sets ("transform" /
 -- "opacity"), per the single-owner discipline in "Miso.Native.MainThread".
-mainThreadSection :: View context Model Action
+mainThreadSection :: View context props Model Action
 mainThreadSection = section "main-thread (MTS) events \8212 gesture + scroll, no BTS round-trip"
   [ view_
     [ event (static (VE.onTapMainWith Pulse))
@@ -798,7 +798,7 @@ badgeComponent = (component (BadgeModel 0) badgeUpdate badgeView) { useContext =
 badgeUpdate :: BadgeAction -> Effect Theme BadgeProps BadgeModel BadgeAction
 badgeUpdate BadgeTap = modify $ \m -> m { badgeTaps = badgeTaps m + 1 }
 -----------------------------------------------------------------------------
-badgeView :: Theme -> BadgeProps -> BadgeModel -> View Theme BadgeModel BadgeAction
+badgeView :: Theme -> BadgeProps -> BadgeModel -> View Theme BadgeProps BadgeModel BadgeAction
 badgeView theme BadgeProps{..} BadgeModel{..} = view_
   [ VE.onTap BadgeTap
   , CSS.style_
@@ -815,7 +815,7 @@ badgeView theme BadgeProps{..} BadgeModel{..} = view_
 -- | Mounts 'badgeComponent' statically with props derived from the parent
 -- model, and a "toggle theme" control above it so context propagation into
 -- the child is visible: tapping it flips the badge's own colors.
-mountedComponentSection :: Theme -> Int -> View Theme Model Action
+mountedComponentSection :: Theme -> Int -> View Theme () Model Action
 mountedComponentSection theme eventCount = section "vcomp \8212 statically-mounted child (props / context / model)"
   [ view_
     [ VE.onTap ToggleTheme

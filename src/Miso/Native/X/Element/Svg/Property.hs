@@ -34,13 +34,26 @@ contentRaw_ = textProp "content"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/svg.html#content
 --
--- Inline SVG XML content using 'Miso.miso' 'Miso.Typess.View' Syntax.
+-- Inline SVG XML content using 'Miso.miso' 'Miso.Types.View' Syntax.
 --
 -- > content_ (svg_ [] [])
 --
 -- N.B. Must use "Miso.Svg" and 'Miso.Svg.Element.svg_' combinator.
 --
-content_ :: View context model action -> Attribute model action
+-- The content is serialised to a string when the attribute is built, so the
+-- 'Miso.Types.View' has no enclosing component to take @props@ from and its
+-- @props@ are fixed to @()@. To draw from the component's @props@, lift
+-- 'Miso.Types.withProps' above the element instead of using
+-- 'Miso.Types.vprops' inside the content:
+--
+-- > withProps $ \Props { color } ->
+-- >   svg_
+-- >     [ content_ $ Svg.svg_ [ textProp "xmlns" "http://www.w3.org/2000/svg" ]
+-- >         [ Svg.circle_ [ Svg.fill_ color ] [] ]
+-- >     ]
+-- >     []
+--
+content_ :: View context () model action -> Attribute model action
 content_ = textProp "content" . ms . toHtml
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/svg.html#src

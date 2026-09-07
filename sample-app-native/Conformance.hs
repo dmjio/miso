@@ -67,7 +67,7 @@ updateModel = \case
   ReadMTS domRef n ->
     io_ (setStyleProperty domRef "opacity" (opacityForCount n))
 
-viewModel :: () -> () -> Model -> View () Model Action
+viewModel :: () -> () -> Model -> View () () Model Action
 viewModel _ _ Model{..} =
   view_
     [ id_ "probe-root"
@@ -128,7 +128,7 @@ panelStyle =
   , CSS.borderRadius "10px"
   ]
 
-btsIncrementButton :: View context Model Action
+btsIncrementButton :: View context props Model Action
 btsIncrementButton =
   view_
     [ id_ "bts-increment"
@@ -137,7 +137,7 @@ btsIncrementButton =
     ]
     [ label "tap: BTS increment + declarative rerender" ]
 
-dynamicSection :: Bool -> View context Model Action
+dynamicSection :: Bool -> View context props Model Action
 dynamicSection visible =
   view_
     [ id_ "dynamic-section"
@@ -166,7 +166,7 @@ dynamicSection visible =
       [ dynamicChild | visible ]
     ]
 
-dynamicChild :: View context Model Action
+dynamicChild :: View context props Model Action
 dynamicChild =
   view_
     [ id_ "dynamic-child"
@@ -182,7 +182,7 @@ dynamicChild =
     ]
     [ label "dynamic child is mounted" ]
 
-mtsPaintSection :: View context Model Action
+mtsPaintSection :: View context props Model Action
 mtsPaintSection =
   view_
     [ id_ "mts-paint-shell"
@@ -203,7 +203,7 @@ mtsPaintSection =
       [ label "tap: MTS-only background-color" ]
     ]
 
-mtsReadSection :: View context Model Action
+mtsReadSection :: View context props Model Action
 mtsReadSection =
   view_
     [ id_ "mts-read-shell"
@@ -225,7 +225,7 @@ mtsReadSection =
       [ label "tap: MTS reads hydrated BTS count" ]
     ]
 
-label :: MisoString -> View context model action
+label :: MisoString -> View context props model action
 label value =
   text_
     [ CSS.style_
@@ -258,7 +258,7 @@ childUpdate :: ChildAction -> Effect () ChildProps ChildModel ChildAction
 childUpdate IncrementChild =
   modify $ \m -> m { childCount = childCount m + 1 }
 
-childView :: () -> ChildProps -> ChildModel -> View () ChildModel ChildAction
+childView :: () -> ChildProps -> ChildModel -> View () ChildProps ChildModel ChildAction
 childView _ ChildProps{..} ChildModel{..} =
   view_
     [ id_ "child-button"
@@ -281,7 +281,7 @@ childView _ ChildProps{..} ChildModel{..} =
       ]
     ]
 
-childSection :: Int -> View () Model Action
+childSection :: Int -> View () () Model Action
 childSection count =
   view_
     [ id_ "child-slot"

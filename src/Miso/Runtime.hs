@@ -261,7 +261,7 @@ initialize events _componentParentId hydrate isRoot live initialProps maybeKey _
         currentContext <- readIORef globalContext
         newVTree <-
           buildVTree events _componentParentId _componentId Draw live
-            _componentSink logLevel newModel (view currentContext currentProps newModel)
+            _componentSink logLevel currentProps newModel (view currentContext currentProps newModel)
         newHandlers <- collectEventHandlers
         oldVTree <- readIORef _componentVTree
         _frame <- requestAnimationFrame rAFCallback
@@ -532,7 +532,7 @@ initialDraw initializedModel events hydrate isRoot live Component {..} Component
 #endif
   currentContext <- readIORef globalContext
   vtree <- buildVTree events _componentParentId _componentId hydrate live _componentSink logLevel
-    initializedModel (view currentContext _componentProps initializedModel)
+    _componentProps initializedModel (view currentContext _componentProps initializedModel)
   vtreeHandlers0 <- collectEventHandlers
 #ifdef BENCH
   end <- FFI.now
@@ -554,7 +554,7 @@ initialDraw initializedModel events hydrate isRoot live Component {..} Component
             else do
               newTree <-
                 buildVTree events _componentParentId _componentId Draw live
-                  _componentSink logLevel initializedModel (view currentContext _componentProps initializedModel)
+                  _componentSink logLevel _componentProps initializedModel (view currentContext _componentProps initializedModel)
               newHandlers <- collectEventHandlers
               -- the discarded hydration tree's callbacks are unreachable
               mapM_ freeFunction vtreeHandlers0
@@ -1232,7 +1232,7 @@ unmountComponent cs@ComponentState {..} = do
 -- infrastructure for each sub-component. During this
 -- process we go between the Haskell heap and the JS heap.
 buildVTree
-  :: forall context model action . Eq context
+  :: forall context props model action . Eq context
   => Events
   -> ComponentId
   -> ComponentId
@@ -1242,10 +1242,12 @@ buildVTree
   -- mounting child components.
   -> Sink action
   -> LogLevel
+  -> props
+  -- ^ The mounting component's current @props@, resolved by 'VProps'.
   -> model
-  -> View context model action
+  -> View context props model action
   -> IO VTree
-buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ model_ = \case
+buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ props_ model_ = \case
   VComp someComp -> buildComp Nothing someComp
 
   VCompStatic ptr props -> case deRefStaticPtr ptr of
@@ -1259,7 +1261,7 @@ buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ model_ = \case
     -- never reads it (all HTML/SVG/MathML nodes carry an empty set anyway).
     FFI.set "directEvents" (Set.toList _directEvents) vnode_
 #endif
-    children_ <- procreate vnode_
+    children_ <- procreate vnode_ kids
     vchildren <- toJSVal (map snd children_)
     FFI.set "children" vchildren vnode_
     nodeType <- toJSVal VNodeType
@@ -1270,21 +1272,6 @@ buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ model_ = \case
     freeJSVal vchildren
     mapM_ freeKid children_
     pure (VTree vnode_)
-      where
-        procreate parentVTree = do
-          kidsViews <- foldM (buildKid parentVTree) [] kids
-          let ordered = reverse kidsViews
-          setNextSibling (map snd ordered)
-          pure ordered
-            where
-              setNextSibling xs =
-                zipWithM_ (flip setField "nextSibling")
-                  xs (drop 1 xs)
-              buildKid _ acc (VFrag _ []) = pure acc
-              buildKid p acc kid = do
-                VTree child <- buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ model_ kid
-                FFI.set "parent" p child
-                pure ((kid, child) : acc)
   VText key t -> do
     vtree <- create
     flip (FFI.set "type") vtree =<< toJSVal VTextType
@@ -1296,29 +1283,55 @@ buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ model_ = \case
     frag <- create
     FFI.set "type" VFragType frag
     forM_ maybeKey $ \(Key k) -> FFI.set "key" k frag
-    children_ <- procreateFragChildren frag
+    children_ <- procreate frag kids
     vchildren <- toJSVal (map snd children_)
     FFI.set "children" vchildren frag
     freeJSVal vchildren
     mapM_ freeKid children_
     pure (VTree frag)
-      where
-        procreateFragChildren parentVTree = do
-          kidsViews <- foldM buildKid [] kids
-          let ordered = reverse kidsViews
-          zipWithM_ (flip setField "nextSibling") (map snd ordered) (drop 1 (map snd ordered))
-          pure ordered
-            where
-              buildKid acc (VFrag _ []) = pure acc
-              buildKid acc kid = do
-                VTree child <- buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ model_ kid
-                FFI.set "parent" parentVTree child
-                pure ((kid, child) : acc)
 
-  VContext f -> do
-    ctx <- readIORef @context globalContext
-    buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ model_ (f ctx)
+  v@VContext {} -> go =<< resolve v
+
+  v@VProps {} -> go =<< resolve v
   where
+    -- Recurse with every argument but the 'View' unchanged.
+    go :: View context props model action -> IO VTree
+    go = buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ props_ model_
+
+    -- Look through the wrapper constructors ('VProps', 'VContext') to the
+    -- node they resolve to. Every child goes through this before it is
+    -- built, so 'freeable' decides on the real constructor and a wrapper
+    -- resolving to @fragment []@ hits the empty-fragment skip in 'buildKid'.
+    resolve :: View context props model action -> IO (View context props model action)
+    resolve = \case
+      VProps f -> resolve (f props_)
+      VContext f -> resolve . f =<< readIORef @context globalContext
+      v -> pure v
+
+    -- Build @kids@ under @parent@ in order, link each to its next sibling,
+    -- and return them paired with their JS handles for 'freeKid'.
+    procreate
+      :: Object
+      -> [View context props model action]
+      -> IO [(View context props model action, Object)]
+    procreate parent kids = do
+      ordered <- reverse <$> foldM (buildKid parent) [] kids
+      zipWithM_ (flip setField "nextSibling") (map snd ordered) (drop 1 (map snd ordered))
+      pure ordered
+
+    -- Build one (resolved) child and link it to @parent@; accumulates in reverse.
+    buildKid
+      :: Object
+      -> [(View context props model action, Object)]
+      -> View context props model action
+      -> IO [(View context props model action, Object)]
+    buildKid parent acc kid0 = resolve kid0 >>= \case
+      VFrag _ [] -> pure acc
+      kid -> do
+        VTree child <- go kid
+        FFI.set "parent" parent child
+        pure ((kid, child) : acc)
+
     -- Note [Freeing VTree handles]
     -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     -- On WASM each 'JSVal' handle carries a weak pointer that every GC must
@@ -1335,17 +1348,20 @@ buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ model_ = \case
     --    component object.
     --
     -- The root handle is returned to the caller and is never freed here.
-    freeKid :: (View context model action, Object) -> IO ()
+    freeKid :: (View context props model action, Object) -> IO ()
     freeKid (kid, Object child) = when (freeable kid) (freeJSVal child)
 
-    freeable :: View context model action -> Bool
+    freeable :: View context props model action -> Bool
     freeable = \case
       VNode _ _ attrs _ _ -> not (any isEvent attrs)
       VText {} -> True
       VFrag {} -> True
       VComp {} -> False
       VCompStatic {} -> False
+      -- Never reached: 'buildKid' resolves wrappers before building, so a
+      -- 'freeKid' pair always holds the resolved node. Conservative anyway.
       VContext {} -> False
+      VProps {} -> False
 
     isEvent :: Attribute model action -> Bool
     isEvent = \case

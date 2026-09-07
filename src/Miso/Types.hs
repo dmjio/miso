@@ -41,7 +41,7 @@
 --   { model           :: model
 --   , hydrateModel    :: Maybe (IO model)
 --   , update          :: action -> 'Miso.Effect.Effect' context props model action
---   , view            :: context -> props -> model -> 'View' context model action
+--   , view            :: context -> props -> model -> 'View' context props model action
 --   , useContext      :: Bool
 --   , subs            :: ['Miso.Effect.Sub' action]
 --   , styles          :: ['CSS']
@@ -69,8 +69,8 @@
 --
 -- = The View type
 --
--- @'View' context model action@ is miso's virtual DOM tree. Its six
--- constructors map to the four node kinds the runtime handles:
+-- @'View' context props model action@ is miso's virtual DOM tree. Five of
+-- its constructors are the node kinds the runtime handles:
 --
 -- * 'VNode' — a regular DOM element (@\<div\>@, @\<svg\>@, …)
 -- * 'VText' — a text node
@@ -78,7 +78,22 @@
 -- * @VCompStatic@ — an embedded child t'Component' behind a 'GHC.StaticPtr.StaticPtr',
 --   so it can cross the Lynx dual-thread boundary (see 'vcomp' \/ 'mountStatic')
 -- * 'VFrag' — a group of siblings with no wrapper element, optionally keyed
--- * 'VContext' — a subtree resolved against the app-global @context@
+--
+-- The remaining two are /ambient accessors/, not nodes. Each wraps a
+-- function that is applied — and the wrapper discarded — when the tree is
+-- built or rendered, so neither ever appears in the virtual DOM:
+--
+-- * 'VContext' — reads the app-global @context@
+-- * 'VProps' — reads the enclosing t'Component'\'s @props@
+--
+-- (@ImplicitParams@ or a @Reader@ could play the same role, at the cost of a
+-- GHC-specific extension or a monadic style for view code; see the
+-- 'VProps' section of the "Miso" module docs.)
+--
+-- The @props@ parameter is the @props@ type of the t'Component' whose
+-- 'view' produced the tree, exactly as @model@ is that component's @model@
+-- type. Both are forgotten at a mount boundary (@VComp@ \/ @VCompStatic@),
+-- so a parent with @props ~ P@ can freely mount a child with @props ~ Q@.
 --
 -- = Key types at a glance
 --
@@ -193,6 +208,9 @@ module Miso.Types
   -- ** Context combinator
   , vcontext
   , withContext
+  -- ** Props combinator
+  , vprops
+  , withProps
   -- ** Utils
   , getMountPoint
   , optionalAttrs
@@ -254,7 +272,7 @@ data Component context props model action
   --   @localStorage@ via 'Miso.Storage.getLocalStorage').
   , update :: action -> Effect context props model action
   -- ^ Updates model, optionally providing effects.
-  , view :: context -> props -> model -> View context model action
+  , view :: context -> props -> model -> View context props model action
   -- ^ Draws 'View'. Receives the app-global @context@, the @props@ passed by the
   --   parent, and the current @model@.
   , useContext :: Bool
@@ -377,7 +395,7 @@ component
   -- ^ model
   -> (action -> Effect context props model action)
   -- ^ update
-  -> (context -> props -> model -> View context model action)
+  -> (context -> props -> model -> View context props model action)
   -- ^ view
   -> Component context props model action
 component m u v = Component
@@ -435,15 +453,15 @@ type Tag = MisoString
 type DirectEvents = Set MisoString
 -----------------------------------------------------------------------------
 -- | Core type for constructing a virtual DOM in Haskell
-data View context model action
-  = VNode Namespace Tag [Attribute model action] [View context model action] DirectEvents
+data View context props model action
+  = VNode Namespace Tag [Attribute model action] [View context props model action] DirectEvents
     -- ^ The final 'Set' names the events this element dispatches /directly/ on
     -- itself rather than by bubbling to the delegated mount listener (Lynx
     -- native @input@\/@scroll@\/… events). Empty for all HTML\/SVG\/MathML
     -- elements. See 'nodeDirectEvents'.
   | VText (Maybe Key) MisoString
   | VComp (SomeComponent context)
-  | forall props . VCompStatic (StaticPtr (SomeStaticComponent props context)) props
+  | forall childProps . VCompStatic (StaticPtr (SomeStaticComponent childProps context)) childProps
     -- ^ An embedded child t'Component'. The 'StaticPtr' holds only the closed
     -- @props -> component@ constructor ('SomeStaticComponent'); the @props@ value — often
     -- derived from the parent's @model@ — rides alongside and crosses the
@@ -451,11 +469,17 @@ data View context model action
     -- (see 'mountStatic'). This split is what lets a mount escape @static@\'s
     -- closedness restriction. See 'vcomp'. This is necessary for lynx dual-thread
     -- in order to transfer context, props, event handlers etc.
-  | VFrag (Maybe Key) [View context model action]
-  | VContext (context -> View context model action)
-    -- ^ A subtree resolved against the app-global @context@ at the point this
-    -- 'View' is built or rendered, letting a helper read @context@ without
-    -- threading it through as an extra argument. See 'vcontext'.
+  | VFrag (Maybe Key) [View context props model action]
+  | VContext (context -> View context props model action)
+    -- ^ Ambient accessor for the app-global @context@ — not a node. The
+    -- function is applied, and this wrapper discarded, at the point the
+    -- enclosing 'View' is built or rendered, letting a helper read @context@
+    -- without threading it through as an extra argument. See 'vcontext'.
+  | VProps (props -> View context props model action)
+    -- ^ Ambient accessor for the enclosing t'Component'\'s @props@ — not a
+    -- node. The function is applied, and this wrapper discarded, at the point
+    -- the enclosing 'View' is built or rendered, letting a helper read
+    -- @props@ without threading it through as an extra argument. See 'vprops'.
 -----------------------------------------------------------------------------
 -- | Existential wrapper allowing nesting of t'Miso.Types.Component' in t'Miso.Types.Component'.
 --
@@ -499,7 +523,7 @@ data SomeStaticComponent props context
 -- Synonym for `fragment'
 --
 -- @since 1.10.0.0
-vfrag :: [View context model action] -> View context model action
+vfrag :: [View context props model action] -> View context props model action
 vfrag = fragment
 -----------------------------------------------------------------------------
 -- | Create a fragment (keyless).
@@ -508,19 +532,19 @@ vfrag = fragment
 -- an extra DOM element.
 --
 -- @since 1.10.0.0
-fragment :: [View context model action] -> View context model action
+fragment :: [View context props model action] -> View context props model action
 fragment = VFrag Nothing
 -----------------------------------------------------------------------------
 -- | Like 'fragment', but keyed for efficient diffing.
 --
 -- @since 1.10.0.0
-vfrag_ :: MisoString -> [View context model action] -> View context model action
+vfrag_ :: MisoString -> [View context props model action] -> View context props model action
 vfrag_ key = VFrag (Just (Key key))
 -----------------------------------------------------------------------------
 -- | Like 'fragment', but keyed for efficient diffing.
 --
 -- @since 1.10.0.0
-fragment_ :: MisoString -> [View context model action] -> View context model action
+fragment_ :: MisoString -> [View context props model action] -> View context props model action
 fragment_ key = VFrag (Just (Key key))
 -----------------------------------------------------------------------------
 -- | t'Miso.Types.Component' mounting combinator
@@ -548,7 +572,7 @@ fragment_ key = VFrag (Just (Key key))
 --
 -- @since 1.9.0.0
 (+>)
-  :: forall context childModel childAction model action .
+  :: forall context childModel childAction model action props .
 #ifdef NATIVE
      (Eq context, Eq childModel, FromJSON childModel, ToJSON childModel, FromJSON childAction, ToJSON childAction)
 #else
@@ -558,7 +582,7 @@ fragment_ key = VFrag (Just (Key key))
   -- ^ @VComp@ @key_@
   -> Component context () childModel childAction
   -- ^ t'Component'
-  -> View context model action
+  -> View context props model action
 infixr 0 +>
 #ifdef NATIVE
 {-# WARNING (+>) "[NATIVE] '+>' has no StaticKey; a component mounted with it after the initial frame silently drops OnStatic handlers inside it. Use 'vcomp' with 'mountStaticWithProps' instead." #-}
@@ -604,16 +628,16 @@ mountStaticWithProps child = SomeStaticComponent (\props -> SomeComponent Nothin
 -- @OnStatic@ handlers inside them. Use 'vcomp' with 'mountStaticWithProps'
 -- instead for anything that may mount dynamically under @NATIVE@.
 mountWithProps
-  :: forall context props childModel childAction model action .
+  :: forall context childProps childModel childAction model action props .
 #ifdef NATIVE
-     (Eq context, Eq props, Eq childModel, FromJSON childModel, ToJSON childModel, FromJSON childAction, ToJSON childAction, FromJSON props, ToJSON props)
+     (Eq context, Eq childProps, Eq childModel, FromJSON childModel, ToJSON childModel, FromJSON childAction, ToJSON childAction, FromJSON childProps, ToJSON childProps)
 #else
-     (Eq context, Eq props, Eq childModel)
+     (Eq context, Eq childProps, Eq childModel)
 #endif
-  => props
-  -> Component context props childModel childAction
+  => childProps
+  -> Component context childProps childModel childAction
   -- ^ t'Component' to mount
-  -> View context model action
+  -> View context props model action
 #ifdef NATIVE
 {-# WARNING mountWithProps "[NATIVE] 'mountWithProps' has no StaticKey; a component mounted with it after the initial frame silently drops OnStatic handlers inside it. Use 'vcomp' with 'mountStaticWithProps' instead." #-}
 #endif
@@ -630,17 +654,17 @@ mountWithProps props comp = VComp (SomeComponent Nothing props comp)
 -- under @NATIVE@ — the compile-time 'GHC.StaticPtr.StaticKey' already
 -- supplies the identity a manual key would, no explicit key needed.
 mountWithProps_
-  :: forall context props childModel childAction model action .
+  :: forall context childProps childModel childAction model action props .
 #ifdef NATIVE
-     (Eq context, Eq props, Eq childModel, FromJSON childAction, FromJSON childModel, ToJSON childModel, ToJSON childAction, FromJSON props, ToJSON props)
+     (Eq context, Eq childProps, Eq childModel, FromJSON childAction, FromJSON childModel, ToJSON childModel, ToJSON childAction, FromJSON childProps, ToJSON childProps)
 #else
-     (Eq context, Eq childModel, Eq props)
+     (Eq context, Eq childModel, Eq childProps)
 #endif
   => MisoString
-  -> props
-  -> Component context props childModel childAction
+  -> childProps
+  -> Component context childProps childModel childAction
   -- ^ t'Component' to mount
-  -> View context model action
+  -> View context props model action
 #ifdef NATIVE
 {-# WARNING mountWithProps_ "[NATIVE] 'mountWithProps_' has no StaticKey; a component mounted with it after the initial frame silently drops OnStatic handlers inside it. Use 'vcomp' with 'mountStaticWithProps' instead." #-}
 #endif
@@ -693,7 +717,7 @@ mountStatic child = SomeStaticComponent (const (SomeComponent Nothing () child))
 --
 -- @since 1.9.0.0
 mount_
-  :: forall context childModel childAction model action .
+  :: forall context childModel childAction model action props .
 #ifdef NATIVE
      (Eq context, Eq childModel, FromJSON childModel, ToJSON childModel, FromJSON childAction, ToJSON childAction)
 #else
@@ -701,7 +725,7 @@ mount_
 #endif
   => Component context () childModel childAction
   -- ^ t'Component' to mount
-  -> View context model action
+  -> View context props model action
 #ifdef NATIVE
 {-# WARNING mount_ "[NATIVE] 'mount_' has no StaticKey; a component mounted with it after the initial frame silently drops OnStatic handlers inside it. Use 'vcomp_' with 'mountStatic' instead." #-}
 #endif
@@ -727,9 +751,9 @@ mount_ comp = VComp (SomeComponent Nothing () comp)
 --
 -- @since 1.12.0.0
 vcomp
-  :: props
-  -> StaticPtr (SomeStaticComponent props context)
-  -> View context model action
+  :: childProps
+  -> StaticPtr (SomeStaticComponent childProps context)
+  -> View context props model action
 vcomp = flip VCompStatic
 -----------------------------------------------------------------------------
 -- | Like 'vcomp', but for a t'Miso.Types.Component' that takes no @props@.
@@ -744,7 +768,7 @@ vcomp = flip VCompStatic
 -- @since 1.13.0.0
 vcomp_
   :: StaticPtr (SomeStaticComponent () context)
-  -> View context model action
+  -> View context props model action
 vcomp_ = vcomp ()
 -----------------------------------------------------------------------------
 -- | t'Miso.Types.Component' mounting combinator that opts the child into
@@ -769,7 +793,7 @@ vcomp_ = vcomp ()
 --
 -- @since 1.13.0.0
 mountUseContext
-  :: forall context childModel childAction model action .
+  :: forall context childModel childAction model action props .
 #ifdef NATIVE
      (Eq context, Eq childModel, FromJSON childModel, ToJSON childModel, FromJSON childAction, ToJSON childAction)
 #else
@@ -777,7 +801,7 @@ mountUseContext
 #endif
   => Component context () childModel childAction
   -- ^ t'Component' to mount
-  -> View context model action
+  -> View context props model action
 #ifdef NATIVE
 {-# WARNING mountUseContext "[NATIVE] 'mountUseContext' has no StaticKey; a component mounted with it after the initial frame silently drops OnStatic handlers inside it. Use 'vcomp_' with 'mountStatic' on a component with useContext = True instead." #-}
 #endif
@@ -801,15 +825,48 @@ mountUseContext comp = VComp (SomeComponent Nothing () comp { useContext = True 
 -- (re)built for some other, already-scheduled reason.
 --
 -- @since 1.14.0.0
-vcontext :: (context -> View context model action) -> View context model action
+vcontext :: (context -> View context props model action) -> View context props model action
 vcontext = VContext
 
 -----------------------------------------------------------------------------
 -- | Synonym for 'vcontext'.
 --
 -- @since 1.14.0.0
-withContext :: (context -> View context model action) -> View context model action
+withContext :: (context -> View context props model action) -> View context props model action
 withContext = vcontext
+
+-----------------------------------------------------------------------------
+-- | Create a new 'Miso.Types.VProps'.
+--
+-- Embeds a subtree that is resolved against the enclosing t'Component'\'s
+-- @props@ at the point the enclosing 'View' is built or rendered, so a helper
+-- deep in a view tree can read @props@ without needing it threaded through as
+-- an explicit argument — unlike 'view' itself, which already receives @props@
+-- as its second parameter.
+--
+-- @
+-- vprops $ \\Props { title } -> h1_ [] [ text title ]
+-- @
+--
+-- Because @props@ is a type parameter of 'View', the @props@ seen here is
+-- statically the @props@ of the t'Component' whose 'view' contains this
+-- node — a mismatch is a compile-time error. A child mounted with
+-- 'mountWithProps' \/ 'vcomp' sees /its own/ @props@, not its parent's.
+--
+-- __Note:__ a 'VProps' node adds no redraw logic of its own. A component is
+-- redrawn when its parent passes it different @props@ (the props phase), and
+-- the node is re-resolved against the new @props@ as part of that redraw.
+--
+-- @since 1.14.0.0
+vprops :: (props -> View context props model action) -> View context props model action
+vprops = VProps
+
+-----------------------------------------------------------------------------
+-- | Synonym for 'vprops'.
+--
+-- @since 1.14.0.0
+withProps :: (props -> View context props model action) -> View context props model action
+withProps = vprops
 -----------------------------------------------------------------------------
 -- | DOM element namespace.
 data Namespace
@@ -953,7 +1010,7 @@ instance Show (Attribute model action) where
         ]
 -----------------------------------------------------------------------------
 -- | 'IsString' instance
-instance IsString (View context model action) where
+instance IsString (View context props model action) where
   fromString = VText Nothing . fromString
 -----------------------------------------------------------------------------
 -- | Virtual DOM implemented as a JavaScript t'Object'.
@@ -976,9 +1033,9 @@ node
   -- ^ Tag name (e.g. @\"div\"@, @\"circle\"@)
   -> [Attribute model action]
   -- ^ Attributes, properties, and event handlers
-  -> [View context model action]
+  -> [View context props model action]
   -- ^ Child nodes
-  -> View context model action
+  -> View context props model action
 node ns tag attrs kids = VNode ns tag attrs kids mempty
 -----------------------------------------------------------------------------
 -- | Like 'node', but declares the set of events this element dispatches
@@ -999,9 +1056,9 @@ nodeDirectEvents
   -- ^ Attributes, properties, and event handlers
   -> [MisoString]
   -- ^ Events dispatched directly on this element
-  -> [View context model action]
+  -> [View context props model action]
   -- ^ Child nodes
-  -> View context model action
+  -> View context props model action
 nodeDirectEvents ns tag attrs direct kids = VNode ns tag attrs kids (S.fromList direct)
 -----------------------------------------------------------------------------
 -- | Create a new 'Miso.Types.VNode'.
@@ -1015,13 +1072,13 @@ vnode
   -- ^ Tag name (e.g. @\"div\"@, @\"circle\"@)
   -> [Attribute model action]
   -- ^ Attributes, properties, and event handlers
-  -> [View context model action]
+  -> [View context props model action]
   -- ^ Child nodes
-  -> View context model action
+  -> View context props model action
 vnode = node
 -----------------------------------------------------------------------------
 -- | Create a new v'VText' with the given content.
-text :: MisoString -> View context model action
+text :: MisoString -> View context props model action
 #ifdef SSR
 text = VText Nothing . htmlEncode
 #else
@@ -1029,14 +1086,14 @@ text = VText Nothing
 #endif
 -----------------------------------------------------------------------------
 -- | Synonym for 'text'
-vtext :: MisoString -> View context model action
+vtext :: MisoString -> View context props model action
 vtext = text
 ----------------------------------------------------------------------------
 -- | Create a new v'VText', not subject to HTML escaping.
 --
 -- Like 'text', except will not escape HTML when used on the server.
 --
-textRaw :: MisoString -> View context model action
+textRaw :: MisoString -> View context props model action
 textRaw = VText Nothing
 ----------------------------------------------------------------------------
 -- |
@@ -1059,7 +1116,7 @@ htmlEncode = MS.concatMap $ \case
 -- | Create a new v'VText' containing concatenation of the given strings.
 --
 -- @
---   view :: View context model action
+--   view :: View context props model action
 --   view = div_
 --     [ className "container" ]
 --     [ text_
@@ -1073,46 +1130,46 @@ htmlEncode = MS.concatMap $ \case
 --
 -- A single additional space is added between elements.
 --
-text_ :: [MisoString] -> View context model action
+text_ :: [MisoString] -> View context props model action
 text_ = VText Nothing . MS.intercalate " "
 -----------------------------------------------------------------------------
 -- | Like 'text', but allow the node to be keyed for efficient diffing.
 --
 -- @
--- view :: model -> View context model action
+-- view :: model -> View context props model action
 -- view = \x -> div_ [] [ textKey (1 :: Int) "text here" ]
 -- @
 --
 -- @since 1.9.0.0
-textKey :: ToKey key => key -> MisoString -> View context model action
+textKey :: ToKey key => key -> MisoString -> View context props model action
 textKey k = VText (Just (toKey k))
 -----------------------------------------------------------------------------
 -- | Like 'text_', but allow the node to be keyed for efficient diffing.
 --
 -- @
--- view :: model -> View context model action
+-- view :: model -> View context props model action
 -- view = \x -> div_ [] [ textKey_ (1 :: Int) [ "text", "goes", "here" ] ]
 -- @
 --
 -- @since 1.9.0.0
-textKey_ :: ToKey key => key -> [MisoString] -> View context model action
+textKey_ :: ToKey key => key -> [MisoString] -> View context props model action
 textKey_ k xs = VText (Just (toKey k)) (MS.intercalate " " xs)
 -----------------------------------------------------------------------------
 -- | Utility function to make it easy to specify conditional attributes
 --
 -- @
--- view :: Bool -> View context model action
+-- view :: Bool -> View context props model action
 -- view danger = optionalAttrs div_ [ id_ "some-div" ] danger [ class_ "danger" ] ["child"]
 -- @
 --
 -- @since 1.9.0.0
 optionalAttrs
-  :: ([Attribute model action] -> [View context model action] -> View context model action)
+  :: ([Attribute model action] -> [View context props model action] -> View context props model action)
   -> [Attribute model action] -- ^ Attributes to be added unconditionally
   -> Bool -- ^ A condition
   -> [Attribute model action] -- ^ Additional attributes to add if the condition is True
-  -> [View context model action] -- ^ Children
-  -> View context model action
+  -> [View context props model action] -- ^ Children
+  -> View context props model action
 optionalAttrs element attrs condition opts kids =
   case element attrs kids of
     VNode ns name _ _ de -> do
@@ -1123,17 +1180,17 @@ optionalAttrs element attrs condition opts kids =
 -- | Utility function to make it easy to specify conditional attributes for void elements.
 --
 -- @
--- view :: Bool -> View context model action
+-- view :: Bool -> View context props model action
 -- view shouldClear = optionalVoidAttrs textarea_ [ value_ "" ] shouldClear [ id_ "text-area-id" ]
 -- @
 --
 -- @since 1.9.0.0
 optionalVoidAttrs
-  :: ([Attribute model action] -> View context model action)
+  :: ([Attribute model action] -> View context props model action)
   -> [Attribute model action] -- ^ Attributes to be added unconditionally
   -> Bool -- ^ A condition
   -> [Attribute model action] -- ^ Additional attributes to add if the condition is True
-  -> View context model action
+  -> View context props model action
 optionalVoidAttrs element attrs condition opts =
   case element attrs of
     VNode ns name _ kids de -> do
@@ -1144,18 +1201,18 @@ optionalVoidAttrs element attrs condition opts =
 -- | Conditionally adds children.
 --
 -- @
--- view :: Bool -> View context model action
+-- view :: Bool -> View context props model action
 -- view withChild = optionalChildren div_ [ id_ "txt" ] [] withChild [ "foo" ]
 -- @
 --
 -- @since 1.9.0.0
 optionalChildren
-  :: ([Attribute model action] -> [View context model action] -> View context model action)
+  :: ([Attribute model action] -> [View context props model action] -> View context props model action)
   -> [Attribute model action] -- ^ Attributes to be added unconditionally
-  -> [View context model action] -- ^ Children to be added unconditionally
+  -> [View context props model action] -- ^ Children to be added unconditionally
   -> Bool -- ^ A condition
-  -> [View context model action] -- ^ Additional children to add if the condition is True
-  -> View context model action
+  -> [View context props model action] -- ^ Additional children to add if the condition is True
+  -> View context props model action
 optionalChildren element attrs kids condition opts =
   case element attrs kids of
     VNode ns name _ _ de -> do
