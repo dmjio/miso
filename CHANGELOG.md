@@ -27,6 +27,13 @@ All notable changes to `miso` are documented here.
 
 ### Changed
 
+- **`vcontext` / `vprops` children are resolved before being built.** The
+  runtime now looks through these wrappers before deciding what to do with
+  a child, so one that resolves to an empty fragment is skipped like an
+  inline `fragment []`, and one that resolves to a plain node has its JS
+  handle freed after linking like any other node. `toHtml` likewise
+  resolves them before collapsing adjacent text nodes, matching the
+  client's hydration-time tree.
 - **`VCompStatic` now carries a `StaticMount context`.** The
   `StaticPtr (SomeStaticComponent props context)` / `props` pair that
   `VCompStatic` held inline is now the `StaticMount` existential, mirroring

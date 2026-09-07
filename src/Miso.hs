@@ -913,12 +913,15 @@
 --
 -- @
 -- 'mountWithProps_'
---   :: ('Eq' context, 'Eq' childModel, 'Eq' props)
+--   :: ('Eq' context, 'Eq' childModel, 'Eq' childProps)
 --   => 'MisoString'
---   -> props
---   -> t'Miso.Types.Component' context props childModel childAction
+--   -> childProps
+--   -> t'Miso.Types.Component' context childProps childModel childAction
 --   -> 'View' context props model action
 -- @
+--
+-- The child's @childProps@ are forgotten at the mount boundary, so the
+-- resulting 'View' lives in the /parent's/ @props@ (here @()@).
 --
 -- === Example: child reading parent-supplied props
 --

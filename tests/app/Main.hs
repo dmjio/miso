@@ -1911,8 +1911,19 @@ main = withJS $ do
           `shouldBe` "<div><div id=\"props-probe\">7</div></div>"
 
       it "toHtml resolves a bare view's vprops against ()" $ do
-        toHtml (div_ [] [ vprops (\() -> "unit") ])
+        -- 'const' leaves @props@ polymorphic, so this only compiles because
+        -- the ToHtml instance's @props ~ ()@ context pins it.
+        toHtml (div_ [] [ vprops (const "unit") ])
           `shouldBe` "<div>unit</div>"
+
+      it "a vprops resolving to an empty fragment contributes no child" $ do
+        let root :: App () Action
+            root = component () noop $ \_ _ _ ->
+              div_ [ id_ "props-wrap" ] [ "a", vprops (\() -> vfrag []), "b" ]
+        liftIO $ startApp mempty root
+        count <- liftIO $ fromJSValUnchecked =<< eval
+          ("document.getElementById('props-wrap').childNodes.length" :: MisoString)
+        count `shouldBe` (2 :: Int)
 
       it "toHtmlWith resolves vprops against the supplied props" $ do
         toHtmlWith (7 :: Int) (div_ [] [ vprops (text . ms) ])

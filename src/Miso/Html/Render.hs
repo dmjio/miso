@@ -196,7 +196,7 @@ renderBuilder props_ (VNode ns tag attrs children _) = mconcat
   , if tag `elem` selfClosing then "/>" else ">"
   , mconcat
     [ mconcat
-      [ foldMap (renderBuilder props_) (collapseSiblingTextNodes children)
+      [ foldMap (renderBuilder props_) (collapseSiblingTextNodes props_ children)
       , "</" <> fromMisoString tag <> ">"
       ]
     | tag `notElem` selfClosing
@@ -216,28 +216,33 @@ renderBuilder props_ (VNode ns tag attrs children _) = mconcat
               | ns == MATHML
               , x <- ["mglyph", "mprescripts", "none", "maligngroup", "malignmark" ]
               ]
-renderBuilder _ (VComp someComp) =
-  case someComp of
-    SomeComponent _key props comp_ ->
-      -- The app-global @context@ is read from 'globalContext'. For the common
-      -- @context ~ ()@ case the 'Miso.Lens.view' ignores it, so the initial @undefined@ is
-      -- never forced. But if a 'Miso.Lens.view' here inspects a non-trivial @context@,
-      -- SSR must seed the cell with 'Miso.setContext' before serializing, or
-      -- forcing @ctx@ raises an exception. See 'Miso.setContext' for details.
-      let ctx = unsafePerformIO (readIORef globalContext) in
-#ifdef SSR
-      renderBuilder props (view comp_ ctx props (getInitialComponentModel comp_))
-#else
-      renderBuilder props (view comp_ ctx props (model comp_))
-#endif
+renderBuilder _ (VComp someComp) = renderComp someComp
 renderBuilder _ (VCompStatic (StaticMount ptr props0)) =
   case deRefStaticPtr ptr of
-    SomeStaticComponent mk -> renderBuilder () (VComp (mk props0))
+    SomeStaticComponent mk -> renderComp (mk props0)
 renderBuilder props_ (VFrag _ kids) = foldMap (renderBuilder props_) kids
 renderBuilder props_ (VContext f) =
   let ctx = unsafePerformIO (readIORef globalContext) in
   renderBuilder props_ (f ctx)
 renderBuilder props_ (VProps f) = renderBuilder props_ (f props_)
+----------------------------------------------------------------------------
+-- | Render a mounted child component: its 'view' applied to the app-global
+-- @context@, the @props@ it was mounted with, and its initial (or hydrated)
+-- @model@. The enclosing component's @props@ play no part, which is why the
+-- @VComp@ \/ @VCompStatic@ arms of 'renderBuilder' ignore theirs.
+renderComp :: SomeComponent context -> Builder
+renderComp (SomeComponent _key props comp_) =
+  -- The app-global @context@ is read from 'globalContext'. For the common
+  -- @context ~ ()@ case the 'Miso.Lens.view' ignores it, so the initial @undefined@ is
+  -- never forced. But if a 'Miso.Lens.view' here inspects a non-trivial @context@,
+  -- SSR must seed the cell with 'Miso.setContext' before serializing, or
+  -- forcing @ctx@ raises an exception. See 'Miso.setContext' for details.
+  let ctx = unsafePerformIO (readIORef globalContext) in
+#ifdef SSR
+  renderBuilder props (view comp_ ctx props (getInitialComponentModel comp_))
+#else
+  renderBuilder props (view comp_ ctx props (model comp_))
+#endif
 ----------------------------------------------------------------------------
 renderAttrs :: Attribute model action -> Builder
 renderAttrs (ClassList classes) =
@@ -285,12 +290,22 @@ renderAttrs (Styles styles_) =
 -- | The browser can't distinguish between multiple text nodes
 -- and a single text node. So it will always parse a single text node
 -- this means we must collapse adjacent text nodes during hydration.
-collapseSiblingTextNodes :: [View context props model action] -> [View context props model action]
-collapseSiblingTextNodes [] = []
-collapseSiblingTextNodes (VText _ x : VText k y : xs) =
-  collapseSiblingTextNodes (VText k (x <> y) : xs)
-collapseSiblingTextNodes (x:xs) =
-  x : collapseSiblingTextNodes xs
+collapseSiblingTextNodes
+  :: props
+  -> [View context props model action]
+  -> [View context props model action]
+collapseSiblingTextNodes props_ = go
+  where
+    -- Look through the wrapper constructors first, so a 'VProps' \/ 'VContext'
+    -- that resolves to text is collapsed with its neighbours exactly as the
+    -- client does after 'buildVTree' has resolved it. Otherwise an empty
+    -- 'VText' behind a wrapper renders as a lone space that hydration
+    -- cannot reconcile.
+    go (VProps f : xs) = go (f props_ : xs)
+    go (VContext f : xs) = go (f (unsafePerformIO (readIORef globalContext)) : xs)
+    go (VText _ x : VText k y : xs) = go (VText k (x <> y) : xs)
+    go (x : xs) = x : go xs
+    go [] = []
 ----------------------------------------------------------------------------
 -- | Helper for turning JSON into Text
 -- Object, Array and Null are kind of non-sensical here

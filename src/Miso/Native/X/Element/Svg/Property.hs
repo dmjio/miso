@@ -47,7 +47,11 @@ contentRaw_ = textProp "content"
 -- 'Miso.Types.vprops' inside the content:
 --
 -- > withProps $ \Props { color } ->
--- >   svg_ [ content_ (circle_ [ fill_ color ] []) ] []
+-- >   svg_
+-- >     [ content_ $ Svg.svg_ [ textProp "xmlns" "http://www.w3.org/2000/svg" ]
+-- >         [ Svg.circle_ [ Svg.fill_ color ] [] ]
+-- >     ]
+-- >     []
 --
 content_ :: View context () model action -> Attribute model action
 content_ = textProp "content" . ms . toHtml
