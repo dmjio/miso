@@ -7,19 +7,20 @@ All notable changes to `miso` are documented here.
 ### Added
 
 - **`VProps` / `vprops` / `withProps`.** The `props` counterpart of
-  `VContext`: a `View` constructor that embeds a subtree built from a
+  `VContext`: an ambient accessor (not a node) wrapping a
   `props -> View context props model action` function, so a helper deep in a
   view tree can read the enclosing component's `props` without needing it
-  threaded through as an explicit argument. Resolved against the mounting
+  threaded through as an explicit argument. `ImplicitParams` or a `Reader`
+  could serve the same purpose, at the cost of a GHC-specific extension or a
+  monadic style for view code. Resolved against the mounting
   component's current `props` whenever the enclosing `View` is built or
   rendered (`toHtml` on a bare `View` uses `()`). `withProps` is a synonym
   for `vprops`.
 - **`toHtmlWith`.** `toHtmlWith :: props -> View context props model action
   -> ByteString` renders a `View` whose `props` type is not `()`, supplying
   the value a `VProps` node resolves against.
-- **`VContext` / `vcontext` / `withContext`.** A `View` constructor that
-  embeds a subtree built from a `context -> View context props model action`
-  function, so a helper deep in a view tree can read the app-global
+- **`VContext` / `vcontext` / `withContext`.** An ambient accessor (not a
+  node) wrapping a `context -> View context props model action` function, so a helper deep in a view tree can read the app-global
   `context` without needing it threaded through as an explicit argument.
   Resolved against the current `context` whenever the enclosing `View` is
   built or rendered; it does not itself trigger a redraw — that is still

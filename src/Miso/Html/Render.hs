@@ -53,11 +53,13 @@
 -- * __'Miso.Types.VComp'__ — recursively renders the sub-component's view
 --   using its initial (or hydrated) model.
 -- * __'Miso.Types.VFrag'__ — renders all children inline, no wrapper tag.
--- * __'Miso.Types.VContext'__ — resolved against the app-global @context@
---   (read from 'globalContext') and the result rendered in its place.
--- * __'Miso.Types.VProps'__ — resolved against the @props@ of the enclosing
---   component (@()@ for a bare 'Miso.Types.View' under 'toHtml'; the value
---   given to 'toHtmlWith' otherwise) and the result rendered in its place.
+-- * __'Miso.Types.VContext'__ (ambient accessor, not a node) — applied to
+--   the app-global @context@ (read from 'globalContext') and the result
+--   rendered in its place.
+-- * __'Miso.Types.VProps'__ (ambient accessor, not a node) — applied to the
+--   @props@ of the enclosing component (@()@ for a bare 'Miso.Types.View'
+--   under 'toHtml'; the value given to 'toHtmlWith' otherwise) and the
+--   result rendered in its place.
 -- * __Event handlers__ (@'Miso.Types.On'@) — silently dropped; they have
 --   no meaning in a static HTML string.
 -- * __Boolean properties__ (@disabled@, @checked@, @required@, …) — rendered

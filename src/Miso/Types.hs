@@ -69,8 +69,8 @@
 --
 -- = The View type
 --
--- @'View' context props model action@ is miso's virtual DOM tree. Its seven
--- constructors map to the node kinds the runtime handles:
+-- @'View' context props model action@ is miso's virtual DOM tree. Five of
+-- its constructors are the node kinds the runtime handles:
 --
 -- * 'VNode' — a regular DOM element (@\<div\>@, @\<svg\>@, …)
 -- * 'VText' — a text node
@@ -78,8 +78,17 @@
 -- * @VCompStatic@ — an embedded child t'Component' behind a 'GHC.StaticPtr.StaticPtr',
 --   so it can cross the Lynx dual-thread boundary (see 'vcomp' \/ 'mountStatic')
 -- * 'VFrag' — a group of siblings with no wrapper element, optionally keyed
--- * 'VContext' — a subtree resolved against the app-global @context@
--- * 'VProps' — a subtree resolved against the enclosing t'Component'\'s @props@
+--
+-- The remaining two are /ambient accessors/, not nodes. Each wraps a
+-- function that is applied — and the wrapper discarded — when the tree is
+-- built or rendered, so neither ever appears in the virtual DOM:
+--
+-- * 'VContext' — reads the app-global @context@
+-- * 'VProps' — reads the enclosing t'Component'\'s @props@
+--
+-- (@ImplicitParams@ or a @Reader@ could play the same role, at the cost of a
+-- GHC-specific extension or a monadic style for view code; see the
+-- 'VProps' section of the "Miso" module docs.)
 --
 -- The @props@ parameter is the @props@ type of the t'Component' whose
 -- 'view' produced the tree, exactly as @model@ is that component's @model@
@@ -462,13 +471,15 @@ data View context props model action
     -- in order to transfer context, props, event handlers etc.
   | VFrag (Maybe Key) [View context props model action]
   | VContext (context -> View context props model action)
-    -- ^ A subtree resolved against the app-global @context@ at the point this
-    -- 'View' is built or rendered, letting a helper read @context@ without
-    -- threading it through as an extra argument. See 'vcontext'.
+    -- ^ Ambient accessor for the app-global @context@ — not a node. The
+    -- function is applied, and this wrapper discarded, at the point the
+    -- enclosing 'View' is built or rendered, letting a helper read @context@
+    -- without threading it through as an extra argument. See 'vcontext'.
   | VProps (props -> View context props model action)
-    -- ^ A subtree resolved against the enclosing t'Component'\'s @props@ at the
-    -- point this 'View' is built or rendered, letting a helper read @props@
-    -- without threading it through as an extra argument. See 'vprops'.
+    -- ^ Ambient accessor for the enclosing t'Component'\'s @props@ — not a
+    -- node. The function is applied, and this wrapper discarded, at the point
+    -- the enclosing 'View' is built or rendered, letting a helper read
+    -- @props@ without threading it through as an extra argument. See 'vprops'.
 -----------------------------------------------------------------------------
 -- | Existential wrapper allowing nesting of t'Miso.Types.Component' in t'Miso.Types.Component'.
 --

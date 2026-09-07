@@ -223,7 +223,7 @@
 --   | 'VProps' (props -> 'View' context props model action)
 -- @
 --
--- 'VNode' and 'VText' have a one-to-one mapping from the virtual DOM to the physical DOM. The 'VComp', 'VFrag', 'VContext' and 'VProps' constructors are abstract (live only on the virtual DOM) and do not contain a reference to the physical DOM. The existential t'SomeComponent' is what allows embedding polymorphic t'Miso.Types.Component' within a 'View'.
+-- 'VNode' and 'VText' have a one-to-one mapping from the virtual DOM to the physical DOM. The 'VComp' and 'VFrag' constructors are abstract nodes (live only on the virtual DOM) and do not contain a reference to the physical DOM. 'VContext' and 'VProps' are not nodes at all: they are /ambient accessors/, resolved to one of the other constructors whenever the tree is built or rendered, and so never appear in the virtual DOM the runtime diffs. The existential t'SomeComponent' is what allows embedding polymorphic t'Miso.Types.Component' within a 'View'.
 --
 -- @
 -- data t'SomeComponent' context
@@ -326,13 +326,15 @@
 -- (usually nested) components whose 'Miso.Types.view' depends on the @context@
 -- and must refresh when it changes.
 --
--- = 'VContext' (Context nodes)
+-- = 'VContext' (ambient context)
 --
--- 'VContext' embeds a subtree built from a @context -> 'View' context props model
--- action@ function, so a helper deep in a view tree can read the app-global
--- @context@ without needing it threaded through as an explicit argument —
--- unlike 'Miso.Types.view' itself, which already receives @context@ as its
--- first parameter.
+-- 'VContext' is an /ambient accessor/ for the app-global @context@, not a
+-- node: it wraps a @context -> 'View' context props model action@ function
+-- that is applied, and the wrapper discarded, whenever the enclosing 'View'
+-- is built or rendered. It lets a helper deep in a view tree read @context@
+-- without needing it threaded through as an explicit argument — unlike
+-- 'Miso.Types.view' itself, which already receives @context@ as its first
+-- parameter.
 --
 -- @
 -- 'vcontext' $ \\theme -> 'Miso.Html.Element.span_' [] [ 'Miso.Types.text' (themeLabel theme) ]
@@ -346,14 +348,15 @@
 -- The smart constructors for 'VContext' are 'vcontext' and 'withContext'
 -- (a synonym).
 --
--- = 'VProps' (Props nodes)
+-- = 'VProps' (ambient props)
 --
--- 'VProps' is the @props@ counterpart of 'VContext': it embeds a subtree
--- built from a @props -> 'View' context props model action@ function, so a
--- helper deep in a view tree can read the enclosing t'Miso.Types.Component'\'s
--- @props@ without needing it threaded through as an explicit argument —
--- unlike 'Miso.Types.view' itself, which already receives @props@ as its
--- second parameter.
+-- 'VProps' is the @props@ counterpart of 'VContext': an ambient accessor
+-- for the enclosing t'Miso.Types.Component'\'s @props@. It wraps a
+-- @props -> 'View' context props model action@ function that is applied, and
+-- the wrapper discarded, whenever the enclosing 'View' is built or rendered,
+-- so a helper deep in a view tree can read @props@ without needing it
+-- threaded through as an explicit argument — unlike 'Miso.Types.view'
+-- itself, which already receives @props@ as its second parameter.
 --
 -- @
 -- 'vprops' $ \\Props { title } -> 'Miso.Html.Element.h1_' [] [ 'Miso.Types.text' title ]
@@ -374,6 +377,17 @@
 --
 -- The smart constructors for 'VProps' are 'vprops' and 'withProps'
 -- (a synonym).
+--
+-- == Why not @ImplicitParams@ or a @Reader@?
+--
+-- Both are alternatives for ambient values. @ImplicitParams@ (@?props@,
+-- @?context@) gives the same "read it where you need it" ergonomics, but is
+-- a GHC-specific extension whose constraints leak into every helper's
+-- signature. A @Reader@ (or @ReaderT@) over the 'View' would work on any
+-- compiler, but forces a monadic style onto view code that is otherwise
+-- plain applicative expressions and lists. 'VContext' and 'VProps' keep the
+-- 'View' DSL as ordinary Haskell values: the accessor is just another
+-- constructor, resolved by the runtime, with nothing to lift or thread.
 --
 -- = 'VComp' (Component nodes)
 --
