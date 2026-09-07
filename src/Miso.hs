@@ -576,7 +576,7 @@
 --
 -- data Item = Item { itemId, itemLabel :: 'MisoString' }
 --
--- renderItem :: Item -> 'View' context Action
+-- renderItem :: Item -> 'View' context props model Action
 -- renderItem item = 'Miso.Html.Element.li_' [] [ 'textKey' (itemId item) (itemLabel item) ]
 -- @
 --
