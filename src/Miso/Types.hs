@@ -155,7 +155,6 @@ module Miso.Types
   , ComponentId
   , SomeComponent (..)
   , SomeStaticComponent         (..)
-  , StaticMount                 (..)
   , EventHandler  (..)
   , View          (..)
   , Key           (..)
@@ -453,7 +452,7 @@ data View context props model action
     -- elements. See 'nodeDirectEvents'.
   | VText (Maybe Key) MisoString
   | VComp (SomeComponent context)
-  | VCompStatic (StaticMount context)
+  | forall childProps . VCompStatic (StaticPtr (SomeStaticComponent childProps context)) childProps
     -- ^ An embedded child t'Component'. The 'StaticPtr' holds only the closed
     -- @props -> component@ constructor ('SomeStaticComponent'); the @props@ value — often
     -- derived from the parent's @model@ — rides alongside and crosses the
@@ -482,21 +481,6 @@ data SomeComponent context
    = forall model action props . (Eq context, Eq model, Eq props)
 #endif
   => SomeComponent (Maybe Key) props (Component context props model action)
------------------------------------------------------------------------------
--- | A 'StaticPtr' to a closed @props -> component@ constructor
--- ('SomeStaticComponent'), paired with the runtime @props@ value to apply it
--- to. The pairing is what a @VCompStatic@ node carries, mirroring how
--- @VComp@ carries a t'SomeComponent'.
---
--- The existential hides the child's @props@ type; within it the @props@
--- value and the constructor are guaranteed to agree, because 'vcomp' (the
--- only public way to build one) requires them to. Only the constructor is
--- behind @static@ — the @props@ value is ordinary runtime data, so it may
--- depend on the parent's @model@.
---
--- @since 1.14.0.0
-data StaticMount context
-  = forall props . StaticMount (StaticPtr (SomeStaticComponent props context)) props
 -----------------------------------------------------------------------------
 -- | A closed @props -> component@ constructor, bundled with the serialization
 -- dictionaries needed to move @props@ across the dual-thread (Lynx) boundary.
@@ -759,7 +743,7 @@ vcomp
   :: childProps
   -> StaticPtr (SomeStaticComponent childProps context)
   -> View context props model action
-vcomp props ptr = VCompStatic (StaticMount ptr props)
+vcomp = flip VCompStatic
 -----------------------------------------------------------------------------
 -- | Like 'vcomp', but for a t'Miso.Types.Component' that takes no @props@.
 --

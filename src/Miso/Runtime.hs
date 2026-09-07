@@ -1250,7 +1250,7 @@ buildVTree
 buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ props_ model_ = \case
   VComp someComp -> buildComp Nothing someComp
 
-  VCompStatic (StaticMount ptr props) -> case deRefStaticPtr ptr of
+  VCompStatic ptr props -> case deRefStaticPtr ptr of
     SomeStaticComponent mk -> buildComp (Just (staticKey ptr)) (mk props)
 
   VNode ns tag attrs kids _directEvents -> do
