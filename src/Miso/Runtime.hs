@@ -329,7 +329,7 @@ initialize events _componentParentId hydrate isRoot live initialProps maybeKey _
   forM_ mount _componentSink
 #ifdef NATIVE
   -- Ship the child's initial @props@ so the MTS can rebuild the mirror
-  -- component by applying the @Props@ constructor recovered from the
+  -- component by pairing them with the 'SomeStaticComponent' recovered from the
   -- 'StaticKey'. The no-props case serializes @()@ (JSON @null@).
   when (bts && not isRoot) $ do
     -- 'mount()' runs synchronously mid-diff (see @ts/miso/dom.ts@
@@ -1251,7 +1251,7 @@ buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ props_ model_ = 
   VComp someComp -> buildComp Nothing someComp
 
   VCompStatic ptr props -> case deRefStaticPtr ptr of
-    SomeStaticComponent mk -> buildComp (Just (staticKey ptr)) (mk props)
+    SomeStaticComponent comp -> buildComp (Just (staticKey ptr)) (SomeComponent Nothing props comp)
 
   VNode ns tag attrs kids _directEvents -> do
     vnode_ <- createNode "vnode" ns tag
@@ -2329,15 +2329,7 @@ initComponent events hydrate live initialContext comp_@Component {..} key props 
 #endif
         atomicWriteIORef schedulerThread =<< forkIO (scheduler proxy)
 ----------------------------------------------------------------------------
--- | Placeholder passed to a @Props@ constructor when only the resulting
--- t'SomeComponent'\'s /types/ (@model@ \/ @props@ \/ @action@) are needed, not a
--- real @props@ value — e.g. to recover the @action@ type for decoding. Safe
--- because every @Props@ built by @mount_@ \/ @mountWithProps@ \/ @(+>)@ is lazy
--- in its @props@ argument, so applying it never forces this.
 #ifdef NATIVE
-propsTypeOnly :: props
-propsTypeOnly = error "Miso.Runtime: props forced during type-only Props application"
------------------------------------------------------------------------------
 -- | Used for bidirectional cross-thread communication.
 effectListener :: forall context jsval . (Eq context, ToJSVal jsval) => Proxy context -> jsval -> IO ()
 effectListener Proxy jsval = void $ do
@@ -2354,9 +2346,10 @@ effectListener Proxy jsval = void $ do
             Nothing ->
               FFI.consoleError "[effectListener]: staticPtr NOT found for effectStaticKey"
             Just ptr ->
+              -- The 'SomeStaticComponent' carries the child's dictionaries, so the
+              -- @action@ type (and its 'FromJSON') is in scope from the key alone.
               case deRefStaticPtr ptr of
-               SomeStaticComponent mk -> case mk propsTypeOnly of
-                SomeComponent _key _props (_ :: Component context props model action) ->
+                SomeStaticComponent (_ :: Component context props model action) ->
                   case fromJSON effectAction :: Result action of
                     Success action -> do
                       comps <- readIORef components
@@ -2480,8 +2473,7 @@ componentListener Proxy live (BTS ctx) = void $ do
                 FFI.consoleError "[COMPONENT]: staticPtr NOT found for componentStaticKey"
               Just ptr ->
                 case deRefStaticPtr ptr of
-                 SomeStaticComponent mk -> case mk propsTypeOnly of
-                  SomeComponent _key _props (comp_ :: Component context props model action) ->
+                  SomeStaticComponent (comp_ :: Component context props model action) ->
                     case componentComponentType of
                       MOUNT ->
                         -- The MTS paints the initial frame itself, so any child that is part

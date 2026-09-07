@@ -396,7 +396,6 @@ module Miso.Native
    , nativeWithContext
      -- * t'Miso.Types.Component' mounting
    , mountStatic
-   , mountStaticWithProps
      -- * Element
    , module Miso.Native.Element
      -- * FFI
@@ -406,8 +405,8 @@ module Miso.Native
    ) where
 -----------------------------------------------------------------------------
 import Miso.Runtime (initComponent)
-import Miso.Types (Events, SomeStaticComponent(..), SomeComponent(..), Hydrate(..))
-import Miso.Types (mountStatic, mountStaticWithProps)
+import Miso.Types (Events, SomeStaticComponent(..), Hydrate(..))
+import Miso.Types (mountStatic)
 -----------------------------------------------------------------------------
 import Miso.Native.Element
 import Miso.Native.FFI
@@ -436,10 +435,9 @@ native
   -> IO ()
 native events ptr =
   case deRefStaticPtr ptr of
-    SomeStaticComponent mk -> case mk () of
-      SomeComponent key props_ vcomp_ ->
-        initComponent events Draw False () vcomp_
-          key props_ (Just (staticKey ptr))
+    SomeStaticComponent vcomp_ ->
+      initComponent events Draw False () vcomp_
+        Nothing () (Just (staticKey ptr))
 -----------------------------------------------------------------------------
 -- | Like 'native', but the user can specify a global 'Miso.Effect.context' object.
 --
@@ -462,8 +460,7 @@ nativeWithContext
   -> IO ()
 nativeWithContext events context ptr =
   case deRefStaticPtr ptr of
-    SomeStaticComponent mk -> case mk () of
-      SomeComponent key props_ vcomp_ ->
-        initComponent events Draw False context vcomp_
-          key props_ (Just (staticKey ptr))
+    SomeStaticComponent vcomp_ ->
+      initComponent events Draw False context vcomp_
+        Nothing () (Just (staticKey ptr))
 -----------------------------------------------------------------------------

@@ -290,7 +290,7 @@ childSection count =
       , CSS.flexShrink 0
       ]
     ]
-    [ vcomp (ChildProps count) (static (mountStaticWithProps childComponent)) ]
+    [ vcomp (ChildProps count) (static (mountStatic childComponent)) ]
 
 opacityForCount :: Int -> MisoString
 opacityForCount n =

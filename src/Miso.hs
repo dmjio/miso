@@ -217,7 +217,7 @@
 --   = 'VNode' 'Namespace' 'Tag' ['Attribute' model action] ['View' context props model action] 'DirectEvents'
 --   | 'VText' (Maybe t'Key') 'MisoString'
 --   | 'VComp' ('SomeComponent' context)
---   | forall childProps . 'VCompStatic' (StaticPtr ('SomeStaticComponent' childProps context)) childProps
+--   | forall childProps . 'VCompStatic' (StaticPtr (t'SomeStaticComponent' childProps context)) childProps
 --   | 'VFrag' (Maybe t'Key') ['View' context props model action]
 --   | 'VContext' (context -> 'View' context props model action)
 --   | 'VProps' (props -> 'View' context props model action)
@@ -227,9 +227,17 @@
 --
 -- @
 -- data t'SomeComponent' context
---   = forall model action props . ('Eq' context, 'Eq' model, 'Eq' props)
+--   = forall model action props . 'MountConstraints' context props model action
 --   => t'SomeComponent' (Maybe t'Key') props ('Miso.Types.Component' context props model action)
+--
+-- data t'SomeStaticComponent' props context
+--   = forall model action . 'MountConstraints' context props model action
+--   => t'SomeStaticComponent' ('Miso.Types.Component' context props model action)
 -- @
+--
+-- t'SomeStaticComponent' is the closed value a static mount places behind
+-- @static@: the component plus its dictionaries, with @props@ left visible
+-- so 'vcomp' can check the runtime @props@ value against it.
 --
 -- The smart constructors:
 --
@@ -444,9 +452,7 @@
 --
 -- The 'GHC.StaticPtr.StaticKey' itself serves as the mount's identity, so
 -- there's no need for ('+>') or a manually-supplied t'Key' — use 'vcomp' \/
--- 'vcomp_' together with 'Miso.Types.mountStatic' (or
--- 'Miso.Types.mountStaticWithProps') to
--- build a 'VCompStatic'.
+-- 'vcomp_' together with 'Miso.Types.mountStatic' to build a 'VCompStatic'.
 --
 -- See "Miso.Native" for the entry points ('Miso.Native.native',
 -- 'Miso.Native.nativeWithContext') and full documentation of the dual-thread

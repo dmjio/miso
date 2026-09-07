@@ -28,6 +28,23 @@ All notable changes to `miso` are documented here.
 
 ### Changed
 
+- **`SomeStaticComponent` now holds the component; `propsTypeOnly` is
+  gone.** A static mount is the component itself bundled with its
+  dictionaries, `SomeStaticComponent props context` (existential over `model`
+  / `action`, `props` kept visible), rather than a `props -> SomeComponent`
+  function. `VCompStatic` holds `StaticPtr (SomeStaticComponent props context)`
+  next to the `props` value and the runtime builds the `SomeComponent` at
+  mount time. Because the dictionaries now sit in the value a `StaticKey`
+  resolves to, the Lynx main thread recovers the child's `action` and
+  `props` types from the key alone, so the lazy `propsTypeOnly` placeholder
+  and the "every constructor is lazy in props" invariant are gone.
+  `mountStatic` now accepts components with or without `props`;
+  `mountStaticWithProps` remains as a deprecated alias until 1.15. Code that
+  pattern-matches the `SomeStaticComponent` constructor directly sees its
+  payload change from a function to a `Component`. A new `MountConstraints`
+  synonym declares the shared dictionary set once for `SomeComponent` and
+  `SomeStaticComponent`. Call sites such as
+  `vcomp_ (static (mountStatic comp))` are unchanged.
 - **`vcontext` / `vprops` children are resolved before being built.** The
   runtime now looks through these wrappers before deciding what to do with
   a child, so one that resolves to an empty fragment is skipped like an
