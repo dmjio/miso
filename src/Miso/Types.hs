@@ -740,6 +740,10 @@ mount_ comp = VComp (SomeComponent Nothing () comp)
 -- @static (mountStatic child)@ site and travel inside the t'SomeStaticComponent',
 -- which is where the MTS recovers them from the 'GHC.StaticPtr.StaticKey'.
 --
+-- The 'GHC.StaticPtr.StaticKey' also serves as the node's diff key: two
+-- different @static@ sites at the same position are replaced, not reused,
+-- while siblings built from one site still diff positionally.
+--
 -- @
 -- div_ [] [ vcomp_ (static (mountStatic myComp)) ]
 -- @
