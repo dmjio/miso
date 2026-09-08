@@ -42,23 +42,26 @@ All notable changes to `miso` are documented here.
 
 ### Changed
 
-- **Breaking: the app-global `context` lives in each `ComponentState`, not a
-  global `IORef`.** `globalContext` is gone. Every mounted component carries
-  `_componentContext` (lens `componentContext`), copied from the component
-  that mounts it (the root from `startAppWithContext`) and rewritten across
-  the whole tree by `modifyContext` / `setContext` (via the new
-  `modifyContextAll`). Draws and the commit phase read the copy in the
-  component's own record, and `buildVTree` receives the context as an
-  explicit argument, so `VContext` is resolved exactly like `VProps`. The
-  scheduler's propagation pass is unchanged. Consequences: `setContext` now
-  writes to every mounted component and is no longer used for SSR;
-  `toHtmlWith` takes the `context` first
-  (`toHtmlWith ctx props model view`) and `ToHtml (View …)` requires
+- **Breaking: the app-global `context` cell is owned by the app, not by a
+  top-level CAF.** The `globalContext` `IORef` is gone. `initComponent` now
+  creates the cell and every mounted component holds a *reference* to it as
+  `_componentContext` (lens `componentContext`), so there is exactly one
+  value per running app: no component holds a copy, none can disagree, and
+  `modifyContext` / `setContext` (via the new `modifyContextAll`) are a single
+  `atomicModifyIORef'` on that cell rather than a rewrite of every component.
+  On Lynx each thread runs its own `initComponent` and so owns its own cell.
+  `buildVTree` receives the context as an explicit argument, so `VContext` is
+  resolved exactly like `VProps`, and the render path takes a plain value —
+  no effectful read inside rendering, and no `undefined`-seeded global to
+  force. The scheduler's propagation pass is unchanged. Consequences:
+  `setContext` writes through the shared cell, is a no-op before the app
+  starts, and is no longer used for SSR; `toHtmlWith` takes the `context`
+  first (`toHtmlWith ctx props model view`) and `ToHtml (View …)` requires
   `context ~ ()` alongside `props ~ ()` and `model ~ ()`; the Lynx SVG
   `content_` takes the `context`, `props` and `model` ahead of the content
-  `View`; `Miso.Reload`'s
-  stable pointer no longer carries a context cell and recovers the old
-  context from the root component's record.
+  `View`; `Miso.Reload`'s stable pointer no longer carries a context cell and
+  recovers the old context by reading the root component's cell, seeding a
+  fresh one on reload.
 - **`SomeStaticComponent` now holds the component; `propsTypeOnly` is
   gone.** A static mount is the component itself bundled with its
   dictionaries, `SomeStaticComponent props context` (existential over `model`

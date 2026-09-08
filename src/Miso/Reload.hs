@@ -240,16 +240,18 @@ liveWithContext events initialContext vcomp_ = do
 
           _oldState <- readIORef oldComponentsRef
           let oldModel = (_oldState IM.! topLevelComponentId) ^. componentModel
-              -- Every mounted component holds the same context; the root's copy
-              -- is the value to recover.
-              oldContext = (_oldState IM.! topLevelComponentId) ^. componentContext
               initialVComp = vcomp_ { model = oldModel }
+          -- There is one @context@ cell per app, reached through any component;
+          -- the root is the one guaranteed to be present. 'initComponent' below
+          -- creates a fresh cell seeded with this value rather than reusing the
+          -- old one, so the reloaded tree cannot share a cell with the old.
+          oldContext <- readIORef ((_oldState IM.! topLevelComponentId) ^. componentContext)
 
           -- Overwrite new components state with old components state.
           atomicWriteIORef components _oldState
 
           -- Perform initial draw, recovering the old model and the old context.
-          -- ('initComponent' stores the context in every component it mounts.)
+          -- ('initComponent' creates the new cell and seeds it with this value.)
           initComponent events Draw True oldContext initialVComp Nothing () Nothing
 
           -- Don't forget to flush (native mobile needs this too)
