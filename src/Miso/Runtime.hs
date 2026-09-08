@@ -1,5 +1,4 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE BangPatterns                #-}
 {-# LANGUAGE CPP                        #-}
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE LambdaCase                 #-}
@@ -799,17 +798,15 @@ setContext = modifyContextAll . const
 -- one atomic update of the 'components' map. This is how
 -- 'Miso.Effect.modifyContext' takes effect during the commit phase.
 --
--- The new @context@ is forced before it is stored: 'IM.map' only evaluates
--- each element to WHNF (the record constructor) and @_componentContext@ is a
--- lazy field, so without the bang a component that never redraws (e.g. one
--- with @useContext = False@) would accumulate one thunk per update and retain
--- every intermediate @context@.
+-- The new @context@ is forced as it is stored, because '_componentContext' is
+-- a strict field. That matters here: a component with @useContext = False@
+-- never redraws, so a lazy field would chain one thunk per update.
 --
 -- @since 1.14.0.0
 modifyContextAll :: (context -> context) -> IO ()
 modifyContextAll f =
   atomicModifyIORef' components $ \vcomps ->
-    (IM.map (\cs -> let !ctx = f (_componentContext cs) in cs { _componentContext = ctx }) vcomps, ())
+    (IM.map (\cs -> cs { _componentContext = f (_componentContext cs) }) vcomps, ())
 -----------------------------------------------------------------------------
 -- | The @context@ currently held by the given component's record. Returns
 -- the fallback if the component is no longer mounted (e.g. an effect in the
@@ -880,11 +877,18 @@ data ComponentState context props model action
   , _componentUseContext :: Bool
   -- ^ Whether this t'Miso.Types.Component' re-renders when the global
   --   @context@ changes.
-  , _componentContext :: context
+  , _componentContext :: !context
   -- ^ This t'Miso.Types.Component'\'s copy of the app-global @context@. Every
   --   mounted component holds the same value: it is copied from the parent
   --   at mount time and rewritten across the whole tree by 'setContext' \/
   --   'modifyContextAll'. Draws and the commit phase read this field.
+  --
+  --   Strict: 'modifyContextAll' rewrites this field on every component on
+  --   every context change, and a component with @useContext = False@ never
+  --   redraws, so a lazy field would accumulate one thunk per update and
+  --   retain every intermediate @context@. Forcing here keeps the parity
+  --   with the 'atomicModifyIORef'' that guarded the old global cell, and
+  --   covers every write site rather than just 'modifyContextAll'.
   , _componentMailbox :: Value -> Maybe action
   -- ^ Mailbox for asynchronous t'Miso.Types.Component' communication
   , _componentDraw :: model -> IO ()
