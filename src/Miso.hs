@@ -278,9 +278,8 @@
 -- * 'startAppWithContext' — the client entry point, replaces 'startApp'.
 -- * 'misoWithContext' \/ 'prerenderWithContext' — the hydrating counterparts
 --   of 'miso' \/ 'prerender', for prerendered pages.
--- * 'setContext' — seeds the value directly. Needed for __server-side
---   rendering__, where a 'View' is serialized to HTML without ever starting
---   the runtime.
+-- * For __server-side rendering__ no runtime is started, so there is no cell
+--   to seed: pass the @context@ to 'Miso.Html.Render.toHtmlWith' directly.
 -- * 'Miso.Reload.liveWithContext' \/ 'Miso.Reload.reloadWithContext' — the
 --   context-aware variants of 'Miso.Reload.live' \/ 'Miso.Reload.reload' for
 --   interactive (GHCi) development.
@@ -1297,10 +1296,9 @@
 --   'Miso.Html.ToHtml.toHtml' :: a -> 'Data.ByteString.Lazy.ByteString'
 -- @
 --
--- Instances are provided for @'View' c () () a@ and @['View' c () () a]@ — a
--- bare 'View' is static markup with no enclosing component to supply
--- @props@ or @model@, so both are fixed to @()@ (a 'View' left polymorphic
--- in them resolves to this):
+-- Instances are provided for @'View' () () () a@ and @['View' () () () a]@ — a
+-- bare 'View' has no running component to supply @context@, @props@, or @model@ so
+-- all are fixed to @()@ (a 'View' left polymorphic in them resolves to this):
 --
 -- @
 -- import "Miso.Html.Render" ('Miso.Html.Render.toHtml')
@@ -1309,13 +1307,12 @@
 -- pageHtml = 'Miso.Html.Render.toHtml' $ 'Miso.Html.Element.div_' [ 'Miso.Html.Property.id_' "root" ] [ "Hello, world!" ]
 -- @
 --
--- To render a 'View' whose @props@ or @model@ type is something else — e.g.
+-- To render a 'View' whose @context@, @props@ or @model@ type is something else — e.g.
 -- a component's 'Miso.Types.view' applied directly, or a subtree containing
--- 'vprops' or 'vmodel' — pass the @props@ and @model@ values with
--- 'Miso.Html.Render.toHtmlWith':
+-- 'vcontext' \/ 'vprops' \/ 'vmodel' — pass the values with 'Miso.Html.Render.toHtmlWith':
 --
 -- @
--- 'Miso.Html.Render.toHtmlWith' props model ('Miso.Types.view' comp ctx props model)
+-- 'Miso.Html.Render.toHtmlWith' ctx props model ('Miso.Types.view' comp ctx props model)
 -- @
 --
 -- This is typically wired into a Servant handler on the server using the
@@ -1817,29 +1814,6 @@ module Miso
   , App
   , startApp
   , startAppWithContext
-    -- | Seed the global React-style @context@ with a value, outside of the
-    -- normal 'startAppWithContext' flow.
-    --
-    -- 'startAppWithContext' already seeds the context before the first draw, so
-    -- client applications never call 'setContext' directly. It exists for
-    -- __server-side rendering__.
-    --
-    -- During SSR you typically serialize a t'Miso.Types.View' to HTML with
-    -- 'Miso.Html.Render.toHtml' without ever starting the runtime. In that path
-    -- the global context cell is still @undefined@. For the common
-    -- @context ~ ()@ case this is harmless — 'Miso.Types.view' ignores its
-    -- @context@ argument, so the thunk is never forced. But if any
-    -- t'Miso.Types.VComp' in the tree has a 'Miso.Types.view' that inspects a
-    -- non-trivial @context@, forcing it during rendering raises an exception.
-    -- Call 'setContext' first to seed the value SSR should render against:
-    --
-    -- @
-    -- main :: 'IO' ()
-    -- main = do
-    --   'setContext' Dark
-    --   Data.ByteString.Lazy.putStr ('Miso.Html.Render.toHtmlWith' () model (view Dark () model))
-    -- @
-  , setContext
   , renderApp
     -- ** Component
   , Component (..)
@@ -2128,8 +2102,8 @@ startApp events comp_ = initComponent events Draw False () comp_ Nothing () Noth
 -- data Theme = Light | Dark deriving (Show, Eq)
 -- @
 --
--- For server-side rendering (where the runtime is never started) seed the
--- context with 'setContext' before serializing the 'Miso.Types.View'.
+-- For server-side rendering (where the runtime is never started) pass the
+-- context to 'Miso.Html.Render.toHtmlWith' when serializing the 'Miso.Types.View'.
 --
 -- __Warning__: if compiling with the @native@ Cabal flag, use
 -- 'Miso.Native.nativeWithContext' instead of this — it mounts with no

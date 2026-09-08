@@ -628,8 +628,8 @@ svgSection = section "<svg> \8212 inline content via Miso.Svg DSL / load"
     svgArt
   ]
   where
-    -- 'content_' takes static markup: @props@ and @model@ fixed to @()@.
-    -- Content that reads the model goes through 'SvP.contentWith_' / 'svgWith_'.
+    -- 'content_' takes the @context@, @props@ and @model@ to render against.
+    -- Content that reads them ambiently goes through 'svgWith_'.
     svgArt :: View context props Model Action
     svgArt = Svg.svg_
       [ SvgP.viewBox_ "0 0 100 100"

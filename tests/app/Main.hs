@@ -1868,7 +1868,10 @@ main = withJS $ do
         liftIO $ startAppWithContext mempty (1 :: Int) contextProbe
         ComponentState {..} <- liftIO $
           ((IM.! 1) <$> readIORef components :: IO (ComponentState Int () () Action))
-        liftIO $ setContext (2 :: Int)
+        -- Write the shared cell directly rather than going through an API
+        -- that might also schedule propagation: this test is about the draw
+        -- re-resolving 'vcontext', which the redraw below triggers by hand.
+        liftIO (atomicWriteIORef _componentContext 2)
         liftIO (_componentDraw _componentModel)
         txt <- liftIO readProbe
         txt `shouldBe` ("2" :: MisoString)
@@ -1880,6 +1883,24 @@ main = withJS $ do
         liftIO (_componentSink BumpContext)
         updated <- liftIO $ pollFor propagationAttempts ((== ("2" :: MisoString)) <$> readProbe)
         updated `shouldBe` True
+
+      it "modifyContext is visible to every mounted component" $ do
+        liftIO $ startAppWithContext mempty (1 :: Int) (contextRoot False)
+        root <- liftIO $
+          ((IM.! 1) <$> readIORef components :: IO (ComponentState Int () () ContextAction))
+        liftIO (_componentSink root BumpContext)
+        synced <- liftIO $ pollFor propagationAttempts $ do
+          vcomps <- readIORef components
+          -- Every component shares one context cell, so this reads the same
+          -- ref once per component; it stays a whole-tree check.
+          and <$> traverse (fmap (== (2 :: Int)) . readIORef . _componentContext) (IM.elems vcomps)
+        synced `shouldBe` True
+        count <- liftIO (IM.size <$> readIORef components)
+        count `shouldBe` 2
+
+      it "toHtmlWith resolves vcontext against the supplied context" $ do
+        toHtmlWith (3 :: Int) () () (div_ [] [ vcontext (text . ms) ])
+          `shouldBe` "<div>3</div>"
 
       it "useContext = False does not redraw vcontext when the context changes" $ do
         liftIO $ startAppWithContext mempty (1 :: Int) (contextRoot False)
@@ -1961,7 +1982,7 @@ main = withJS $ do
         count `shouldBe` (2 :: Int)
 
       it "toHtmlWith resolves vprops against the supplied props" $ do
-        toHtmlWith (7 :: Int) () (div_ [] [ vprops (text . ms) ])
+        toHtmlWith () (7 :: Int) () (div_ [] [ vprops (text . ms) ])
           `shouldBe` "<div>7</div>"
 
     describe "VModel tests" $ do
@@ -2017,17 +2038,17 @@ main = withJS $ do
         count `shouldBe` (2 :: Int)
 
       it "toHtmlWith resolves vmodel against the supplied model" $ do
-        toHtmlWith () (7 :: Int) (div_ [] [ vmodel (text . ms) ])
+        toHtmlWith () () (7 :: Int) (div_ [] [ vmodel (text . ms) ])
           `shouldBe` "<div>7</div>"
 
       it "toHtmlWith collapses a vmodel text node with its neighbours" $ do
-        toHtmlWith () ("b" :: MisoString) (div_ [] [ "a", withModel text, "c" ])
+        toHtmlWith () () ("b" :: MisoString) (div_ [] [ "a", withModel text, "c" ])
           `shouldBe` "<div>abc</div>"
 
       it "toHtmlWith collapses text nodes inside a fragment, matching the client" $ do
         -- An empty model string behind 'withModel' must not become a lone
         -- space: hydrate.ts recurses into fragments before comparing text.
-        toHtmlWith () ("" :: MisoString) (div_ [] [ vfrag [ "a", withModel text, "c" ] ])
+        toHtmlWith () () ("" :: MisoString) (div_ [] [ vfrag [ "a", withModel text, "c" ] ])
           `shouldBe` "<div>ac</div>"
 
       it "toHtml collapses text nodes across a [View]" $ do

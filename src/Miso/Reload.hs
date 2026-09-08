@@ -75,7 +75,7 @@ import           Miso.DSL ((!), jsg, setField)
 import qualified Miso.FFI.Internal as FFI
 import           Miso.Types (Component(..), Events)
 import           Miso.String (MisoString)
-import           Miso.Runtime (componentModel, initComponent, topLevelComponentId, globalContext, Hydrate(..))
+import           Miso.Runtime (componentModel, componentContext, initComponent, topLevelComponentId, Hydrate(..))
 import           Miso.Runtime.Internal (components, schedulerThread)
 -----------------------------------------------------------------------------
 import           Miso.Lens
@@ -159,14 +159,14 @@ reloadWithContext
 reloadWithContext events initialContext comp = do
    exists <- x_exists
    when (exists == 1) $ do
-     (_, oldSchedulerRef, _) <- deRefStablePtr =<< x_get
+     (_, oldSchedulerRef) <- deRefStablePtr =<< x_get
      killThread =<< readIORef oldSchedulerRef
      x_clear
    clearPage
    -- 'reload' is a full reset: seed the freshly-supplied context.
-   -- ('initComponent' writes 'globalContext' with the value we pass it.)
+   -- ('initComponent' stores it in every component it mounts.)
    void (initComponent events Draw False initialContext comp Nothing () Nothing)
-   x_store =<< newStablePtr (components, schedulerThread, globalContext :: IORef context)
+   x_store =<< newStablePtr (components, schedulerThread)
 -----------------------------------------------------------------------------
 -- | Live reloading. Persists all t'Component' @model@ between successive GHCi reloads.
 --
@@ -235,31 +235,49 @@ liveWithContext events initialContext vcomp_ = do
           clearBody
 
           -- Deref old state, update new state, set pointer in C heap.
-          (oldComponentsRef, oldSchedulerRef, oldContextRef) <- deRefStablePtr =<< x_get
-          oldContext <- readIORef oldContextRef
+          (oldComponentsRef, oldSchedulerRef) <- deRefStablePtr =<< x_get
           killThread =<< readIORef oldSchedulerRef
 
           _oldState <- readIORef oldComponentsRef
           let oldModel = (_oldState IM.! topLevelComponentId) ^. componentModel
               initialVComp = vcomp_ { model = oldModel }
+          -- There is one @context@ cell per app, reached through any component;
+          -- the root is the one guaranteed to be present. 'initComponent' below
+          -- creates a fresh cell seeded with this value rather than reusing the
+          -- old one, so the reloaded tree cannot share a cell with the old.
+          oldContext <- readIORef ((_oldState IM.! topLevelComponentId) ^. componentContext)
 
           -- Overwrite new components state with old components state.
           atomicWriteIORef components _oldState
 
           -- Perform initial draw, recovering the old model and the old context.
-          -- ('initComponent' seeds 'globalContext' with the context we pass it.)
+          -- ('initComponent' creates the new cell and seeds it with this value.)
           initComponent events Draw True oldContext initialVComp Nothing () Nothing
+
+          -- 'cleanup' with @live = True@ deliberately keeps 'components', and
+          -- the fresh tree only overwrites the ids it reuses. A reloaded tree
+          -- smaller than the previous one therefore leaves entries behind that
+          -- still reference the PREVIOUS app's context cell, and the scheduler's
+          -- propagation pass would draw them against a context nothing updates
+          -- any more. Re-point every surviving entry at the new root's cell so
+          -- the whole map shares one cell again. This rewrites references, once
+          -- per reload — not values, and not per context change.
+          newState <- readIORef components
+          forM_ (IM.lookup topLevelComponentId newState) $ \root -> do
+            let newCell = root ^. componentContext
+            atomicModifyIORef' components $ \m ->
+              (IM.map (componentContext .~ newCell) m, ())
 
           -- Don't forget to flush (native mobile needs this too)
           FFI.flush
 
           -- Clear and set static ptr to use new state (new CAF state)
           x_clear
-          x_store =<< newStablePtr (components, schedulerThread, globalContext :: IORef context)
+          x_store =<< newStablePtr (components, schedulerThread)
         else do
           -- This means it is initial load, just store the pointer.
           void (initComponent events Draw False initialContext vcomp_ Nothing () Nothing)
-          x_store =<< newStablePtr (components, schedulerThread, globalContext :: IORef context)
+          x_store =<< newStablePtr (components, schedulerThread)
 -----------------------------------------------------------------------------
 clearPage, clearBody, clearHead :: IO ()
 clearPage = clearBody >> clearHead
