@@ -88,7 +88,6 @@ module Miso.Runtime
   , arrayBuffer
   -- ** Internal Component state
   , components
-  , setContext
   , modifyContextAll
   , schedulerThread
   , componentIds
@@ -779,37 +778,6 @@ globalQueue :: IORef (Queue action)
 {-# NOINLINE globalQueue #-}
 globalQueue = unsafePerformIO (newIORef emptyQueue)
 -----------------------------------------------------------------------------
--- | Overwrite the app-global @context@.
---
--- There is one @context@ cell per running app, created by 'initComponent' and
--- shared by reference through every t'ComponentState' as '_componentContext'.
--- Writing through it is therefore all it takes to change the @context@ the
--- whole tree sees: no component holds a copy, so none can disagree and none
--- can be missed. Draws and the commit phase read the same cell.
---
--- This only writes the value; it does not schedule a redraw. The scheduler's
--- context-propagation pass ('enqueueContextPropagation') is what redraws the
--- components with @useContext@ set after 'Miso.Effect.modifyContext'.
---
--- Server-side rendering never starts the runtime and has no components to
--- write to: pass the @context@ to 'Miso.Html.Render.toHtmlWith' instead.
---
--- __Note:__ this writes to the mounted tree, so calling it before the app
--- starts is a silent no-op — there is no cell left to seed. Pass the initial
--- @context@ to 'Miso.startAppWithContext' \/ 'Miso.hydrateWithContext'
--- instead.
---
--- @since 1.13.0.0
-setContext :: context -> IO ()
-setContext ctx = do
-  vcomps <- readIORef components
-  -- The root is the app's own component, so its cell is this app's cell.
-  -- Deliberately not "any element": after a hot reload 'components' can still
-  -- hold entries from the previous tree, and those point at the previous cell.
-  case IM.lookup topLevelComponentId vcomps of
-    Nothing -> pure ()
-    Just cs -> modifyContextAll (_componentContext cs) (const ctx)
------------------------------------------------------------------------------
 -- | Apply a function to the app-global @context@, in one atomic update of the
 -- shared cell. This is how 'Miso.Effect.modifyContext' takes effect during the
 -- commit phase.
@@ -894,8 +862,8 @@ data ComponentState context props model action
   -- ^ The app-global @context@ cell. There is exactly one per running app: it
   --   is created by 'initComponent' and shared __by reference__ with every
   --   component mounted under it, so two components cannot disagree and none
-  --   can hold a copy that goes stale. 'setContext' \/ 'modifyContextAll'
-  --   write through it; draws and the commit phase read it.
+  --   can hold a copy that goes stale. 'modifyContextAll' writes through it;
+  --   draws and the commit phase read it.
   --
   --   On Lynx each thread runs its own 'initComponent' and so owns its own
   --   cell, which is what lets a mirror component on the MTS obtain a

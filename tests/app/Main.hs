@@ -1868,7 +1868,10 @@ main = withJS $ do
         liftIO $ startAppWithContext mempty (1 :: Int) contextProbe
         ComponentState {..} <- liftIO $
           ((IM.! 1) <$> readIORef components :: IO (ComponentState Int () () Action))
-        liftIO $ setContext (2 :: Int)
+        -- Write the shared cell directly rather than going through an API
+        -- that might also schedule propagation: this test is about the draw
+        -- re-resolving 'vcontext', which the redraw below triggers by hand.
+        liftIO (atomicWriteIORef _componentContext 2)
         liftIO (_componentDraw _componentModel)
         txt <- liftIO readProbe
         txt `shouldBe` ("2" :: MisoString)

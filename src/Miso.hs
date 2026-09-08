@@ -278,10 +278,8 @@
 -- * 'startAppWithContext' — the client entry point, replaces 'startApp'.
 -- * 'misoWithContext' \/ 'prerenderWithContext' — the hydrating counterparts
 --   of 'miso' \/ 'prerender', for prerendered pages.
--- * 'setContext' — writes through the app's shared @context@ cell, without
---   scheduling a redraw. For __server-side rendering__, where no runtime is
---   started and so no cell exists, pass the @context@ to
---   'Miso.Html.Render.toHtmlWith' instead.
+-- * For __server-side rendering__ no runtime is started, so there is no cell
+--   to seed: pass the @context@ to 'Miso.Html.Render.toHtmlWith' directly.
 -- * 'Miso.Reload.liveWithContext' \/ 'Miso.Reload.reloadWithContext' — the
 --   context-aware variants of 'Miso.Reload.live' \/ 'Miso.Reload.reload' for
 --   interactive (GHCi) development.
@@ -1816,25 +1814,6 @@ module Miso
   , App
   , startApp
   , startAppWithContext
-    -- | Overwrite the React-style @context@, outside of the normal
-    -- 'Miso.Effect.modifyContext' flow.
-    --
-    -- There is one @context@ cell per running app, created by
-    -- 'startAppWithContext' and shared by reference with every component it
-    -- mounts, so no component holds a copy that could disagree. 'setContext'
-    -- writes through that cell but does not schedule a redraw, so client
-    -- applications normally never call it. Before the app starts there is no
-    -- cell, and it does nothing.
-    --
-    -- For __server-side rendering__ there is no runtime and nothing to write
-    -- to; pass the @context@ (and @props@) to 'Miso.Html.Render.toHtmlWith'
-    -- instead:
-    --
-    -- @
-    -- main :: 'IO' ()
-    -- main = Data.ByteString.Lazy.putStr ('Miso.Html.Render.toHtmlWith' Dark () model (view Dark () model))
-    -- @
-  , setContext
   , renderApp
     -- ** Component
   , Component (..)

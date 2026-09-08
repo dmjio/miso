@@ -40,6 +40,17 @@ All notable changes to `miso` are documented here.
   built or rendered; it does not itself trigger a redraw — that is still
   governed solely by `useContext`. `withContext` is a synonym for `vcontext`.
 
+### Removed
+
+- **Breaking: `setContext`.** It existed to seed the `globalContext` cell for
+  the `ToHtml` renderer, and that cell is gone: the renderer now takes the
+  `context` as an argument, `ToHtml` requires `context ~ ()`, and there is no
+  cell at all until an app starts, so the call it was added for is now a type
+  error rather than something you fix by calling it first. Seed the `context`
+  with `startAppWithContext` / `misoWithContext` / `prerenderWithContext`,
+  change it from `update` with `modifyContext` / `putContext`, and pass it to
+  `toHtmlWith` for server-side rendering.
+
 ### Changed
 
 - **Breaking: the app-global `context` cell is owned by the app, not by a
@@ -47,15 +58,14 @@ All notable changes to `miso` are documented here.
   creates the cell and every mounted component holds a *reference* to it as
   `_componentContext` (lens `componentContext`), so there is exactly one
   value per running app: no component holds a copy, none can disagree, and
-  `modifyContext` / `setContext` (via the new `modifyContextAll`) are a single
+  `modifyContext` (via the new `modifyContextAll`) is a single
   `atomicModifyIORef'` on that cell rather than a rewrite of every component.
   On Lynx each thread runs its own `initComponent` and so owns its own cell.
   `buildVTree` receives the context as an explicit argument, so `VContext` is
   resolved exactly like `VProps`, and the render path takes a plain value —
   no effectful read inside rendering, and no `undefined`-seeded global to
   force. The scheduler's propagation pass is unchanged. Consequences:
-  `setContext` writes through the shared cell, is a no-op before the app
-  starts, and is no longer used for SSR; `toHtmlWith` takes the `context`
+  `toHtmlWith` takes the `context`
   first (`toHtmlWith ctx props model view`) and `ToHtml (View …)` requires
   `context ~ ()` alongside `props ~ ()` and `model ~ ()`; the Lynx SVG
   `content_` takes the `context`, `props` and `model` ahead of the content
