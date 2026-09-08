@@ -40,11 +40,13 @@ contentRaw_ = textProp "content"
 --
 -- N.B. Must use "Miso.Svg" and 'Miso.Svg.Element.svg_' combinator.
 --
--- The content is serialised to a string when the attribute is built, so the
--- 'Miso.Types.View' has no running component to take @context@, @props@ or @model@
--- from and all are fixed to @()@. To draw from the component's @context@
--- @props@ or @model@, lift 'Miso.Types.withContext' \/ 'Miso.Types.withProps' \/ 'Miso.Types.withModel' above
--- the element instead of using the accessors inside the content:
+-- The content is serialised to a string when the attribute is built, so there
+-- is no running component to take @context@, @props@ or @model@ from: the
+-- caller supplies all three, and 'Miso.Types.vcontext' \/ 'Miso.Types.vprops'
+-- \/ 'Miso.Types.vmodel' inside the content resolve against those values. To
+-- draw from the enclosing component, obtain them with 'Miso.Types.withContext'
+-- \/ 'Miso.Types.withProps' \/ 'Miso.Types.withModel' above the element and
+-- pass them down:
 --
 -- > withContext $ \context -> withProps $ \props -> withModel $ \model ->
 -- >   svg_
@@ -55,7 +57,8 @@ contentRaw_ = textProp "content"
 -- >     []
 --
 -- or use 'Miso.Native.X.Element.Svg.svgWith_', which does that lifting and
--- lets the content itself use 'Miso.Types.vprops' \/ 'Miso.Types.vmodel'.
+-- lets the content itself use 'Miso.Types.vcontext' \/ 'Miso.Types.vprops' \/
+-- 'Miso.Types.vmodel'.
 --
 --
 -- @since 1.14.0.0

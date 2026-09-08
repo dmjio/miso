@@ -1298,7 +1298,7 @@
 --   'Miso.Html.ToHtml.toHtml' :: a -> 'Data.ByteString.Lazy.ByteString'
 -- @
 --
--- Instances are provided for @'View' () () m a@ and @['View' () () m a]@ — a
+-- Instances are provided for @'View' () () () a@ and @['View' () () () a]@ — a
 -- bare 'View' has no running component to supply @context@, @props@, or @model@ so
 -- all are fixed to @()@ (a 'View' left polymorphic in them resolves to this):
 --
