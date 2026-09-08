@@ -1,4 +1,5 @@
 -----------------------------------------------------------------------------
+{-# LANGUAGE BangPatterns                #-}
 {-# LANGUAGE CPP                        #-}
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE LambdaCase                 #-}
@@ -798,11 +799,17 @@ setContext = modifyContextAll . const
 -- one atomic update of the 'components' map. This is how
 -- 'Miso.Effect.modifyContext' takes effect during the commit phase.
 --
+-- The new @context@ is forced before it is stored: 'IM.map' only evaluates
+-- each element to WHNF (the record constructor) and @_componentContext@ is a
+-- lazy field, so without the bang a component that never redraws (e.g. one
+-- with @useContext = False@) would accumulate one thunk per update and retain
+-- every intermediate @context@.
+--
 -- @since 1.14.0.0
 modifyContextAll :: (context -> context) -> IO ()
 modifyContextAll f =
   atomicModifyIORef' components $ \vcomps ->
-    (IM.map (\cs -> cs { _componentContext = f (_componentContext cs) }) vcomps, ())
+    (IM.map (\cs -> let !ctx = f (_componentContext cs) in cs { _componentContext = ctx }) vcomps, ())
 -----------------------------------------------------------------------------
 -- | The @context@ currently held by the given component's record. Returns
 -- the fallback if the component is no longer mounted (e.g. an effect in the
