@@ -14,7 +14,6 @@
 module Miso.Native.X.Element.Svg.Property
   ( -- *** Property
     content_
-  , contentWith_
   , contentRaw_
   , src_
   ) where
@@ -51,9 +50,10 @@ contentRaw_ = textProp "content"
 -- 'Miso.Types.withProps' \/ 'Miso.Types.withModel' above the element so the
 -- values are closed over:
 --
--- > withModel $ \Model { color } ->
+-- > withProps $ \props -> withModel $ \model ->
 -- >   svg_
--- >     [ content_ $ Svg.svg_ [ textProp "xmlns" "http://www.w3.org/2000/svg" ]
+-- >     [ content_ props model $ Svg.svg_
+-- >         [ textProp "xmlns" "http://www.w3.org/2000/svg" ]
 -- >         [ Svg.circle_ [ Svg.fill_ color ] [] ]
 -- >     ]
 -- >     []
@@ -61,18 +61,10 @@ contentRaw_ = textProp "content"
 -- or use 'Miso.Native.X.Element.Svg.svgWith_', which does that lifting and
 -- lets the content itself use 'Miso.Types.vprops' \/ 'Miso.Types.vmodel'.
 --
-content_ :: View context () () action -> Attribute model action
-content_ = contentWith_ () ()
------------------------------------------------------------------------------
--- | 'content_' for a 'Miso.Types.View' that reads the enclosing component's
--- @props@ \/ @model@ (via 'Miso.Types.vprops' \/ 'Miso.Types.vmodel'):
--- the values are supplied explicitly and the content is rendered with
--- 'Miso.Html.Render.toHtmlWith'. 'Miso.Native.X.Element.Svg.svgWith_'
--- obtains them ambiently for you.
 --
 -- @since 1.14.0.0
-contentWith_ :: props -> model -> View context props model action -> Attribute model action
-contentWith_ props model = textProp "content" . ms . toHtmlWith props model
+content_ :: props -> model -> View context props model action -> Attribute model action
+content_ props model = textProp "content" . ms . toHtmlWith props model
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/svg.html#src
 --

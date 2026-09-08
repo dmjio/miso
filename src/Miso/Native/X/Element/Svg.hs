@@ -31,7 +31,7 @@ import Miso.Types (Attribute, View, withModel, withProps)
 -- component's @props@ and @model@, so the content may itself use
 -- 'Miso.Types.vprops' \/ 'Miso.Types.vmodel'. The values are obtained
 -- ambiently with 'Miso.Types.withProps' \/ 'Miso.Types.withModel' and passed
--- to 'contentWith_':
+-- to 'content_':
 --
 -- @
 -- svgWith_ [ 'Miso.CSS.style_' [ 'Miso.CSS.width' "100px" ] ] $
@@ -50,5 +50,5 @@ svgWith_
   -> View context props model action
 svgWith_ attrs content =
   withProps $ \props -> withModel $ \model ->
-    svg_ (contentWith_ props model content : attrs) []
+    svg_ (content_ props model content : attrs) []
 -----------------------------------------------------------------------------
