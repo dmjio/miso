@@ -2373,6 +2373,11 @@ initComponent events hydrate live initialContext comp_@Component {..} key props 
 #endif
       withJS $ do
         let proxy = Proxy :: Proxy context
+        -- The one @context@ cell for this app, created before anything that
+        -- needs it. Every component mounted below shares this reference, and
+        -- on Lynx so does the MTS wire listener, so there is a single value to
+        -- read and write and nothing has to go looking for it.
+        contextRef <- newIORef initialContext
 #ifdef NATIVE
         when bts $ do
           effectListener proxy =<< getMTSContext
@@ -2380,16 +2385,13 @@ initComponent events hydrate live initialContext comp_@Component {..} key props 
           void $ forkIO (sendReadyUntilAcked sk)
         when mts $ do
           effectListener proxy =<< getBTSContext
-          componentListener proxy live =<< getBTSContext
+          componentListener contextRef live =<< getBTSContext
           registerMainThreadDispatch
 #endif
         root <- Diff.mountElement (getMountPoint mountPoint)
         when web (cleanup proxy live root)
         -- dmj: top-level Component always responsive to Context changes
         let comp_' = comp_ { useContext = True }
-        -- The one @context@ cell for this app. Every component mounted below
-        -- shares this reference, so there is a single value to read and write.
-        contextRef <- newIORef initialContext
         void $ initialize events rootComponentId hydrate True live contextRef props key sk comp_' (pure root)
 #ifdef NATIVE
         -- The root mount (root + every nested component drawn synchronously above)
@@ -2518,8 +2520,8 @@ resolveNodeRef domRef = do
   nodes  <- jsg "runtime" >>= (! "nodes")
   nodes ! ms nodeId
 -----------------------------------------------------------------------------
-componentListener :: forall context . Eq context => Proxy context -> Bool -> BTS -> IO ()
-componentListener Proxy live (BTS ctx) = void $ do
+componentListener :: forall context . Eq context => IORef context -> Bool -> BTS -> IO ()
+componentListener contextRef live (BTS ctx) = void $ do
   FFI.addEventListener ctx "Miso.components" $ \msgEvent ->
     flip catch (\(e :: SomeException) ->
         FFI.consoleError ("[componentListener]: exception in callback: " <> ms (show e))) $ do
@@ -2580,24 +2582,18 @@ componentListener Proxy live (BTS ctx) = void $ do
                                 -- them on @MOUNT@), decoded at the @props@ type recovered above.
                                 case componentComponentPayload of
                                   Just pv | Success initProps <- (fromJSON pv :: Result props) ->
-                                    -- This thread owns one @context@ cell, created by its own
-                                    -- 'initComponent' at startup, and every component holds a
-                                    -- reference to it — so any mounted component reaches it. That
-                                    -- removes the parent lookup this used to do, which mattered:
-                                    -- 'postComponent' MOUNT fires at the end of 'initialize',
-                                    -- after 'initialDraw' has built the children, so a nested
-                                    -- subtree posts the child's MOUNT ahead of its parent's and
-                                    -- the parent was routinely absent here.
+                                    -- 'contextRef' is this thread's own @context@ cell, closed
+                                    -- over from 'initComponent'. Nothing is looked up: the cell
+                                    -- exists before this listener is installed, and the mirror
+                                    -- component shares it exactly as a locally built one does.
                                     --
-                                    -- 'contextRef' rather than 'ctx': the enclosing
-                                    -- 'componentListener' binds 'ctx' to the BTS JS context handle
-                                    -- it dispatches on, which this would otherwise shadow.
-                                    (fmap _componentContext . listToMaybe . IM.elems <$> readIORef components) >>= \case
-                                      Nothing ->
-                                        FFI.consoleError "[COMPONENT]: MOUNT arrived before this thread mounted its root"
-                                      Just contextRef ->
-                                        void $ initialize mempty componentComponentId Draw False live contextRef initProps
-                                          Nothing (Just (staticKey ptr)) comp_ (pure parent_)
+                                    -- This is also why the parent is not consulted. 'postComponent'
+                                    -- MOUNT fires at the end of 'initialize', after 'initialDraw'
+                                    -- has built the children, so a nested subtree posts the child's
+                                    -- MOUNT ahead of its parent's and the parent is routinely not
+                                    -- here yet.
+                                    void $ initialize mempty componentComponentId Draw False live contextRef initProps
+                                      Nothing (Just (staticKey ptr)) comp_ (pure parent_)
                                   _ ->
                                     FFI.consoleError "[COMPONENT]: MOUNT missing/invalid props payload"
                       UNMOUNT ->
