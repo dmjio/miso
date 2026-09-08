@@ -46,6 +46,7 @@ import           Miso.Native.X.Element.Input.Property   (placeholder_)
 import qualified Miso.Native.X.Element.Textarea.Event     as TaE
 import qualified Miso.Native.X.Element.Svg.Property       as SvP
 import qualified Miso.Native.X.Element.Svg.Event          as SvE
+import           Miso.Native.X.Element.Svg (svgWith_)
 import qualified Miso.Svg                                  as Svg
 import qualified Miso.Svg.Property                         as SvgP
 import qualified Miso.Native.X.Element.Viewpager.Event    as VpE
@@ -620,17 +621,16 @@ refreshSection rows = section "<refresh> \8212 pull down from the top to load ro
 -- well-formed standalone SVG document.
 svgSection :: View context props Model Action
 svgSection = section "<svg> \8212 inline content via Miso.Svg DSL / load"
-  [ svg_
-    [ SvP.content_ svgArt
-    , SvE.onLoad (Log "svg: load")
+  [ svgWith_
+    [ SvE.onLoad (Log "svg: load")
     , CSS.style_ [ CSS.width "100px", CSS.height "100px" ]
     ]
-    []
+    svgArt
   ]
   where
     -- 'content_' takes static markup: @props@ and @model@ fixed to @()@.
     -- Content that reads the model goes through 'SvP.contentWith_' / 'svgWith_'.
-    svgArt :: View context () () Action
+    svgArt :: View context props Model Action
     svgArt = Svg.svg_
       [ SvgP.viewBox_ "0 0 100 100"
       , textProp "xmlns" "http://www.w3.org/2000/svg"
