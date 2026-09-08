@@ -1,6 +1,7 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ExistentialQuantification  #-}
+{-# LANGUAGE ConstraintKinds            #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE DerivingStrategies         #-}
@@ -164,6 +165,7 @@ module Miso.Types
   , ComponentId
   , SomeComponent (..)
   , SomeStaticComponent         (..)
+  , MountConstraints
   , EventHandler  (..)
   , View          (..)
   , Key           (..)
@@ -463,12 +465,12 @@ data View context props model action
   | VComp (SomeComponent context)
   | forall childProps . VCompStatic (StaticPtr (SomeStaticComponent childProps context)) childProps
     -- ^ An embedded child t'Component'. The 'StaticPtr' holds only the closed
-    -- @props -> component@ constructor ('SomeStaticComponent'); the @props@ value — often
-    -- derived from the parent's @model@ — rides alongside and crosses the
-    -- dual-thread (Lynx) boundary as JSON. The no-props case uses @props ~ ()@
-    -- (see 'mountStatic'). This split is what lets a mount escape @static@\'s
-    -- closedness restriction. See 'vcomp'. This is necessary for lynx dual-thread
-    -- in order to transfer context, props, event handlers etc.
+    -- t'SomeStaticComponent' (the component plus its dictionaries, built by
+    -- 'mountStatic'); the @props@ value — often derived from the parent's
+    -- @model@ — rides alongside and crosses the dual-thread (Lynx) boundary
+    -- as JSON. The no-props case uses @props ~ ()@. This split is what lets a
+    -- mount escape @static@\'s closedness restriction: the component is
+    -- closed, the value need not be. See 'vcomp'.
   | VFrag (Maybe Key) [View context props model action]
   | VContext (context -> View context props model action)
     -- ^ Ambient accessor for the app-global @context@ — not a node. The
@@ -481,39 +483,49 @@ data View context props model action
     -- the enclosing 'View' is built or rendered, letting a helper read
     -- @props@ without threading it through as an extra argument. See 'vprops'.
 -----------------------------------------------------------------------------
+-- | The dictionaries a t'Component' must carry to be mounted as a child:
+-- equality for dirty-checking, plus (under the @native@ flag) JSON for
+-- shipping @model@, @props@ and @action@ across the Lynx dual-thread
+-- boundary. Shared by t'SomeComponent' and t'SomeStaticComponent' so the two
+-- can never drift apart.
+--
+-- @since 1.14.0.0
+#ifdef NATIVE
+type MountConstraints context props model action =
+  (Eq context, Eq props, Eq model, FromJSON props, ToJSON props, FromJSON model, ToJSON model, FromJSON action, ToJSON action)
+#else
+type MountConstraints context props model action =
+  (Eq context, Eq props, Eq model)
+#endif
+-----------------------------------------------------------------------------
 -- | Existential wrapper allowing nesting of t'Miso.Types.Component' in t'Miso.Types.Component'.
 --
 -- The @context@ type parameter is shared with the enclosing 'View', so every
 -- nested t'Miso.Types.Component' participates in the same app-global context.
 data SomeComponent context
-#ifdef NATIVE
-   = forall model action props . (FromJSON model, ToJSON model, FromJSON action, ToJSON action, FromJSON props, ToJSON props, Eq context, Eq model, Eq props)
-#else
-   = forall model action props . (Eq context, Eq model, Eq props)
-#endif
+  = forall model action props . MountConstraints context props model action
   => SomeComponent (Maybe Key) props (Component context props model action)
 -----------------------------------------------------------------------------
--- | A closed @props -> component@ constructor, bundled with the serialization
--- dictionaries needed to move @props@ across the dual-thread (Lynx) boundary.
+-- | A closed t'Component' bundled with its 'MountConstraints' dictionaries,
+-- ready to be placed behind @static@ and mounted with 'vcomp'.
 --
 -- Unlike t'SomeComponent', the @props@ type parameter is /preserved/ (not
--- existential). This lets @vcompWith@ statically require the runtime @props@
--- value to match the constructor, while the packed 'FromJSON' \/ 'ToJSON'
--- dictionaries are recovered on the MTS after 'unsafeLookupStaticPtr' derefs
--- the 'StaticPtr' — so the MTS can decode the wire @props@ at exactly this
--- type and rebuild the t'SomeComponent'.
+-- existential) so 'vcomp' can statically require the runtime @props@ value
+-- to match the component. Only @model@ and @action@ are hidden. Because the
+-- dictionaries sit here, in the value a 'StaticKey' resolves to, the Lynx
+-- main thread can decode a wire @props@ payload or an @action@ at the right
+-- type from the key alone — no @props@ value is needed first.
 --
--- Built with 'mount_' \/ 'mountWithProps' \/ '(+>)'; consumed by 'vcomp'.
+-- Built with 'mountStatic'; consumed by 'vcomp' \/ 'vcomp_'.
+--
+-- Up to 1.13 this held a @props -> 'SomeComponent' context@ function instead
+-- of the component itself, which forced the main thread to apply it to a
+-- placeholder just to reach the dictionaries; see 'mountStatic'.
 --
 -- @since 1.13.0.0
 data SomeStaticComponent props context
-#ifdef NATIVE
-  = (Eq props, FromJSON props, ToJSON props)
-  => SomeStaticComponent (props -> SomeComponent context)
-#else
-  = Eq props
-  => SomeStaticComponent (props -> SomeComponent context)
-#endif
+  = forall model action . MountConstraints context props model action
+  => SomeStaticComponent (Component context props model action)
 -----------------------------------------------------------------------------
 -- | Create a fragment (keyless).
 --
@@ -589,35 +601,18 @@ infixr 0 +>
 #endif
 key +> child = VComp (SomeComponent (Just (toKey key)) () child)
 -----------------------------------------------------------------------------
--- | t'Miso.Types.Component' mounting combinator.
---
--- Note: only use this if you're certain you won't be diffing two t'Miso.Types.Component'
--- against each other. Otherwise, you will need a key to distinguish between
--- the two t'Miso.Types.Component', to ensure unmounting and mounting occurs.
---
--- It takes only the @component@ and yields a closed @props -> component@
--- constructor ('SomeStaticComponent') suitable for @static@ — the @props@ value
--- is /not/ supplied here, but later at the 'vcomp' site, so a parent can pass
--- runtime @props@ (e.g. derived from its own @model@) without an explicit lambda:
---
--- Static mounting automatically provides the @key_@ at compile time (via 'GHC.StaticPtr.staticKey').
--- So the user doesn't need to use the '+>' combinators.
---
--- @
--- vcomp (model ^. field) (static (mountStaticWithProps child))
--- @
+-- | __Deprecated.__ Synonym for 'mountStatic', which now handles components
+-- with and without @props@ alike (the @props@ value is supplied at the
+-- 'vcomp' site either way). Will be removed in 1.15.
 --
 -- @since 1.13.0.0
 mountStaticWithProps
-#ifdef NATIVE
-  :: (Eq context, Eq props, Eq model, FromJSON model, ToJSON model, FromJSON action, ToJSON action, FromJSON props, ToJSON props)
-#else
-  :: (Eq context, Eq props, Eq model)
-#endif
+  :: MountConstraints context props model action
   => Component context props model action
   -- ^ t'Component' to mount
   -> SomeStaticComponent props context
-mountStaticWithProps child = SomeStaticComponent (\props -> SomeComponent Nothing props child)
+mountStaticWithProps = SomeStaticComponent
+{-# DEPRECATED mountStaticWithProps "Use mountStatic; it now accepts components with props. This alias will be removed in 1.15." #-}
 -----------------------------------------------------------------------------
 -- | t'Miso.Types.Component' mounting combinator, with @props@ supplied directly.
 --
@@ -670,32 +665,32 @@ mountWithProps_
 #endif
 mountWithProps_ key props child = VComp (SomeComponent (Just (Key key)) props child)
 -----------------------------------------------------------------------------
--- | Static t'Miso.Types.Component' mounting combinator, for a component
--- that takes no @props@.
+-- | Static t'Miso.Types.Component' mounting combinator.
 --
--- Produces a @'SomeStaticComponent' () context@ to be wrapped in @static@ and
--- turned into a 'View' by 'vcomp_'. Unlike 'mount_', no key is needed: the
--- compile-time 'GHC.StaticPtr.StaticKey' already supplies identity, so this is
--- safe to diff against another t'Miso.Types.Component'.
+-- Wraps the component in a t'SomeStaticComponent' — the closed value to place
+-- behind @static@ — and discharges its 'MountConstraints' dictionaries
+-- there. The @props@ value is /not/ supplied here but later, at the 'vcomp'
+-- site, so a parent can pass runtime @props@ (e.g. derived from its own
+-- @model@) without an explicit lambda; a component with @props ~ ()@ pairs
+-- with 'vcomp_'. Unlike 'mount_', no key is needed: the compile-time
+-- 'GHC.StaticPtr.StaticKey' already supplies identity, so this is safe to
+-- diff against another t'Miso.Types.Component'.
 --
 -- To opt the child into app-global @context@ updates, set the field directly:
 -- @mountStatic comp { useContext = True }@.
 --
 -- @
 -- div_ [] [ vcomp_ (static (mountStatic myComp)) ]
+-- div_ [] [ vcomp (model ^. field) (static (mountStatic child)) ]
 -- @
 --
 -- @since 1.13.0.0
 mountStatic
-#ifdef NATIVE
-  :: (Eq context, Eq model, FromJSON model, ToJSON model, FromJSON action, ToJSON action)
-#else
-  :: (Eq context, Eq model)
-#endif
-  => Component context () model action
+  :: MountConstraints context props model action
+  => Component context props model action
   -- ^ t'Component' to mount
-  -> SomeStaticComponent () context
-mountStatic child = SomeStaticComponent (const (SomeComponent Nothing () child))
+  -> SomeStaticComponent props context
+mountStatic = SomeStaticComponent
 -----------------------------------------------------------------------------
 -- | t'Miso.Types.Component' mounting combinator.
 --
@@ -735,15 +730,15 @@ mount_ comp = VComp (SomeComponent Nothing () comp)
 --
 -- Smart constructor for @VComp@, mirroring 'vnode' \/ 'vtext' \/ 'vfrag'.
 --
--- The 'StaticPtr' wraps only the closed @props -> component@ constructor (built
--- with 'mountStatic' or 'mountStaticWithProps'); it must use the @static@ keyword
--- and refer to a closed, top-level binding. The @props@ value is supplied
--- /separately/ — so it may depend on the parent's @model@ — and is serialized
--- across the dual-thread boundary. The no-props case passes @()@.
+-- The 'StaticPtr' wraps only the closed t'SomeStaticComponent' (built with
+-- 'mountStatic'); it must use the @static@ keyword and refer to a closed,
+-- top-level binding. The @props@ value is supplied /separately/ — so it may
+-- depend on the parent's @model@ — and is serialized across the dual-thread
+-- boundary. The no-props case passes @()@.
 --
--- No class constraints appear here: the serialization dictionaries are
--- discharged at the @static (mount_ child)@ site and recovered on the MTS from
--- the @Props@.
+-- No class constraints appear here: the dictionaries are discharged at the
+-- @static (mountStatic child)@ site and travel inside the t'SomeStaticComponent',
+-- which is where the MTS recovers them from the 'GHC.StaticPtr.StaticKey'.
 --
 -- @
 -- div_ [] [ vcomp_ (static (mountStatic myComp)) ]
@@ -758,8 +753,8 @@ vcomp = flip VCompStatic
 -----------------------------------------------------------------------------
 -- | Like 'vcomp', but for a t'Miso.Types.Component' that takes no @props@.
 --
--- @'vcomp_' = 'vcomp' ()@ — pair it with 'mountStatic', which produces a
--- @'SomeStaticComponent' () context@.
+-- @'vcomp_' = 'vcomp' ()@ — pair it with 'mountStatic' on a component whose
+-- @props@ are @()@, which produces a @'SomeStaticComponent' () context@.
 --
 -- @
 -- div_ [] [ vcomp_ (static (mountStatic myComp)) ]

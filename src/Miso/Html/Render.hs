@@ -221,7 +221,7 @@ renderBuilder props_ (VNode ns tag attrs children _) = mconcat
 renderBuilder _ (VComp someComp) = renderComp someComp
 renderBuilder _ (VCompStatic ptr props0) =
   case deRefStaticPtr ptr of
-    SomeStaticComponent mk -> renderComp (mk props0)
+    SomeStaticComponent comp_ -> renderComp (SomeComponent Nothing props0 comp_)
 renderBuilder props_ (VFrag _ kids) = foldMap (renderBuilder props_) kids
 renderBuilder props_ (VContext f) =
   let ctx = unsafePerformIO (readIORef globalContext) in
