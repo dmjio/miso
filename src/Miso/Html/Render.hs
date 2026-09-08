@@ -147,10 +147,12 @@ renderView = toHtmlWith () () ()
 --
 -- This is the general form of 'toHtml', for a 'View' whose @context@, @props@
 -- or @model@ type is not @()@ — e.g. a component's 'Miso.Types.view' applied
--- directly:
+-- directly. The @view@ itself takes only the @model@; the @context@ and
+-- @props@ given here are what its 'Miso.Types.VContext' \/
+-- 'Miso.Types.VProps' accessors resolve against:
 --
 -- @
--- toHtmlWith ctx props model (view comp ctx props model)
+-- toHtmlWith ctx props model (view comp model)
 -- @
 --
 -- @since 1.14.0.0
@@ -248,17 +250,18 @@ renderBuilder ctx_ props_ model_ (VContext f) = renderBuilder ctx_ props_ model_
 renderBuilder ctx_ props_ model_ (VProps f) = renderBuilder ctx_ props_ model_ (f props_)
 renderBuilder ctx_ props_ model_ (VModel f) = renderBuilder ctx_ props_ model_ (f model_)
 ----------------------------------------------------------------------------
--- | Render a mounted child component: its 'view' applied to the app-global
--- @context@, the @props@ it was mounted with, and its initial (or hydrated)
--- @model@. The enclosing component's @props@ play no part, which is why the
--- @VComp@ \/ @VCompStatic@ arms of 'renderBuilder' ignore theirs; the
--- @context@ is shared by every component and is passed straight through.
+-- | Render a mounted child component: its 'view' applied to its initial (or
+-- hydrated) @model@, rendered against the app-global @context@ and the
+-- @props@ it was mounted with. The enclosing component's @props@ play no
+-- part, which is why the @VComp@ \/ @VCompStatic@ arms of 'renderBuilder'
+-- ignore theirs; the @context@ is shared by every component and is passed
+-- straight through.
 renderComp :: context -> SomeComponent context -> Builder
 renderComp ctx (SomeComponent _key props comp_) =
 #ifdef SSR
-  let m = getInitialComponentModel comp_ in renderBuilder ctx props m (view comp_ ctx props m)
+  let m = getInitialComponentModel comp_ in renderBuilder ctx props m (view comp_ m)
 #else
-  renderBuilder ctx props (model comp_) (view comp_ ctx props (model comp_))
+  renderBuilder ctx props (model comp_) (view comp_ (model comp_))
 #endif
 ----------------------------------------------------------------------------
 renderAttrs :: Attribute model action -> Builder

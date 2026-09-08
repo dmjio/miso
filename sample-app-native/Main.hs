@@ -178,8 +178,8 @@ updateModel = \case
 animId :: MisoString
 animId = "#anim-gif"
 -----------------------------------------------------------------------------
-viewModel :: Theme -> () -> Model -> View Theme () Model Action
-viewModel theme _ Model{..} = view_
+viewModel :: Model -> View Theme () Model Action
+viewModel Model{..} = view_
   [ CSS.style_
     [ CSS.height "100vh"
     , CSS.width "100%"
@@ -218,7 +218,7 @@ viewModel theme _ Model{..} = view_
     , webviewSection
     , overlaySection overlayOpen
     , mainThreadSection
-    , mountedComponentSection theme (length eventLog)
+    , mountedComponentSection (length eventLog)
     ]
   ]
 -----------------------------------------------------------------------------
@@ -800,8 +800,11 @@ badgeComponent = (component (BadgeModel 0) badgeUpdate badgeView) { useContext =
 badgeUpdate :: BadgeAction -> Effect Theme BadgeProps BadgeModel BadgeAction
 badgeUpdate BadgeTap = modify $ \m -> m { badgeTaps = badgeTaps m + 1 }
 -----------------------------------------------------------------------------
-badgeView :: Theme -> BadgeProps -> BadgeModel -> View Theme BadgeProps BadgeModel BadgeAction
-badgeView theme BadgeProps{..} BadgeModel{..} = view_
+badgeView :: BadgeModel -> View Theme BadgeProps BadgeModel BadgeAction
+badgeView BadgeModel{..} =
+  withContext $ \theme ->
+  withProps $ \BadgeProps{..} ->
+  view_
   [ VE.onTap BadgeTap
   , CSS.style_
     [ CSS.width "100%", CSS.height "56px"
@@ -817,9 +820,9 @@ badgeView theme BadgeProps{..} BadgeModel{..} = view_
 -- | Mounts 'badgeComponent' statically with props derived from the parent
 -- model, and a "toggle theme" control above it so context propagation into
 -- the child is visible: tapping it flips the badge's own colors.
-mountedComponentSection :: Theme -> Int -> View Theme () Model Action
-mountedComponentSection theme eventCount = section "vcomp \8212 statically-mounted child (props / context / model)"
-  [ view_
+mountedComponentSection :: Int -> View Theme () Model Action
+mountedComponentSection eventCount = section "vcomp \8212 statically-mounted child (props / context / model)"
+  [ withContext $ \theme -> view_
     [ VE.onTap ToggleTheme
     , CSS.style_
       [ CSS.height "36px", CSS.marginBottom "6px"

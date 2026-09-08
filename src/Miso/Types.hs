@@ -278,9 +278,18 @@ data Component context props model action
   --   @localStorage@ via 'Miso.Storage.getLocalStorage').
   , update :: action -> Effect context props model action
   -- ^ Updates model, optionally providing effects.
-  , view :: context -> props -> model -> View context props model action
-  -- ^ Draws 'View'. Receives the app-global @context@, the @props@ passed by the
-  --   parent, and the current @model@.
+  , view :: model -> View context props model action
+  -- ^ Draws 'View'. Receives the current @model@.
+  --
+  --   The app-global @context@ and the @props@ passed by the parent are /not/
+  --   arguments: read them where they are needed with the ambient accessors
+  --   'withContext' \/ 'vcontext' and 'withProps' \/ 'vprops'. A @view@ that
+  --   ignored them no longer has to name them, and one that uses them reads
+  --   them at the point of use rather than threading them down by hand.
+  --
+  --   @
+  --   view m = div_ [] [ withContext $ \\theme -> ... , text (ms m) ]
+  --   @
   , useContext :: Bool
   -- ^ Whether this t'Miso.Types.Component' should be re-rendered when the
   --   app-global @context@ changes (see 'Miso.Effect.modifyContext').
@@ -401,7 +410,7 @@ component
   -- ^ model
   -> (action -> Effect context props model action)
   -- ^ update
-  -> (context -> props -> model -> View context props model action)
+  -> (model -> View context props model action)
   -- ^ view
   -> Component context props model action
 component m u v = Component
@@ -819,9 +828,10 @@ mountUseContext comp = VComp (SomeComponent Nothing () comp { useContext = True 
 -- | Create a new 'Miso.Types.VContext'.
 --
 -- Embeds a subtree that is resolved against the app-global @context@ at the
--- point the enclosing 'View' is built or rendered, so a helper deep in a
--- view tree can read @context@ without needing it threaded through as an
--- explicit argument.
+-- point the enclosing 'View' is built or rendered, so any part of a view tree
+-- can read @context@ without needing it threaded through as an explicit
+-- argument. Since 'view' takes only the @model@, this is /the/ way to read
+-- the @context@ during render.
 --
 -- @
 -- vcontext $ \\theme -> div_ [] [ text (themeLabel theme) ]
@@ -847,10 +857,10 @@ withContext = vcontext
 -- | Create a new 'Miso.Types.VProps'.
 --
 -- Embeds a subtree that is resolved against the enclosing t'Component'\'s
--- @props@ at the point the enclosing 'View' is built or rendered, so a helper
--- deep in a view tree can read @props@ without needing it threaded through as
--- an explicit argument — unlike 'view' itself, which already receives @props@
--- as its second parameter.
+-- @props@ at the point the enclosing 'View' is built or rendered, so any part
+-- of a view tree can read @props@ without needing it threaded through as an
+-- explicit argument. Since 'view' takes only the @model@, this is /the/ way
+-- to read the @props@ during render.
 --
 -- @
 -- vprops $ \\Props { title } -> h1_ [] [ text title ]
@@ -882,8 +892,8 @@ withProps = vprops
 -- Embeds a subtree that is resolved against the enclosing t'Component'\'s
 -- @model@ at the point the enclosing 'View' is built or rendered, so a helper
 -- deep in a view tree can read @model@ without needing it threaded through as
--- an explicit argument — unlike 'view' itself, which already receives @model@
--- as its third parameter.
+-- an explicit argument — unlike 'view' itself, which receives the @model@ as
+-- its only parameter.
 --
 -- @
 -- vmodel $ \\Model { count } -> span_ [] [ text (ms count) ]

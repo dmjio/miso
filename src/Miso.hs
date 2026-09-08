@@ -286,13 +286,14 @@
 --
 -- __Reading__ (in 'Miso.Types.view'):
 --
--- The current @context@ is delivered as the __first argument__ to every
--- t'Component'\'s 'Miso.Types.view' function, so any component — however deeply
--- nested — can read it synchronously during render:
+-- 'Miso.Types.view' takes only the @model@. The current @context@ is read
+-- /ambiently/, with 'withContext' \/ 'vcontext', at the point in the tree
+-- that needs it — so any component, however deeply nested, can read it
+-- synchronously during render without threading it down:
 --
 -- @
--- view :: context -> props -> model -> 'View' context props model action
--- view ctx _props _model = ...
+-- view :: model -> 'View' context props model action
+-- view _model = 'withContext' $ \\ctx -> ...
 -- @
 --
 -- __Reading__ (in 'Miso.Types.update'):
@@ -340,10 +341,10 @@
 -- 'VContext' is an /ambient accessor/ for the app-global @context@, not a
 -- node: it wraps a @context -> 'View' context props model action@ function
 -- that is applied, and the wrapper discarded, whenever the enclosing 'View'
--- is built or rendered. It lets a helper deep in a view tree read @context@
--- without needing it threaded through as an explicit argument — unlike
--- 'Miso.Types.view' itself, which already receives @context@ as its first
--- parameter.
+-- is built or rendered. It lets any part of a view tree read @context@
+-- without needing it threaded through as an explicit argument. Since
+-- 'Miso.Types.view' takes only the @model@, this is /the/ way to read the
+-- @context@ during render.
 --
 -- @
 -- 'vcontext' $ \\theme -> 'Miso.Html.Element.span_' [] [ 'Miso.Types.text' (themeLabel theme) ]
@@ -363,9 +364,9 @@
 -- for the enclosing t'Miso.Types.Component'\'s @props@. It wraps a
 -- @props -> 'View' context props model action@ function that is applied, and
 -- the wrapper discarded, whenever the enclosing 'View' is built or rendered,
--- so a helper deep in a view tree can read @props@ without needing it
--- threaded through as an explicit argument — unlike 'Miso.Types.view'
--- itself, which already receives @props@ as its second parameter.
+-- so any part of a view tree can read @props@ without needing it threaded
+-- through as an explicit argument. Since 'Miso.Types.view' takes only the
+-- @model@, this is /the/ way to read the @props@ during render.
 --
 -- @
 -- 'vprops' $ \\Props { title } -> 'Miso.Html.Element.h1_' [] [ 'Miso.Types.text' title ]
@@ -407,7 +408,7 @@
 -- the wrapper discarded, whenever the enclosing 'View' is built or rendered,
 -- so a helper deep in a view tree can read @model@ without needing it
 -- threaded through as an explicit argument — unlike 'Miso.Types.view'
--- itself, which already receives @model@ as its third parameter.
+-- itself, which receives the @model@ as its only parameter.
 --
 -- @
 -- 'vmodel' $ \\Model { count } -> 'Miso.Html.Element.span_' [] [ 'Miso.Types.text' ('Miso.String.ms' count) ]
@@ -556,8 +557,8 @@
 --   Highlight domRef -> 'io_' $ do
 --     ['Miso.FFI.QQ.js'| hljs.highlight(${domRef}) |]
 --
--- view :: context -> props -> model -> 'View' context props model Action
--- view _ _ x =
+-- view :: model -> 'View' context props model Action
+-- view _ =
 --   'Miso.Html.Element.code_'
 --   [ 'onCreatedWith' Highlight
 --   ]
@@ -911,18 +912,21 @@
 --
 -- === Props in 'Miso.Types.view'
 --
--- The 'Miso.Types.view' field of a t'Miso.Types.Component' takes the app-global @context@ as
--- its first argument and the @props@ as its second:
+-- The 'Miso.Types.view' field of a t'Miso.Types.Component' takes only the
+-- @model@; the @props@ are read where they are needed with 'withProps' \/
+-- 'vprops':
 --
 -- @
--- view :: context -> props -> model -> 'View' context props model action
+-- view :: model -> 'View' context props model action
+-- view model = 'withProps' $ \\props -> …
 -- @
 --
--- Top-level applications have no parent, so @props@ is always @()@:
+-- Top-level applications have no parent, so @props@ is always @()@ and there
+-- is nothing to read:
 --
 -- @
--- view :: () -> () -> model -> 'View' () () model action
--- view _context _props model = …
+-- view :: model -> 'View' () () model action
+-- view model = …
 -- @
 --
 -- === Props in 'Effect' \/ 'Miso.Types.update'
@@ -1312,7 +1316,7 @@
 -- 'vcontext' \/ 'vprops' \/ 'vmodel' — pass the values with 'Miso.Html.Render.toHtmlWith':
 --
 -- @
--- 'Miso.Html.Render.toHtmlWith' ctx props model ('Miso.Types.view' comp ctx props model)
+-- 'Miso.Html.Render.toHtmlWith' ctx props model ('Miso.Types.view' comp model)
 -- @
 --
 -- This is typically wired into a Servant handler on the server using the

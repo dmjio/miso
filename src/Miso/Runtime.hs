@@ -268,7 +268,7 @@ initialize events _componentParentId hydrate isRoot live _componentContext initi
         currentContext <- readIORef contextRef
         newVTree <-
           buildVTree events _componentParentId _componentId Draw live
-            _componentSink logLevel contextRef currentContext currentProps newModel (view currentContext currentProps newModel)
+            _componentSink logLevel contextRef currentContext currentProps newModel (view newModel)
         newHandlers <- collectEventHandlers
         oldVTree <- readIORef _componentVTree
         _frame <- requestAnimationFrame rAFCallback
@@ -539,7 +539,7 @@ initialDraw initializedModel events hydrate isRoot live Component {..} Component
 #endif
   currentContext <- readIORef _componentContext
   vtree <- buildVTree events _componentParentId _componentId hydrate live _componentSink logLevel
-    _componentContext currentContext _componentProps initializedModel (view currentContext _componentProps initializedModel)
+    _componentContext currentContext _componentProps initializedModel (view initializedModel)
   vtreeHandlers0 <- collectEventHandlers
 #ifdef BENCH
   end <- FFI.now
@@ -561,7 +561,7 @@ initialDraw initializedModel events hydrate isRoot live Component {..} Component
             else do
               newTree <-
                 buildVTree events _componentParentId _componentId Draw live
-                  _componentSink logLevel _componentContext currentContext _componentProps initializedModel (view currentContext _componentProps initializedModel)
+                  _componentSink logLevel _componentContext currentContext _componentProps initializedModel (view initializedModel)
               newHandlers <- collectEventHandlers
               -- the discarded hydration tree's callbacks are unreachable
               mapM_ freeFunction vtreeHandlers0

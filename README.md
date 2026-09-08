@@ -211,8 +211,8 @@ updateModel = \case
     consoleLog "Hello World"
 ----------------------------------------------------------------------------
 -- | Constructs a virtual DOM from a model
-viewModel :: context -> props -> Int -> View context props Int Action
-viewModel _context _props x = vfrag
+viewModel :: Int -> View context props Int Action
+viewModel x = vfrag
     [ H.button_ [ H.onClick AddOne ] [ text "+" ]
     , text (ms x)
     , H.button_ [ H.onClick SubtractOne ] [ text "-" ]

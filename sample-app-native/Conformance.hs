@@ -67,8 +67,8 @@ updateModel = \case
   ReadMTS domRef n ->
     io_ (setStyleProperty domRef "opacity" (opacityForCount n))
 
-viewModel :: () -> () -> Model -> View () () Model Action
-viewModel _ _ Model{..} =
+viewModel :: Model -> View () () Model Action
+viewModel Model{..} =
   view_
     [ id_ "probe-root"
     , CSS.style_
@@ -258,8 +258,9 @@ childUpdate :: ChildAction -> Effect () ChildProps ChildModel ChildAction
 childUpdate IncrementChild =
   modify $ \m -> m { childCount = childCount m + 1 }
 
-childView :: () -> ChildProps -> ChildModel -> View () ChildProps ChildModel ChildAction
-childView _ ChildProps{..} ChildModel{..} =
+childView :: ChildModel -> View () ChildProps ChildModel ChildAction
+childView ChildModel{..} =
+  withProps $ \ChildProps{..} ->
   view_
     [ id_ "child-button"
     , VE.onTap IncrementChild

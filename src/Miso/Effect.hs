@@ -616,8 +616,9 @@ withSink f = tell [ async f ]
 -- value changes (per its 'Eq' instance), every t'Miso.Types.Component' with @useContext@
 -- enabled is re-rendered.
 --
--- Note that @context@ is __write-only__ inside @update@; to read it, use the
--- @context@ argument threaded into the 'Miso.Types.view' function.
+-- To read the @context@ inside @update@, use 'getContext'; to read it during
+-- render, use 'Miso.Types.withContext' \/ 'Miso.Types.vcontext' — the
+-- 'Miso.Types.view' function itself takes only the @model@.
 --
 -- @
 -- @update@ Toggle = 'modifyContext' (\\theme -> if theme == Light then Dark else Light)

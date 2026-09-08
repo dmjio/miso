@@ -53,6 +53,19 @@ All notable changes to `miso` are documented here.
 
 ### Changed
 
+- **Breaking: `view` takes only the `model`.** The `view` field of a
+  `Component` was `context -> props -> model -> View context props model
+  action`; it is now `model -> View context props model action`. The
+  `context` and `props` are read where they are actually needed with the
+  ambient accessors `withContext` / `vcontext` and `withProps` / `vprops`,
+  which resolve at the point the enclosing `View` is built or rendered. A
+  `view` that ignored them no longer has to name them (`\_ _ _ -> …` becomes
+  `\_ -> …`), and one that used them reads them at the point of use instead
+  of threading them down through every helper. `toHtmlWith` still takes the
+  `context`, `props` and `model` — they are what the accessors in the
+  rendered tree resolve against — but the `view` it is applied to now takes
+  only the `model`: `toHtmlWith ctx props model (view comp model)`.
+
 - **Breaking: the app-global `context` cell is owned by the app, not by a
   top-level CAF.** The `globalContext` `IORef` is gone. `initComponent` now
   creates the cell and every mounted component holds a *reference* to it as

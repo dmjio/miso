@@ -64,8 +64,8 @@ updateModel = \case
   SayHelloWorld -> io_ (consoleLog "Hello world")
 ----------------------------------------------------------------------------
 -- | Constructs a virtual DOM from a model
-viewModel :: () -> () -> Model -> View () () Model Action
-viewModel _ _ (Model x) =
+viewModel :: Model -> View () () Model Action
+viewModel (Model x) =
   vfrag
   [ H.button_ [ H.onClick AddOne ] [ "+" ]
   , text (ms x)

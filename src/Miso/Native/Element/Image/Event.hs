@@ -74,7 +74,7 @@ imageEvents
 --
 -- data Action = HandleImageLoad ImageLoadEvent
 --
--- view :: context -> props -> Model -> View context Action
+-- view :: Model -> View context props Model Action
 -- view model = image_ "url" [ onLoad HandleImageLoad ]
 --
 -- update :: Action -> Effect context props Model Action
@@ -120,8 +120,8 @@ onLoadMainWith action = onMain "load" imageLoadDecoder action
 --
 -- data Action = HandleImageError ImageErrorEvent
 --
--- view :: context -> props -> Model -> View context Action
--- view _ _ model = image_ "url" [ onError HandleImageError ]
+-- view :: Model -> View context props Model Action
+-- view model = image_ "url" [ onError HandleImageError ]
 --
 -- update :: Action -> Effect context props Model Action
 -- update (HandleImageError ImageErrorEvent {..}) = do
@@ -166,8 +166,8 @@ onErrorMainWith action = onMain "error" imageErrorDecoder action
 --
 -- data Action = HandleStartPlay
 --
--- view :: context -> props -> Model -> View context Action
--- view _ _ model = image_ "url" [ onStartPlay HandleStartPlay ]
+-- view :: Model -> View context props Model Action
+-- view model = image_ "url" [ onStartPlay HandleStartPlay ]
 --
 -- @
 --
@@ -208,8 +208,8 @@ onStartPlayMainWith action = onMain "startplay" emptyDecoder (\() m ref -> actio
 --
 -- data Action = HandleCurrentLoopComplete
 --
--- view :: context -> props -> Model -> View context Action
--- view _ _ model = image_ "url" [ onCurrentLoopComplete HandleCurrentLoopComplete ]
+-- view :: Model -> View context props Model Action
+-- view model = image_ "url" [ onCurrentLoopComplete HandleCurrentLoopComplete ]
 --
 -- @
 --
@@ -251,8 +251,8 @@ onCurrentLoopCompleteMainWith action = onMain "currentloopcomplete" emptyDecoder
 --
 -- data Action = HandleFinalLoopComplete
 --
--- view :: context -> props -> Model -> View context Action
--- view _ _ model = image_ "url" [ onFinalLoopComplete HandleFinalLoopComplete ]
+-- view :: Model -> View context props Model Action
+-- view model = image_ "url" [ onFinalLoopComplete HandleFinalLoopComplete ]
 --
 -- @
 --

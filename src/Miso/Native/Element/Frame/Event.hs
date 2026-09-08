@@ -113,8 +113,8 @@ frameLoadMetricsDecoder = ["detail"] `at` details
 --
 -- data Action = HandleLoad FrameLoadEvent
 --
--- view :: context -> props -> Model -> View context Action
--- view _ _ model = frame_ [ src_ "http://url", onLoad HandleLoad ] []
+-- view :: Model -> View context props Model Action
+-- view model = frame_ [ src_ "http://url", onLoad HandleLoad ] []
 --
 -- update :: Action -> Effect props Model Action
 -- update (HandleLoad FrameLoadEvent {..}) =
@@ -157,8 +157,8 @@ onLoadMainWith action = onMain "load" frameLoadDecoder action
 --
 -- data Action = HandleMetrics FrameLoadMetricsEvent
 --
--- view :: context -> props -> Model -> View context Action
--- view _ _ model = frame_ [ src_ "http://url", onLoadMetrics HandleMetrics ] []
+-- view :: Model -> View context props Model Action
+-- view model = frame_ [ src_ "http://url", onLoadMetrics HandleMetrics ] []
 --
 -- update :: Action -> Effect props Model Action
 -- update (HandleMetrics FrameLoadMetricsEvent {..}) =
