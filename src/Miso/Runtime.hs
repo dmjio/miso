@@ -130,7 +130,7 @@ import qualified Data.Set as Set
 import           Data.Proxy (Proxy(Proxy))
 import           Control.Category ((.))
 import           Control.Concurrent
-import           Control.Exception (SomeException, catch)
+import           Control.Exception (SomeException, catch, evaluate)
 import           Control.Monad (forM, forM_, when, void, (<=<), zipWithM_, forever, foldM, unless)
 import           Control.Monad.Reader (ask, asks)
 import           Control.Monad.State hiding (state)
@@ -220,7 +220,7 @@ initialize
   -> IO DOMRef
   -- ^ Callback function is used for obtaining the t'Miso.Types.Component' @DOMRef@.
   -> IO (ComponentState context props model action)
-initialize events _componentParentId hydrate isRoot live _componentContext initialProps maybeKey _componentStaticKey comp@Component {..} getComponentMountPoint = do
+initialize events _componentParentId hydrate isRoot live initialContext initialProps maybeKey _componentStaticKey comp@Component {..} getComponentMountPoint = do
   _componentId <- freshComponentId
   let
     _componentProps = initialProps
@@ -304,6 +304,17 @@ initialize events _componentParentId hydrate isRoot live _componentContext initi
           case runEffect (update action) info m of
             (n, sss) -> (n, ss <> sss))
           (model_, []) actions
+
+  -- Re-read the @context@ rather than trusting the value the caller captured.
+  -- 'hydrateModel' above is arbitrary user 'IO': if it yields, a 'modifyContext'
+  -- can commit while this component is not yet in 'components', and
+  -- 'modifyContextAll' would skip it. Nothing repairs that afterwards, because
+  -- every later draw reads this component's own field and the propagation pass
+  -- re-renders it against the same stale value. The parent is registered before
+  -- it draws its children, so the lookup hits; the root's parent id is
+  -- 'rootComponentId', which is never a mounted component, so the root
+  -- correctly falls back to the seed it was given.
+  _componentContext <- readContextOf _componentParentId initialContext
 
   let vcomponent = ComponentState
         { _componentEvents = events
@@ -790,23 +801,46 @@ globalQueue = unsafePerformIO (newIORef emptyQueue)
 -- Server-side rendering never starts the runtime and has no components to
 -- write to: pass the @context@ to 'Miso.Html.Render.toHtmlWith' instead.
 --
+-- __Note:__ this writes to the mounted tree, so calling it before the app
+-- starts is a silent no-op — there is no cell left to seed. Pass the initial
+-- @context@ to 'Miso.startAppWithContext' \/ 'Miso.hydrateWithContext'
+-- instead.
+--
 -- @since 1.13.0.0
-setContext :: Eq context => context -> IO ()
+setContext :: context -> IO ()
 setContext = modifyContextAll . const
 -----------------------------------------------------------------------------
 -- | Apply a function to the @context@ held by every mounted component, in
 -- one atomic update of the 'components' map. This is how
 -- 'Miso.Effect.modifyContext' takes effect during the commit phase.
 --
--- The new @context@ is forced as it is stored, because '_componentContext' is
--- a strict field. That matters here: a component with @useContext = False@
--- never redraws, so a lazy field would chain one thunk per update.
+-- @f@ is applied ONCE, and forced, before the map is touched. Two reasons:
+--
+-- * '_componentContext' is strict, so building the records forces the new
+--   @context@ anyway. Doing that inside 'atomicModifyIORef'' means an @f@ that
+--   throws makes the whole new 'IM.IntMap' bottom, and that bottom is what
+--   gets installed — every later lookup into 'components' would then rethrow,
+--   taking down the component registry rather than just the context. Forcing
+--   here leaves 'components' untouched when @f@ throws.
+-- * Every mounted component holds the same @context@, so applying @f@ per
+--   element would allocate one identical copy per component instead of
+--   sharing a single value.
+--
+-- Any element is a valid representative because the values agree. The read is
+-- outside the atomic update, but the write still maps over whatever map is
+-- current, so a component mounted in between is not dropped — it is rewritten
+-- along with the rest.
 --
 -- @since 1.14.0.0
 modifyContextAll :: (context -> context) -> IO ()
-modifyContextAll f =
-  atomicModifyIORef' components $ \vcomps ->
-    (IM.map (\cs -> cs { _componentContext = f (_componentContext cs) }) vcomps, ())
+modifyContextAll f = do
+  vcomps <- readIORef components
+  case IM.elems vcomps of
+    [] -> pure ()
+    cs : _ -> do
+      ctx <- evaluate (f (_componentContext cs))
+      atomicModifyIORef' components $ \vcomps' ->
+        (IM.map (\cs' -> cs' { _componentContext = ctx }) vcomps', ())
 -----------------------------------------------------------------------------
 -- | The @context@ currently held by the given component's record. Returns
 -- the fallback if the component is no longer mounted (e.g. an effect in the
@@ -1436,9 +1470,11 @@ buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ ctx_ props_ mode
           -- the 'ctx_' captured when the tree was built: every later draw reads
           -- this component's own field, so a stale value copied in here would
           -- persist until the next 'modifyContext' rather than self-correct.
-          -- 'registerComponent' precedes 'initialDraw', so the parent is in
-          -- 'components' by the time its children mount; the fallback covers
-          -- the root, whose parent id is not a mounted component.
+          -- 'vcompId' is the id of the component doing the building (the one
+          -- whose 'children' set gains this mount, just below), not a parent
+          -- id that might be absent: 'registerComponent' precedes
+          -- 'initialDraw', so it is always in 'components' here and the
+          -- 'ctx_' fallback is defensive rather than a path we rely on.
           ctx0 <- readContextOf vcompId ctx_
           ComponentState {..} <- initialize events_ vcompId hydrate False live ctx0 newProps maybeKey maybeStaticKey app (pure parent_)
           modifyComponent vcompId (children %= IS.insert _componentId)
@@ -2582,9 +2618,15 @@ componentListener Proxy live (BTS ctx) = void $ do
                                     -- this child as part of the subtree.
                                     (fmap _componentContext . IM.lookup componentComponentParentId <$> readIORef components) >>= \case
                                       Nothing ->
-                                        FFI.consoleError "[COMPONENT]: MOUNT parent component not mounted"
-                                      Just ctx ->
-                                        void $ initialize mempty componentComponentId Draw False live ctx initProps
+                                        -- Expected, not a fault: see the note above. Logged at
+                                        -- 'consoleLog' so it does not read as a wire-invariant
+                                        -- break, since the parent's own MOUNT rebuilds this child.
+                                        FFI.consoleLog "[COMPONENT]: MOUNT deferred, parent not mounted yet"
+                                      -- 'parentCtx' rather than 'ctx': the enclosing
+                                      -- 'componentListener' binds 'ctx' to the BTS JS context
+                                      -- handle it dispatches on, which this would shadow.
+                                      Just parentCtx ->
+                                        void $ initialize mempty componentComponentId Draw False live parentCtx initProps
                                           Nothing (Just (staticKey ptr)) comp_ (pure parent_)
                                   _ ->
                                     FFI.consoleError "[COMPONENT]: MOUNT missing/invalid props payload"
