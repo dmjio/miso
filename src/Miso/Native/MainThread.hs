@@ -27,7 +27,7 @@
 --
 -- @
 -- -- move an element with the finger, entirely on the main thread:
--- view _ _ _ = view_ [ onTouchMoveWith Drag ] []
+-- view _ = view_ [ onTouchMoveWith Drag ] []
 --
 -- update (Drag touch domRef) = io_ $
 --   setStyleProperty domRef \"transform\"

@@ -151,7 +151,7 @@
 -- Child components are embedded in a 'Miso.Lens.view' the same way, with 'Miso.Types.vcomp':
 --
 -- @
--- view _ _ _ = view_ [] [ 'Miso.Types.vcomp' () (static ('Miso.Types.mountStatic' childComponent)) ]
+-- view _ = view_ [] [ 'Miso.Types.vcomp' () (static ('Miso.Types.mountStatic' childComponent)) ]
 -- @
 --
 -- __Static-pointer limitation.__ A @static@ form may only close over
@@ -236,7 +236,7 @@
 -- @
 -- {-# LANGUAGE StaticPointers #-}
 --
--- view _ _ _ =
+-- view _ =
 --   @view_@ [ 'Miso.Types.event' (static ('Miso.Native.Element.View.Event.onTapMain' HandleTap)) ] []
 -- @
 --
@@ -375,8 +375,8 @@
 -- import "Miso" hiding (text_)
 -- import "Miso.Native"
 -- -----------------------------------------------------------------------------
--- view :: context -> props -> Model -> 'Miso.Types.View' context Model Action
--- view _ _ m =
+-- view :: Model -> 'Miso.Types.View' context props Model Action
+-- view m =
 --   'Miso.Types.vfrag'
 --   [ @view_@ [ 'Miso.Native.Element.View.Event.onTap' Increment ] [ 'text_' [] [ \"+\" ] ]
 --   , 'text_' [] [ 'Miso.Types.text' $ 'Miso.String.ms' ('show' m) ]

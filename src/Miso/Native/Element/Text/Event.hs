@@ -64,8 +64,8 @@ textEvents
 --
 -- data Action = HandleLayout LayoutEvent
 --
--- view :: context -> props -> Model -> View context Action
--- view _ _ model = text_ [ onLayout HandleLayout ] [ text "hi" ]
+-- view :: Model -> View context props Model Action
+-- view model = text_ [ onLayout HandleLayout ] [ text "hi" ]
 --
 -- update :: Action -> Effect context props Model Action
 -- update (HandleLayout LayoutEvent {..}) = io_ (consoleLog "layout event received")
@@ -109,8 +109,8 @@ onLayoutMainWith action = onMain "layout" layoutDecoder action
 --
 -- data Action = HandleSelectionChange SelectionChangeEvent
 --
--- view :: context -> props -> Model -> View context Action
--- view _ _ model = text_ [ onSelectionChange HandleSelectionChange ] [ text "hi" ]
+-- view :: Model -> View context props Model Action
+-- view model = text_ [ onSelectionChange HandleSelectionChange ] [ text "hi" ]
 --
 -- update :: Action -> Effect context props Model Action
 -- update (HandleSelectionChange SelectionChangeEvent {..}) =

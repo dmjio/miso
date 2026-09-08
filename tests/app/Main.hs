@@ -147,7 +147,7 @@ readText elemId = fromJSValUnchecked =<< eval
   ("document.getElementById('" <> elemId <> "').textContent")
 -----------------------------------------------------------------------------
 testComponent :: Component () () Int Action
-testComponent = component (0 :: Int) update_ $ \_ _ _ -> button_ [ id_ "foo", onClick AddOne ] [ "click me " ]
+testComponent = component (0 :: Int) update_ $ \_ -> button_ [ id_ "foo", onClick AddOne ] [ "click me " ]
   where
     update_ = \case
       AddOne -> this += 1
@@ -160,11 +160,11 @@ data Action = AddOne
 -- 'staticSwapRoot'; the differ must replace one with the other, not keep the
 -- first and run the second's @diffProps@ against it.
 staticProbeA, staticProbeB :: Component () () () Action
-staticProbeA = component () noop $ \_ _ _ -> div_ [ id_ "static-a" ] [ "A" ]
-staticProbeB = component () noop $ \_ _ _ -> div_ [ id_ "static-b" ] [ "B" ]
+staticProbeA = component () noop $ \_ -> div_ [ id_ "static-a" ] [ "A" ]
+staticProbeB = component () noop $ \_ -> div_ [ id_ "static-b" ] [ "B" ]
 -----------------------------------------------------------------------------
 staticSwapRoot :: Component () () Bool Action
-staticSwapRoot = component False (\AddOne -> this %= not) $ \_ _ swapped ->
+staticSwapRoot = component False (\AddOne -> this %= not) $ \swapped ->
   div_ []
     [ if swapped
         then vcomp_ (static (mountStatic staticProbeB))
@@ -1758,7 +1758,7 @@ main = withJS $ do
 
       it "Should mount 1000 components" $ do
         liftIO $ startApp mempty $
-          ((component (0 :: Int) noop $ \_ _ _ ->
+          ((component (0 :: Int) noop $ \_ ->
             div_ [] (replicate 999 (mount_ testComponent))) :: Component () () Int ())
         mountedComponents >>= (`shouldBe` 1000)
 
@@ -1771,7 +1771,7 @@ main = withJS $ do
         -- undefined), so freeFunction was never called and every non-root
         -- Component unmount leaked the mount/unmount closures.
         liftIO $ startApp mempty $
-          ((component (0 :: Int) noop $ \_ _ _ ->
+          ((component (0 :: Int) noop $ \_ ->
             div_ [] [ mount_ testComponent ]) :: Component () () Int ())
         mountedComponents >>= (`shouldBe` 2)
         childState@ComponentState {..} <-
@@ -1807,7 +1807,7 @@ main = withJS $ do
         -- used to inherit those leftovers instead of getting its own fresh
         -- (unset) values.
         liftIO $ startApp mempty $
-          component (0 :: Int) noop $ \_ _ _ ->
+          component (0 :: Int) noop $ \_ ->
             div_
               [ event (static (onMain "click" emptyDecoder (\() _ _ -> AddOne)))
               , on "mouseover" emptyDecoder (\() _ _ -> AddOne)
@@ -1850,11 +1850,11 @@ main = withJS $ do
 
     describe "VContext tests" $ do
       let contextProbe :: Component Int () () Action
-          contextProbe = component () noop $ \_ _ _ ->
+          contextProbe = component () noop $ \_ ->
             div_ [ id_ "ctx-probe" ] [ vcontext (text . ms) ]
 
           contextRoot :: Bool -> Component Int () () ContextAction
-          contextRoot useContext = component () (\BumpContext -> modifyContext (+1)) $ \_ _ _ ->
+          contextRoot useContext = component () (\BumpContext -> modifyContext (+1)) $ \_ ->
             div_ [] [ mount_ contextProbe { useContext } ]
 
           readProbe = readText "ctx-probe"
@@ -1916,17 +1916,17 @@ main = withJS $ do
     describe "VProps tests" $ do
       let -- A child whose @props@ is an 'Int', displayed via 'vprops'.
           propsProbe :: Component () Int () Action
-          propsProbe = component () noop $ \_ _ _ ->
+          propsProbe = component () noop $ \_ ->
             div_ [ id_ "props-probe" ] [ vprops (text . ms) ]
 
           -- A root that forwards its own 'Int' model to 'propsProbe' as @props@.
           propsRoot :: Component () () Int Action
-          propsRoot = component (1 :: Int) (\AddOne -> this += 1) $ \_ _ m ->
+          propsRoot = component (1 :: Int) (\AddOne -> this += 1) $ \m ->
             div_ [] [ mountWithProps m propsProbe ]
 
       it "vprops resolves the mounting component's props at initial mount" $ do
         let root :: App () Action
-            root = component () noop $ \_ _ _ ->
+            root = component () noop $ \_ ->
               div_ [] [ mountWithProps (100 :: Int) propsProbe ]
         liftIO $ startApp mempty root
         txt <- liftIO (readText "props-probe")
@@ -1945,16 +1945,16 @@ main = withJS $ do
         -- parent can host a 'MisoString'-props child and each 'vprops' /
         -- 'withProps' resolves against its own component.
         let inner :: Component () MisoString () Action
-            inner = component () noop $ \_ _ _ ->
+            inner = component () noop $ \_ ->
               span_ [ id_ "props-inner" ] [ withProps text ]
             outer :: Component () Int () Action
-            outer = component () noop $ \_ _ _ ->
+            outer = component () noop $ \_ ->
               div_ [ id_ "props-outer" ]
                 [ span_ [] [ vprops (text . ms) ]
                 , mountWithProps ("inner" :: MisoString) inner
                 ]
             root :: App () Action
-            root = component () noop $ \_ _ _ ->
+            root = component () noop $ \_ ->
               div_ [] [ mountWithProps (7 :: Int) outer ]
         liftIO $ startApp mempty root
         outerTxt <- liftIO (readText "props-outer")
@@ -1974,7 +1974,7 @@ main = withJS $ do
 
       it "a vprops resolving to an empty fragment contributes no child" $ do
         let root :: App () Action
-            root = component () noop $ \_ _ _ ->
+            root = component () noop $ \_ ->
               div_ [ id_ "props-wrap" ] [ "a", vprops (\() -> vfrag []), "b" ]
         liftIO $ startApp mempty root
         count <- liftIO $ fromJSValUnchecked =<< eval
@@ -1989,7 +1989,7 @@ main = withJS $ do
       let -- A root whose 'Int' model is displayed via 'vmodel' rather than
           -- through the 'view' argument.
           modelRoot :: App Int Action
-          modelRoot = component (1 :: Int) (\AddOne -> this += 1) $ \_ _ _ ->
+          modelRoot = component (1 :: Int) (\AddOne -> this += 1) $ \_ ->
             div_ [ id_ "model-probe" ] [ vmodel (text . ms) ]
 
       it "vmodel resolves the component's model at initial mount" $ do
@@ -2010,10 +2010,10 @@ main = withJS $ do
         -- parent can host a 'MisoString'-model child and each 'vmodel' /
         -- 'withModel' resolves against its own component.
         let inner :: Component () () MisoString Action
-            inner = component ("inner" :: MisoString) noop $ \_ _ _ ->
+            inner = component ("inner" :: MisoString) noop $ \_ ->
               span_ [ id_ "model-inner" ] [ withModel text ]
             outer :: Component () () Int Action
-            outer = component (7 :: Int) noop $ \_ _ _ ->
+            outer = component (7 :: Int) noop $ \_ ->
               div_ [ id_ "model-outer" ]
                 [ span_ [] [ vmodel (text . ms) ]
                 , mount_ inner
@@ -2030,7 +2030,7 @@ main = withJS $ do
 
       it "a vmodel resolving to an empty fragment contributes no child" $ do
         let root :: App () Action
-            root = component () noop $ \_ _ _ ->
+            root = component () noop $ \_ ->
               div_ [ id_ "model-wrap" ] [ "a", vmodel (\() -> vfrag []), "b" ]
         liftIO $ startApp mempty root
         count <- liftIO $ fromJSValUnchecked =<< eval
