@@ -1417,7 +1417,19 @@ buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ ctx_ props_ mode
       comp <- create
       mountCallback <- do
         syncCallback1' $ \parent_ -> do
-          ComponentState {..} <- initialize events_ vcompId hydrate False live ctx_ newProps maybeKey maybeStaticKey app (pure parent_)
+          -- This callback does not run at 'buildVTree' time: it fires later,
+          -- synchronously inside the enclosing 'Diff.diff'. That same diff runs
+          -- unmount callbacks first, and an unmounting sibling's 'drain' can
+          -- commit a 'ContextModify' (via 'modifyContextAll') before we get
+          -- here. So read the parent's current '_componentContext' instead of
+          -- the 'ctx_' captured when the tree was built: every later draw reads
+          -- this component's own field, so a stale value copied in here would
+          -- persist until the next 'modifyContext' rather than self-correct.
+          -- 'registerComponent' precedes 'initialDraw', so the parent is in
+          -- 'components' by the time its children mount; the fallback covers
+          -- the root, whose parent id is not a mounted component.
+          ctx0 <- readContextOf vcompId ctx_
+          ComponentState {..} <- initialize events_ vcompId hydrate False live ctx0 newProps maybeKey maybeStaticKey app (pure parent_)
           modifyComponent vcompId (children %= IS.insert _componentId)
           vtree <- toJSVal =<< readIORef _componentVTree
           FFI.set "parent" comp (Object vtree)
