@@ -300,8 +300,7 @@ initialize events _componentParentId hydrate isRoot live initialProps maybeKey _
           (model_, []) actions
 
   let vcomponent = ComponentState
-        { _componentEvents = events
-        , _componentKey = maybeKey
+        { _componentKey = maybeKey
         , _componentMailbox = mailbox
         , _componentUseContext = useContext
         , _componentTopics = mempty
@@ -848,8 +847,6 @@ data ComponentState context props model action
   -- ^ t'Miso.Types.Component' state
   , _componentScripts :: [DOMRef]
   -- ^ DOM references for \<script\> and \<style\> appended to \<head\>
-  , _componentEvents :: Events
-  -- ^ List of events a t'Miso.Types.Component' listens on
   , _componentUseContext :: Bool
   -- ^ Whether this t'Miso.Types.Component' re-renders when the global
   --   @context@ changes.
