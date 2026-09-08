@@ -296,6 +296,11 @@
 -- view _model = 'withContext' $ \\ctx -> ...
 -- @
 --
+-- The @model@ is the one of the three that /is/ an argument, purely for
+-- convenience — it is what a @view@ almost always needs. It is also available
+-- ambiently through 'withModel' \/ 'vmodel', so @view _ = 'withModel' $
+-- \\m -> …@ is equivalent to taking it as an argument.
+--
 -- __Reading__ (in 'Miso.Types.update'):
 --
 -- The current @context@ is also readable inside the 'Effect' monad, just like
@@ -407,8 +412,10 @@
 -- @model -> 'View' context props model action@ function that is applied, and
 -- the wrapper discarded, whenever the enclosing 'View' is built or rendered,
 -- so a helper deep in a view tree can read @model@ without needing it
--- threaded through as an explicit argument — unlike 'Miso.Types.view'
--- itself, which receives the @model@ as its only parameter.
+-- threaded through as an explicit argument. Unlike @context@ and @props@,
+-- the @model@ is /also/ handed to 'Miso.Types.view' as its only parameter —
+-- a convenience, not a restriction: @view _ = 'vmodel' $ \\m -> …@ is
+-- equivalent to taking it as an argument.
 --
 -- @
 -- 'vmodel' $ \\Model { count } -> 'Miso.Html.Element.span_' [] [ 'Miso.Types.text' ('Miso.String.ms' count) ]

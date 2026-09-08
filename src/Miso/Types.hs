@@ -290,6 +290,19 @@ data Component context props model action
   --   @
   --   view m = div_ [] [ withContext $ \\theme -> ... , text (ms m) ]
   --   @
+  --
+  --   __Note:__ the @model@ is an argument purely for convenience — it is the
+  --   one of the three a @view@ almost always needs, and the one that most
+  --   often drives the shape of the whole tree. It is /also/ available
+  --   ambiently through 'withModel' \/ 'vmodel', so
+  --
+  --   @
+  --   view _ = withModel $ \\m -> ...
+  --   @
+  --
+  --   is equivalent to taking it as an argument; use whichever reads better.
+  --   'withModel' is the better choice for a helper deep in the tree that
+  --   needs the @model@ but is not otherwise passed it.
   , useContext :: Bool
   -- ^ Whether this t'Miso.Types.Component' should be re-rendered when the
   --   app-global @context@ changes (see 'Miso.Effect.modifyContext').
@@ -892,8 +905,10 @@ withProps = vprops
 -- Embeds a subtree that is resolved against the enclosing t'Component'\'s
 -- @model@ at the point the enclosing 'View' is built or rendered, so a helper
 -- deep in a view tree can read @model@ without needing it threaded through as
--- an explicit argument — unlike 'view' itself, which receives the @model@ as
--- its only parameter.
+-- an explicit argument. Unlike @context@ and @props@, the @model@ is /also/
+-- handed to 'view' as its only parameter — that is a convenience, not a
+-- restriction: @view _ = vmodel $ \\m -> …@ is equivalent, and 'vmodel' is
+-- the better choice for a helper the @model@ is not otherwise passed to.
 --
 -- @
 -- vmodel $ \\Model { count } -> span_ [] [ text (ms count) ]

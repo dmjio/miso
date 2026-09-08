@@ -66,6 +66,12 @@ All notable changes to `miso` are documented here.
   rendered tree resolve against — but the `view` it is applied to now takes
   only the `model`: `toHtmlWith ctx props model (view comp model)`.
 
+  The `model` stays an argument purely for convenience — it is the one of the
+  three a `view` almost always needs. It is available ambiently too, so
+  `view _ = withModel $ \m -> …` is equivalent to taking it as an argument;
+  `withModel` / `vmodel` remain the better choice for a helper deep in the
+  tree that the `model` is not otherwise passed to.
+
 - **Breaking: the app-global `context` cell is owned by the app, not by a
   top-level CAF.** The `globalContext` `IORef` is gone. `initComponent` now
   creates the cell and every mounted component holds a *reference* to it as
