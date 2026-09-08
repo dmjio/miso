@@ -1196,7 +1196,14 @@ drain ComponentState {..} = do
   drainQueueAt _componentId >>= \case
     S.Empty -> pure ()
     actions -> do
-       let currentContext = _componentContext
+       -- Read the live @context@ rather than the one in the 'ComponentState'
+       -- we were handed: 'cleanup' snapshots 'components' once and then
+       -- unmounts in a loop, so an earlier component's 'drain' may already
+       -- have committed a 'ContextModify'. 'unmountComponent' calls us before
+       -- it deletes us from the map, so the lookup still finds this component;
+       -- the fallback only applies if it is already gone. This is also the
+       -- correct baseline for the 'dirtyCheck' below.
+       currentContext <- readContextOf _componentId _componentContext
        case _componentApplyActions actions _componentModel _componentProps currentContext of
          (_, schedules) -> do
            forM_ schedules $ \case
@@ -2565,8 +2572,14 @@ componentListener Proxy live (BTS ctx) = void $ do
                                 -- them on @MOUNT@), decoded at the @props@ type recovered above.
                                 case componentComponentPayload of
                                   Just pv | Success initProps <- (fromJSON pv :: Result props) ->
-                                    -- The child's @context@ is copied from its parent's record;
-                                    -- the MTS mounts parents before children, so it is present.
+                                    -- The child's @context@ is copied from its parent's record.
+                                    -- The parent is NOT always here yet: 'postComponent' MOUNT
+                                    -- fires at the end of 'initialize', after 'initialDraw' has
+                                    -- already built the children, so a fresh nested subtree posts
+                                    -- the child's MOUNT ahead of its parent's. Skipping is the
+                                    -- right response rather than synthesizing a context: the
+                                    -- parent's own MOUNT follows, and its 'initialDraw' rebuilds
+                                    -- this child as part of the subtree.
                                     (fmap _componentContext . IM.lookup componentComponentParentId <$> readIORef components) >>= \case
                                       Nothing ->
                                         FFI.consoleError "[COMPONENT]: MOUNT parent component not mounted"
