@@ -49,6 +49,18 @@ All notable changes to `miso` are documented here.
   `View context () model action`; lift `withProps` above the element to
   draw from the component's `props`.
 
+### Fixed
+
+- **Static mounts now carry their `StaticKey` as the diff key.** A
+  `VCompStatic` node had no `key`, so two different `static` sites at the
+  same position compared equal in the differ: the first component stayed
+  mounted and the second's `diffProps` ran against it with props of an
+  unrelated type. `buildComp` now sets `key` to the mount's `StaticKey`
+  (unique per `static` site) when no explicit key is given, so swapping
+  `vcomp_ (static (mountStatic A))` for `vcomp_ (static (mountStatic B))`
+  replaces the child. Siblings built from one `static` site still diff
+  positionally.
+
 ## 1.13.0.0
 
 ### Added

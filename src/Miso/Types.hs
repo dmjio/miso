@@ -745,6 +745,10 @@ mount_ comp = VComp (SomeComponent Nothing () comp)
 -- discharged at the @static (mount_ child)@ site and recovered on the MTS from
 -- the @Props@.
 --
+-- The 'GHC.StaticPtr.StaticKey' also serves as the node's diff key: two
+-- different @static@ sites at the same position are replaced, not reused,
+-- while siblings built from one site still diff positionally.
+--
 -- @
 -- div_ [] [ vcomp_ (static (mountStatic myComp)) ]
 -- @

@@ -156,6 +156,21 @@ data Action = AddOne
   deriving stock (Show, Eq, Generic)
   deriving anyclass (JSON.FromJSON, JSON.ToJSON)
 -----------------------------------------------------------------------------
+-- | Two distinct components mounted statically at the same position by
+-- 'staticSwapRoot'; the differ must replace one with the other, not keep the
+-- first and run the second's @diffProps@ against it.
+staticProbeA, staticProbeB :: Component () () () Action
+staticProbeA = component () noop $ \_ _ _ -> div_ [ id_ "static-a" ] [ "A" ]
+staticProbeB = component () noop $ \_ _ _ -> div_ [ id_ "static-b" ] [ "B" ]
+-----------------------------------------------------------------------------
+staticSwapRoot :: Component () () Bool Action
+staticSwapRoot = component False (\AddOne -> this %= not) $ \_ _ swapped ->
+  div_ []
+    [ if swapped
+        then vcomp_ (static (mountStatic staticProbeB))
+        else vcomp_ (static (mountStatic staticProbeA))
+    ]
+-----------------------------------------------------------------------------
 -- | Increments the app-global @context@ (an 'Int'); used to test that
 -- 'useContext' gates whether a 'vcontext' subtree observes the change.
 data ContextAction = BumpContext
@@ -1812,6 +1827,26 @@ main = withJS $ do
         clickStaticKey <- liftIO (clickHandler ! "staticKey")
         clickStaticKeyUndefined <- liftIO (isUndefined clickStaticKey)
         clickStaticKeyUndefined `shouldBe` False
+
+    describe "Static mount identity tests" $ do
+      it "swapping two static mounts at one position replaces the child" $ do
+        liftIO $ startApp mempty staticSwapRoot
+        ComponentState {..} <- liftIO $
+          ((IM.! 1) <$> readIORef components :: IO (ComponentState () () Bool Action))
+        let childIds = filter (/= 1) . IM.keys <$> readIORef components
+        before <- liftIO childIds
+        length before `shouldBe` 1
+        liftIO (_componentSink AddOne)
+        replaced <- liftIO $ pollFor propagationAttempts $ do
+          ids <- childIds
+          pure (length ids == 1 && ids /= before)
+        replaced `shouldBe` True
+        hasB <- liftIO $ fromJSValUnchecked =<< eval
+          ("document.getElementById('static-b') !== null" :: MisoString)
+        hasB `shouldBe` True
+        hasA <- liftIO $ fromJSValUnchecked =<< eval
+          ("document.getElementById('static-a') !== null" :: MisoString)
+        hasA `shouldBe` False
 
     describe "VContext tests" $ do
       let contextProbe :: Component Int () () Action

@@ -140,6 +140,7 @@ import           Miso.Event.Decoder (Decoder(decoder, decodeAt))
 #if __GLASGOW_HASKELL__ < 910
 import           Data.Foldable (foldl')
 #endif
+import           Control.Applicative ((<|>))
 import           Data.Maybe
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
@@ -1407,7 +1408,14 @@ buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ props_ model_ = 
             enqueueSchedule componentId_
       FFI.set "diffProps" diffPropsCallback comp
       FFI.set "child" jsNull comp
-      forM_ maybeKey (\key -> FFI.set "key" key comp)
+      -- Identity for the differ (@n.key === c.key@ in @ts/miso/dom.ts@): an
+      -- explicit key wins; otherwise a static mount uses its 'StaticKey',
+      -- which is unique per @static@ site. Without this every static mount
+      -- had @key = undefined@, so two different static components at one
+      -- position compared equal and the old instance was kept — with the new
+      -- node's @diffProps@ run against props of an unrelated type.
+      forM_ (maybeKey <|> (Key . ms <$> maybeStaticKey)) $ \key ->
+        FFI.set "key" key comp
       FFI.set "mount" mountCallback comp
       FFI.set "unmount" unmountCallback comp
       FFI.set "eventPropagation" (eventPropagation app) comp
