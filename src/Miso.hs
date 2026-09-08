@@ -221,9 +221,10 @@
 --   | 'VFrag' (Maybe t'Key') ['View' context props model action]
 --   | 'VContext' (context -> 'View' context props model action)
 --   | 'VProps' (props -> 'View' context props model action)
+--   | 'VModel' (model -> 'View' context props model action)
 -- @
 --
--- 'VNode' and 'VText' have a one-to-one mapping from the virtual DOM to the physical DOM. The 'VComp' and 'VFrag' constructors are abstract nodes (live only on the virtual DOM) and do not contain a reference to the physical DOM. 'VContext' and 'VProps' are not nodes at all: they are /ambient accessors/, resolved to one of the other constructors whenever the tree is built or rendered, and so never appear in the virtual DOM the runtime diffs. The existential t'SomeComponent' is what allows embedding polymorphic t'Miso.Types.Component' within a 'View'.
+-- 'VNode' and 'VText' have a one-to-one mapping from the virtual DOM to the physical DOM. The 'VComp' and 'VFrag' constructors are abstract nodes (live only on the virtual DOM) and do not contain a reference to the physical DOM. 'VContext', 'VProps' and 'VModel' are not nodes at all: they are /ambient accessors/, resolved to one of the other constructors whenever the tree is built or rendered, and so never appear in the virtual DOM the runtime diffs. The existential t'SomeComponent' is what allows embedding polymorphic t'Miso.Types.Component' within a 'View'.
 --
 -- @
 -- data t'SomeComponent' context
@@ -249,6 +250,7 @@
 -- * 'vcomp', 'vcomp_' — build a 'VCompStatic' (see below)
 -- * 'vcontext' \/ 'withContext' — build a 'VContext'
 -- * 'vprops' \/ 'withProps' — build a 'VProps'
+-- * 'vmodel' \/ 'withModel' — build a 'VModel'
 --
 -- A full list of element smart constructors built on 'node' (e.g. 'Miso.Html.Element.Miso.Html.Element.div_') can be found in "Miso.Html.Element".
 --
@@ -389,13 +391,49 @@
 -- == Why not @ImplicitParams@ or a @Reader@?
 --
 -- Both are alternatives for ambient values. @ImplicitParams@ (@?props@,
--- @?context@) gives the same "read it where you need it" ergonomics, but is
--- a GHC-specific extension whose constraints leak into every helper's
--- signature. A @Reader@ (or @ReaderT@) over the 'View' would work on any
--- compiler, but forces a monadic style onto view code that is otherwise
--- plain applicative expressions and lists. 'VContext' and 'VProps' keep the
--- 'View' DSL as ordinary Haskell values: the accessor is just another
--- constructor, resolved by the runtime, with nothing to lift or thread.
+-- @?context@, @?model@) gives the same "read it where you need it"
+-- ergonomics, but is a GHC-specific extension whose constraints leak into
+-- every helper's signature. A @Reader@ (or @ReaderT@) over the 'View' would
+-- work on any compiler, but forces a monadic style onto view code that is
+-- otherwise plain applicative expressions and lists. 'VContext', 'VProps'
+-- and 'VModel' keep the 'View' DSL as ordinary Haskell values: the accessor
+-- is just another constructor, resolved by the runtime, with nothing to lift
+-- or thread.
+--
+-- = 'VModel' (ambient model)
+--
+-- 'VModel' completes the trio: an ambient accessor for the enclosing
+-- t'Miso.Types.Component'\'s @model@. It wraps a
+-- @model -> 'View' context props model action@ function that is applied, and
+-- the wrapper discarded, whenever the enclosing 'View' is built or rendered,
+-- so a helper deep in a view tree can read @model@ without needing it
+-- threaded through as an explicit argument — unlike 'Miso.Types.view'
+-- itself, which already receives @model@ as its third parameter.
+--
+-- @
+-- 'vmodel' $ \\Model { count } -> 'Miso.Html.Element.span_' [] [ 'Miso.Types.text' ('Miso.String.ms' count) ]
+-- @
+--
+-- As with @props@, @model@ is a type parameter of 'View', so the @model@ a
+-- 'VModel' sees is statically the @model@ of the t'Miso.Types.Component'
+-- whose 'Miso.Types.view' contains it, and a mismatch is a compile-time
+-- error. A child mounted with 'mount_' \/ 'vcomp' sees /its own/ @model@,
+-- never its parent's.
+--
+-- The function is applied to the current @model@ whenever the enclosing
+-- 'View' is built or rendered. It adds no redraw logic of its own: a
+-- component is redrawn when its @model@ changes after an 'Miso.Types.update',
+-- and the accessor is re-resolved as part of that redraw.
+--
+-- When serialising, a bare 'View' under 'Miso.Html.Render.toHtml' is static
+-- markup with @model ~ ()@; a view that reads a real @model@ is rendered with
+-- 'Miso.Html.Render.toHtmlWith', which takes the value. A 'VModel' inside a
+-- mounted component sees that component's initial (or hydrated) @model@.
+--
+-- The smart constructors for 'VModel' are 'vmodel' and 'withModel'
+-- (a synonym). Like 'withContext' and 'withProps', 'withModel' provides
+-- /ambient/ access to the component's @model@: any helper in the view tree
+-- can reach it without the value being passed down explicitly.
 --
 -- = 'VComp' (Component nodes)
 --
@@ -1259,9 +1297,10 @@
 --   'Miso.Html.ToHtml.toHtml' :: a -> 'Data.ByteString.Lazy.ByteString'
 -- @
 --
--- Instances are provided for @'View' c () m a@ and @['View' c () m a]@ — a
--- bare 'View' has no enclosing component to supply @props@, so they are
--- fixed to @()@ (a 'View' left polymorphic in @props@ resolves to this):
+-- Instances are provided for @'View' c () () a@ and @['View' c () () a]@ — a
+-- bare 'View' is static markup with no enclosing component to supply
+-- @props@ or @model@, so both are fixed to @()@ (a 'View' left polymorphic
+-- in them resolves to this):
 --
 -- @
 -- import "Miso.Html.Render" ('Miso.Html.Render.toHtml')
@@ -1270,12 +1309,13 @@
 -- pageHtml = 'Miso.Html.Render.toHtml' $ 'Miso.Html.Element.div_' [ 'Miso.Html.Property.id_' "root" ] [ "Hello, world!" ]
 -- @
 --
--- To render a 'View' whose @props@ type is something else — e.g. a
--- component's 'Miso.Types.view' applied directly, or a subtree containing
--- 'vprops' — pass the @props@ value with 'Miso.Html.Render.toHtmlWith':
+-- To render a 'View' whose @props@ or @model@ type is something else — e.g.
+-- a component's 'Miso.Types.view' applied directly, or a subtree containing
+-- 'vprops' or 'vmodel' — pass the @props@ and @model@ values with
+-- 'Miso.Html.Render.toHtmlWith':
 --
 -- @
--- 'Miso.Html.Render.toHtmlWith' props ('Miso.Types.view' comp ctx props model)
+-- 'Miso.Html.Render.toHtmlWith' props model ('Miso.Types.view' comp ctx props model)
 -- @
 --
 -- This is typically wired into a Servant handler on the server using the
@@ -1797,7 +1837,7 @@ module Miso
     -- main :: 'IO' ()
     -- main = do
     --   'setContext' Dark
-    --   Data.ByteString.Lazy.putStr ('Miso.Html.Render.toHtml' (view Dark () model))
+    --   Data.ByteString.Lazy.putStr ('Miso.Html.Render.toHtmlWith' () model (view Dark () model))
     -- @
   , setContext
   , renderApp
@@ -1822,6 +1862,8 @@ module Miso
   , withContext
   , vprops
   , withProps
+  , vmodel
+  , withModel
     -- ** Sink
   , withSink
   , Sink

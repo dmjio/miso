@@ -6,6 +6,20 @@ All notable changes to `miso` are documented here.
 
 ### Added
 
+- **`VModel` / `vmodel` / `withModel`.** The `model` counterpart of
+  `VProps`: an ambient accessor (not a node) wrapping a
+  `model -> View context props model action` function, so a helper deep in a
+  view tree can read the enclosing component's `model` without needing it
+  threaded through as an explicit argument. Resolved against the mounting
+  component's current `model` whenever the enclosing `View` is built, and
+  against its initial (or hydrated) `model` when rendered with `toHtml`.
+  `withModel` is a synonym for `vmodel`.
+- **`contentWith_` / `svgWith_`** (`Miso.Native.X.Element.Svg`). Native
+  inline SVG content that reads the enclosing component's `props` / `model`:
+  `contentWith_ props model` renders the content with `toHtmlWith`, and
+  `svgWith_ attrs content` is an `<svg>` that obtains both ambiently via
+  `withProps` / `withModel` so the content may use `vprops` / `vmodel`
+  directly.
 - **`VProps` / `vprops` / `withProps`.** The `props` counterpart of
   `VContext`: an ambient accessor (not a node) wrapping a
   `props -> View context props model action` function, so a helper deep in a
@@ -16,9 +30,9 @@ All notable changes to `miso` are documented here.
   component's current `props` whenever the enclosing `View` is built or
   rendered (`toHtml` on a bare `View` uses `()`). `withProps` is a synonym
   for `vprops`.
-- **`toHtmlWith`.** `toHtmlWith :: props -> View context props model action
-  -> ByteString` renders a `View` whose `props` type is not `()`, supplying
-  the value a `VProps` node resolves against.
+- **`toHtmlWith`.** `toHtmlWith :: props -> model -> View context props model
+  action -> ByteString` renders a `View` whose `props` or `model` type is not
+  `()`, supplying the values `VProps` / `VModel` accessors resolve against.
 - **`VContext` / `vcontext` / `withContext`.** An ambient accessor (not a
   node) wrapping a `context -> View context props model action` function, so a helper deep in a view tree can read the app-global
   `context` without needing it threaded through as an explicit argument.
@@ -45,7 +59,12 @@ All notable changes to `miso` are documented here.
   synonym declares the shared dictionary set once for `SomeComponent` and
   `SomeStaticComponent`. Call sites such as
   `vcomp_ (static (mountStatic comp))` are unchanged.
-- **`vcontext` / `vprops` children are resolved before being built.** The
+- **`toHtml` collapses adjacent text nodes inside fragments and across a
+  `[View]`.** Previously only an element's direct children were collapsed,
+  so an empty text node inside a `vfrag` rendered as a lone space that the
+  client's hydration walk (which recurses into fragments) could not
+  reconcile, silently falling back to a full re-render.
+- **`vcontext` / `vprops` / `vmodel` children are resolved before being built.** The
   runtime now looks through these wrappers before deciding what to do with
   a child, so one that resolves to an empty fragment is skipped like an
   inline `fragment []`, and one that resolves to a plain node has its JS
@@ -60,11 +79,16 @@ All notable changes to `miso` are documented here.
   (`mount_`, `mountWithProps`, `(+>)`, `vcomp`, …) forget the child's
   `props` at the boundary exactly as they forget its `model` and `action`.
   Update signatures by inserting a `props` variable after `context`; code
-  that leaves it polymorphic needs no other change. `ToHtml (View …)` now
-  requires `props ~ ()` (use `toHtmlWith` otherwise). `content_` in
+  that leaves it polymorphic needs no other change. `ToHtml (View …)` and
+  `ToHtml [View …]` now require `props ~ ()` and `model ~ ()`: a bare `View`
+  is static markup, and a component's view is rendered with
+  `toHtmlWith props model` (so `toHtml (view ctx () m)` becomes
+  `toHtmlWith () m (view ctx () m)`). `content_` in
   `Miso.Native.X.Element.Svg.Property` now takes a
-  `View context () model action`; lift `withProps` above the element to
-  draw from the component's `props`.
+  `View context () () action` — this pins the content's own type
+  parameters, not the enclosing component's; lift `withProps` / `withModel`
+  above the element, or use `svgWith_`, to draw from the component's
+  `props` / `model`.
 
 ### Fixed
 

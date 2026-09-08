@@ -1246,6 +1246,7 @@ buildVTree
   -> props
   -- ^ The mounting component's current @props@, resolved by 'VProps'.
   -> model
+  -- ^ The mounting component's current @model@, resolved by 'VModel'.
   -> View context props model action
   -> IO VTree
 buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ props_ model_ = \case
@@ -1294,18 +1295,21 @@ buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ props_ model_ = 
   v@VContext {} -> go =<< resolve v
 
   v@VProps {} -> go =<< resolve v
+
+  v@VModel {} -> go =<< resolve v
   where
     -- Recurse with every argument but the 'View' unchanged.
     go :: View context props model action -> IO VTree
     go = buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ props_ model_
 
-    -- Look through the wrapper constructors ('VProps', 'VContext') to the
-    -- node they resolve to. Every child goes through this before it is
+    -- Look through the wrapper constructors ('VProps', 'VModel', 'VContext')
+    -- to the node they resolve to. Every child goes through this before it is
     -- built, so 'freeable' decides on the real constructor and a wrapper
     -- resolving to @fragment []@ hits the empty-fragment skip in 'buildKid'.
     resolve :: View context props model action -> IO (View context props model action)
     resolve = \case
       VProps f -> resolve (f props_)
+      VModel f -> resolve (f model_)
       VContext f -> resolve . f =<< readIORef @context globalContext
       v -> pure v
 
@@ -1363,6 +1367,7 @@ buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ props_ model_ = 
       -- 'freeKid' pair always holds the resolved node. Conservative anyway.
       VContext {} -> False
       VProps {} -> False
+      VModel {} -> False
 
     isEvent :: Attribute model action -> Bool
     isEvent = \case
