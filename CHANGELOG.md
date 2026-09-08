@@ -14,12 +14,11 @@ All notable changes to `miso` are documented here.
   component's current `model` whenever the enclosing `View` is built, and
   against its initial (or hydrated) `model` when rendered with `toHtml`.
   `withModel` is a synonym for `vmodel`.
-- **`contentWith_` / `svgWith_`** (`Miso.Native.X.Element.Svg`). Native
-  inline SVG content that reads the enclosing component's `props` / `model`:
-  `contentWith_ props model` renders the content with `toHtmlWith`, and
-  `svgWith_ attrs content` is an `<svg>` that obtains both ambiently via
-  `withProps` / `withModel` so the content may use `vprops` / `vmodel`
-  directly.
+- **`svgWith_`** (`Miso.Native.X.Element.Svg`). Native inline SVG content
+  that reads the enclosing component's `context` / `props` / `model`:
+  `svgWith_ attrs content` is an `<svg>` that obtains all three ambiently via
+  `withContext` / `withProps` / `withModel` and hands them to `content_`, so
+  the content may use `vcontext` / `vprops` / `vmodel` directly.
 - **`VProps` / `vprops` / `withProps`.** The `props` counterpart of
   `VContext`: an ambient accessor (not a node) wrapping a
   `props -> View context props model action` function, so a helper deep in a
@@ -30,9 +29,10 @@ All notable changes to `miso` are documented here.
   component's current `props` whenever the enclosing `View` is built or
   rendered (`toHtml` on a bare `View` uses `()`). `withProps` is a synonym
   for `vprops`.
-- **`toHtmlWith`.** `toHtmlWith :: props -> model -> View context props model
-  action -> ByteString` renders a `View` whose `props` or `model` type is not
-  `()`, supplying the values `VProps` / `VModel` accessors resolve against.
+- **`toHtmlWith`.** `toHtmlWith :: context -> props -> model -> View context
+  props model action -> ByteString` renders a `View` whose `context`, `props`
+  or `model` type is not `()`, supplying the values `VContext` / `VProps` /
+  `VModel` accessors resolve against.
 - **`VContext` / `vcontext` / `withContext`.** An ambient accessor (not a
   node) wrapping a `context -> View context props model action` function, so a helper deep in a view tree can read the app-global
   `context` without needing it threaded through as an explicit argument.
@@ -52,9 +52,11 @@ All notable changes to `miso` are documented here.
   explicit argument, so `VContext` is resolved exactly like `VProps`. The
   scheduler's propagation pass is unchanged. Consequences: `setContext` now
   writes to every mounted component and is no longer used for SSR;
-  `toHtmlWith` takes the `context` first (`toHtmlWith ctx props view`) and
-  `ToHtml (View …)` requires `context ~ ()` as well as `props ~ ()`; the
-  Lynx SVG `content_` takes a `View () () model action`; `Miso.Reload`'s
+  `toHtmlWith` takes the `context` first
+  (`toHtmlWith ctx props model view`) and `ToHtml (View …)` requires
+  `context ~ ()` alongside `props ~ ()` and `model ~ ()`; the Lynx SVG
+  `content_` takes the `context`, `props` and `model` ahead of the content
+  `View`; `Miso.Reload`'s
   stable pointer no longer carries a context cell and recovers the old
   context from the root component's record.
 - **`SomeStaticComponent` now holds the component; `propsTypeOnly` is
@@ -95,15 +97,13 @@ All notable changes to `miso` are documented here.
   `props` at the boundary exactly as they forget its `model` and `action`.
   Update signatures by inserting a `props` variable after `context`; code
   that leaves it polymorphic needs no other change. `ToHtml (View …)` and
-  `ToHtml [View …]` now require `props ~ ()` and `model ~ ()`: a bare `View`
-  is static markup, and a component's view is rendered with
-  `toHtmlWith props model` (so `toHtml (view ctx () m)` becomes
-  `toHtmlWith () m (view ctx () m)`). `content_` in
-  `Miso.Native.X.Element.Svg.Property` now takes a
-  `View context () () action` — this pins the content's own type
-  parameters, not the enclosing component's; lift `withProps` / `withModel`
-  above the element, or use `svgWith_`, to draw from the component's
-  `props` / `model`.
+  `ToHtml [View …]` now require `context ~ ()`, `props ~ ()` and
+  `model ~ ()`: a bare `View` is static markup, and a component's view is
+  rendered with `toHtmlWith` (so `toHtml (view ctx () m)` becomes
+  `toHtmlWith ctx () m (view ctx () m)`). `content_` in
+  `Miso.Native.X.Element.Svg.Property` now takes the `context`, `props` and
+  `model` to render against, ahead of the content `View`; use `svgWith_` to
+  obtain all three ambiently from the enclosing component.
 
 ### Fixed
 

@@ -26,11 +26,12 @@
 -- <https://en.wikipedia.org/wiki/Server-side_scripting server-side rendering (SSR)>
 -- support.
 --
--- Instances are provided for both @'Miso.Types.View' c () () a@ (a single
--- node) and @['Miso.Types.View' c () () a]@ (a sequence of nodes): a bare
--- 'Miso.Types.View' is static markup with no enclosing component, so its
--- @props@ and @model@ are fixed to @()@. A component's view, or any subtree
--- that reads @props@ \/ @model@, is rendered with 'toHtmlWith'.
+-- Instances are provided for both @'Miso.Types.View' () () () a@ (a single
+-- node) and @['Miso.Types.View' () () () a]@ (a sequence of nodes): a bare
+-- 'Miso.Types.View' is static markup with no enclosing component and no
+-- app-global @context@ to read, so its @context@, @props@ and @model@ are all
+-- fixed to @()@. A component's view, or any subtree that reads @context@ \/
+-- @props@ \/ @model@, is rendered with 'toHtmlWith'.
 --
 -- = Quick start
 --
@@ -39,7 +40,7 @@
 -- import qualified Data.ByteString.Lazy as L
 --
 -- renderPage :: Model -> L.ByteString
--- renderPage m = 'toHtmlWith' () m (view () () m)
+-- renderPage m = 'toHtmlWith' () () m (view () () m)
 --
 -- staticPage :: L.ByteString
 -- staticPage = 'toHtml' ('Miso.Html.Element.div_' [] [ "Hello, world!" ])
@@ -138,17 +139,18 @@ instance (context ~ (), props ~ (), model ~ ()) => ToHtml [View context props mo
 renderView :: View () () () action -> L.ByteString
 renderView = toHtmlWith () () ()
 ----------------------------------------------------------------------------
--- | Render a 'View' to a @L.ByteString@, supplying the app-global @context@
--- and the @props@ that 'Miso.Types.VContext' \/ 'Miso.Types.VProps' nodes in
--- it resolve against. Mounted child components see the same @context@ and
--- their own @props@.
+-- | Render a 'View' to a @L.ByteString@, supplying the app-global @context@,
+-- the @props@ and the @model@ that 'Miso.Types.VContext' \/
+-- 'Miso.Types.VProps' \/ 'Miso.Types.VModel' accessors in it resolve against.
+-- Mounted child components see the same @context@, and their own @props@ and
+-- initial @model@.
 --
--- This is the general form of 'toHtml', for a 'View' whose @context@ or
--- @props@ type is not @()@ — e.g. a component's 'Miso.Types.view' applied
+-- This is the general form of 'toHtml', for a 'View' whose @context@, @props@
+-- or @model@ type is not @()@ — e.g. a component's 'Miso.Types.view' applied
 -- directly:
 --
 -- @
--- toHtmlWith ctx props (view comp ctx props model)
+-- toHtmlWith ctx props model (view comp ctx props model)
 -- @
 --
 -- @since 1.14.0.0
