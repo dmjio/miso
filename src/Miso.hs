@@ -278,10 +278,10 @@
 -- * 'startAppWithContext' — the client entry point, replaces 'startApp'.
 -- * 'misoWithContext' \/ 'prerenderWithContext' — the hydrating counterparts
 --   of 'miso' \/ 'prerender', for prerendered pages.
--- * 'setContext' — overwrites the value held by every mounted component,
---   without scheduling a redraw. For __server-side rendering__, where no
---   runtime is started, pass the @context@ to 'Miso.Html.Render.toHtmlWith'
---   instead.
+-- * 'setContext' — writes through the app's shared @context@ cell, without
+--   scheduling a redraw. For __server-side rendering__, where no runtime is
+--   started and so no cell exists, pass the @context@ to
+--   'Miso.Html.Render.toHtmlWith' instead.
 -- * 'Miso.Reload.liveWithContext' \/ 'Miso.Reload.reloadWithContext' — the
 --   context-aware variants of 'Miso.Reload.live' \/ 'Miso.Reload.reload' for
 --   interactive (GHCi) development.
@@ -1816,14 +1816,15 @@ module Miso
   , App
   , startApp
   , startAppWithContext
-    -- | Overwrite the React-style @context@ held by every mounted component,
-    -- outside of the normal 'Miso.Effect.modifyContext' flow.
+    -- | Overwrite the React-style @context@, outside of the normal
+    -- 'Miso.Effect.modifyContext' flow.
     --
-    -- The @context@ is not a global cell: each mounted component carries its
-    -- own copy, seeded by 'startAppWithContext' and kept identical across the
-    -- tree by 'Miso.Effect.modifyContext'. 'setContext' rewrites all of those
-    -- copies at once but does not schedule a redraw, so client applications
-    -- normally never call it.
+    -- There is one @context@ cell per running app, created by
+    -- 'startAppWithContext' and shared by reference with every component it
+    -- mounts, so no component holds a copy that could disagree. 'setContext'
+    -- writes through that cell but does not schedule a redraw, so client
+    -- applications normally never call it. Before the app starts there is no
+    -- cell, and it does nothing.
     --
     -- For __server-side rendering__ there is no runtime and nothing to write
     -- to; pass the @context@ (and @props@) to 'Miso.Html.Render.toHtmlWith'

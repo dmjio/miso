@@ -1881,14 +1881,16 @@ main = withJS $ do
         updated <- liftIO $ pollFor propagationAttempts ((== ("2" :: MisoString)) <$> readProbe)
         updated `shouldBe` True
 
-      it "modifyContext writes the new context into every mounted component" $ do
+      it "modifyContext is visible to every mounted component" $ do
         liftIO $ startAppWithContext mempty (1 :: Int) (contextRoot False)
         root <- liftIO $
           ((IM.! 1) <$> readIORef components :: IO (ComponentState Int () () ContextAction))
         liftIO (_componentSink root BumpContext)
         synced <- liftIO $ pollFor propagationAttempts $ do
           vcomps <- readIORef components
-          pure (all ((== (2 :: Int)) . _componentContext) (IM.elems vcomps))
+          -- Every component shares one context cell, so this reads the same
+          -- ref once per component; it stays a whole-tree check.
+          and <$> traverse (fmap (== (2 :: Int)) . readIORef . _componentContext) (IM.elems vcomps)
         synced `shouldBe` True
         count <- liftIO (IM.size <$> readIORef components)
         count `shouldBe` 2

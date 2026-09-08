@@ -254,6 +254,20 @@ liveWithContext events initialContext vcomp_ = do
           -- ('initComponent' creates the new cell and seeds it with this value.)
           initComponent events Draw True oldContext initialVComp Nothing () Nothing
 
+          -- 'cleanup' with @live = True@ deliberately keeps 'components', and
+          -- the fresh tree only overwrites the ids it reuses. A reloaded tree
+          -- smaller than the previous one therefore leaves entries behind that
+          -- still reference the PREVIOUS app's context cell, and the scheduler's
+          -- propagation pass would draw them against a context nothing updates
+          -- any more. Re-point every surviving entry at the new root's cell so
+          -- the whole map shares one cell again. This rewrites references, once
+          -- per reload — not values, and not per context change.
+          newState <- readIORef components
+          forM_ (IM.lookup topLevelComponentId newState) $ \root -> do
+            let newCell = root ^. componentContext
+            atomicModifyIORef' components $ \m ->
+              (IM.map (componentContext .~ newCell) m, ())
+
           -- Don't forget to flush (native mobile needs this too)
           FFI.flush
 

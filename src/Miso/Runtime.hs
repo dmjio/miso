@@ -472,7 +472,7 @@ scheduler Proxy =
       -- crosses — sibling effects in the same @update@ stay put, so nothing is
       -- double-executed.
       forM_ schedules $ \case
-        ContextModify f -> modifyContextAll f
+        ContextModify f -> modifyContextAll _componentContext f
         CrossThread targetThread action
           | crossThread targetThread -> _componentPostEffect action
           | otherwise                -> _componentSink action
@@ -801,28 +801,31 @@ globalQueue = unsafePerformIO (newIORef emptyQueue)
 --
 -- @since 1.13.0.0
 setContext :: context -> IO ()
-setContext = modifyContextAll . const
+setContext ctx = do
+  vcomps <- readIORef components
+  -- The root is the app's own component, so its cell is this app's cell.
+  -- Deliberately not "any element": after a hot reload 'components' can still
+  -- hold entries from the previous tree, and those point at the previous cell.
+  case IM.lookup topLevelComponentId vcomps of
+    Nothing -> pure ()
+    Just cs -> modifyContextAll (_componentContext cs) (const ctx)
 -----------------------------------------------------------------------------
 -- | Apply a function to the app-global @context@, in one atomic update of the
 -- shared cell. This is how 'Miso.Effect.modifyContext' takes effect during the
 -- commit phase.
 --
--- Every component shares one '_componentContext' cell, so this is a single
--- 'atomicModifyIORef'' on that cell: any mounted component is a way to reach
--- it, and there is no per-component copy to rewrite. Nothing is written when
--- the app is not running, since no cell exists yet.
+-- The cell is passed in rather than looked up: every caller in the commit and
+-- unmount paths already holds it as '_componentContext', and taking it from
+-- them keeps this exact instead of relying on all live components pointing at
+-- the same cell.
 --
 -- 'atomicModifyIORef'' forces the new @context@, so a component that never
 -- redraws cannot accumulate a thunk chain, and an @f@ that throws damages only
 -- this cell rather than the 'components' registry.
 --
 -- @since 1.14.0.0
-modifyContextAll :: (context -> context) -> IO ()
-modifyContextAll f = do
-  vcomps <- readIORef components
-  case IM.elems vcomps of
-    [] -> pure ()
-    cs : _ -> atomicModifyIORef' (_componentContext cs) $ \ctx -> (f ctx, ())
+modifyContextAll :: IORef context -> (context -> context) -> IO ()
+modifyContextAll ref f = atomicModifyIORef' ref $ \ctx -> (f ctx, ())
 -----------------------------------------------------------------------------
 componentId :: Lens (ComponentState context props model action) ComponentId
 componentId = lens _componentId $ \record field -> record { _componentId = field }
@@ -1222,7 +1225,7 @@ drain ComponentState {..} = do
              Schedule _ effect ->
                effect _componentSink
                  `catch` exception
-             ContextModify f -> modifyContextAll f
+             ContextModify f -> modifyContextAll _componentContext f
            newContext <- readIORef _componentContext
            when (not mts && dirtyCheck currentContext newContext) enqueueContextPropagation
            -- dmj: One last context propagation before aborting.

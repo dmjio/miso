@@ -36,7 +36,7 @@ contentRaw_ = textProp "content"
 --
 -- Inline SVG XML content using 'Miso.miso' 'Miso.Types.View' Syntax.
 --
--- > content_ (svg_ [] [])
+-- > content_ context props model (svg_ [] [])
 --
 -- N.B. Must use "Miso.Svg" and 'Miso.Svg.Element.svg_' combinator.
 --
