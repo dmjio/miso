@@ -425,10 +425,10 @@
 -- component is redrawn when its @model@ changes after an 'Miso.Types.update',
 -- and the accessor is re-resolved as part of that redraw.
 --
--- When serialising with 'Miso.Html.Render.toHtml', a bare 'View' has no
--- @model@ to resolve against, so a top-level 'VModel' raises an exception if
--- forced — supply one with 'Miso.Html.Render.toHtmlWith'. A 'VModel' inside
--- a mounted component sees that component's initial (or hydrated) @model@.
+-- When serialising, a bare 'View' under 'Miso.Html.Render.toHtml' is static
+-- markup with @model ~ ()@; a view that reads a real @model@ is rendered with
+-- 'Miso.Html.Render.toHtmlWith', which takes the value. A 'VModel' inside a
+-- mounted component sees that component's initial (or hydrated) @model@.
 --
 -- The smart constructors for 'VModel' are 'vmodel' and 'withModel'
 -- (a synonym). Like 'withContext' and 'withProps', 'withModel' provides
@@ -1297,9 +1297,10 @@
 --   'Miso.Html.ToHtml.toHtml' :: a -> 'Data.ByteString.Lazy.ByteString'
 -- @
 --
--- Instances are provided for @'View' c () m a@ and @['View' c () m a]@ — a
--- bare 'View' has no enclosing component to supply @props@, so they are
--- fixed to @()@ (a 'View' left polymorphic in @props@ resolves to this):
+-- Instances are provided for @'View' c () () a@ and @['View' c () () a]@ — a
+-- bare 'View' is static markup with no enclosing component to supply
+-- @props@ or @model@, so both are fixed to @()@ (a 'View' left polymorphic
+-- in them resolves to this):
 --
 -- @
 -- import "Miso.Html.Render" ('Miso.Html.Render.toHtml')
@@ -1308,11 +1309,10 @@
 -- pageHtml = 'Miso.Html.Render.toHtml' $ 'Miso.Html.Element.div_' [ 'Miso.Html.Property.id_' "root" ] [ "Hello, world!" ]
 -- @
 --
--- To render a 'View' whose @props@ type is something else — e.g. a
--- component's 'Miso.Types.view' applied directly, or a subtree containing
+-- To render a 'View' whose @props@ or @model@ type is something else — e.g.
+-- a component's 'Miso.Types.view' applied directly, or a subtree containing
 -- 'vprops' or 'vmodel' — pass the @props@ and @model@ values with
--- 'Miso.Html.Render.toHtmlWith' (a bare 'View' has no @model@ either, so a
--- top-level 'vmodel' under 'Miso.Html.Render.toHtml' raises when forced):
+-- 'Miso.Html.Render.toHtmlWith':
 --
 -- @
 -- 'Miso.Html.Render.toHtmlWith' props model ('Miso.Types.view' comp ctx props model)
@@ -1837,7 +1837,7 @@ module Miso
     -- main :: 'IO' ()
     -- main = do
     --   'setContext' Dark
-    --   Data.ByteString.Lazy.putStr ('Miso.Html.Render.toHtml' (view Dark () model))
+    --   Data.ByteString.Lazy.putStr ('Miso.Html.Render.toHtmlWith' () model (view Dark () model))
     -- @
   , setContext
   , renderApp

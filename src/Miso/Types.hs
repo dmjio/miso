@@ -894,11 +894,11 @@ withProps = vprops
 -- redrawn when its @model@ changes after an 'update', and the node is
 -- re-resolved against the new @model@ as part of that redraw.
 --
--- When serialising with 'Miso.Html.Render.toHtml', a bare 'View' has no
--- enclosing component to supply a @model@, so a 'VModel' at that level
--- cannot be resolved and raises an exception if forced; pass the @model@
--- with 'Miso.Html.Render.toHtmlWith' instead. One nested inside a mounted
--- component always sees that component's initial (or hydrated) @model@.
+-- When serialising, a bare 'View' under 'Miso.Html.Render.toHtml' has no
+-- enclosing component to supply a @model@, so its @model@ is fixed to @()@;
+-- pass a real @model@ with 'Miso.Html.Render.toHtmlWith' instead. A 'VModel'
+-- nested inside a mounted component always sees that component's initial
+-- (or hydrated) @model@.
 --
 -- @since 1.14.0.0
 vmodel :: (model -> View context props model action) -> View context props model action

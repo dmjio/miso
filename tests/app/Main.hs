@@ -1989,6 +1989,16 @@ main = withJS $ do
         toHtmlWith () ("b" :: MisoString) (div_ [] [ "a", withModel text, "c" ])
           `shouldBe` "<div>abc</div>"
 
+      it "toHtmlWith collapses text nodes inside a fragment, matching the client" $ do
+        -- An empty model string behind 'withModel' must not become a lone
+        -- space: hydrate.ts recurses into fragments before comparing text.
+        toHtmlWith () ("" :: MisoString) (div_ [] [ vfrag [ "a", withModel text, "c" ] ])
+          `shouldBe` "<div>ac</div>"
+
+      it "toHtml collapses text nodes across a [View]" $ do
+        toHtml ([ "a", "", "c" ] :: [View () () () Action])
+          `shouldBe` "ac"
+
     describe "Miso.DSL `await` tests" $ do
       it "Successful Promise resolution should result in a value" $ do
         -- Create a Promise and immediately resolve it with `42`

@@ -26,17 +26,23 @@
 -- <https://en.wikipedia.org/wiki/Server-side_scripting server-side rendering (SSR)>
 -- support.
 --
--- Instances are provided for both @'Miso.Types.View' m a@ (a single node)
--- and @['Miso.Types.View' m a]@ (a sequence of nodes).
+-- Instances are provided for both @'Miso.Types.View' c () () a@ (a single
+-- node) and @['Miso.Types.View' c () () a]@ (a sequence of nodes): a bare
+-- 'Miso.Types.View' is static markup with no enclosing component, so its
+-- @props@ and @model@ are fixed to @()@. A component's view, or any subtree
+-- that reads @props@ \/ @model@, is rendered with 'toHtmlWith'.
 --
 -- = Quick start
 --
 -- @
--- import           "Miso.Html.Render" ('ToHtml', 'toHtml')
+-- import           "Miso.Html.Render" ('ToHtml', 'toHtml', 'toHtmlWith')
 -- import qualified Data.ByteString.Lazy as L
 --
 -- renderPage :: Model -> L.ByteString
--- renderPage m = 'toHtml' (view m)
+-- renderPage m = 'toHtmlWith' () m (view () () m)
+--
+-- staticPage :: L.ByteString
+-- staticPage = 'toHtml' ('Miso.Html.Element.div_' [] [ "Hello, world!" ])
 -- @
 --
 -- With @servant@, use @'toHtml'@ inside a @'Data.ByteString.Lazy.ByteString'@
@@ -61,10 +67,9 @@
 --   under 'toHtml'; the value given to 'toHtmlWith' otherwise) and the
 --   result rendered in its place.
 -- * __'Miso.Types.VModel'__ (ambient accessor, not a node) — applied to the
---   initial (or hydrated) @model@ of the enclosing component (the value
---   given to 'toHtmlWith' for a bare 'Miso.Types.View'; under 'toHtml' there
---   is no @model@ to apply it to, and forcing the accessor raises an
---   exception) and the result rendered in its place.
+--   initial (or hydrated) @model@ of the enclosing component (@()@ for a
+--   bare 'Miso.Types.View' under 'toHtml'; the value given to 'toHtmlWith'
+--   otherwise) and the result rendered in its place.
 -- * __Event handlers__ (@'Miso.Types.On'@) — silently dropped; they have
 --   no meaning in a static HTML string.
 -- * __Boolean properties__ (@disabled@, @checked@, @required@, …) — rendered
@@ -116,45 +121,31 @@ class ToHtml a where
 ----------------------------------------------------------------------------
 -- | Render a @Miso.Types.View@ to a @L.ByteString@
 --
--- A bare 'View' has no enclosing t'Component' to supply @props@, so its
--- @props@ are fixed to @()@ (the @props ~ ()@ constraint lets a 'View' that is
--- polymorphic in @props@ still resolve this instance). A 'Miso.Types.VProps'
--- node at this level therefore sees @()@; one nested inside a mounted
--- component sees that component's real @props@.
---
--- Nor is there a @model@ to resolve a 'Miso.Types.VModel' node against: the
--- @model@ type is left free (so existing @toHtml (view ctx () m)@ code keeps
--- compiling), but forcing a 'Miso.Types.VModel' at this level raises an
--- exception. Use 'toHtmlWith' to supply one. A 'Miso.Types.VModel' nested
--- inside a mounted component sees that component's initial (or hydrated)
--- @model@ as usual.
-instance (props ~ ()) => ToHtml (View context props model action) where
+-- A bare 'View' has no enclosing t'Component' to supply @props@ or @model@,
+-- so both are fixed to @()@ (the equality constraints let a 'View' that is
+-- polymorphic in them still resolve this instance). A 'Miso.Types.VProps' \/
+-- 'Miso.Types.VModel' accessor at this level therefore sees @()@; one nested
+-- inside a mounted component sees that component's real @props@ and its
+-- initial (or hydrated) @model@. A 'View' whose @props@ or @model@ type is
+-- something else is rendered with 'toHtmlWith', which takes the values.
+instance (props ~ (), model ~ ()) => ToHtml (View context props model action) where
   toHtml = renderView
 ----------------------------------------------------------------------------
--- | Render a @[Miso.Types.View]@ to a @L.ByteString@
-instance (props ~ ()) => ToHtml [View context props model action] where
-  toHtml = foldMap renderView
+-- | Render a @[Miso.Types.View]@ to a @L.ByteString@. Adjacent text nodes
+-- are collapsed across the list, as they are among an element's children.
+instance (props ~ (), model ~ ()) => ToHtml [View context props model action] where
+  toHtml = toLazyByteString . foldMap (renderBuilder () ()) . collapseSiblingTextNodes () ()
 ----------------------------------------------------------------------------
-renderView :: View context () model action -> L.ByteString
-renderView = toHtmlWith () noModel
-----------------------------------------------------------------------------
--- | The @model@ a bare 'View' is rendered against under 'toHtml'. There is
--- none, so this is a lazy bottom: it is only ever forced by a
--- 'Miso.Types.VModel' node at the top level, where it explains the fix.
-noModel :: model
-noModel = errorWithoutStackTrace $ mconcat
-  [ "Miso.Html.Render.toHtml: a bare View has no enclosing Component to "
-  , "supply a model, so a vmodel / withModel node here cannot be resolved. "
-  , "Render it with toHtmlWith, passing the model explicitly."
-  ]
+renderView :: View context () () action -> L.ByteString
+renderView = toHtmlWith () ()
 ----------------------------------------------------------------------------
 -- | Render a 'View' to a @L.ByteString@, supplying the @props@ and @model@
--- that any 'Miso.Types.VProps' \/ 'Miso.Types.VModel' node in it resolves
--- against.
+-- that any 'Miso.Types.VProps' \/ 'Miso.Types.VModel' accessor in it
+-- resolves against.
 --
--- This is the general form of 'toHtml', for a 'View' whose @props@ type is
--- not @()@ or that contains a 'Miso.Types.vmodel' — e.g. a component's
--- 'Miso.Types.view' applied directly:
+-- This is the general form of 'toHtml', for a 'View' whose @props@ or
+-- @model@ type is not @()@ — e.g. a component's 'Miso.Types.view' applied
+-- directly:
 --
 -- @
 -- toHtmlWith props model (view comp ctx props model)
@@ -247,7 +238,10 @@ renderBuilder _ _ (VComp someComp) = renderComp someComp
 renderBuilder _ _ (VCompStatic ptr props0) =
   case deRefStaticPtr ptr of
     SomeStaticComponent comp_ -> renderComp (SomeComponent Nothing props0 comp_)
-renderBuilder props_ model_ (VFrag _ kids) = foldMap (renderBuilder props_ model_) kids
+renderBuilder props_ model_ (VFrag _ kids) =
+  -- Collapse inside the fragment too: the client's hydration walk recurses
+  -- into fragments before comparing text, so the server must match.
+  foldMap (renderBuilder props_ model_) (collapseSiblingTextNodes props_ model_ kids)
 renderBuilder props_ model_ (VContext f) =
   let ctx = unsafePerformIO (readIORef globalContext) in
   renderBuilder props_ model_ (f ctx)
