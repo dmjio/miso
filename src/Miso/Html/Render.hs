@@ -130,9 +130,10 @@ class ToHtml a where
 instance (context ~ (), props ~ (), model ~ ()) => ToHtml (View context props model action) where
   toHtml = renderView
 ----------------------------------------------------------------------------
--- | Render a @[Miso.Types.View]@ to a @L.ByteString@
+-- | Render a @[Miso.Types.View]@ to a @L.ByteString@. Adjacent text nodes
+-- are collapsed across the list, as they are among an element's children.
 instance (context ~ (), props ~ (), model ~ ()) => ToHtml [View context props model action] where
-  toHtml = foldMap renderView
+  toHtml = toLazyByteString . foldMap (renderBuilder () () ()) . collapseSiblingTextNodes () () ()
 ----------------------------------------------------------------------------
 renderView :: View () () () action -> L.ByteString
 renderView = toHtmlWith () () ()
@@ -237,7 +238,10 @@ renderBuilder ctx_ _ _ (VComp someComp) = renderComp ctx_ someComp
 renderBuilder ctx_ _ _ (VCompStatic ptr props0) =
   case deRefStaticPtr ptr of
     SomeStaticComponent comp_ -> renderComp ctx_ (SomeComponent Nothing props0 comp_)
-renderBuilder ctx_ props_ model_ (VFrag _ kids) = foldMap (renderBuilder ctx_ props_ model_) kids
+renderBuilder ctx_ props_ model_ (VFrag _ kids) =
+  -- Collapse inside the fragment too: the client's hydration walk recurses
+  -- into fragments before comparing text, so the server must match.
+  foldMap (renderBuilder ctx_ props_ model_) (collapseSiblingTextNodes ctx_ props_ model_ kids)
 renderBuilder ctx_ props_ model_ (VContext f) = renderBuilder ctx_ props_ model_ (f ctx_)
 renderBuilder ctx_ props_ model_ (VProps f) = renderBuilder ctx_ props_ model_ (f props_)
 renderBuilder ctx_ props_ model_ (VModel f) = renderBuilder ctx_ props_ model_ (f model_)
