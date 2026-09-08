@@ -21,7 +21,7 @@ module Miso.Native.X.Element.Svg.Property
 import           Miso.String (MisoString, ms)
 import           Miso.Types (Attribute, View)
 import           Miso.Property
-import           Miso.Html.Render (toHtml)
+import           Miso.Html.Render (toHtmlWith)
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/svg.html#content
 --
@@ -41,20 +41,26 @@ contentRaw_ = textProp "content"
 -- N.B. Must use "Miso.Svg" and 'Miso.Svg.Element.svg_' combinator.
 --
 -- The content is serialised to a string when the attribute is built, so the
--- 'Miso.Types.View' has no running component to take @context@ or @props@
--- from and both are fixed to @()@. To draw from the component's @context@
--- or @props@, lift 'Miso.Types.withContext' \/ 'Miso.Types.withProps' above
+-- 'Miso.Types.View' has no running component to take @context@, @props@ or @model@
+-- from and all are fixed to @()@. To draw from the component's @context@
+-- @props@ or @model@, lift 'Miso.Types.withContext' \/ 'Miso.Types.withProps' \/ 'Miso.Types.withModel' above
 -- the element instead of using the accessors inside the content:
 --
--- > withProps $ \Props { color } ->
+-- > withContext $ \context -> withProps $ \props -> withModel $ \model ->
 -- >   svg_
--- >     [ content_ $ Svg.svg_ [ textProp "xmlns" "http://www.w3.org/2000/svg" ]
+-- >     [ content_ context props model $ Svg.svg_
+-- >         [ textProp "xmlns" "http://www.w3.org/2000/svg" ]
 -- >         [ Svg.circle_ [ Svg.fill_ color ] [] ]
 -- >     ]
 -- >     []
 --
-content_ :: View () () model action -> Attribute model action
-content_ = textProp "content" . ms . toHtml
+-- or use 'Miso.Native.X.Element.Svg.svgWith_', which does that lifting and
+-- lets the content itself use 'Miso.Types.vprops' \/ 'Miso.Types.vmodel'.
+--
+--
+-- @since 1.14.0.0
+content_ :: context -> props -> model -> View context props model action -> Attribute model action
+content_ context props model = textProp "content" . ms . toHtmlWith context props model
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/svg.html#src
 --

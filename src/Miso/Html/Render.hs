@@ -26,17 +26,23 @@
 -- <https://en.wikipedia.org/wiki/Server-side_scripting server-side rendering (SSR)>
 -- support.
 --
--- Instances are provided for both @'Miso.Types.View' m a@ (a single node)
--- and @['Miso.Types.View' m a]@ (a sequence of nodes).
+-- Instances are provided for both @'Miso.Types.View' c () () a@ (a single
+-- node) and @['Miso.Types.View' c () () a]@ (a sequence of nodes): a bare
+-- 'Miso.Types.View' is static markup with no enclosing component, so its
+-- @props@ and @model@ are fixed to @()@. A component's view, or any subtree
+-- that reads @props@ \/ @model@, is rendered with 'toHtmlWith'.
 --
 -- = Quick start
 --
 -- @
--- import           "Miso.Html.Render" ('ToHtml', 'toHtml')
+-- import           "Miso.Html.Render" ('ToHtml', 'toHtml', 'toHtmlWith')
 -- import qualified Data.ByteString.Lazy as L
 --
 -- renderPage :: Model -> L.ByteString
--- renderPage m = 'toHtml' (view m)
+-- renderPage m = 'toHtmlWith' () m (view () () m)
+--
+-- staticPage :: L.ByteString
+-- staticPage = 'toHtml' ('Miso.Html.Element.div_' [] [ "Hello, world!" ])
 -- @
 --
 -- With @servant@, use @'toHtml'@ inside a @'Data.ByteString.Lazy.ByteString'@
@@ -61,6 +67,10 @@
 --   @props@ of the enclosing component (@()@ for a bare 'Miso.Types.View'
 --   under 'toHtml'; the value given to 'toHtmlWith' otherwise) and the
 --   result rendered in its place.
+-- * __'Miso.Types.VModel'__ (ambient accessor, not a node) — applied to the
+--   initial (or hydrated) @model@ of the enclosing component (@()@ for a
+--   bare 'Miso.Types.View' under 'toHtml'; the value given to 'toHtmlWith'
+--   otherwise) and the result rendered in its place.
 -- * __Event handlers__ (@'Miso.Types.On'@) — silently dropped; they have
 --   no meaning in a static HTML string.
 -- * __Boolean properties__ (@disabled@, @checked@, @required@, …) — rendered
@@ -117,15 +127,15 @@ class ToHtml a where
 -- therefore sees @()@; one nested inside a mounted component sees that
 -- component's real @props@ (and the same @context@). Use 'toHtmlWith' to
 -- supply real values.
-instance (context ~ (), props ~ ()) => ToHtml (View context props model action) where
+instance (context ~ (), props ~ (), model ~ ()) => ToHtml (View context props model action) where
   toHtml = renderView
 ----------------------------------------------------------------------------
 -- | Render a @[Miso.Types.View]@ to a @L.ByteString@
-instance (context ~ (), props ~ ()) => ToHtml [View context props model action] where
+instance (context ~ (), props ~ (), model ~ ()) => ToHtml [View context props model action] where
   toHtml = foldMap renderView
 ----------------------------------------------------------------------------
-renderView :: View () () model action -> L.ByteString
-renderView = toHtmlWith () ()
+renderView :: View () () () action -> L.ByteString
+renderView = toHtmlWith () () ()
 ----------------------------------------------------------------------------
 -- | Render a 'View' to a @L.ByteString@, supplying the app-global @context@
 -- and the @props@ that 'Miso.Types.VContext' \/ 'Miso.Types.VProps' nodes in
@@ -141,8 +151,8 @@ renderView = toHtmlWith () ()
 -- @
 --
 -- @since 1.14.0.0
-toHtmlWith :: context -> props -> View context props model action -> L.ByteString
-toHtmlWith ctx props = toLazyByteString . renderBuilder ctx props
+toHtmlWith :: context -> props -> model -> View context props model action -> L.ByteString
+toHtmlWith ctx props model_ = toLazyByteString . renderBuilder ctx props model_
 ----------------------------------------------------------------------------
 intercalate :: Builder -> [Builder] -> Builder
 intercalate _ [] = ""
@@ -190,11 +200,11 @@ booleanProperties = S.fromList
 -- | Serialise a 'View' given the app-global @context@ and the @props@ of the
 -- t'Component' it belongs to. Entering a @VComp@ \/ @VCompStatic@ keeps the
 -- @context@ and switches to that child's @props@.
-renderBuilder :: context -> props -> View context props model action -> Builder
-renderBuilder _ _ (VText _ "")    = fromMisoString " "
-renderBuilder _ _ (VText _ s)     = fromMisoString s
-renderBuilder _ _ (VNode _ "doctype" [] [] _) = "<!doctype html>"
-renderBuilder ctx_ props_ (VNode ns tag attrs children _) = mconcat
+renderBuilder :: context -> props -> model -> View context props model action -> Builder
+renderBuilder _ _ _ (VText _ "")    = fromMisoString " "
+renderBuilder _ _ _ (VText _ s)     = fromMisoString s
+renderBuilder _ _ _ (VNode _ "doctype" [] [] _) = "<!doctype html>"
+renderBuilder ctx_ props_ model_ (VNode ns tag attrs children _) = mconcat
   [ "<"
   , fromMisoString tag
   , mconcat [ " " <> intercalate " " (renderAttrs <$> attrs)
@@ -203,7 +213,7 @@ renderBuilder ctx_ props_ (VNode ns tag attrs children _) = mconcat
   , if tag `elem` selfClosing then "/>" else ">"
   , mconcat
     [ mconcat
-      [ foldMap (renderBuilder ctx_ props_) (collapseSiblingTextNodes ctx_ props_ children)
+      [ foldMap (renderBuilder ctx_ props_ model_) (collapseSiblingTextNodes ctx_ props_ model_ children)
       , "</" <> fromMisoString tag <> ">"
       ]
     | tag `notElem` selfClosing
@@ -223,13 +233,14 @@ renderBuilder ctx_ props_ (VNode ns tag attrs children _) = mconcat
               | ns == MATHML
               , x <- ["mglyph", "mprescripts", "none", "maligngroup", "malignmark" ]
               ]
-renderBuilder ctx_ _ (VComp someComp) = renderComp ctx_ someComp
-renderBuilder ctx_ _ (VCompStatic ptr props0) =
+renderBuilder ctx_ _ _ (VComp someComp) = renderComp ctx_ someComp
+renderBuilder ctx_ _ _ (VCompStatic ptr props0) =
   case deRefStaticPtr ptr of
-    SomeStaticComponent mk -> renderComp ctx_ (mk props0)
-renderBuilder ctx_ props_ (VFrag _ kids) = foldMap (renderBuilder ctx_ props_) kids
-renderBuilder ctx_ props_ (VContext f) = renderBuilder ctx_ props_ (f ctx_)
-renderBuilder ctx_ props_ (VProps f) = renderBuilder ctx_ props_ (f props_)
+    SomeStaticComponent comp_ -> renderComp ctx_ (SomeComponent Nothing props0 comp_)
+renderBuilder ctx_ props_ model_ (VFrag _ kids) = foldMap (renderBuilder ctx_ props_ model_) kids
+renderBuilder ctx_ props_ model_ (VContext f) = renderBuilder ctx_ props_ model_ (f ctx_)
+renderBuilder ctx_ props_ model_ (VProps f) = renderBuilder ctx_ props_ model_ (f props_)
+renderBuilder ctx_ props_ model_ (VModel f) = renderBuilder ctx_ props_ model_ (f model_)
 ----------------------------------------------------------------------------
 -- | Render a mounted child component: its 'view' applied to the app-global
 -- @context@, the @props@ it was mounted with, and its initial (or hydrated)
@@ -239,9 +250,9 @@ renderBuilder ctx_ props_ (VProps f) = renderBuilder ctx_ props_ (f props_)
 renderComp :: context -> SomeComponent context -> Builder
 renderComp ctx (SomeComponent _key props comp_) =
 #ifdef SSR
-  renderBuilder ctx props (view comp_ ctx props (getInitialComponentModel comp_))
+  let m = getInitialComponentModel comp_ in renderBuilder ctx props m (view comp_ ctx props m)
 #else
-  renderBuilder ctx props (view comp_ ctx props (model comp_))
+  renderBuilder ctx props (model comp_) (view comp_ ctx props (model comp_))
 #endif
 ----------------------------------------------------------------------------
 renderAttrs :: Attribute model action -> Builder
@@ -293,17 +304,19 @@ renderAttrs (Styles styles_) =
 collapseSiblingTextNodes
   :: context
   -> props
+  -> model
   -> [View context props model action]
   -> [View context props model action]
-collapseSiblingTextNodes ctx_ props_ = go
+collapseSiblingTextNodes ctx_ props_ model_ = go
   where
-    -- Look through the wrapper constructors first, so a 'VProps' \/ 'VContext'
-    -- that resolves to text is collapsed with its neighbours exactly as the
-    -- client does after 'buildVTree' has resolved it. Otherwise an empty
-    -- 'VText' behind a wrapper renders as a lone space that hydration
-    -- cannot reconcile.
+    -- Look through the wrapper constructors first, so a 'VProps' \/ 'VModel'
+    -- \/ 'VContext' that resolves to text is collapsed with its neighbours
+    -- exactly as the client does after 'buildVTree' has resolved it.
+    -- Otherwise an empty 'VText' behind a wrapper renders as a lone space
+    -- that hydration cannot reconcile.
     go (VProps f : xs) = go (f props_ : xs)
     go (VContext f : xs) = go (f ctx_ : xs)
+    go (VModel f : xs) = go (f model_ : xs)
     go (VText _ x : VText k y : xs) = go (VText k (x <> y) : xs)
     go (x : xs) = x : go xs
     go [] = []

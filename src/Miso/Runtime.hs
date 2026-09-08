@@ -141,6 +141,7 @@ import           Miso.Event.Decoder (Decoder(decoder, decodeAt))
 #if __GLASGOW_HASKELL__ < 910
 import           Data.Foldable (foldl')
 #endif
+import           Control.Applicative ((<|>))
 import           Data.Maybe
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
@@ -335,7 +336,7 @@ initialize events _componentParentId hydrate isRoot live _componentContext initi
   forM_ mount _componentSink
 #ifdef NATIVE
   -- Ship the child's initial @props@ so the MTS can rebuild the mirror
-  -- component by applying the @Props@ constructor recovered from the
+  -- component by pairing them with the 'SomeStaticComponent' recovered from the
   -- 'StaticKey'. The no-props case serializes @()@ (JSON @null@).
   when (bts && not isRoot) $ do
     -- 'mount()' runs synchronously mid-diff (see @ts/miso/dom.ts@
@@ -1272,13 +1273,14 @@ buildVTree
   -> props
   -- ^ The mounting component's current @props@, resolved by 'VProps'.
   -> model
+  -- ^ The mounting component's current @model@, resolved by 'VModel'.
   -> View context props model action
   -> IO VTree
 buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ ctx_ props_ model_ = \case
   VComp someComp -> buildComp Nothing someComp
 
   VCompStatic ptr props -> case deRefStaticPtr ptr of
-    SomeStaticComponent mk -> buildComp (Just (staticKey ptr)) (mk props)
+    SomeStaticComponent comp -> buildComp (Just (staticKey ptr)) (SomeComponent Nothing props comp)
 
   VNode ns tag attrs kids _directEvents -> do
     vnode_ <- createNode "vnode" ns tag
@@ -1320,19 +1322,22 @@ buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ ctx_ props_ mode
   v@VContext {} -> go =<< resolve v
 
   v@VProps {} -> go =<< resolve v
+
+  v@VModel {} -> go =<< resolve v
   where
     -- Recurse with every argument but the 'View' unchanged.
     go :: View context props model action -> IO VTree
     go = buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ ctx_ props_ model_
 
-    -- Look through the wrapper constructors ('VProps', 'VContext') to the
-    -- node they resolve to. Every child goes through this before it is
+    -- Look through the wrapper constructors ('VProps', 'VModel', 'VContext')
+    -- to the node they resolve to. Every child goes through this before it is
     -- built, so 'freeable' decides on the real constructor and a wrapper
     -- resolving to @fragment []@ hits the empty-fragment skip in 'buildKid'.
     resolve :: View context props model action -> IO (View context props model action)
     resolve = \case
       VProps f -> resolve (f props_)
       VContext f -> resolve (f ctx_)
+      VModel f -> resolve (f model_)
       v -> pure v
 
     -- Build @kids@ under @parent@ in order, link each to its next sibling,
@@ -1389,6 +1394,7 @@ buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ ctx_ props_ mode
       -- 'freeKid' pair always holds the resolved node. Conservative anyway.
       VContext {} -> False
       VProps {} -> False
+      VModel {} -> False
 
     isEvent :: Attribute model action -> Bool
     isEvent = \case
@@ -1434,7 +1440,14 @@ buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ ctx_ props_ mode
             enqueueSchedule componentId_
       FFI.set "diffProps" diffPropsCallback comp
       FFI.set "child" jsNull comp
-      forM_ maybeKey (\key -> FFI.set "key" key comp)
+      -- Identity for the differ (@n.key === c.key@ in @ts/miso/dom.ts@): an
+      -- explicit key wins; otherwise a static mount uses its 'StaticKey',
+      -- which is unique per @static@ site. Without this every static mount
+      -- had @key = undefined@, so two different static components at one
+      -- position compared equal and the old instance was kept — with the new
+      -- node's @diffProps@ run against props of an unrelated type.
+      forM_ (maybeKey <|> (Key . ms <$> maybeStaticKey)) $ \key ->
+        FFI.set "key" key comp
       FFI.set "mount" mountCallback comp
       FFI.set "unmount" unmountCallback comp
       FFI.set "eventPropagation" (eventPropagation app) comp
@@ -2355,15 +2368,7 @@ initComponent events hydrate live initialContext comp_@Component {..} key props 
 #endif
         atomicWriteIORef schedulerThread =<< forkIO (scheduler proxy)
 ----------------------------------------------------------------------------
--- | Placeholder passed to a @Props@ constructor when only the resulting
--- t'SomeComponent'\'s /types/ (@model@ \/ @props@ \/ @action@) are needed, not a
--- real @props@ value — e.g. to recover the @action@ type for decoding. Safe
--- because every @Props@ built by @mount_@ \/ @mountWithProps@ \/ @(+>)@ is lazy
--- in its @props@ argument, so applying it never forces this.
 #ifdef NATIVE
-propsTypeOnly :: props
-propsTypeOnly = error "Miso.Runtime: props forced during type-only Props application"
------------------------------------------------------------------------------
 -- | Used for bidirectional cross-thread communication.
 effectListener :: forall context jsval . (Eq context, ToJSVal jsval) => Proxy context -> jsval -> IO ()
 effectListener Proxy jsval = void $ do
@@ -2380,9 +2385,10 @@ effectListener Proxy jsval = void $ do
             Nothing ->
               FFI.consoleError "[effectListener]: staticPtr NOT found for effectStaticKey"
             Just ptr ->
+              -- The 'SomeStaticComponent' carries the child's dictionaries, so the
+              -- @action@ type (and its 'FromJSON') is in scope from the key alone.
               case deRefStaticPtr ptr of
-               SomeStaticComponent mk -> case mk propsTypeOnly of
-                SomeComponent _key _props (_ :: Component context props model action) ->
+                SomeStaticComponent (_ :: Component context props model action) ->
                   case fromJSON effectAction :: Result action of
                     Success action -> do
                       comps <- readIORef components
@@ -2506,8 +2512,7 @@ componentListener Proxy live (BTS ctx) = void $ do
                 FFI.consoleError "[COMPONENT]: staticPtr NOT found for componentStaticKey"
               Just ptr ->
                 case deRefStaticPtr ptr of
-                 SomeStaticComponent mk -> case mk propsTypeOnly of
-                  SomeComponent _key _props (comp_ :: Component context props model action) ->
+                  SomeStaticComponent (comp_ :: Component context props model action) ->
                     case componentComponentType of
                       MOUNT ->
                         -- The MTS paints the initial frame itself, so any child that is part

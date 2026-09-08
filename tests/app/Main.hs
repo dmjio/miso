@@ -156,6 +156,21 @@ data Action = AddOne
   deriving stock (Show, Eq, Generic)
   deriving anyclass (JSON.FromJSON, JSON.ToJSON)
 -----------------------------------------------------------------------------
+-- | Two distinct components mounted statically at the same position by
+-- 'staticSwapRoot'; the differ must replace one with the other, not keep the
+-- first and run the second's @diffProps@ against it.
+staticProbeA, staticProbeB :: Component () () () Action
+staticProbeA = component () noop $ \_ _ _ -> div_ [ id_ "static-a" ] [ "A" ]
+staticProbeB = component () noop $ \_ _ _ -> div_ [ id_ "static-b" ] [ "B" ]
+-----------------------------------------------------------------------------
+staticSwapRoot :: Component () () Bool Action
+staticSwapRoot = component False (\AddOne -> this %= not) $ \_ _ swapped ->
+  div_ []
+    [ if swapped
+        then vcomp_ (static (mountStatic staticProbeB))
+        else vcomp_ (static (mountStatic staticProbeA))
+    ]
+-----------------------------------------------------------------------------
 -- | Increments the app-global @context@ (an 'Int'); used to test that
 -- 'useContext' gates whether a 'vcontext' subtree observes the change.
 data ContextAction = BumpContext
@@ -1813,6 +1828,26 @@ main = withJS $ do
         clickStaticKeyUndefined <- liftIO (isUndefined clickStaticKey)
         clickStaticKeyUndefined `shouldBe` False
 
+    describe "Static mount identity tests" $ do
+      it "swapping two static mounts at one position replaces the child" $ do
+        liftIO $ startApp mempty staticSwapRoot
+        ComponentState {..} <- liftIO $
+          ((IM.! 1) <$> readIORef components :: IO (ComponentState () () Bool Action))
+        let childIds = filter (/= 1) . IM.keys <$> readIORef components
+        before <- liftIO childIds
+        length before `shouldBe` 1
+        liftIO (_componentSink AddOne)
+        replaced <- liftIO $ pollFor propagationAttempts $ do
+          ids <- childIds
+          pure (length ids == 1 && ids /= before)
+        replaced `shouldBe` True
+        hasB <- liftIO $ fromJSValUnchecked =<< eval
+          ("document.getElementById('static-b') !== null" :: MisoString)
+        hasB `shouldBe` True
+        hasA <- liftIO $ fromJSValUnchecked =<< eval
+          ("document.getElementById('static-a') !== null" :: MisoString)
+        hasA `shouldBe` False
+
     describe "VContext tests" $ do
       let contextProbe :: Component Int () () Action
           contextProbe = component () noop $ \_ _ _ ->
@@ -1859,7 +1894,7 @@ main = withJS $ do
         count `shouldBe` 2
 
       it "toHtmlWith resolves vcontext against the supplied context" $ do
-        toHtmlWith (3 :: Int) () (div_ [] [ vcontext (text . ms) ])
+        toHtmlWith (3 :: Int) () () (div_ [] [ vcontext (text . ms) ])
           `shouldBe` "<div>3</div>"
 
       it "useContext = False does not redraw vcontext when the context changes" $ do
@@ -1942,8 +1977,78 @@ main = withJS $ do
         count `shouldBe` (2 :: Int)
 
       it "toHtmlWith resolves vprops against the supplied props" $ do
-        toHtmlWith () (7 :: Int) (div_ [] [ vprops (text . ms) ])
+        toHtmlWith () (7 :: Int) () (div_ [] [ vprops (text . ms) ])
           `shouldBe` "<div>7</div>"
+
+    describe "VModel tests" $ do
+      let -- A root whose 'Int' model is displayed via 'vmodel' rather than
+          -- through the 'view' argument.
+          modelRoot :: App Int Action
+          modelRoot = component (1 :: Int) (\AddOne -> this += 1) $ \_ _ _ ->
+            div_ [ id_ "model-probe" ] [ vmodel (text . ms) ]
+
+      it "vmodel resolves the component's model at initial mount" $ do
+        liftIO $ startApp mempty modelRoot
+        txt <- liftIO (readText "model-probe")
+        txt `shouldBe` ("1" :: MisoString)
+
+      it "vmodel re-resolves when the model changes" $ do
+        liftIO $ startApp mempty modelRoot
+        ComponentState {..} <- liftIO $
+          ((IM.! 1) <$> readIORef components :: IO (ComponentState () () Int Action))
+        liftIO (_componentSink AddOne)
+        updated <- liftIO $ pollFor propagationAttempts ((== ("2" :: MisoString)) <$> readText "model-probe")
+        updated `shouldBe` True
+
+      it "nested components each see their own model type" $ do
+        -- The mount boundary forgets the child's @model@, so an 'Int'-model
+        -- parent can host a 'MisoString'-model child and each 'vmodel' /
+        -- 'withModel' resolves against its own component.
+        let inner :: Component () () MisoString Action
+            inner = component ("inner" :: MisoString) noop $ \_ _ _ ->
+              span_ [ id_ "model-inner" ] [ withModel text ]
+            outer :: Component () () Int Action
+            outer = component (7 :: Int) noop $ \_ _ _ ->
+              div_ [ id_ "model-outer" ]
+                [ span_ [] [ vmodel (text . ms) ]
+                , mount_ inner
+                ]
+        liftIO $ startApp mempty outer
+        outerTxt <- liftIO (readText "model-outer")
+        innerTxt <- liftIO (readText "model-inner")
+        outerTxt `shouldBe` ("7inner" :: MisoString)
+        innerTxt `shouldBe` ("inner" :: MisoString)
+
+      it "toHtml resolves vmodel against the mounted component's initial model" $ do
+        toHtml (div_ [] [ mount_ modelRoot ])
+          `shouldBe` "<div><div id=\"model-probe\">1</div></div>"
+
+      it "a vmodel resolving to an empty fragment contributes no child" $ do
+        let root :: App () Action
+            root = component () noop $ \_ _ _ ->
+              div_ [ id_ "model-wrap" ] [ "a", vmodel (\() -> vfrag []), "b" ]
+        liftIO $ startApp mempty root
+        count <- liftIO $ fromJSValUnchecked =<< eval
+          ("document.getElementById('model-wrap').childNodes.length" :: MisoString)
+        count `shouldBe` (2 :: Int)
+
+      it "toHtmlWith resolves vmodel against the supplied model" $ do
+        toHtmlWith () () (7 :: Int) (div_ [] [ vmodel (text . ms) ])
+          `shouldBe` "<div>7</div>"
+
+      it "toHtmlWith collapses a vmodel text node with its neighbours" $ do
+        toHtmlWith () () ("b" :: MisoString) (div_ [] [ "a", withModel text, "c" ])
+          `shouldBe` "<div>abc</div>"
+
+      it "toHtmlWith collapses text nodes inside a fragment, matching the client" $ do
+        -- An empty model string behind 'withModel' must not become a lone
+        -- space: hydrate.ts recurses into fragments before comparing text.
+        toHtmlWith () () ("" :: MisoString) (div_ [] [ vfrag [ "a", withModel text, "c" ] ])
+          `shouldBe` "<div>ac</div>"
+
+      it "toHtml collapses text nodes across a [View]" $ do
+        toHtml ([ "a", "", "c" ] :: [View () () () Action])
+          `shouldBe` "ac"
 
     describe "Miso.DSL `await` tests" $ do
       it "Successful Promise resolution should result in a value" $ do
