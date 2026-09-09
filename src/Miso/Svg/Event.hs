@@ -31,7 +31,7 @@
 --
 -- data Action = AnimDone | Zoomed
 --
--- view :: Model -> 'Miso.Types.View' Model Action
+-- view :: Model -> 'Miso.Types.View' context props Model Action
 -- view _ =
 --   @svg_@ []
 --     [ 'Miso.Svg.Element.animate_'

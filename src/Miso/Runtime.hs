@@ -335,7 +335,7 @@ initialize events _componentParentId hydrate isRoot live _componentContext initi
   forM_ mount _componentSink
 #ifdef NATIVE
   -- Ship the child's initial @props@ so the MTS can rebuild the mirror
-  -- component by pairing them with the 'SomeStaticComponent' recovered from the
+  -- component by pairing them with the t'SomeStaticComponent' recovered from the
   -- 'StaticKey'. The no-props case serializes @()@ (JSON @null@).
   when (bts && not isRoot) $ do
     -- 'mount()' runs synchronously mid-diff (see @ts/miso/dom.ts@
@@ -2390,7 +2390,7 @@ effectListener Proxy jsval = void $ do
             Nothing ->
               FFI.consoleError "[effectListener]: staticPtr NOT found for effectStaticKey"
             Just ptr ->
-              -- The 'SomeStaticComponent' carries the child's dictionaries, so the
+              -- The t'SomeStaticComponent' carries the child's dictionaries, so the
               -- @action@ type (and its 'FromJSON') is in scope from the key alone.
               case deRefStaticPtr ptr of
                 SomeStaticComponent (_ :: Component context props model action) ->

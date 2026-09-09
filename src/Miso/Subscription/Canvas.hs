@@ -34,7 +34,7 @@ import Miso.Subscription.Util
 --
 -- data Action = InitCanvas DOMRef | StopCanvas
 --
--- canvasComponent :: 'Component' context props model action
+-- canvasComponent :: t'Component' context props model action
 -- canvasComponent = 'component' m u v
 --   where
 --     m = ()
@@ -44,7 +44,7 @@ import Miso.Subscription.Util
 --           drawScene currentModel
 --       StopCanvas ->
 --         stopSub "galaxy"
---     v _context _props () =
+--     v () =
 --       'canvas_' [ onCreatedWith InitCanvas, onDestroyed StopCanvas ] []
 --
 -- drawScene :: Model -> 'Canvas' ()

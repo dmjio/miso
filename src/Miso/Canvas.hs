@@ -47,7 +47,7 @@
 -- import qualified "Miso.CSS.Color" as Color
 -- import qualified "Miso.Html.Property" as HP
 --
--- view :: Model -> 'Miso.Types.View' Model Action
+-- view :: Model -> 'Miso.Types.View' context props Model Action
 -- view m =
 --   'canvas'
 --     [ HP.'Miso.Html.Property.width_' \"800\", HP.'Miso.Html.Property.height_' \"480\" ]

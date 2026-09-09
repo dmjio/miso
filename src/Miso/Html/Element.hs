@@ -30,7 +30,7 @@
 -- @
 -- import "Miso"
 --
--- view :: Model -> 'Miso.Types.View' Model Action
+-- view :: Model -> 'Miso.Types.View' context props Model Action
 -- view m =
 --   'div_' []
 --     [ 'h1_' [] [ 'Miso.text' \"Hello, miso!\" ]

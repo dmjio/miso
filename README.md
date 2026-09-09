@@ -197,9 +197,9 @@ main = startApp defaultEvents app
 foreign export javascript "hs_start" main :: IO ()
 #endif
 ----------------------------------------------------------------------------
--- | `vcomp` takes as arguments the initial model, update function, view function
+-- | `component` takes as arguments the initial model, update function, view function
 app :: App Int Action
-app = vcomp 0 updateModel viewModel
+app = component 0 updateModel viewModel
 ----------------------------------------------------------------------------
 -- | Updates model, optionally introduces side effects
 updateModel :: Action -> Effect context props Int Action
