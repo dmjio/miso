@@ -39,6 +39,11 @@
 
   outputs = { self, nixpkgs, flake-utils, ... } @ inputs:
 
+    {
+      # Reusable for downstream flakes: `overlays.default = miso.overlays.default;`
+      overlays.default = final: prev: import ./nix/overlay.nix final prev;
+    } //
+
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs {
