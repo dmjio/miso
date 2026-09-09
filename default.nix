@@ -65,6 +65,22 @@ rec {
 
   miso-tests = pkgs.pkgsCross.ghcjs.haskell.packages.ghc9122.miso-tests;
 
+  # wasm32-wasi, via a real callCabal2nix-capable Haskell package set --
+  # see nix/wasm/package-set.nix. Distinct from playwright-wasm below, which
+  # still uses `nix develop .#wasm --command make` for the browser-side
+  # integration tests.
+  miso-wasm-ghc9141 = pkgs.wasmPkgs.haskell.packages.ghc9122.miso;
+  sample-app-wasm-ghc9141 = pkgs.wasmPkgs.haskell.packages.ghc9122.sample-app;
+  miso-tests-wasm-ghc9141 = pkgs.wasmPkgs.haskell.packages.ghc9122.miso-tests;
+
+  # Browser-loadable bundle (the wasm32-wasi analogue of a .jsexe) --
+  # see nix/wasm/mk-wasm-bundle.nix.
+  sample-app-wasm-bundle-ghc9141 = pkgs.wasmWebBundle {
+    name = "sample-app-wasm-bundle";
+    drv = sample-app-wasm-ghc9141;
+    exeName = "app";
+  };
+
   # ghcjs86
   miso-ghcjs = legacyPkgs.haskell.packages.ghcjs.miso;
   miso-ghcjs-prod = legacyPkgs.haskell.packages.ghcjs86.miso-prod;

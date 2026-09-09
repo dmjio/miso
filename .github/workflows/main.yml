@@ -73,6 +73,18 @@ jobs:
      - name: Nix garbage collection
        run: cabal clean && nix-collect-garbage -d
 
+     - name: (WASM) Miso GHC (GHC 9.14.1, wasm32-wasi)
+       run: nix-build -A miso-wasm-ghc9141
+
+     - name: Nix garbage collection
+       run: cabal clean && nix-collect-garbage -d
+
+     - name: (WASM) Miso sample app (GHC 9.14.1, wasm32-wasi)
+       run: nix-build -A sample-app-wasm-ghc9141
+
+     - name: Nix garbage collection
+       run: cabal clean && nix-collect-garbage -d
+
      - name: (JS) Miso sample app (GHCJS 8.6)
        run: nix-build -A sample-app-js
 

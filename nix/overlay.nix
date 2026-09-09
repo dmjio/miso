@@ -23,4 +23,18 @@ in
       };
     };
   };
+
+  # A proper callCabal2nix-capable Haskell package set cross-compiled to
+  # wasm32-wasi (nixpkgs has no GHC of its own that targets it, so this
+  # reaches for ghc-wasm-meta's prebuilt toolchain -- see nix/wasm/package-set.nix).
+  # e.g. wasmPkgs.haskell.packages.ghc9122.callCabal2nix (the real compiler
+  # underneath is 9.14.1 -- see package-set.nix for why the slot is ghc9122).
+  wasmPkgs = import ./wasm/package-set.nix {
+    pkgs = super;
+    ghcWasmMeta = (builtins.getFlake "gitlab:haskell-wasm/ghc-wasm-meta?host=gitlab.haskell.org").outputs;
+  };
+
+  # Packages a wasmPkgs-built executable into a browser-loadable bundle
+  # (the wasm32-wasi analogue of mkLynxBundle above). See nix/wasm/mk-wasm-bundle.nix.
+  wasmWebBundle = import ./wasm/mk-wasm-bundle.nix self;
 }

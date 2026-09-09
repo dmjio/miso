@@ -1,0 +1,22 @@
+--- a/pkgs/development/haskell-modules/with-packages-wrapper.nix
++++ b/pkgs/development/haskell-modules/with-packages-wrapper.nix
+@@ -59,6 +59,8 @@
+   libDir =
+     if isHaLVM then
+       "$out/lib/HaLVM-${ghc.version}"
++    else if ghc.targetPrefix == "wasm32-wasi-" then
++      "$out/lib"
+     else
+       "$out/lib/${ghc.targetPrefix}${ghc.haskellCompilerName}"
+       + lib.optionalString (ghc ? hadrian) "/lib";
+@@ -178,8 +180,8 @@
+           # to another nix derivation, so they are not writable.  Removing
+           # them allow the correct behavior of ghc-pkg recache
+           # See: https://github.com/NixOS/nixpkgs/issues/79441
+-          rm ${packageCfgDir}/package.cache.lock
+-          rm ${packageCfgDir}/package.cache
++          rm -f ${packageCfgDir}/package.cache.lock
++          rm -f ${packageCfgDir}/package.cache
+ 
+           $out/bin/${ghcCommand}-pkg recache
+         ''}
