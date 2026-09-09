@@ -43,8 +43,8 @@
 -- import qualified "Miso.CSS"       as CSS
 -- import           "Miso.CSS.Color"
 --
--- myView :: 'Miso.Types.View' Model Action
--- myView =
+-- myView :: Model -> 'Miso.Types.View' context props Model Action
+-- myView _ =
 --   'Miso.Html.Element.div_'
 --     [ CSS.'Miso.CSS.style_'
 --         [ CSS.'Miso.CSS.backgroundColor' 'cornflowerblue'

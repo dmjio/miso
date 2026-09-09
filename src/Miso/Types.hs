@@ -34,7 +34,7 @@
 --
 -- = The Component record
 --
--- @'Component' context props model action@ is the central record type. It
+-- @t'Component' context props model action@ is the central record type. It
 -- wires together the MVU loop and all supporting runtime configuration:
 --
 -- @
@@ -42,7 +42,7 @@
 --   { model           :: model
 --   , hydrateModel    :: Maybe (IO model)
 --   , update          :: action -> 'Miso.Effect.Effect' context props model action
---   , view            :: context -> props -> model -> 'View' context props model action
+--   , view            :: model -> 'View' context props model action
 --   , useContext      :: Bool
 --   , subs            :: ['Miso.Effect.Sub' action]
 --   , styles          :: ['CSS']
@@ -99,16 +99,16 @@
 --
 -- = Key types at a glance
 --
--- ['Component'] full MVU application\/component record
--- ['App'] alias for @'Component' () () model action@
+-- [t'Component'] full MVU application\/component record
+-- ['App'] alias for @t'Component' () () model action@
 -- ['View'] virtual DOM node
 -- ['Attribute'] DOM property, class list, event handler, or style
 -- ['Namespace'] @HTML@ \| @SVG@ \| @MATHML@
--- ['Key'] reconciliation hint for list diffing
+-- [t'Key'] reconciliation hint for list diffing
 -- ['CSS'] stylesheet reference (@Href@, @Style@, @Sheet@)
 -- ['JS'] script reference (@Src@, @Script@, @Module@, …)
 -- ['LogLevel'] debug verbosity (@Off@, @DebugHydrate@, …)
--- ['URI'] parsed URL (path + query string + fragment)
+-- [t'URI'] parsed URL (path + query string + fragment)
 --
 -- = Text combinators
 --
@@ -288,7 +288,7 @@ data Component context props model action
   --   them at the point of use rather than threading them down by hand.
   --
   --   @
-  --   view m = div_ [] [ withContext $ \\theme -> ... , text (ms m) ]
+  --   view m = div_ [] [ vcontext $ \\theme -> ... , text (ms m) ]
   --   @
   --
   --   __Note:__ the @model@ is an argument purely for convenience — it is the
@@ -297,7 +297,7 @@ data Component context props model action
   --   ambiently through 'withModel' \/ 'vmodel', so
   --
   --   @
-  --   view _ = withModel $ \\m -> ...
+  --   view _ = vmodel $ \\m -> ...
   --   @
   --
   --   is equivalent to taking it as an argument; use whichever reads better.
@@ -549,7 +549,7 @@ data SomeComponent context
 --
 -- Built with 'mountStatic'; consumed by 'vcomp' \/ 'vcomp_'.
 --
--- Up to 1.13 this held a @props -> 'SomeComponent' context@ function instead
+-- Up to 1.13 this held a @props -> t'SomeComponent' context@ function instead
 -- of the component itself, which forced the main thread to apply it to a
 -- placeholder just to reach the dictionaries; see 'mountStatic'.
 --
@@ -789,7 +789,7 @@ vcomp = flip VCompStatic
 -- | Like 'vcomp', but for a t'Miso.Types.Component' that takes no @props@.
 --
 -- @'vcomp_' = 'vcomp' ()@ — pair it with 'mountStatic' on a component whose
--- @props@ are @()@, which produces a @'SomeStaticComponent' () context@.
+-- @props@ are @()@, which produces a @t'SomeStaticComponent' () context@.
 --
 -- @
 -- div_ [] [ vcomp_ (static (mountStatic myComp)) ]

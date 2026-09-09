@@ -32,7 +32,7 @@
 --
 -- data Action = Increment | Decrement | Reset
 --
--- view :: Int -> 'Miso.Types.View' Int Action
+-- view :: Int -> 'Miso.Types.View' context props Int Action
 -- view n =
 --   'Miso.Html.Element.div_' [ 'Miso.Html.Property.class_' \"counter\" ]
 --     [ 'h1_' [] [ 'Miso.text' \"Counter\" ]

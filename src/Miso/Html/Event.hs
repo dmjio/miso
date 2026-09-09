@@ -32,7 +32,7 @@
 -- @
 -- import "Miso"
 --
--- view :: Model -> 'Miso.Types.View' Model Action
+-- view :: Model -> 'Miso.Types.View' context props Model Action
 -- view m =
 --   'Miso.Html.Element.div_' []
 --     [ 'Miso.Html.Element.button_' [ 'onClick' Increment ]        [ 'Miso.text' \"+\" ]

@@ -29,8 +29,8 @@
 -- import qualified "Miso.CSS"       as CSS
 -- import           "Miso.CSS.Color" ('Miso.CSS.Color.red', 'Miso.CSS.Color.rgba')
 --
--- myView :: 'Miso.Types.View' Model Action
--- myView =
+-- myView :: model -> 'Miso.Types.View' context props model Action
+-- myView _ =
 --   'Miso.Html.Element.div_'
 --     [ CSS.'Miso.CSS.style_'
 --         [ CSS.'Miso.CSS.display'        "flex"
