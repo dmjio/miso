@@ -27,8 +27,8 @@ in
   # A proper callCabal2nix-capable Haskell package set cross-compiled to
   # wasm32-wasi (nixpkgs has no GHC of its own that targets it, so this
   # reaches for ghc-wasm-meta's prebuilt toolchain -- see nix/wasm/package-set.nix).
-  # e.g. wasmPkgs.haskell.packages.ghc9122.callCabal2nix (the real compiler
-  # underneath is 9.14.1 -- see package-set.nix for why the slot is ghc9122).
+  # e.g. wasmPkgs.haskell.packages.ghc9141.callCabal2nix (ghc9141 is an alias
+  # for the ghc9122 slot the generator actually builds -- see package-set.nix).
   wasmPkgs = import ./wasm/package-set.nix {
     pkgs = super;
     ghcWasmMeta = (builtins.getFlake "gitlab:haskell-wasm/ghc-wasm-meta?host=gitlab.haskell.org").outputs;

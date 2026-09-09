@@ -69,16 +69,21 @@ rec {
   # see nix/wasm/package-set.nix. Distinct from playwright-wasm below, which
   # still uses `nix develop .#wasm --command make` for the browser-side
   # integration tests.
-  miso-wasm-ghc9141 = pkgs.wasmPkgs.haskell.packages.ghc9122.miso;
-  sample-app-wasm-ghc9141 = pkgs.wasmPkgs.haskell.packages.ghc9122.sample-app;
-  miso-tests-wasm-ghc9141 = pkgs.wasmPkgs.haskell.packages.ghc9122.miso-tests;
+  miso-wasm-ghc9141 = pkgs.wasmPkgs.haskell.packages.ghc9141.miso;
+  sample-app-wasm-ghc9141 = pkgs.wasmPkgs.haskell.packages.ghc9141.sample-app;
+  miso-tests-wasm-ghc9141 = pkgs.wasmPkgs.haskell.packages.ghc9141.miso-tests;
 
-  # Browser-loadable bundle (the wasm32-wasi analogue of a .jsexe) --
+  # Browser-loadable bundles (the wasm32-wasi analogue of a .jsexe) --
   # see nix/wasm/mk-wasm-bundle.nix.
   sample-app-wasm-bundle-ghc9141 = pkgs.wasmWebBundle {
     name = "sample-app-wasm-bundle";
     drv = sample-app-wasm-ghc9141;
     exeName = "app";
+  };
+  miso-tests-wasm-bundle-ghc9141 = pkgs.wasmWebBundle {
+    name = "miso-tests-wasm-bundle";
+    drv = miso-tests-wasm-ghc9141;
+    exeName = "component-tests";
   };
 
   # ghcjs86
@@ -160,15 +165,16 @@ rec {
     exit "$exit_code"
   '';
 
+  # Nix-native (via wasmPkgs -- see nix/wasm/package-set.nix), no more
+  # `nix develop .#wasm --command make`.
   playwright-wasm = pkgs.writeScriptBin "playwright" ''
     #!${pkgs.stdenv.shell}
     export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
     export PATH="${pkgs.lib.makeBinPath [ pkgs.http-server pkgs.bun ]}:$PATH"
     bun install playwright@1.53
+    http-server ${miso-tests-wasm-bundle-ghc9141}/component-tests.wasmexe &
+    bun run ts/echo-server.ts &
     cd tests
-    nix develop .#wasm --command bash -c 'make'
-    http-server ./public &
-    bun run ../ts/echo-server.ts &
     bun run ../ts/playwright.ts
     exit_code=$?
     pkill http-server
@@ -177,7 +183,12 @@ rec {
   '';
 
   # Same as playwright-wasm, but miso is built with the 'aeson' cabal flag
-  # (Miso.JSON defined in terms of Data.Aeson).
+  # (Miso.JSON defined in terms of Data.Aeson). Still on the old mechanism:
+  # aeson pulls in hashable, whose bounds (ghc-bignum <1.4) reject the
+  # ghc-bignum-1.4 this pinned nixpkgs' wasm toolchain bundles -- a real
+  # upstream version gap, not fixable by overriding here. The actual fix is
+  # bumping miso's nixpkgs pin to one with a native ghc9141/ghc914 slot
+  # (a bigger, separate undertaking); not doing that now.
   playwright-wasm-aeson = pkgs.writeScriptBin "playwright" ''
     #!${pkgs.stdenv.shell}
     export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
@@ -196,7 +207,7 @@ rec {
 
   # Same as playwright-wasm, but miso is built with the 'aeson' and 'text'
   # cabal flags (Miso.JSON defined in terms of Data.Aeson, Miso.String
-  # backed by Data.Text).
+  # backed by Data.Text). Still on the old mechanism -- see playwright-wasm-aeson.
   playwright-wasm-aeson-text = pkgs.writeScriptBin "playwright" ''
     #!${pkgs.stdenv.shell}
     export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}

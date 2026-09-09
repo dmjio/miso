@@ -1,9 +1,9 @@
 # Builds a from-scratch, wasm32-wasi cross-compiled nixpkgs Haskell package
 # set. Nixpkgs has no GHC of its own that targets wasm32-wasi, so this
 # reaches for ghc-wasm-meta's prebuilt GHC/wasi-sdk toolchain instead, and
-# patches nixpkgs' Haskell generic-builder/with-packages-wrapper (which
-# assume a target-specific lib dir layout that the wasm backend doesn't
-# use) so `callCabal2nix`/`mkDerivation` work against it.
+# patches nixpkgs' Haskell generic-builder (it assumes a target-specific
+# lib dir layout the wasm backend doesn't use) so `callCabal2nix`/
+# `mkDerivation` work against it.
 #
 # This is a separate, proper `haskell.packages`-shaped set (exposed as
 # `wasmPkgs` from nix/overlay.nix) -- distinct from the ad-hoc single-file
@@ -22,7 +22,6 @@ let
     src = nixpkgsPath;
     patches = [
       ./nixpkgs-patches/generic-builder.patch
-      ./nixpkgs-patches/with-packages-wrapper.patch
     ];
     dontBuild = true;
     installPhase = ''
@@ -82,7 +81,6 @@ import patchedNixpkgsPath rec {
         packageOverrides = lib.composeManyExtensions [
           prev.haskell.packageOverrides
           (hfinal: hprev: {
-            ghcWithPackages = hprev.ghcWithPackages.override { installDocumentation = false; };
             ghc = ghcWasmMetaPkgs.wasm32-wasi-ghc-9_14 // {
               inherit (pkgs.haskell.packages.${ghc}.ghc) version haskellCompilerName;
               inherit targetPrefix;
@@ -99,7 +97,11 @@ import patchedNixpkgsPath rec {
               doHaddock = false;
               doCheck = false;
               jailbreak = true;
-              configureFlags = [
+              # (args.configureFlags or []) ++ ..., not a plain replacement --
+              # callCabal2nixWithOptions-generated cabal flags (e.g.
+              # -ftemplate-haskell) arrive via configureFlags too, and a
+              # plain `configureFlags = [...]` here would silently discard them.
+              configureFlags = (args.configureFlags or [ ]) ++ [
                 "--with-ld=${prev.stdenv.cc.bintools}/bin/lld"
                 "--with-ar=${prev.stdenv.cc.bintools}/bin/ar"
                 "--with-strip=${prev.stdenv.cc.bintools}/bin/strip"
@@ -122,6 +124,19 @@ import patchedNixpkgsPath rec {
           })
           (import ../haskell/packages/wasm final)
         ];
+      };
+    })
+    # Alias the (already correctly overridden) ghc9122 slot under the name
+    # that actually reflects the compiler running there. Same technique
+    # nix/overlay.nix's ghcNative uses -- take an already-generated package
+    # set and expose it under a new key, since the generator itself only
+    # builds haskell.packages.<X> for the fixed list of <X> it predefines
+    # (ghc9122 is on that list; ghc9141 isn't).
+    (final: prev: {
+      haskell = prev.haskell // {
+        packages = prev.haskell.packages // {
+          ghc9141 = prev.haskell.packages.${ghc};
+        };
       };
     })
   ];
