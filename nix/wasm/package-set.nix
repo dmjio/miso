@@ -13,7 +13,7 @@
 #
 # Ported from https://github.com/ners/nix-wasm (default.nix and the two
 # nixpkgs-patches/*.patch files).
-{ pkgs, ghcWasmMeta, nixpkgsPath ? pkgs.path, system ? pkgs.system }:
+{ pkgs, ghcWasmMeta, nixpkgsPath ? pkgs.path, system ? pkgs.stdenv.hostPlatform.system }:
 let
   inherit (pkgs) lib;
 

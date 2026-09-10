@@ -7,7 +7,7 @@ self: super:
     let
       src = self.wasm-flake;
     in
-      (builtins.getFlake src).outputs.packages."${super.system}";
+      (builtins.getFlake src).outputs.packages."${super.stdenv.hostPlatform.system}";
 
   wasm-cabal =
     self.ghc-wasm-meta.wasm32-wasi-cabal-9_12;
