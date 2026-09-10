@@ -39,6 +39,10 @@ All notable changes to `miso` are documented here.
   Resolved against the current `context` whenever the enclosing `View` is
   built or rendered; it does not itself trigger a redraw — that is still
   governed solely by `useContext`. `withContext` is a synonym for `vcontext`.
+- **`onDestroyedWith`** (`Miso.Event`). Like `onDestroyed` but also receives
+  the element's (already-detached) `DOMRef`, completing the lifecycle hook
+  family alongside `onCreated` / `onCreatedWith` and `onBeforeDestroyed` /
+  `onBeforeDestroyedWith`.
 
 ### Removed
 
@@ -139,6 +143,11 @@ All notable changes to `miso` are documented here.
 
 ### Fixed
 
+- **`onDestroyedWith` / `onBeforeDestroyedWith` now receive the element's
+  `DOMRef` instead of `undefined`.** `callDestroyed` and
+  `callBeforeDestroyed` invoked the hooks with no argument, so the `DOMRef`
+  callback was always `undefined` on the Haskell side. Zero-argument
+  `onDestroyed` / `onBeforeDestroyed` users are unaffected.
 - **Static mounts now carry their `StaticKey` as the diff key.** A
   `VCompStatic` node had no `key`, so two different `static` sites at the
   same position compared equal in the differ: the first component stayed

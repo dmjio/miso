@@ -786,9 +786,12 @@ globalQueue = unsafePerformIO (newIORef emptyQueue)
 -- them keeps this exact instead of relying on all live components pointing at
 -- the same cell.
 --
--- 'atomicModifyIORef'' forces the new @context@, so a component that never
--- redraws cannot accumulate a thunk chain, and an @f@ that throws damages only
--- this cell rather than the 'components' registry.
+-- 'atomicModifyIORef'' forces the new @context@ to weak head normal form on
+-- every update, so a component that never redraws cannot leave this cell
+-- holding an unevaluated chain of 'modifyContextAll' applications (the classic
+-- lazy-@'atomicModifyIORef'@ space leak) — it does not deeply force a lazy
+-- field nested inside @context@ itself. An @f@ that throws damages only this
+-- cell rather than the 'components' registry.
 --
 -- @since 1.14.0.0
 modifyContextAll :: IORef context -> (context -> context) -> IO ()
