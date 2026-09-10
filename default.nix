@@ -4,7 +4,7 @@ with (import ./nix { inherit overlays; });
 
 with pkgs.haskell.lib;
 rec {
-  inherit pkgs legacyPkgs;
+  inherit pkgs;
 
   # hackage release
   release =
@@ -100,20 +100,10 @@ rec {
     exeName = "component-tests";
   };
 
-  # ghcjs86
-  miso-ghcjs = legacyPkgs.haskell.packages.ghcjs.miso;
-  miso-ghcjs-prod = legacyPkgs.haskell.packages.ghcjs86.miso-prod;
-  inherit (legacyPkgs.haskell.packages.ghcjs) sample-app-js;
-
   # miso x86
-  miso-ghc = legacyPkgs.haskell.packages.ghc865.miso;
   miso-ghc-9141 = pkgs.haskell.packages.ghc9141.miso;
   miso-native-ghc-9141 = pkgs.haskell.packages.ghc9141.miso-native;
   miso-tests-ghc = pkgs.haskell.packages.ghc9141.miso;
-
-  # sample app legacy build
-  inherit (legacyPkgs.haskell.packages.ghc865)
-    sample-app;
 
   # sample app
   sample-app-ghc9141 =
@@ -140,29 +130,9 @@ rec {
   inherit (pkgs.haskell.packages.ghc9141)
     haskell-language-server;
 
-  # dmj: make a NixOS test to ensure examples can be hosted
-  # dry-running this ensures we catch the failure before deploy
-  inherit (legacyPkgs)
-    nginx-nixos-test;
-
   # bun
   inherit (pkgs)
     bun;
-
-  playwright-ghcjs = pkgs.writeScriptBin "playwright" ''
-    #!${pkgs.stdenv.shell}
-    export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
-    export PATH="${pkgs.lib.makeBinPath [ pkgs.http-server pkgs.bun ]}:$PATH"
-    bun install playwright@${pkgs.playwright-driver.version}
-    http-server ${legacyPkgs.haskell.packages.ghcjs.miso-tests}/bin/component-tests.jsexe &
-    bun run ts/echo-server.ts &
-    cd tests
-    bun run ../ts/playwright.ts
-    exit_code=$?
-    pkill http-server
-    pkill -f echo-server
-    exit "$exit_code"
-  '';
 
   playwright-js = pkgs.writeScriptBin "playwright" ''
     #!${pkgs.stdenv.shell}

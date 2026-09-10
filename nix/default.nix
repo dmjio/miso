@@ -11,9 +11,8 @@ let
   overlays = [ (import ./wasm)
                (import ./overlay.nix)
              ] ++ options.overlays;
-  legacyPkgs = import ./legacy options;
   pkgs = import nixpkgs { inherit overlays config; };
 in
 {
-  inherit pkgs legacyPkgs;
+  inherit pkgs;
 }
