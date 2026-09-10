@@ -608,7 +608,7 @@ fragment_ key = VFrag (Just (Key key))
 -- t'Miso.Types.ComponentState' for it, and any main-thread (@OnStatic@)
 -- event handler inside that subtree silently fails to dispatch for the
 -- component's whole lifetime, with only a console error as a clue. Use
--- 'vcomp' with 'mountStaticWithProps' instead for anything that may mount
+-- 'vcomp' with 'mountStatic' instead for anything that may mount
 -- after the initial frame under @NATIVE@ — the compile-time
 -- 'GHC.StaticPtr.StaticKey' already supplies the identity a manual key would,
 -- no explicit key needed.
@@ -628,7 +628,7 @@ fragment_ key = VFrag (Just (Key key))
   -> View context props model action
 infixr 0 +>
 #ifdef NATIVE
-{-# WARNING (+>) "[NATIVE] '+>' has no StaticKey; a component mounted with it after the initial frame silently drops OnStatic handlers inside it. Use 'vcomp' with 'mountStaticWithProps' instead." #-}
+{-# WARNING (+>) "[NATIVE] '+>' has no StaticKey; a component mounted with it after the initial frame silently drops OnStatic handlers inside it. Use 'vcomp' with 'mountStatic' instead." #-}
 #endif
 key +> child = VComp (SomeComponent (Just (toKey key)) () child)
 -----------------------------------------------------------------------------
@@ -651,7 +651,7 @@ mountStaticWithProps = SomeStaticComponent
 -- also builds an unkeyed @VComp@ with no 'GHC.StaticPtr.StaticKey', so the
 -- same caveat applies: components mounted with this /after/ the initial
 -- frame never get a main-thread mirror registered, silently breaking
--- @OnStatic@ handlers inside them. Use 'vcomp' with 'mountStaticWithProps'
+-- @OnStatic@ handlers inside them. Use 'vcomp' with 'mountStatic'
 -- instead for anything that may mount dynamically under @NATIVE@.
 mountWithProps
   :: forall context childProps childModel childAction model action props .
@@ -665,7 +665,7 @@ mountWithProps
   -- ^ t'Component' to mount
   -> View context props model action
 #ifdef NATIVE
-{-# WARNING mountWithProps "[NATIVE] 'mountWithProps' has no StaticKey; a component mounted with it after the initial frame silently drops OnStatic handlers inside it. Use 'vcomp' with 'mountStaticWithProps' instead." #-}
+{-# WARNING mountWithProps "[NATIVE] 'mountWithProps' has no StaticKey; a component mounted with it after the initial frame silently drops OnStatic handlers inside it. Use 'vcomp' with 'mountStatic' instead." #-}
 #endif
 mountWithProps props comp = VComp (SomeComponent Nothing props comp)
 -----------------------------------------------------------------------------
@@ -676,7 +676,7 @@ mountWithProps props comp = VComp (SomeComponent Nothing props comp)
 -- just the diffing t'Key', unrelated), so the same caveat applies: mounted
 -- /after/ the initial frame, it never gets a main-thread mirror registered,
 -- silently breaking @OnStatic@ handlers inside it. Use 'vcomp' with
--- 'mountStaticWithProps' instead for anything that may mount dynamically
+-- 'mountStatic' instead for anything that may mount dynamically
 -- under @NATIVE@ — the compile-time 'GHC.StaticPtr.StaticKey' already
 -- supplies the identity a manual key would, no explicit key needed.
 mountWithProps_
@@ -692,7 +692,7 @@ mountWithProps_
   -- ^ t'Component' to mount
   -> View context props model action
 #ifdef NATIVE
-{-# WARNING mountWithProps_ "[NATIVE] 'mountWithProps_' has no StaticKey; a component mounted with it after the initial frame silently drops OnStatic handlers inside it. Use 'vcomp' with 'mountStaticWithProps' instead." #-}
+{-# WARNING mountWithProps_ "[NATIVE] 'mountWithProps_' has no StaticKey; a component mounted with it after the initial frame silently drops OnStatic handlers inside it. Use 'vcomp' with 'mountStatic' instead." #-}
 #endif
 mountWithProps_ key props child = VComp (SomeComponent (Just (Key key)) props child)
 -----------------------------------------------------------------------------
