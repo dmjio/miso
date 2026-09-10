@@ -5,6 +5,10 @@ on:
       - master
   pull_request:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
 jobs:
   build-linux:
     runs-on: ubuntu-latest
@@ -13,10 +17,6 @@ jobs:
        with:
          reclaim_space: true
      - uses: actions/checkout@v7.0.1
-     - name: Cancel Previous Runs
-       uses: styfle/cancel-workflow-action@0.13.1
-       with:
-         access_token: ${{ github.token }}
      - uses: cachix/cachix-action@v17
        with:
          name: haskell-miso-cachix
@@ -113,10 +113,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
      - uses: actions/checkout@v7.0.1
-     - name: Cancel Previous Runs
-       uses: styfle/cancel-workflow-action@0.13.1
-       with:
-         access_token: ${{ github.token }}
      - uses: cachix/install-nix-action@v31.11.1
        with:
          extra_nix_config: |
@@ -156,10 +152,6 @@ jobs:
     needs: build-bundle
     steps:
      - uses: actions/checkout@v7.0.1
-     - name: Cancel Previous Runs
-       uses: styfle/cancel-workflow-action@0.13.1
-       with:
-         access_token: ${{ github.token }}
      - uses: cachix/install-nix-action@v31.11.1
        with:
          extra_nix_config: |
@@ -207,10 +199,6 @@ jobs:
     needs: build-bundle
     steps:
      - uses: actions/checkout@v7.0.1
-     - name: Cancel Previous Runs
-       uses: styfle/cancel-workflow-action@0.13.1
-       with:
-         access_token: ${{ github.token }}
 
      - name: Download Lynx bundle
        uses: actions/download-artifact@v8.0.1
@@ -247,10 +235,6 @@ jobs:
     needs: build-bundle
     steps:
      - uses: actions/checkout@v7.0.1
-     - name: Cancel Previous Runs
-       uses: styfle/cancel-workflow-action@0.13.1
-       with:
-         access_token: ${{ github.token }}
      - uses: actions/setup-java@v6.0.1
        with:
          distribution: temurin
