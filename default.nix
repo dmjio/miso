@@ -153,7 +153,7 @@ rec {
     #!${pkgs.stdenv.shell}
     export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
     export PATH="${pkgs.lib.makeBinPath [ pkgs.http-server pkgs.bun ]}:$PATH"
-    bun install playwright@1.53
+    bun install playwright@${pkgs.playwright-driver.version}
     http-server ${legacyPkgs.haskell.packages.ghcjs.miso-tests}/bin/component-tests.jsexe &
     bun run ts/echo-server.ts &
     cd tests
@@ -168,7 +168,7 @@ rec {
     #!${pkgs.stdenv.shell}
     export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
     export PATH="${pkgs.lib.makeBinPath [ pkgs.http-server pkgs.bun ]}:$PATH"
-    bun install playwright@1.53
+    bun install playwright@${pkgs.playwright-driver.version}
     http-server ${pkgs.pkgsCross.ghcjs.haskell.packages.ghc9141.miso-tests}/bin/component-tests.jsexe &
     bun run ts/echo-server.ts &
     cd tests
@@ -185,7 +185,7 @@ rec {
     #!${pkgs.stdenv.shell}
     export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
     export PATH="${pkgs.lib.makeBinPath [ pkgs.http-server pkgs.bun ]}:$PATH"
-    bun install playwright@1.53
+    bun install playwright@${pkgs.playwright-driver.version}
     http-server ${miso-tests-wasm-bundle-ghc9141}/component-tests.wasmexe &
     bun run ts/echo-server.ts &
     cd tests
@@ -205,7 +205,7 @@ rec {
     #!${pkgs.stdenv.shell}
     export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
     export PATH="${pkgs.lib.makeBinPath [ pkgs.http-server pkgs.bun ]}:$PATH"
-    bun install playwright@1.53
+    bun install playwright@${pkgs.playwright-driver.version}
     http-server ${miso-tests-aeson-wasm-bundle-ghc9141}/component-tests.wasmexe &
     bun run ts/echo-server.ts &
     cd tests
@@ -223,7 +223,7 @@ rec {
     #!${pkgs.stdenv.shell}
     export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
     export PATH="${pkgs.lib.makeBinPath [ pkgs.http-server pkgs.bun ]}:$PATH"
-    bun install playwright@1.53
+    bun install playwright@${pkgs.playwright-driver.version}
     http-server ${miso-tests-aeson-text-wasm-bundle-ghc9141}/component-tests.wasmexe &
     bun run ts/echo-server.ts &
     cd tests
