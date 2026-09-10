@@ -296,7 +296,7 @@ onDestroyed action =
 -- library, drop it from a lookup table) — for teardown that needs the
 -- element still live in the document, use 'onBeforeDestroyedWith'.
 --
--- @since 1.13.0.0
+-- @since 1.14.0.0
 --
 onDestroyedWith
   :: (DOMRef -> action)
