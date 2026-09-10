@@ -29,14 +29,7 @@ let
     '';
   };
 
-  # nixpkgs' haskell-packages.nix only generates a haskell.packages.<X> entry
-  # for compiler versions it already predefines a slot for -- this pinned
-  # nixpkgs snapshot has nothing newer than ghc9122 (no 9.13/9.14 slot to
-  # reuse the way nix-wasm's newer nixpkgs snapshot had a real "ghc914").
-  # So: reuse the ghc9122 slot (same technique the ghc9122/ghcjs override
-  # above already uses) -- the compiler actually installed there is still
-  # the real ghc-wasm-meta 9.14.1 binary, just under nixpkgs' 9.12.2 name.
-  ghc = "ghc9122";
+  ghc = "ghc9141";
   targetPrefix = "wasm32-wasi-";
   ghcWasmMetaPkgs = ghcWasmMeta.packages.${system};
 in
@@ -124,19 +117,6 @@ import patchedNixpkgsPath rec {
           })
           (import ../haskell/packages/wasm final)
         ];
-      };
-    })
-    # Alias the (already correctly overridden) ghc9122 slot under the name
-    # that actually reflects the compiler running there. Same technique
-    # nix/overlay.nix's ghcNative uses -- take an already-generated package
-    # set and expose it under a new key, since the generator itself only
-    # builds haskell.packages.<X> for the fixed list of <X> it predefines
-    # (ghc9122 is on that list; ghc9141 isn't).
-    (final: prev: {
-      haskell = prev.haskell // {
-        packages = prev.haskell.packages // {
-          ghc9141 = prev.haskell.packages.${ghc};
-        };
       };
     })
   ];

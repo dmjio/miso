@@ -8,17 +8,17 @@ rec {
 
   # hackage release
   release =
-    with pkgs.haskell.packages.ghc9122;
+    with pkgs.haskell.packages.ghc9141;
     sdistTarball (buildStrictly miso);
 
   # js tooling
   inherit (pkgs) rspeedy;
 
-  # ghcjs9122
-  miso-ghcjs-9122 = pkgs.pkgsCross.ghcjs.haskell.packages.ghc9122.miso;
-  miso-native-ghcjs-9122 = pkgs.pkgsCross.ghcjs.haskell.packages.ghcNative.miso-native;
-  sample-app-js-9122 = pkgs.pkgsCross.ghcjs.haskell.packages.ghc9122.sample-app-js;
-  sample-app-native-9122 = pkgs.pkgsCross.ghcjs.haskell.packages.ghcNative.sample-app-native;
+  # ghcjs9141
+  miso-ghcjs-9141 = pkgs.pkgsCross.ghcjs.haskell.packages.ghc9141.miso;
+  miso-native-ghcjs-9141 = pkgs.pkgsCross.ghcjs.haskell.packages.ghcNative.miso-native;
+  sample-app-js-9141 = pkgs.pkgsCross.ghcjs.haskell.packages.ghc9141.sample-app-js;
+  sample-app-native-9141 = pkgs.pkgsCross.ghcjs.haskell.packages.ghcNative.sample-app-native;
 
   # Lynx bundle: compiles sample-app-native through rspeedy into a .lynx.bundle
   # (via the shared mkLynxBundle helper). The showcase uses remote image URLs,
@@ -63,7 +63,7 @@ rec {
       activity = ".MainActivity";
     };
 
-  miso-tests = pkgs.pkgsCross.ghcjs.haskell.packages.ghc9122.miso-tests;
+  miso-tests = pkgs.pkgsCross.ghcjs.haskell.packages.ghc9141.miso-tests;
 
   # wasm32-wasi, via a real callCabal2nix-capable Haskell package set --
   # see nix/wasm/package-set.nix. Distinct from playwright-wasm below, which
@@ -72,6 +72,10 @@ rec {
   miso-wasm-ghc9141 = pkgs.wasmPkgs.haskell.packages.ghc9141.miso;
   sample-app-wasm-ghc9141 = pkgs.wasmPkgs.haskell.packages.ghc9141.sample-app;
   miso-tests-wasm-ghc9141 = pkgs.wasmPkgs.haskell.packages.ghc9141.miso-tests;
+  miso-wasm-aeson-ghc9141 = pkgs.wasmPkgs.haskell.packages.ghc9141.miso-aeson;
+  miso-wasm-aeson-text-ghc9141 = pkgs.wasmPkgs.haskell.packages.ghc9141.miso-aeson-text;
+  miso-tests-wasm-aeson-ghc9141 = pkgs.wasmPkgs.haskell.packages.ghc9141.miso-tests-aeson;
+  miso-tests-wasm-aeson-text-ghc9141 = pkgs.wasmPkgs.haskell.packages.ghc9141.miso-tests-aeson-text;
 
   # Browser-loadable bundles (the wasm32-wasi analogue of a .jsexe) --
   # see nix/wasm/mk-wasm-bundle.nix.
@@ -85,6 +89,16 @@ rec {
     drv = miso-tests-wasm-ghc9141;
     exeName = "component-tests";
   };
+  miso-tests-aeson-wasm-bundle-ghc9141 = pkgs.wasmWebBundle {
+    name = "miso-tests-aeson-wasm-bundle";
+    drv = miso-tests-wasm-aeson-ghc9141;
+    exeName = "component-tests";
+  };
+  miso-tests-aeson-text-wasm-bundle-ghc9141 = pkgs.wasmWebBundle {
+    name = "miso-tests-aeson-text-wasm-bundle";
+    drv = miso-tests-wasm-aeson-text-ghc9141;
+    exeName = "component-tests";
+  };
 
   # ghcjs86
   miso-ghcjs = legacyPkgs.haskell.packages.ghcjs.miso;
@@ -93,17 +107,17 @@ rec {
 
   # miso x86
   miso-ghc = legacyPkgs.haskell.packages.ghc865.miso;
-  miso-ghc-9122 = pkgs.haskell.packages.ghc9122.miso;
-  miso-native-ghc-9122 = pkgs.haskell.packages.ghc9122.miso-native;
-  miso-tests-ghc = pkgs.haskell.packages.ghc9122.miso;
+  miso-ghc-9141 = pkgs.haskell.packages.ghc9141.miso;
+  miso-native-ghc-9141 = pkgs.haskell.packages.ghc9141.miso-native;
+  miso-tests-ghc = pkgs.haskell.packages.ghc9141.miso;
 
   # sample app legacy build
   inherit (legacyPkgs.haskell.packages.ghc865)
     sample-app;
 
   # sample app
-  sample-app-ghc9122 =
-    pkgs.haskell.packages.ghc9122.sample-app;
+  sample-app-ghc9141 =
+    pkgs.haskell.packages.ghc9141.sample-app;
 
   # Miso wasm examples
   inherit (pkgs)
@@ -119,11 +133,11 @@ rec {
     ghciwatch;
 
   # utils
-  inherit (pkgs.haskell.packages.ghc9122)
+  inherit (pkgs.haskell.packages.ghc9141)
     miso-from-html;
 
   # hls
-  inherit (pkgs.haskell.packages.ghc9122)
+  inherit (pkgs.haskell.packages.ghc9141)
     haskell-language-server;
 
   # dmj: make a NixOS test to ensure examples can be hosted
@@ -155,7 +169,7 @@ rec {
     export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
     export PATH="${pkgs.lib.makeBinPath [ pkgs.http-server pkgs.bun ]}:$PATH"
     bun install playwright@1.53
-    http-server ${pkgs.pkgsCross.ghcjs.haskell.packages.ghc9122.miso-tests}/bin/component-tests.jsexe &
+    http-server ${pkgs.pkgsCross.ghcjs.haskell.packages.ghc9141.miso-tests}/bin/component-tests.jsexe &
     bun run ts/echo-server.ts &
     cd tests
     bun run ../ts/playwright.ts
@@ -183,21 +197,18 @@ rec {
   '';
 
   # Same as playwright-wasm, but miso is built with the 'aeson' cabal flag
-  # (Miso.JSON defined in terms of Data.Aeson). Still on the old mechanism:
-  # aeson pulls in hashable, whose bounds (ghc-bignum <1.4) reject the
-  # ghc-bignum-1.4 this pinned nixpkgs' wasm toolchain bundles -- a real
-  # upstream version gap, not fixable by overriding here. The actual fix is
-  # bumping miso's nixpkgs pin to one with a native ghc9141/ghc914 slot
-  # (a bigger, separate undertaking); not doing that now.
+  # (Miso.JSON defined in terms of Data.Aeson). Nix-native now (see
+  # miso-tests-aeson-wasm-bundle-ghc9141 above) -- unblocked by the nixpkgs
+  # bump to a revision whose hashable (1.5.1.0) no longer depends on
+  # ghc-bignum at all, so the old ghc-bignum-1.4 version conflict is moot.
   playwright-wasm-aeson = pkgs.writeScriptBin "playwright" ''
     #!${pkgs.stdenv.shell}
     export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
     export PATH="${pkgs.lib.makeBinPath [ pkgs.http-server pkgs.bun ]}:$PATH"
     bun install playwright@1.53
+    http-server ${miso-tests-aeson-wasm-bundle-ghc9141}/component-tests.wasmexe &
+    bun run ts/echo-server.ts &
     cd tests
-    nix develop .#wasm --command bash -c 'make aeson'
-    http-server ./public &
-    bun run ../ts/echo-server.ts &
     bun run ../ts/playwright.ts
     exit_code=$?
     pkill http-server
@@ -207,16 +218,15 @@ rec {
 
   # Same as playwright-wasm, but miso is built with the 'aeson' and 'text'
   # cabal flags (Miso.JSON defined in terms of Data.Aeson, Miso.String
-  # backed by Data.Text). Still on the old mechanism -- see playwright-wasm-aeson.
+  # backed by Data.Text). Nix-native now -- see playwright-wasm-aeson.
   playwright-wasm-aeson-text = pkgs.writeScriptBin "playwright" ''
     #!${pkgs.stdenv.shell}
     export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
     export PATH="${pkgs.lib.makeBinPath [ pkgs.http-server pkgs.bun ]}:$PATH"
     bun install playwright@1.53
+    http-server ${miso-tests-aeson-text-wasm-bundle-ghc9141}/component-tests.wasmexe &
+    bun run ts/echo-server.ts &
     cd tests
-    nix develop .#wasm --command bash -c 'make aeson-text'
-    http-server ./public &
-    bun run ../ts/echo-server.ts &
     bun run ../ts/playwright.ts
     exit_code=$?
     pkill http-server
