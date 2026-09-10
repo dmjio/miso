@@ -7,7 +7,7 @@
 pkgs:
 let
   shim = import ./browser-shim.nix pkgs;
-  ghcWasmMeta = (builtins.getFlake "gitlab:haskell-wasm/ghc-wasm-meta?host=gitlab.haskell.org").outputs.packages.${pkgs.system};
+  ghcWasmMeta = (builtins.getFlake "gitlab:haskell-wasm/ghc-wasm-meta?host=gitlab.haskell.org").outputs.packages.${pkgs.stdenv.hostPlatform.system};
 in
 { name, drv, exeName, title ? exeName, scripts ? "" }:
 pkgs.stdenvNoCC.mkDerivation {
