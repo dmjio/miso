@@ -66,7 +66,7 @@ in
   ghcjs-base = fetchFromGitHub {
     owner = "ghcjs";
     repo = "ghcjs-base";
-    rev = "b7ae2cafb082ff247d29ab50d651f4e955ada47a";
-    sha256 = "0az7xdvd5irsf4x18dgz8aqymrk01bxzmjwhwrmbqmi8kdp1dfb4";
+    rev = "b25d91bb51241d496adfb2b1f8f8dd593efe646b";
+    sha256 = "1wi3vpswik9wj8x16ik5v17sjkd537c482kiavh719kfaz4h7884";
   };
 }

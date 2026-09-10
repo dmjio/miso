@@ -18,10 +18,10 @@
   # Miso's flake inputs
   inputs = {
 
-    # Miso's nixpkgs hash, this is used for acquiring the GHCJS-9122 backend
+    # Miso's nixpkgs hash, this is used for acquiring the GHCJS-9141 backend
     # and native backend
     nixpkgs.url =
-      "github:nixos/nixpkgs?rev=9e2e8a7878573d312db421d69e071690ec34e98c";
+      "github:nixos/nixpkgs?rev=d6524aaca2ff07876657ae2b323f24be4874944b";
 
     # Some light utils
     flake-utils.url = "github:numtide/flake-utils";
@@ -65,23 +65,23 @@
 
         # Miso's packages
         packages = rec {
-          # Default package is vanilla GHC 9.12.2 miso
-          default = miso-ghc-9122;
+          # Default package is vanilla GHC 9.14.1 miso
+          default = miso-ghc-9141;
 
           # GHCJS miso
-          miso-ghcjs-9122 =
-            pkgs.pkgsCross.ghcjs.haskell.packages.ghc9122.miso;
+          miso-ghcjs-9141 =
+            pkgs.pkgsCross.ghcjs.haskell.packages.ghc9141.miso;
 
           # miso with -fnative (LynxJS dual-thread arch)
-          miso-native-ghcjs-9122 =
+          miso-native-ghcjs-9141 =
             pkgs.pkgsCross.ghcjs.haskell.packages.ghcNative.miso-native;
 
           # GHC
-          miso-ghc-9122 =
-            pkgs.haskell.packages.ghc9122.miso;
+          miso-ghc-9141 =
+            pkgs.haskell.packages.ghc9141.miso;
 
           # Sample app (native / LynxJS)
-          sample-app-native-ghcjs-9122 =
+          sample-app-native-ghcjs-9141 =
             pkgs.pkgsCross.ghcjs.haskell.packages.ghcNative.sample-app-native;
 
           # rspeedy (LynxJS bundle builder, wraps rspack)
@@ -106,7 +106,7 @@
           };
 
           # Util
-          inherit (pkgs.haskell.packages.ghc9122)
+          inherit (pkgs.haskell.packages.ghc9141)
             miso-from-html;
 
         };
@@ -116,7 +116,7 @@
 
           # Default GHC shell
           default =
-            pkgs.haskell.packages.ghc9122.miso.env.overrideAttrs (drv: {
+            pkgs.haskell.packages.ghc9141.miso.env.overrideAttrs (drv: {
               buildInputs = with pkgs;
                 drv.buildInputs ++
                   [ just bun ormolu cabal-install ghcid tailwindcss_4
@@ -125,8 +125,8 @@
 
           # Shell for hls dev
           hls =
-            pkgs.haskell.packages.ghc9122.miso.env.overrideAttrs (drv: {
-              buildInputs = with pkgs; with haskell.packages.ghc9122;
+            pkgs.haskell.packages.ghc9141.miso.env.overrideAttrs (drv: {
+              buildInputs = with pkgs; with haskell.packages.ghc9141;
                 drv.buildInputs ++
                   [ just bun ormolu haskell-language-server cabal-install ghcid tailwindcss_4
                   ];
@@ -203,10 +203,10 @@
               '';
             };
 
-          # GHCJS9122 shell
+          # GHCJS9141 shell
           ghcjs =
             pkgs.mkShell {
-              name = "The miso ${system} GHC JS 9.12.2 shell";
+              name = "The miso ${system} GHC JS 9.14.1 shell";
               shellHook = ''
                 export CC=${pkgs.emscripten}/bin/emcc
                 mkdir -p ~/.emscripten_cache
@@ -227,7 +227,7 @@
                 }
               '';
               packages = with pkgs; [
-                 pkgsCross.ghcjs.haskell.packages.ghc9122.ghc
+                 pkgsCross.ghcjs.haskell.packages.ghc9141.ghc
                  bun
                  gnumake
                  http-server
@@ -241,7 +241,7 @@
           # GHCJS shell for building iOS / Android apps targeting LynxJS.org
           native =
             pkgs.mkShell {
-              name = "The miso-native ${system} GHC JS 9.12.2 shell";
+              name = "The miso-native ${system} GHC JS 9.14.1 shell";
               shellHook = ''
                 function build () {
                    cabal build $1 \
