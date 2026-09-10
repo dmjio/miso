@@ -318,17 +318,25 @@ collapseSiblingTextNodes
   -> [View context props model action]
 collapseSiblingTextNodes ctx_ props_ model_ = go
   where
-    -- Look through the wrapper constructors first, so a 'VProps' \/ 'VModel'
-    -- \/ 'VContext' that resolves to text is collapsed with its neighbours
+    -- Look through the wrapper constructors, so a 'VProps' \/ 'VModel' \/
+    -- 'VContext' that resolves to text is collapsed with its neighbours
     -- exactly as the client does after 'buildVTree' has resolved it.
-    -- Otherwise an empty 'VText' behind a wrapper renders as a lone space
-    -- that hydration cannot reconcile.
-    go (VProps f : xs) = go (f props_ : xs)
-    go (VContext f : xs) = go (f ctx_ : xs)
-    go (VModel f : xs) = go (f model_ : xs)
-    go (VText _ x : VText k y : xs) = go (VText k (x <> y) : xs)
-    go (x : xs) = x : go xs
-    go [] = []
+    resolve (VProps f) = resolve (f props_)
+    resolve (VContext f) = resolve (f ctx_)
+    resolve (VModel f) = resolve (f model_)
+    resolve v = v
+
+    -- Resolve *both* sides of a pair before deciding whether they merge —
+    -- not just the head, as the single-pass version once did. Otherwise a
+    -- literal 'VText' immediately followed by a wrapper resolving to text
+    -- (or to empty text, which 'renderBuilder' renders as a lone space) is
+    -- never recognised as adjacent, since the second element is only
+    -- resolved on a later call, by which point the first has already been
+    -- emitted.
+    go (x : y : xs)
+      | VText _ a <- resolve x, VText k b <- resolve y = go (VText k (a <> b) : xs)
+      | otherwise = x : go (y : xs)
+    go xs = xs
 ----------------------------------------------------------------------------
 -- | Helper for turning JSON into Text
 -- Object, Array and Null are kind of non-sensical here

@@ -2055,6 +2055,21 @@ main = withJS $ do
         toHtml ([ "a", "", "c" ] :: [View () () () Action])
           `shouldBe` "ac"
 
+      it "toHtmlWith collapses a literal text node with a wrapper that resolves to empty text right after it" $ do
+        -- Regression: a literal 'VText' followed by a 'VModel' \/ 'VProps' \/
+        -- 'VContext' resolving to "" must not leave the empty text stranded —
+        -- it renders as a lone space (see the comment on 'renderBuilder'\'s
+        -- @VText _ ""@ case), producing a stray trailing space.
+        toHtmlWith () () ("" :: MisoString) (div_ [] [ "a", withModel text ])
+          `shouldBe` "<div>a</div>"
+
+      it "toHtmlWith fully collapses a run of text interleaved with empty-resolving wrappers" $ do
+        -- Regression: with two wrappers resolving to "" between two literal
+        -- texts, a partial collapse left an un-merged empty node in the
+        -- middle, rendering as an internal stray space ("x y" instead of "xy").
+        toHtmlWith () () ("" :: MisoString) (div_ [] [ "x", withModel text, withModel text, "y" ])
+          `shouldBe` "<div>xy</div>"
+
     describe "Miso.DSL `await` tests" $ do
       it "Successful Promise resolution should result in a value" $ do
         -- Create a Promise and immediately resolve it with `42`
