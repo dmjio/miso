@@ -5,7 +5,7 @@ packages:
   tests/
 
 allow-newer:
-  all:base
+  all:base,
   all:ghc-experimental
 
 if arch(wasm32)
