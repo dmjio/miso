@@ -298,17 +298,17 @@ library
     hs-source-dirs:
       ffi/js
     build-depends:
-      ghcjs-base -any
+      ghcjs-base < 0.9
 
     if impl(ghcjs)
       build-depends:
-        ghcjs-prim
+        ghcjs-prim < 0.2
 
   elif arch(wasm32)
     hs-source-dirs:
       ffi/wasm
     build-depends:
-      ghc-experimental,
+      ghc-experimental < 9.15,
       template-haskell >= 2.21 && < 2.25
     exposed-modules:
       Miso.DSL.TH

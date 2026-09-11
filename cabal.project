@@ -6,6 +6,7 @@ packages:
 
 allow-newer:
   all:base
+  all:ghc-experimental
 
 if arch(wasm32)
   shared: True
