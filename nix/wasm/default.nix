@@ -1,13 +1,9 @@
 self: super:
 {
 
-  wasm-flake = "gitlab:haskell-wasm/ghc-wasm-meta?host=gitlab.haskell.org";
-
+  # Pinned by flake.lock -- see nix/ghc-wasm-meta.nix (via nix/overlay.nix).
   ghc-wasm-meta =
-    let
-      src = self.wasm-flake;
-    in
-      (builtins.getFlake src).outputs.packages."${super.stdenv.hostPlatform.system}";
+    self.ghcWasmMeta.packages."${super.stdenv.hostPlatform.system}";
 
   wasm-cabal =
     self.ghc-wasm-meta.wasm32-wasi-cabal-9_12;

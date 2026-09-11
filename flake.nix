@@ -41,7 +41,7 @@
 
     {
       # Reusable for downstream flakes: `overlays.default = miso.overlays.default;`
-      overlays.default = final: prev: import ./nix/overlay.nix final prev;
+      overlays.default = import ./nix/overlay.nix { ghcWasmMeta = inputs.ghc-wasm-meta; };
     } //
 
     flake-utils.lib.eachDefaultSystem (system:
@@ -49,7 +49,7 @@
         pkgs = import nixpkgs {
           inherit system;
           # Miso's overlays (provides rspeedy, ghcNative, mkLynxBundle, ...)
-          overlays = [ (import ./nix/overlay.nix) ];
+          overlays = [ (import ./nix/overlay.nix { ghcWasmMeta = inputs.ghc-wasm-meta; }) ];
         };
       in
       {
