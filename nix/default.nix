@@ -9,7 +9,7 @@ let
   config.allowBroken = false;
   config.android_sdk.accept_license = true;
   overlays = [ (import ./wasm)
-               (import ./overlay.nix)
+               (import ./overlay.nix {})
              ] ++ options.overlays;
   legacyPkgs = import ./legacy options;
   pkgs = import nixpkgs { inherit overlays config; };

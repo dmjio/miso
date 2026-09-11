@@ -1,8 +1,16 @@
+# `ghcWasmMeta` is the ghc-wasm-meta flake's outputs. flake.nix passes its
+# locked input; everything else gets the same revision via nix/ghc-wasm-meta.nix,
+# which reads it out of flake.lock.
+{ ghcWasmMeta ? import ./ghc-wasm-meta.nix }:
 self: super:
 let
   js = import ./js super;
 in
 {
+  # The wasm32-wasi toolchain everything below reads from. Exposed so the
+  # legacy nix/wasm overlay and mk-wasm-bundle.nix share this one pin.
+  inherit ghcWasmMeta;
+
   # JS tooling
   inherit (js) rspeedy;
 
@@ -30,7 +38,7 @@ in
   # e.g. wasmPkgs.haskell.packages.ghc9141.callCabal2nix
   wasmPkgs = import ./wasm/package-set.nix {
     pkgs = super;
-    ghcWasmMeta = (builtins.getFlake "gitlab:haskell-wasm/ghc-wasm-meta?host=gitlab.haskell.org").outputs;
+    inherit ghcWasmMeta;
   };
 
   # Packages a wasmPkgs-built executable into a browser-loadable bundle
