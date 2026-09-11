@@ -308,7 +308,7 @@ library
     hs-source-dirs:
       ffi/wasm
     build-depends:
-      ghc-experimental < 9.15,
+      ghc-experimental < 9.1500,
       template-haskell >= 2.21 && < 2.25
     exposed-modules:
       Miso.DSL.TH
