@@ -1,9 +1,5 @@
 # The HTML/JS harness needed to actually load and run a wasm32-wasi
-# executable in a browser via @bjorn3/browser_wasi_shim. Self-contained
-# copies of the same small templates already in ../wasm/default.nix (the
-# ad-hoc overlay backing the legacy sampleWasm/wasmWebBuilder path) --
-# duplicated rather than shared because that overlay isn't applied on the
-# flake's pkgs, only on the legacy nix/default.nix's.
+# executable in a browser via @bjorn3/browser_wasi_shim.
 pkgs:
 {
   indexHtml = title: name: scripts:

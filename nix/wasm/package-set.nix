@@ -5,11 +5,11 @@
 # lib dir layout the wasm backend doesn't use) so `callCabal2nix`/
 # `mkDerivation` work against it.
 #
-# This is a separate, proper `haskell.packages`-shaped set (exposed as
-# `wasmPkgs` from nix/overlay.nix) -- distinct from the ad-hoc single-file
-# builder in ./default.nix, which predates this and has no cabal/hackage
-# support. That one still backs the legacy nix/default.nix build (sampleWasm,
-# wasm-ghc, ghc-wasm-meta) and is left untouched.
+# This is a proper `haskell.packages`-shaped set, exposed as `wasmPkgs` from
+# nix/overlay.nix. It superseded an ad-hoc single-file builder that used to
+# live in ./default.nix and had no cabal/hackage support; all that remains
+# there are the `ghc-wasm-meta` and `wasm-ghc` passthroughs for the legacy
+# nix/default.nix build.
 #
 # Ported from https://github.com/ners/nix-wasm (default.nix and the two
 # nixpkgs-patches/*.patch files).

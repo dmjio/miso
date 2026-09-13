@@ -119,10 +119,6 @@ rec {
   sample-app-ghc9141 =
     pkgs.haskell.packages.ghc9141.sample-app;
 
-  # Miso wasm examples
-  inherit (pkgs)
-    sampleWasm;
-
   # wasm utils
   inherit (pkgs)
     wasm-ghc
