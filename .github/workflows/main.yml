@@ -40,24 +40,6 @@ jobs:
      - name: Bun build prod
        run: bun run build && bun run prod
 
-     - name: (JS) Miso GHCJS (GHCJS 8.6)
-       run: nix-build -A miso-ghcjs
-
-     - name: Nix garbage collection
-       run: cabal clean && nix-collect-garbage -d
-
-     - name: (JS) Miso GHCJS Production (GHCJS 8.6)
-       run: nix-build -A miso-ghcjs-prod
-
-     - name: Nix garbage collection
-       run: cabal clean && nix-collect-garbage -d
-
-     - name: (x86) Miso GHC (GHC 8.6.5)
-       run: nix-build -A miso-ghc
-
-     - name: Nix garbage collection
-       run: cabal clean && nix-collect-garbage -d
-
      - name: (JS) Miso GHCJS (GHC 9.14.1)
        run: nix-build -A miso-ghcjs-9141
 
@@ -82,18 +64,6 @@ jobs:
      - name: Nix garbage collection
        run: cabal clean && nix-collect-garbage -d
 
-     - name: (JS) Miso sample app (GHCJS 8.6)
-       run: nix-build -A sample-app-js
-
-     - name: Nix garbage collection
-       run: cabal clean && nix-collect-garbage -d
-
-     - name: (x86) Miso sample app (GHC 8.6.5)
-       run: nix-build -A sample-app
-
-     - name: Nix garbage collection
-       run: cabal clean && nix-collect-garbage -d
-
      - name: (JS) Miso integration tests
        run: nix-build -A playwright-js && ./result/bin/playwright
 
@@ -114,12 +84,6 @@ jobs:
 
      - name: (WASM) Miso integration tests (aeson + text)
        run: nix-build -A playwright-wasm-aeson-text && ./result/bin/playwright
-
-     - name: Nix garbage collection
-       run: cabal clean && nix-collect-garbage -d
-
-     - name: (GHCJS) Miso integration tests
-       run: nix-build -A playwright-ghcjs && ./result/bin/playwright
 
   build-bundle:
     runs-on: ubuntu-latest
