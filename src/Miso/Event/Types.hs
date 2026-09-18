@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 -----------------------------------------------------------------------------
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE RecordWildCards            #-}
@@ -88,6 +89,11 @@ module Miso.Event.Types
   , clipboardEvents
   , touchEvents
   ) where
+#ifdef __MHS__
+import Prelude hiding (mapM, mapM_, sequence, sequence_)
+import Data.Foldable (mapM_, sequence_)
+import Data.Traversable (mapM, sequence)
+#endif
 -----------------------------------------------------------------------------
 import           Miso.JSON (FromJSON(..), withText)
 import qualified Data.Map.Strict as M

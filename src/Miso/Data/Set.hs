@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 -----------------------------------------------------------------------------
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -81,7 +82,12 @@ module Miso.Data.Set
   , isDisjoint
   ) where
 -----------------------------------------------------------------------------
+#ifdef __MHS__
+import           Control.Monad (void)
+import           Data.Foldable (forM_)
+#else
 import           Control.Monad (void, forM_)
+#endif
 import           Prelude hiding (lookup)
 -----------------------------------------------------------------------------
 import           Miso.DSL (jsg, JSVal, ToJSVal, FromJSVal, (!))

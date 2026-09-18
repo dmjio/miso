@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 -----------------------------------------------------------------------------
 {-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE TemplateHaskellQuotes #-}
@@ -86,6 +87,11 @@ module Miso.Lens.TH
   , this
   , Lens
   ) where
+#ifdef __MHS__
+import Prelude hiding (mapM, mapM_, sequence, sequence_)
+import Data.Foldable (mapM_, sequence_)
+import Data.Traversable (mapM, sequence)
+#endif
 -----------------------------------------------------------------------------
 import Data.Char
 import Data.Maybe

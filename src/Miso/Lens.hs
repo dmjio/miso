@@ -847,32 +847,51 @@ prism = Prism
 -- >   at 10 ?= value
 --
 -- @since 1.9.0.0
+#ifndef __MHS__
 class At at where
   type family Index at :: Type
   -- ^ Index of the container
   type family IxValue at :: Type
   -- ^ Indexed value of the container
   at :: Index at -> Lens at (Maybe (IxValue at))
+#else
+-- MicroHs has no associated type families, so the index and value types are
+-- class parameters determined by the container type.
+class At at k v | at -> k, at -> v where
+  at :: k -> Lens at (Maybe v)
+#endif
 ----------------------------------------------------------------------------
+#ifndef __MHS__
 instance Ord k => At (Map k v) where
   type Index (Map k v) = k
   type IxValue (Map k v) = v
+#else
+instance Ord k => At (Map k v) k v where
+#endif
   at key = lens (M.lookup key) $ \m value ->
     case value of
       Nothing -> M.delete key m
       Just v -> M.insert key v m
 ----------------------------------------------------------------------------
+#ifndef __MHS__
 instance At (IntMap v) where
   type Index (IntMap v) = Int
   type IxValue (IntMap v) = v
+#else
+instance At (IntMap v) Int v where
+#endif
   at key = lens (IM.lookup key) $ \m value ->
     case value of
       Nothing -> IM.delete key m
       Just v -> IM.insert key v m
 ----------------------------------------------------------------------------
+#ifndef __MHS__
 instance Ord k => At (Set k) where
   type Index (Set k) = k
   type IxValue (Set k) = ()
+#else
+instance Ord k => At (Set k) k () where
+#endif
   at key = Lens {..}
     where
       _set = \v m ->
@@ -883,9 +902,13 @@ instance Ord k => At (Set k) where
         | S.member key m = Just ()
         | otherwise = Nothing
 ----------------------------------------------------------------------------
+#ifndef __MHS__
 instance At IntSet where
   type Index IntSet = Int
   type IxValue IntSet = ()
+#else
+instance At IntSet Int () where
+#endif
   at key = Lens {..}
     where
       _set = \v m ->
@@ -896,9 +919,13 @@ instance At IntSet where
         | IS.member key m = Just ()
         | otherwise = Nothing
 ----------------------------------------------------------------------------
+#ifndef __MHS__
 instance At [a] where
   type Index [a] = Int
   type IxValue [a] = a
+#else
+instance At [a] Int a where
+#endif
   at key = Lens {..}
     where
       _set Nothing m

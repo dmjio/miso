@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 -----------------------------------------------------------------------------
 {-# LANGUAGE RecordWildCards   #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -72,13 +73,22 @@ module Miso.Subscription.Window
   , Coord
   ) where
 -----------------------------------------------------------------------------
+#ifdef __MHS__
+#ifdef __MHS__
+import Prelude hiding (mapM, mapM_, sequence, sequence_)
+#endif
+import           Control.Monad hiding (forM, forM_, mapM, mapM_, sequence, sequence_)
+import           Data.Foldable (forM_, mapM_, sequence_)
+import           Data.Traversable (forM, mapM, sequence)
+#else
 import           Control.Monad
+#endif
 -----------------------------------------------------------------------------
 import           Miso.DSL
 import           Miso.Event
 import           Miso.Effect
 import qualified Miso.FFI.Internal as FFI
-import           Miso.JSON hiding (Options, defaultOptions)
+import           Miso.JSON hiding (Options(..), defaultOptions)
 import           Miso.String
 import           Miso.Subscription.Util
 import           Miso.Canvas (Coord)

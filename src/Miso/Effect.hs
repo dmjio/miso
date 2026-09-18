@@ -148,6 +148,11 @@ module Miso.Effect
   , runOnBG
   , runOnMain
   ) where
+#ifdef __MHS__
+import Prelude hiding (mapM, mapM_, sequence, sequence_)
+import Data.Foldable (mapM_, sequence_)
+import Data.Traversable (mapM, sequence)
+#endif
 -----------------------------------------------------------------------------
 import           Control.Monad (void)
 import           Data.Foldable (traverse_)

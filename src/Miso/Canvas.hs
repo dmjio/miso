@@ -178,6 +178,9 @@ module Miso.Canvas
   , color
   ) where
 -----------------------------------------------------------------------------
+#ifdef __MHS__
+import Prelude hiding (setField)
+#endif
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.Reader (ReaderT, runReaderT, ask)
 -----------------------------------------------------------------------------

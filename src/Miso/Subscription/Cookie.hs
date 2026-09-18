@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 -----------------------------------------------------------------------------
 {-# LANGUAGE OverloadedStrings #-}
 -----------------------------------------------------------------------------
@@ -56,6 +57,11 @@ module Miso.Subscription.Cookie
   ( -- ** Subscriptions
     cookieChangeSub
   ) where
+#ifdef __MHS__
+import Prelude hiding (mapM, mapM_, sequence, sequence_)
+import Data.Foldable (mapM_, sequence_)
+import Data.Traversable (mapM, sequence)
+#endif
 -----------------------------------------------------------------------------
 import           Miso.Cookie (CookieChangeEvent)
 import           Miso.DSL (fromJSVal)

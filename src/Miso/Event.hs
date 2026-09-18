@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 -----------------------------------------------------------------------------
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -47,6 +48,11 @@ module Miso.Event
    , module Miso.Event.Decoder
    , module Miso.Event.Types
    ) where
+#ifdef __MHS__
+import Prelude hiding (mapM, mapM_, sequence, sequence_)
+import Data.Foldable (mapM_, sequence_)
+import Data.Traversable (mapM, sequence)
+#endif
 -----------------------------------------------------------------------------
 import           Control.Monad (when)
 import qualified Data.Map.Strict as M

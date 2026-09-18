@@ -97,6 +97,11 @@ module Miso.Html.Render
     -- *** Functions
   , toHtmlWith
   ) where
+#ifdef __MHS__
+import Prelude hiding (mapM, mapM_, sequence, sequence_)
+import Data.Foldable (mapM_, sequence_)
+import Data.Traversable (mapM, sequence)
+#endif
 ----------------------------------------------------------------------------
 import qualified Data.Set as S
 import           Data.Set (Set)

@@ -188,7 +188,7 @@ module Miso.JSON
   , Options (..)
   , defaultOptions
   -- * Generics
-#ifndef AESON
+#if !defined(AESON) && !defined(__MHS__)
   , GToJSON (..)
   , GToFields (..)
   , GToJSONRep (..)
@@ -202,17 +202,28 @@ module Miso.JSON
   , GFromJSONSum (..)
   , GFromJSONSumNullary (..)
 #endif
+#ifndef __MHS__
   , genericToJSON
   , genericParseJSON
+#endif
   -- * Modifiers
   , camelTo2
   ) where
 ----------------------------------------------------------------------------
+#ifdef __MHS__
+import Prelude hiding (mapM, mapM_, sequence, sequence_)
+#endif
 #ifdef GHCJS_BOTH
 import qualified GHCJS.Marshal as Marshal
 #endif
 ----------------------------------------------------------------------------
+#ifdef __MHS__
+import           Control.Monad hiding (forM, forM_, mapM, mapM_, sequence, sequence_)
+import           Data.Foldable (forM_, mapM_, sequence_)
+import           Data.Traversable (forM, mapM, sequence)
+#else
 import           Control.Monad
+#endif
 #if __GLASGOW_HASKELL__ <= 865
 import           Control.Monad.Fail
 import           GHC.Natural (Natural)
@@ -376,8 +387,10 @@ instance FromJSONKey MisoString where
 class ToJSON a where
   -- | Convert a value to a JSON 'Value'.
   toJSON :: a -> Value
+#ifndef __MHS__
   default toJSON :: (Generic a, GToJSON (Rep a)) => a -> Value
   toJSON = genericToJSON defaultOptions
+#endif
 
   -- | Encode a list of @a@. Defaults to a JSON 'Array'; overridden by the
   -- 'Char' instance so that @[Char]@ (i.e. t'String') serializes as a JSON
@@ -385,6 +398,7 @@ class ToJSON a where
   toJSONList :: [a] -> Value
   toJSONList = Array . Prelude.map toJSON
 ----------------------------------------------------------------------------
+#ifndef __MHS__
 -- | Derive 'toJSON' via 'GHC.Generics' with custom t'Options'.
 -- Called by the default 'ToJSON' implementation using 'defaultOptions'.
 genericToJSON
@@ -395,6 +409,7 @@ genericToJSON
   -- ^ Value to encode
   -> Value
 genericToJSON opts = gToJSON opts . from
+#endif
 ----------------------------------------------------------------------------
 -- | Configuration for generic JSON encoding and decoding via 'genericToJSON'
 -- and 'genericParseJSON'. Mirrors the subset of aeson's @Options@ that is
@@ -455,6 +470,7 @@ camelTo2 c = Prelude.map toLower . go2 . go1
           go2 (l:u:xs) | isLower l && isUpper u = l : c : u : go2 xs
           go2 (x:xs) = x : go2 xs
 ----------------------------------------------------------------------------
+#ifndef __MHS__
 -- | Intermediate representation of a constructor's fields after encoding.
 --
 -- 'RecordFields' is produced when every selector has a name (record syntax);
@@ -624,6 +640,7 @@ instance (Constructor m, GToFields f) => GToJSONSum (C1 m f) where
     encodeTaggedCon
       (ms (constructorTagModifier opts (conName (undefined :: C1 m f ()))))
       (gToFields opts x)
+#endif
 ----------------------------------------------------------------------------
 instance ToJSON () where
   toJSON () = Array []
@@ -789,9 +806,12 @@ class FromJSON a where
   -- | Parse a JSON 'Value' into @a@, failing with a descriptive error message
   -- via t'Parser' on a type mismatch.
   parseJSON :: Value -> Parser a
+#ifndef __MHS__
   default parseJSON :: (Generic a, GFromJSON (Rep a)) => Value -> Parser a
   parseJSON = genericParseJSON defaultOptions
+#endif
 ----------------------------------------------------------------------------
+#ifndef __MHS__
 -- | Top-level generic decoding class. Symmetric with 'GToJSON'.
 --
 -- Decoding rules match aeson's defaults (see t'Options' and 'defaultOptions').
@@ -957,6 +977,7 @@ instance {-# OVERLAPPABLE #-} (Selector m, FromJSON a)
   gFromPositional _ vs = case vs of
     (v:_) -> M1 . K1 <$> parseJSON v
     []    -> pfail "gFromPositional: unexpected end of fields"
+#endif
 ----------------------------------------------------------------------------
 instance FromJSON Value where
   parseJSON = pure
@@ -1081,7 +1102,7 @@ instance FromJSON Char where
        | otherwise -> pfail ("expected Char, received: " <> x)
 ----------------------------------------------------------------------------
 instance FromJSON v => FromJSON (Map MisoString v) where
-  parseJSON = withObject "FromJSON v => Map MisoString v" $ mapM parseJSON
+  parseJSON = withObject "FromJSON v => Map MisoString v" $ traverse parseJSON
 #endif
 ----------------------------------------------------------------------------
 #ifdef AESON
@@ -1335,7 +1356,7 @@ foreign import javascript unsafe
   encodePretty_ffi :: JSVal -> Int -> IO MisoString
 #endif
 -----------------------------------------------------------------------------
-#ifdef WASM
+#if defined(WASM) || defined(MHS)
 #ifdef MISO_TEXT
 foreign import javascript unsafe
   "return JSON.stringify($1, null, $2);"
@@ -1393,7 +1414,7 @@ foreign import javascript unsafe
   jsonStringify :: JSVal -> IO MisoString
 #endif
 -----------------------------------------------------------------------------
-#ifdef WASM
+#if defined(WASM) || defined(MHS)
 #ifdef MISO_TEXT
 foreign import javascript unsafe
   "return JSON.stringify($1);"
@@ -1425,7 +1446,7 @@ foreign import javascript unsafe
   jsonParse :: MisoString -> IO JSVal
 #endif
 -----------------------------------------------------------------------------
-#ifdef WASM
+#if defined(WASM) || defined(MHS)
 #ifdef MISO_TEXT
 foreign import javascript unsafe
   "return JSON.parse($1);"
@@ -1574,7 +1595,7 @@ fromJSVal_Value jsval_ = do
     toObject = mkObject
 #endif
 -----------------------------------------------------------------------------
-#ifdef WASM
+#if defined(WASM) || defined(MHS)
 fromJSVal_Value :: JSVal -> IO (Maybe Value)
 fromJSVal_Value jsval = do
   typeof jsval >>= \case
@@ -1630,7 +1651,7 @@ foreign import javascript unsafe
   typeof :: JSVal -> IO Int
 #endif
 -----------------------------------------------------------------------------
-#ifdef WASM
+#if defined(WASM) || defined(MHS)
 foreign import javascript unsafe
  "return globalThis.miso.typeOf($1);"
   typeof :: JSVal -> IO Int
@@ -1642,7 +1663,7 @@ foreign import javascript unsafe
   typeof :: JSVal -> IO Int
 #endif
 -----------------------------------------------------------------------------
-#ifdef WASM
+#if defined(WASM) || defined(MHS)
 -- | Convert a Miso JSON t'Value' to a raw JavaScript value via FFI.
 toJSVal_Value :: Value -> IO JSVal
 toJSVal_Value = \case

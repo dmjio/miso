@@ -36,6 +36,7 @@ sample-app-native/build
 # haddocks
 haddocks/
 /sample-app/public/
+/sample-app/public-mhs/
 
 .gradle
 sample-app-native/android/app/src/main/assets/main.lynx.bundle

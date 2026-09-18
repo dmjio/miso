@@ -54,3 +54,18 @@ build-js86:
 	cp -v ../dist-newstyle/build/x86_64-linux/ghcjs-8.6.0.1/app-0.1.0.0/x/app/build/app/app.jsexe/all.js .
 	rm -rf public
 	cp -rv static public
+
+# Build with MicroHs (mhs) for the browser, via emscripten.
+# MHS_TARGET is a section of MicroHs's targets.conf: browser (WebAssembly)
+# or browser_js (JavaScript only, -sWASM=0).
+MHS_TARGET=browser
+MHS_FLAGS=-XCPP -DMHS -DMISO_TEXT -i../src -i../ffi/mhs
+
+mhs:
+	mkdir -p public-mhs
+	cp ../js/miso.js public-mhs/
+	cp static-mhs/index.html public-mhs/
+	mhs $(MHS_FLAGS) -t$(MHS_TARGET) Main -opublic-mhs/app.js
+
+serve-mhs:
+	http-server public-mhs

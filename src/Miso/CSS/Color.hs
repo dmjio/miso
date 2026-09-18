@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 -----------------------------------------------------------------------------
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
@@ -251,7 +252,11 @@ import           Miso.String (MisoString, ms)
 import qualified Miso.String as MS
 -----------------------------------------------------------------------------
 import           Data.Proxy
+#ifdef __MHS__
+import           Data.TypeLits
+#else
 import           GHC.TypeLits
+#endif
 import           GHC.OverloadedLabels
 import           Miso.DSL (ToJSVal(..), ToArgs(..))
 import           Prelude hiding (tan)

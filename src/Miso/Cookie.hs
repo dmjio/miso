@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 -----------------------------------------------------------------------------
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE RecordWildCards     #-}
@@ -86,7 +87,12 @@ module Miso.Cookie
   ) where
 -----------------------------------------------------------------------------
 import           Control.Concurrent (MVar, newEmptyMVar, putMVar, takeMVar)
+#ifdef __MHS__
+import           Control.Monad ((<=<), join)
+import           Data.Foldable (forM_)
+#else
 import           Control.Monad ((<=<), forM_, join)
+#endif
 import           Prelude hiding ((!!))
 -----------------------------------------------------------------------------
 import           Miso.DSL

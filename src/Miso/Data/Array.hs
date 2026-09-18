@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 -----------------------------------------------------------------------------
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -80,8 +81,20 @@ module Miso.Data.Array
   , reverse
   ) where
 -----------------------------------------------------------------------------
+#ifdef __MHS__
+import           Control.Monad (void)
+import           Data.Foldable (forM_)
+import           Data.Traversable (forM)
+#else
 import           Control.Monad (void, forM, forM_)
+#endif
+#ifdef __MHS__
+import           Prelude hiding (mapM, mapM_, sequence, sequence_, lookup, null, reverse)
+import Data.Foldable (mapM_, sequence_)
+import Data.Traversable (mapM, sequence)
+#else
 import           Prelude hiding (lookup, null, reverse)
+#endif
 -----------------------------------------------------------------------------
 import           Miso.DSL (jsg, JSVal, ToObject, ToJSVal, FromJSVal, (!))
 import qualified Miso.DSL as DSL

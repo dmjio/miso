@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 -----------------------------------------------------------------------------
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
@@ -106,7 +107,9 @@ module Miso.Router
   ( -- ** Classes
     Router (..)
   , RouteParser
+#ifndef __MHS__
   , GRouter (..)
+#endif
     -- ** Types
   , Capture (..)
   , Path (..)
@@ -140,6 +143,9 @@ module Miso.Router
   , tokensToURI
   ) where
 -----------------------------------------------------------------------------
+#ifdef __MHS__
+import Prelude hiding (mapM, mapM_, sequence, sequence_)
+#endif
 import qualified Data.Map.Strict as M
 import           Data.Maybe
 import           Data.Bifunctor (first)
@@ -148,9 +154,19 @@ import           Data.Proxy
 import qualified Data.Char as C
 import           Data.String
 import           Control.Applicative
+#ifdef __MHS__
+import           Control.Monad hiding (forM, forM_, mapM, mapM_, sequence, sequence_)
+import           Data.Foldable (forM_, mapM_, sequence_)
+import           Data.Traversable (forM, mapM, sequence)
+#else
 import           Control.Monad
+#endif
 import           GHC.Generics
+#ifdef __MHS__
+import           Data.TypeLits
+#else
 import           GHC.TypeLits
+#endif
 -----------------------------------------------------------------------------
 import           Miso.Types hiding (model, fragment, fragment_)
 import           Miso.JSON (FromJSON (..))
@@ -345,8 +361,10 @@ instance FromJSON URI where
 -- | Class used to facilitate routing for miso applications
 class Router route where
   fromRoute :: route -> [Token]
+#ifndef __MHS__
   default fromRoute :: (Generic route, GRouter (Rep route)) => route -> [Token]
   fromRoute = gFromRoute . from
+#endif
 
   -- | Convert a 'Router route => route' into a t'URI'
   toURI :: route -> URI
@@ -373,8 +391,10 @@ class Router route where
   toRoute input = parseRoute input routeParser
 
   routeParser :: RouteParser route
+#ifndef __MHS__
   default routeParser :: (Generic route, GRouter (Rep route)) => RouteParser route
   routeParser = to <$> gRouteParser
+#endif
 -----------------------------------------------------------------------------
 -- | Smart constructor for building a @RouteParser@
 --
@@ -405,6 +425,7 @@ runRouter = parseRoute
 routes :: [ RouteParser route ] -> RouteParser route
 routes = foldr (<|>) empty
 -----------------------------------------------------------------------------
+#ifndef __MHS__
 -- | Generic deriving for 'Router'
 class GRouter f where
   gFromRoute :: f route -> [Token]
@@ -460,6 +481,7 @@ instance {-# OVERLAPS #-} forall param m a . (ToMisoString a, FromMisoString a, 
         Nothing -> [QueryParamToken key Nothing]
         Just v -> [QueryParamToken key (Just (ms v))]
     gRouteParser = K1 <$> queryParam
+#endif
 -----------------------------------------------------------------------------
 -- | Query parameter parser from a route
 queryParam
@@ -475,6 +497,7 @@ queryParam = do
           Right parsed -> pure (Just parsed)
       _ -> pure Nothing
 -----------------------------------------------------------------------------
+#ifndef __MHS__
 instance {-# OVERLAPS #-} forall flag m . KnownSymbol flag => GRouter (K1 m (QueryFlag flag)) where
   gFromRoute (K1 (QueryFlag specified))
     | specified = [ QueryParamToken flag Nothing ]
@@ -482,6 +505,7 @@ instance {-# OVERLAPS #-} forall flag m . KnownSymbol flag => GRouter (K1 m (Que
         where
           flag = ms (symbolVal (Proxy @flag))
   gRouteParser = K1 <$> queryFlag
+#endif
 -----------------------------------------------------------------------------
 -- | Query flag parser from a route
 queryFlag :: forall flag . KnownSymbol flag => RouteParser (QueryFlag flag)
@@ -491,6 +515,7 @@ queryFlag = do
     where
       flag = ms $ symbolVal (Proxy @flag)
 -----------------------------------------------------------------------------
+#ifndef __MHS__
 instance Router a => GRouter (K1 m a) where
   gFromRoute (K1 x) = fromRoute x
   gRouteParser = K1 <$> routeParser
@@ -511,6 +536,7 @@ instance (GRouter left, GRouter right) => GRouter (left :+: right) where
     [ L1 <$> gRouteParser
     , R1 <$> gRouteParser
     ]
+#endif
 -----------------------------------------------------------------------------
 captureOrPathToken :: RouteParser Token
 captureOrPathToken = satisfy $ \case

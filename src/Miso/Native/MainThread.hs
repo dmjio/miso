@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 -----------------------------------------------------------------------------
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -73,7 +74,12 @@ module Miso.Native.MainThread
   , modifyMainThreadRef_
   ) where
 -----------------------------------------------------------------------------
+#ifdef __MHS__
+import           Control.Monad (void)
+import           Data.Foldable (forM_)
+#else
 import           Control.Monad (void, forM_)
+#endif
 import           Control.Monad.State (State, execState)
 import           Data.IORef (IORef, newIORef, readIORef, writeIORef, modifyIORef')
 import           System.IO.Unsafe (unsafePerformIO)
