@@ -14,7 +14,7 @@ let
           baseName = baseNameOf (toString name);
           excluded =
             [ ".git" ".github" ".gradle" ".stack-work" "coverage"
-              "dist" "dist-newstyle" "dist-mcabal" "node_modules" "result"
+              "dist" "dist-newstyle" "dist-mcabal" ".mcabal" ".emcache" "node_modules" "result"
             ] ++ excludedNames;
         in
          (!elem baseName excluded && (

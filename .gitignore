@@ -12,6 +12,11 @@ dist
 # nix
 result*
 
+# MicroHs shell (nix develop .#mhs)
+.mcabal/
+.emcache/
+dist-mcabal/
+
 # emacs
 *~
 
