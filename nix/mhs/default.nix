@@ -131,4 +131,32 @@ rec {
       runHook postInstall
     '';
   };
+
+  # The integration tests (tests/app/Main.hs) built with mhs for the browser,
+  # driven by ts/playwright.ts (see playwright-mhs in default.nix).
+  miso-tests-mhs-bundle = super.stdenv.mkDerivation {
+    pname = "miso-tests-mhs-bundle";
+    version = "1.14.0.0";
+    src = src.miso-tests;
+    nativeBuildInputs = [ microhs super.emscripten ];
+    buildPhase = ''
+      runHook preBuild
+      export CABALDIR=$TMPDIR/mcabal
+      cp -r ${cabalDir miso-mhs} $CABALDIR
+      chmod -R u+w $CABALDIR
+      export HOME=$TMPDIR
+      export EM_CACHE=$TMPDIR/emcache
+      cp -r ${super.emscripten}/share/emscripten/cache $EM_CACHE
+      chmod -R u+w $EM_CACHE
+      ${mcabal} --options=-tbrowser build
+      runHook postBuild
+    '';
+    installPhase = ''
+      runHook preInstall
+      mkdir -p $out
+      cp ${../../sample-app/static-mhs/index.html} $out/index.html
+      cp dist-mcabal/bin/mhs/component-tests $out/app.js
+      runHook postInstall
+    '';
+  };
 }

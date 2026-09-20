@@ -11,7 +11,7 @@
 {-# LANGUAGE DerivingStrategies  #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StaticPointers      #-}
-#ifndef GHCJS_OLD
+#if !defined(GHCJS_OLD) && !defined(__MHS__)
 {-# LANGUAGE QuasiQuotes #-}
 #endif
 -----------------------------------------------------------------------------
@@ -25,15 +25,21 @@ import           Data.Map.Strict (Map)
 import qualified Data.IntMap.Strict as IM
 import           Data.IntMap.Strict (IntMap)
 import           Data.Char (toLower)
+#ifdef __MHS__
+import           Prelude hiding (setField, (!!))
+#else
 import           Prelude hiding ((!!))
+#endif
 import           GHC.Generics
 import           Control.Monad
 import           Data.Either
 import           Data.IORef
 import           Data.Text (Text)
 import           GHC.Fingerprint (Fingerprint(..), fingerprint0)
-import           GHC.Natural (Natural)
+import           Numeric.Natural (Natural)
+#ifndef __MHS__
 import           GHC.StaticPtr (StaticKey)
+#endif
 import qualified Data.Text as T
 import           Control.Monad.State
 -----------------------------------------------------------------------------
@@ -46,10 +52,12 @@ import qualified Miso.Data.Map as MDM
 import qualified Miso.Data.Set as MDS
 import qualified Miso.Data.Array as Array
 import qualified Miso.Date as D
-#ifndef GHCJS_OLD
+#if !defined(GHCJS_OLD) && !defined(__MHS__)
 import           Miso.FFI.QQ (js)
 #endif
+#ifndef __MHS__
 import           Miso.Lens.Generic
+#endif
 import           Miso.Lens
 import           Miso.Test
 import           Miso.Html
@@ -154,11 +162,14 @@ testComponent = component (0 :: Int) update_ $ \_ -> button_ [ id_ "foo", onClic
 -----------------------------------------------------------------------------
 data Action = AddOne
   deriving stock (Show, Eq, Generic)
+#ifndef __MHS__
   deriving anyclass (JSON.FromJSON, JSON.ToJSON)
+#endif
 -----------------------------------------------------------------------------
 -- | Two distinct components mounted statically at the same position by
 -- 'staticSwapRoot'; the differ must replace one with the other, not keep the
 -- first and run the second's @diffProps@ against it.
+#ifndef __MHS__
 staticProbeA, staticProbeB :: Component () () () Action
 staticProbeA = component () noop $ \_ -> div_ [ id_ "static-a" ] [ "A" ]
 staticProbeB = component () noop $ \_ -> div_ [ id_ "static-b" ] [ "B" ]
@@ -170,12 +181,15 @@ staticSwapRoot = component False (\AddOne -> this %= not) $ \swapped ->
         then vcomp_ (static (mountStatic staticProbeB))
         else vcomp_ (static (mountStatic staticProbeA))
     ]
+#endif
 -----------------------------------------------------------------------------
 -- | Increments the app-global @context@ (an 'Int'); used to test that
 -- 'useContext' gates whether a 'vcontext' subtree observes the change.
 data ContextAction = BumpContext
   deriving stock (Show, Eq, Generic)
+#ifndef __MHS__
   deriving anyclass (JSON.FromJSON, JSON.ToJSON)
+#endif
 -----------------------------------------------------------------------------
 #ifdef WASM
 #ifndef INTERACTIVE
@@ -183,23 +197,39 @@ foreign export javascript "hs_start" main :: IO ()
 #endif
 #endif
 -----------------------------------------------------------------------------
+#ifndef __MHS__
 data Route
   = Index
   | Home
   | Widget (Capture "thing" Int) (Path "foo") (Capture "other" MisoString) (QueryParam "bar" Int) (QueryParam "lol" Int)
   deriving stock (Generic, Show, Eq)
   deriving anyclass Router
+#endif
 -----------------------------------------------------------------------------
 data Person = Person { name :: MisoString, age :: Int }
+#ifndef __MHS__
   deriving stock Generic
   deriving anyclass (ToJSVal, ToObject)
+#else
+-- MicroHs has no Generic-based defaults
+instance ToObject Person where
+  toObject (Person n a) = do
+    o <- create
+    setField o "name" =<< toJSVal n
+    setField o "age" =<< toJSVal a
+    pure o
+instance ToJSVal Person where
+  toJSVal p = toJSVal =<< toObject p
+#endif
 ----------------------------------------------------------------------------
 -- Types for generic JSON encoding/decoding tests
 ----------------------------------------------------------------------------
 -- Nullary sum
 data Color = Red | Green | Blue
   deriving stock (Generic, Show, Eq)
+#ifndef __MHS__
   deriving anyclass (JSON.ToJSON, JSON.FromJSON)
+#endif
 ----------------------------------------------------------------------------
 -- Single-constructor record (no tag)
 data Point = Point { px :: Int, py :: Int }
@@ -215,12 +245,16 @@ instance JSON.FromJSON Point where
 -- Single-constructor newtype-like (unwrapped)
 data Wrapper = Wrapper Int
   deriving stock (Generic, Show, Eq)
+#ifndef __MHS__
   deriving anyclass (JSON.ToJSON, JSON.FromJSON)
+#endif
 ----------------------------------------------------------------------------
 -- Single-constructor with a list field (exercises parseProd gFieldCount == 1 fix)
 data WrapperList = WrapperList [MisoString]
   deriving stock (Generic, Show, Eq)
+#ifndef __MHS__
   deriving anyclass (JSON.ToJSON, JSON.FromJSON)
+#endif
 ----------------------------------------------------------------------------
 -- Multi-constructor sum with positional fields
 data Shape
@@ -228,24 +262,32 @@ data Shape
   | Rectangle Double Double
   | Dot
   deriving stock (Generic, Show, Eq)
+#ifndef __MHS__
   deriving anyclass (JSON.ToJSON, JSON.FromJSON)
+#endif
 ----------------------------------------------------------------------------
 -- Multi-constructor sum with record fields
 data Animal
   = Cat { catName :: MisoString, lives :: Int }
   | Dog { dogName :: MisoString, tricks :: Int }
   deriving stock (Generic, Show, Eq)
+#ifndef __MHS__
   deriving anyclass (JSON.ToJSON, JSON.FromJSON)
+#endif
 ----------------------------------------------------------------------------
 -- Record with Maybe field
 data Profile = Profile { handle :: MisoString, bio :: Maybe MisoString }
   deriving stock (Generic, Show, Eq)
+#ifndef __MHS__
   deriving anyclass (JSON.ToJSON, JSON.FromJSON)
+#endif
 ----------------------------------------------------------------------------
 -- Record with camelCase fields for fieldLabelModifier tests
 data CamelRecord = CamelRecord { firstName :: MisoString, lastName :: MisoString }
   deriving stock (Generic, Show, Eq)
+#ifndef __MHS__
   deriving anyclass (JSON.ToJSON, JSON.FromJSON)
+#endif
 ----------------------------------------------------------------------------
 -- Sum type with a single-field constructor whose field type is a list
 -- (exercises the parseTaggedCon gFieldCount == 1 fix)
@@ -253,12 +295,16 @@ data NestedList
   = NestedList [MisoString]
   | EmptyNested
   deriving stock (Generic, Show, Eq)
+#ifndef __MHS__
   deriving anyclass (JSON.ToJSON, JSON.FromJSON)
+#endif
 ----------------------------------------------------------------------------
 -- Zero-field single constructor (exercises parseProd 0-field guard)
 data Nullary = Nullary
   deriving stock (Generic, Show, Eq)
+#ifndef __MHS__
   deriving anyclass (JSON.ToJSON, JSON.FromJSON)
+#endif
 ----------------------------------------------------------------------------
 -- JSON helpers that work whether miso is built with its own JSON
 -- representation or with the aeson flag (where Value is aeson's type:
@@ -284,7 +330,7 @@ isError _              = False
 getAge :: Person -> IO Int
 getAge = inline "return age;"
 ----------------------------------------------------------------------------
-#ifndef GHCJS_OLD
+#if !defined(GHCJS_OLD) && !defined(__MHS__)
 factorial :: Int -> IO Int
 factorial n = [js|
   let x = 1;
@@ -303,12 +349,14 @@ square n = [js|
 main :: IO ()
 main = withJS $ do
   runTests $ beforeEach clearBody $ afterEach clearComponentState $ do
+#ifndef __MHS__
     describe "Miso.Lens.Generic tests" $ do
       it "Should update field generically" $ do
         let john = Person "john" 30
         (john ^. field @"name") `shouldBe` "john"
         let bob = john & field @"name" .~ "bob"
         (bob ^. field @"name") `shouldBe` "bob"
+#endif
     describe "Miso.Storage tests" $ do
       it "Should get and set in localStorage" $ do
         (`shouldBe` 0) =<< liftIO localStorageLength
@@ -689,6 +737,7 @@ main = withJS $ do
         decodePure "{\"a\":true,\"b\":1.1}"
           `shouldBe` Right (JSON.object [("a",JSON.Bool True),("b",JSON.Number 1.1)])
 
+#ifndef __MHS__
     describe "Miso.JSON generic encoding tests" $ do
       -- Nullary sum constructors → bare String (allNullaryToStringTag = True)
       it "encodes nullary sum constructors as bare strings" $ do
@@ -820,7 +869,7 @@ main = withJS $ do
       it "round-trips nullary sibling of single-field list constructor" $ do
         (JSON.fromJSON (JSON.toJSON EmptyNested) :: JSON.Result NestedList)
           `shouldBe` JSON.Success EmptyNested
-#ifndef GHCJS_OLD
+#if !defined(GHCJS_OLD) && !defined(__MHS__)
       -- #3: omitNothingFields = True decode — missing key decodes as Nothing
       it "decodes missing key as Nothing when omitNothingFields was used" $ do
         let opts = JSON.defaultOptions { JSON.omitNothingFields = True }
@@ -896,6 +945,7 @@ main = withJS $ do
         JSON.encodePure (JSON.object [("ke\"y", JSON.Bool True)])
           `shouldBe` "{\"ke\\\"y\":true}"
 
+#endif
     -- toJSONList: String (i.e. [Char]) serializes as a JSON string while
     -- other lists serialize as JSON arrays. This replaces the old
     -- OVERLAPPING/OVERLAPPABLE ToJSON String / ToJSON [a] instances.
@@ -1001,7 +1051,7 @@ main = withJS $ do
         (`shouldBe` False) =<< liftIO (MDS.isDisjoint k k)
         (`shouldBe` True) =<< liftIO (MDS.isDisjoint x y)
 
-#ifndef GHCJS_OLD
+#if !defined(GHCJS_OLD) && !defined(__MHS__)
     describe "inline JS QQ tests" $ do
       it "should use inline JS to calc factorial" $
         (`shouldBe` 120) =<< liftIO (factorial 5)
@@ -1140,6 +1190,7 @@ main = withJS $ do
     describe "Inline JS tests" $ do
      it "Should use inline js" $ do
        (`shouldBe` 42) =<< liftIO (getAge (Person "larry" 42))
+#ifndef __MHS__
     describe "Router tests" $ do
       it "should call fromRoute on Index" $ do
         fromRoute Index `shouldBe` [ IndexToken ]
@@ -1209,6 +1260,7 @@ main = withJS $ do
         lexTokens "/foo?bar#cool" `shouldBe`
           Right [CaptureOrPathToken "foo", QueryParamToken "bar" Nothing, FragmentToken "cool"]
 
+#endif
     describe "MisoString tests" $ do
       it "Should pack" $ do
         S.unpack (S.pack "foo") `shouldBe`
@@ -1800,6 +1852,7 @@ main = withJS $ do
         liftIO (unmountComponent rootState)
         mountedComponents >>= (`shouldBe` 0)
 
+#ifndef __MHS__
       it "On after OnStatic on the same node must not inherit a stale staticKey" $ do
         -- Regression for: an 'OnStatic' handler stashes 'pendingStaticKey' /
         -- 'pendingMainThread' on the shared vnode object so 'onWithOptions'
@@ -1827,7 +1880,9 @@ main = withJS $ do
         clickStaticKey <- liftIO (clickHandler ! "staticKey")
         clickStaticKeyUndefined <- liftIO (isUndefined clickStaticKey)
         clickStaticKeyUndefined `shouldBe` False
+#endif
 
+#ifndef __MHS__
     describe "Static mount identity tests" $ do
       it "swapping two static mounts at one position replaces the child" $ do
         liftIO $ startApp mempty staticSwapRoot
@@ -1848,6 +1903,7 @@ main = withJS $ do
           ("document.getElementById('static-a') !== null" :: MisoString)
         hasA `shouldBe` False
 
+#endif
     describe "VContext tests" $ do
       let contextProbe :: Component Int () () Action
           contextProbe = component () noop $ \_ ->

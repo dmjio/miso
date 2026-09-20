@@ -14,8 +14,8 @@ in
   # JS tooling
   inherit (js) rspeedy;
 
-  # MicroHs (mhs) toolchain and the sample app built with it, see nix/mhs/default.nix
-  inherit (import ./mhs self super) microhs microhs-packages miso-mhs sample-app-mhs-bundle;
+  # MicroHs (mhs) toolchain, the sample app and the tests built with it, see nix/mhs/default.nix
+  inherit (import ./mhs self super) microhs microhs-packages miso-mhs sample-app-mhs-bundle miso-tests-mhs-bundle;
 
   # Reusable Lynx bundler (GHC-JS app -> .lynx.bundle). `self` is the final
   # overlayed pkgs, so it already has rspeedy/bun. See nix/lib/mk-lynx-bundle.nix.

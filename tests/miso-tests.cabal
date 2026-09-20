@@ -35,6 +35,9 @@ common cpp
   elif arch(wasm32)
     cpp-options:
       -DWASM
+  elif impl(mhs)
+    cpp-options:
+      -DMHS -DMISO_TEXT
   else
     cpp-options:
       -DVANILLA

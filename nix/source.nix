@@ -14,7 +14,7 @@ let
           baseName = baseNameOf (toString name);
           excluded =
             [ ".git" ".github" ".gradle" ".stack-work" "coverage"
-              "dist" "dist-newstyle" "node_modules" "result"
+              "dist" "dist-newstyle" "dist-mcabal" "node_modules" "result"
             ] ++ excludedNames;
         in
          (!elem baseName excluded && (
@@ -76,8 +76,8 @@ in
   microhs = fetchFromGitHub {
     owner = "dmjio";
     repo = "MicroHs";
-    rev = "22b26e0e4bf07db61d41e2e6eced0904392cc478";
-    hash = "sha256-TvKx+ofbc1KwfPfaWbEAwEjTXekDNVQo96ZJ9O7fLRM=";
+    rev = "08442f79f0e151c840f3863bd10fc52dd7788eca";
+    hash = "sha256-57ZcThgryxvuXXOEf9SphDtHOiOw0CqwQeQu27DYwGo=";
   };
   mhs-ghc-compat = fetchFromGitHub {
     owner = "augustss";
