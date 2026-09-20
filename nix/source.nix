@@ -76,8 +76,8 @@ in
   microhs = fetchFromGitHub {
     owner = "dmjio";
     repo = "MicroHs";
-    rev = "05538183bb21d0799c3d132048ec21be700eb936";
-    hash = "sha256-OiIxzZDZGcQnRQyVOOCXgUjc3gLZ9i8xnV1Ndjp4lH4=";
+    rev = "2a16a58db5b2ea66ca7bbb29aa097201c376803f";
+    hash = "sha256-25yW0amejQEVjv1Oe6zBND9FbTpTfbpEAYtRiZxvX2A=";
   };
   mhs-ghc-compat = fetchFromGitHub {
     owner = "augustss";
