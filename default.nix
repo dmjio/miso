@@ -192,6 +192,21 @@ rec {
     exit "$exit_code"
   '';
 
+  # The sample app built with MicroHs (mhs), see nix/mhs/default.nix, driven
+  # by the smoke test in ts/playwright-mhs.ts.
+  inherit (pkgs) microhs microhs-packages miso-mhs sample-app-mhs-bundle;
+  playwright-mhs = pkgs.writeScriptBin "playwright" ''
+    #!${pkgs.stdenv.shell}
+    export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
+    export PATH="${pkgs.lib.makeBinPath [ pkgs.http-server pkgs.bun ]}:$PATH"
+    bun install playwright@${pkgs.playwright-driver.version}
+    http-server ${pkgs.sample-app-mhs-bundle} &
+    bun run ts/playwright-mhs.ts
+    exit_code=$?
+    pkill http-server
+    exit "$exit_code"
+  '';
+
   # Same as playwright-wasm, but miso is built with the 'aeson' cabal flag
   # (Miso.JSON defined in terms of Data.Aeson). Nix-native now (see
   # miso-tests-aeson-wasm-bundle-ghc9141 above) -- unblocked by the nixpkgs

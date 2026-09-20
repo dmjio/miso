@@ -103,6 +103,9 @@ jobs:
      - name: (WASM) Miso integration tests
        run: nix-build -A playwright-wasm && ./result/bin/playwright
 
+     - name: (MHS) Miso sample app built with MicroHs, browser smoke test
+       run: nix-build -A playwright-mhs && ./result/bin/playwright
+
      - name: Nix garbage collection
        run: cabal clean && nix-collect-garbage -d
 

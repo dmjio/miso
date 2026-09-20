@@ -69,4 +69,41 @@ in
     rev = "b25d91bb51241d496adfb2b1f8f8dd593efe646b";
     sha256 = "1wi3vpswik9wj8x16ik5v17sjkd537c482kiavh719kfaz4h7884";
   };
+
+  # MicroHs (mhs) with the JSVal / JavaScript FFI, browser targets and
+  # js-sources support (dmjio/MicroHs, branch rts-standalone), plus the
+  # packages miso needs when built with mhs.  See nix/mhs/default.nix.
+  microhs = fetchFromGitHub {
+    owner = "dmjio";
+    repo = "MicroHs";
+    rev = "22b26e0e4bf07db61d41e2e6eced0904392cc478";
+    hash = "sha256-TvKx+ofbc1KwfPfaWbEAwEjTXekDNVQo96ZJ9O7fLRM=";
+  };
+  mhs-ghc-compat = fetchFromGitHub {
+    owner = "augustss";
+    repo = "ghc-compat";
+    rev = "e04bd70e4040d52cd1d319387bda7514000b58a0";
+    hash = "sha256-YRmgq3v/V3ewX9I1czFxPNfQ1r9c9YUV0MCMUPN/HpE=";
+  };
+  mhs-array = fetchFromGitHub {
+    owner = "augustss";
+    repo = "array-mhs";
+    rev = "cbc2dbc31a84c7bcebef4a15b045e4ce21b27984";
+    hash = "sha256-5qIch+MNsOMyP3pDRC4/mgGUX33y67eG0Bhtgq7sE+E=";
+  };
+  # containers 0.8 has MicroHs support (__MHS__)
+  mhs-containers = fetchFromGitHub {
+    owner = "haskell";
+    repo = "containers";
+    rev = "0c3b9ee93af23f86fb8ad5ffe7729cb82fc4cd3a";
+    hash = "sha256-I8QOxeTPw1sSfSiFaaLqDRZPLP1j7rvusZRDzxzZ1fI=";
+  };
+  mhs-transformers = fetchzip {
+    url = "https://hackage.haskell.org/package/transformers-0.6.1.2/transformers-0.6.1.2.tar.gz";
+    sha256 = "1hyqi74hamb9cry60r7i4l62ml2rbn2agrkmzav4bqznmfwz097w";
+  };
+  mhs-mtl = fetchzip {
+    url = "https://hackage.haskell.org/package/mtl-2.3.1/mtl-2.3.1.tar.gz";
+    sha256 = "0mrh1n5i1d00rslrjwj8fvnfjpsjx6aswixa93bx6v94kxlkkakh";
+  };
 }
