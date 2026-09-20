@@ -41,6 +41,9 @@ common cpp
   elif arch(wasm32)
     cpp-options:
       -DWASM
+  elif impl(mhs)
+    cpp-options:
+      -DMHS -DMISO_TEXT
   else
     cpp-options:
       -DVANILLA
@@ -66,7 +69,7 @@ common cpp
       -DMISO_TEXT
 
 common client
-  if impl(ghcjs) || arch(javascript) || arch(wasm32)
+  if impl(ghcjs) || arch(javascript) || arch(wasm32) || impl(mhs)
     if flag(native) && flag(production)
       js-sources:
         js/miso-native.prod.js
@@ -182,7 +185,6 @@ library
     Miso.JSON.Parser
     Miso.JSON.Types
     Miso.Lens
-    Miso.Lens.Generic
     Miso.Mathml
     Miso.Mathml.Element
     Miso.Mathml.Property
@@ -315,9 +317,22 @@ library
       Miso.DSL.TH.File
     other-modules:
       Data.JSString
+  elif impl(mhs)
+    hs-source-dirs:
+      ffi/mhs
+    other-modules:
+      GHC.Natural
+      GHC.OverloadedLabels
+      GHC.StaticPtr
+      Data.Text.Lazy.Encoding
   else
     hs-source-dirs:
       ffi/ghc
+
+  -- Uses type families and custom type errors, which MicroHs does not have
+  if !impl(mhs)
+    exposed-modules:
+      Miso.Lens.Generic
 
   if flag(template-haskell)
     exposed-modules:

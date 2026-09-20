@@ -59,13 +59,20 @@ build-js86:
 # MHS_TARGET is a section of MicroHs's targets.conf: browser (WebAssembly)
 # or browser_js (JavaScript only, -sWASM=0).
 MHS_TARGET=browser
-MHS_FLAGS=-XCPP -DMHS -DMISO_TEXT -i../src -i../ffi/mhs
+# -js embeds js/miso.js in the output (like js-sources in miso.cabal when built with mcabal)
+MHS_FLAGS=-XCPP -DMHS -DMISO_TEXT -i../src -i../ffi/mhs -js ../js/miso.js
 
 mhs:
 	mkdir -p public-mhs
-	cp ../js/miso.js public-mhs/
 	cp static-mhs/index.html public-mhs/
 	mhs $(MHS_FLAGS) -t$(MHS_TARGET) Main -opublic-mhs/app.js
+
+# The same via mcabal (needs 'mcabal install' of miso first): js-sources are embedded automatically.
+mhs-mcabal:
+	mcabal --options=-t$(MHS_TARGET) build
+	mkdir -p public-mhs
+	cp static-mhs/index.html public-mhs/
+	cp dist-mcabal/bin/mhs/app public-mhs/app.js
 
 serve-mhs:
 	http-server public-mhs

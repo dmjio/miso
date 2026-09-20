@@ -1,7 +1,7 @@
 // Browser smoke test for the sample app built with MicroHs (see scripts/playwright-mhs.sh).
 // Loads the page served on port 8080, clicks the counter buttons, and prints
 // SUCCESS or ERROR (the same protocol as playwright.ts).
-const { chromium } = require('playwright');
+import { chromium } from 'playwright';
 
 (async () => {
   const browser = await chromium.launch({ headless: true });
