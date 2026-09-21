@@ -1,0 +1,192 @@
+#####################################################################
+# Build miso and the sample app with MicroHs (mhs), without nix.
+#
+# This is the nix-free equivalent of `nix develop .#mhs`: it ends with
+# the same package database in ./.mcabal (mhs, mcabal, and miso), so the
+# sample-app targets documented in flake.nix work unchanged afterwards.
+#
+#   make -f Makefile.mhs apt      # Ubuntu prerequisites (needs sudo, run once)
+#   make -f Makefile.mhs          # everything -> sample-app/public-mhs
+#   make -f Makefile.mhs serve    # http://localhost:8080
+#
+# Steps run in this order, each guarded by a stamp in .mhs-bootstrap/stamp:
+#
+#   emsdk      emscripten, for the -tbrowser target's emcc
+#   microhs    mhs, mcabal and cpphs, installed into ./.mcabal
+#   packages   the packages miso needs under mhs
+#   miso       this checkout, installed as an mhs package
+#   app        sample-app, via sample-app/Makefile's mhs-mcabal target
+#
+# To redo one step, delete its stamp (or `make -f Makefile.mhs clean`).
+# Revisions are kept in step with nix/source.nix -- change them in both.
+#####################################################################
+
+MHS_VERSION   := 0.15.3.0
+
+# MicroHs with the JSVal/JavaScript FFI and browser targets: dmjio/MicroHs,
+# branch rts-standalone.  Upstream augustss/MicroHs will not work.
+MICROHS_URL   := https://github.com/dmjio/MicroHs
+MICROHS_REV   := 2a16a58db5b2ea66ca7bbb29aa097201c376803f
+
+GHC_COMPAT_URL := https://github.com/augustss/ghc-compat
+GHC_COMPAT_REV := e04bd70e4040d52cd1d319387bda7514000b58a0
+ARRAY_URL      := https://github.com/augustss/array-mhs
+ARRAY_REV      := cbc2dbc31a84c7bcebef4a15b045e4ce21b27984
+# containers 0.8 has MicroHs support (__MHS__)
+CONTAINERS_URL := https://github.com/haskell/containers
+CONTAINERS_REV := 0c3b9ee93af23f86fb8ad5ffe7729cb82fc4cd3a
+TRANSFORMERS_VERSION := 0.6.1.2
+MTL_VERSION          := 2.3.1
+
+# miso's cabal flags under mhs (see nix/mhs/default.nix).
+MISO_FLAGS := -template-haskell -aeson -native -production -ssr -benchmark text
+
+# The section of MicroHs's targets.conf to compile for: browser
+# (WebAssembly) or browser_js (JavaScript only, -sWASM=0).
+MHS_TARGET ?= browser
+
+SERVE_PORT ?= 8080
+
+#####################################################################
+
+WORK      := $(CURDIR)/.mhs-bootstrap
+SRC       := $(WORK)/src
+STAMP     := $(WORK)/stamp
+EMSDK_DIR := $(WORK)/emsdk
+
+# mcabal installs into $CABALDIR; mhs is built below with its data directory
+# baked in to match, so neither needs -a.
+export CABALDIR := $(CURDIR)/.mcabal
+export PATH     := $(CABALDIR)/bin:$(PATH)
+
+# emsdk_env.sh puts emcc on PATH.  Skipped when the system already has one.
+EMSDK_ENV = if [ -f $(EMSDK_DIR)/emsdk_env.sh ]; then . $(EMSDK_DIR)/emsdk_env.sh >/dev/null; fi
+
+# Check out $(2) at exactly revision $(3) into $(SRC)/$(1), without
+# downloading the rest of the history.
+define git-at-rev
+	@mkdir -p $(SRC)
+	@test -d $(SRC)/$(1)/.git || { \
+	  git init -q $(SRC)/$(1); \
+	  git -C $(SRC)/$(1) remote add origin $(2); \
+	}
+	git -C $(SRC)/$(1) fetch -q --depth 1 origin $(3)
+	git -C $(SRC)/$(1) checkout -q --detach FETCH_HEAD
+endef
+
+# Unpack hackage package $(1)-$(2) into $(SRC)/$(1)-$(2).
+define hackage-at-version
+	@mkdir -p $(SRC)
+	@test -d $(SRC)/$(1)-$(2) || curl -sSfL \
+	  https://hackage.haskell.org/package/$(1)-$(2)/$(1)-$(2).tar.gz | tar xz -C $(SRC)
+endef
+
+.PHONY: all apt emsdk microhs packages miso app serve clean
+.PHONY: package-ghc-compat package-array package-transformers
+.PHONY: package-mtl package-template-haskell package-containers
+
+all: app
+
+# Run once.  Kept out of `all` so the build never surprises you with sudo.
+apt:
+	sudo apt-get update
+	sudo apt-get install -y build-essential git curl ca-certificates python3 xz-utils
+
+#####################################################################
+# emscripten
+
+emsdk: $(STAMP)/emsdk
+$(STAMP)/emsdk:
+	@mkdir -p $(STAMP)
+	@if command -v emcc >/dev/null 2>&1; then \
+	  echo "emcc already on PATH, not installing emsdk"; \
+	else \
+	  test -d $(EMSDK_DIR) || git clone -q --depth 1 \
+	    https://github.com/emscripten-core/emsdk $(EMSDK_DIR); \
+	  $(EMSDK_DIR)/emsdk install latest; \
+	  $(EMSDK_DIR)/emsdk activate latest; \
+	fi
+	@touch $@
+
+#####################################################################
+# MicroHs: mhs, mcabal, cpphs and the base package, installed into .mcabal
+
+microhs: $(STAMP)/microhs
+$(STAMP)/microhs:
+	@mkdir -p $(STAMP)
+	$(call git-at-rev,MicroHs,$(MICROHS_URL),$(MICROHS_REV))
+	$(MAKE) -C $(SRC)/MicroHs bin/mhs bin/cpphs bin/mcabal
+	# Paths_MicroHs.hs bakes in the data directory and is not regenerated
+	# on its own, so drop it in case an earlier build used another CABALDIR.
+	rm -f $(SRC)/MicroHs/dist-mcabal/Paths_MicroHs.hs
+	$(MAKE) -C $(SRC)/MicroHs MCABAL=$(CABALDIR) install
+	@touch $@
+
+#####################################################################
+# The packages miso needs under mhs
+
+packages: $(STAMP)/packages
+$(STAMP)/packages: package-ghc-compat package-array package-transformers \
+                   package-mtl package-template-haskell package-containers
+	@mkdir -p $(STAMP)
+	@touch $@
+
+package-ghc-compat: $(STAMP)/microhs
+	$(call git-at-rev,ghc-compat,$(GHC_COMPAT_URL),$(GHC_COMPAT_REV))
+	cd $(SRC)/ghc-compat && mcabal -q install
+
+package-array: $(STAMP)/microhs
+	$(call git-at-rev,array-mhs,$(ARRAY_URL),$(ARRAY_REV))
+	cd $(SRC)/array-mhs && mcabal -q install
+
+package-transformers: $(STAMP)/microhs
+	$(call hackage-at-version,transformers,$(TRANSFORMERS_VERSION))
+	cd $(SRC)/transformers-$(TRANSFORMERS_VERSION) && mcabal -q install
+
+# mtl 2.3.1: MicroHs cannot parse the poly-kinded instance head.
+package-mtl: $(STAMP)/microhs
+	$(call hackage-at-version,mtl,$(MTL_VERSION))
+	sed -i 's/^instance forall k (r :: k) (m :: (k -> Type)) \. MonadCont (ContT r m) where/instance MonadCont (ContT r m) where/' \
+	  $(SRC)/mtl-$(MTL_VERSION)/Control/Monad/Cont/Class.hs
+	@grep -q '^instance MonadCont (ContT r m) where' \
+	  $(SRC)/mtl-$(MTL_VERSION)/Control/Monad/Cont/Class.hs || \
+	  { echo "*** the mtl patch did not apply; check MTL_VERSION"; exit 1; }
+	cd $(SRC)/mtl-$(MTL_VERSION) && mcabal -q install
+
+# containers depends on template-haskell only for Lift instances, which are
+# never compiled, so an empty package satisfies it.
+package-template-haskell: $(STAMP)/microhs
+	@mkdir -p $(SRC)/template-haskell
+	@printf '%s\n' \
+	  'cabal-version:      2.4' \
+	  'name:               template-haskell' \
+	  'version:            2.22.0.0' \
+	  'synopsis:           Empty stand-in for template-haskell when building with MicroHs' \
+	  'build-type:         Simple' \
+	  '' \
+	  'library' \
+	  '    default-language: Haskell2010' \
+	  '    build-depends:    base' \
+	  > $(SRC)/template-haskell/template-haskell.cabal
+	cd $(SRC)/template-haskell && mcabal -q install
+
+package-containers: $(STAMP)/microhs package-template-haskell
+	$(call git-at-rev,containers,$(CONTAINERS_URL),$(CONTAINERS_REV))
+	cd $(SRC)/containers/containers && mcabal -q install
+
+#####################################################################
+# miso and the sample app
+
+miso: $(STAMP)/miso
+$(STAMP)/miso: $(STAMP)/packages
+	cd $(CURDIR) && mcabal -q -f"$(MISO_FLAGS)" install
+	@touch $@
+
+app: $(STAMP)/miso $(STAMP)/emsdk
+	$(EMSDK_ENV); $(MAKE) -C sample-app mhs-mcabal MHS_TARGET=$(MHS_TARGET)
+
+serve:
+	cd sample-app/public-mhs && python3 -m http.server $(SERVE_PORT)
+
+clean:
+	rm -rf $(WORK) $(CABALDIR) sample-app/public-mhs sample-app/dist-mcabal

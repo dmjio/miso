@@ -47,3 +47,6 @@ haddocks/
 sample-app-native/android/app/src/main/assets/main.lynx.bundle
 sample-app-native/android/app/src/main/assets/main.lynx.bundle.sha256
 
+
+# MicroHs bootstrap (make -f Makefile.mhs)
+.mhs-bootstrap/
