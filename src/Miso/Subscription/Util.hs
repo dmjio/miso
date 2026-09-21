@@ -47,7 +47,7 @@
 -- @'createSub' acquire release sink@ runs:
 --
 -- @
--- 'Control.Exception.bracket' acquire release (\\_ -> forever (threadDelay 10000_000_000))
+-- 'Control.Exception.bracket' acquire release (\\_ -> forever (threadDelay 1000_000_000))
 -- @
 --
 -- The @forever@ loop keeps the subscription thread alive by sleeping in
@@ -82,8 +82,12 @@ createSub
   -- ^ Release resource
   -> Sub model action
 createSub acquire release = \_ _ ->
-  bracket acquire release (\_ -> forever (threadDelay (secs 10000)))
+  bracket acquire release (\_ -> forever (threadDelay (secs 1000)))
     where
+      -- 'Int' is 32 bits on wasm32 (GHC and MicroHs), so the delay must stay
+      -- below 2^31 microseconds (about 2147 seconds); MicroHs throws
+      -- 'Overflow' on a larger product, which would kill the 'Sub' thread and
+      -- release the resource.
       secs :: Int -> Int
       secs = (*1000000)
 ----------------------------------------------------------------------------
