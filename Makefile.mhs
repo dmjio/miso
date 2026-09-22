@@ -21,12 +21,12 @@
 # Revisions are kept in step with nix/source.nix -- change them in both.
 #####################################################################
 
-MHS_VERSION   := 0.15.3.0
+MHS_VERSION   := 0.16.6.0
 
 # MicroHs with the JSVal/JavaScript FFI and browser targets: dmjio/MicroHs,
 # branch rts-standalone.  Upstream augustss/MicroHs will not work.
 MICROHS_URL   := https://github.com/dmjio/MicroHs
-MICROHS_REV   := 2a16a58db5b2ea66ca7bbb29aa097201c376803f
+MICROHS_REV   := a75a4d60ebf86ac0307a3d410f7f43b3d25a09cd
 
 GHC_COMPAT_URL := https://github.com/augustss/ghc-compat
 GHC_COMPAT_REV := e04bd70e4040d52cd1d319387bda7514000b58a0
@@ -41,7 +41,7 @@ MTL_VERSION          := 2.3.1
 # miso's cabal flags under mhs (see nix/mhs/default.nix).
 MISO_FLAGS := -template-haskell -aeson -native -production -ssr -benchmark text
 
-# The section of MicroHs's targets.conf to compile for: browser
+# The section of MicroHs's mhs.conf to compile for: browser
 # (WebAssembly) or browser_js (JavaScript only, -sWASM=0).
 MHS_TARGET ?= browser
 

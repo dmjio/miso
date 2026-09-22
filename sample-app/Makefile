@@ -56,7 +56,7 @@ build-js86:
 	cp -rv static public
 
 # Build with MicroHs (mhs) for the browser, via emscripten.
-# MHS_TARGET is a section of MicroHs's targets.conf: browser (WebAssembly)
+# MHS_TARGET is a section of MicroHs's mhs.conf: browser (WebAssembly)
 # or browser_js (JavaScript only, -sWASM=0).
 MHS_TARGET=browser
 # -js embeds js/miso.js in the output (like js-sources in miso.cabal when built with mcabal)
