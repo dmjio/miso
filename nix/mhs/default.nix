@@ -8,7 +8,7 @@
 self: super:
 let
   src = import ../source.nix super;
-  version = "0.15.3.0";
+  version = "0.16.6.0";
   # Package database of a derivation, as seen by mhs/mcabal.
   cabalDir = drv: "${drv}/lib/mcabal";
   mhsDir = drv: "${cabalDir drv}/mhs-${version}";
