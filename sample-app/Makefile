@@ -60,7 +60,7 @@ build-js86:
 # or browser_js (JavaScript only, -sWASM=0).
 MHS_TARGET=browser
 # -js embeds js/miso.js in the output (like js-sources in miso.cabal when built with mcabal)
-MHS_FLAGS=-XCPP -DMHS -DMISO_TEXT -i../src -i../ffi/mhs -js ../js/miso.js
+MHS_FLAGS=-XCPP -DMHS -i../src -i../ffi/mhs -i../ffi/jsstring -js ../js/miso.js
 
 mhs:
 	mkdir -p public-mhs

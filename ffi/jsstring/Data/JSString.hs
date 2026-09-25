@@ -1,4 +1,5 @@
 -----------------------------------------------------------------------------
+{-# LANGUAGE CPP               #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE MultilineStrings  #-}
 {-# LANGUAGE UnboxedTuples     #-}
@@ -134,10 +135,15 @@ module Data.JSString
   , toString_Int
   ) where
 -----------------------------------------------------------------------------
+#ifdef __MHS__
+-- MicroHs: textFromJSString / textToJSString come from GHC.Wasm.Prim
+import           Data.Text (Text)
+#else
 import           Data.Array.Byte (ByteArray(..))
 import           Data.Text.Internal hiding (pack, empty, append)
 import           GHC.Exts
 import           GHC.IO
+#endif
 import           GHC.Wasm.Prim
 import qualified Data.List as List
 import qualified Data.Text as T
@@ -737,6 +743,7 @@ zipWith f l r =
       f l' r' `cons` zipWith f ls rs
     _ -> mempty
 -----------------------------------------------------------------------------
+#ifndef __MHS__
 newtype JSUint8Array = JSUint8Array JSVal
 -----------------------------------------------------------------------------
 foreign import javascript unsafe "(new TextEncoder()).encode($1)"
@@ -768,6 +775,7 @@ textToJSString (Text (ByteArray ba#) (I# off#) (I# len#)) = unsafeDupablePerform
   IO $ \s0 -> case newPinnedByteArray# len# s0 of
     (# s1, mba# #) -> case copyByteArray# ba# off# mba# 0# len# s1 of
       s2 -> keepAlive# mba# s2 $ unIO $ js_to_str (Ptr (mutableByteArrayContents# mba#)) $ I# len#
+#endif
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """

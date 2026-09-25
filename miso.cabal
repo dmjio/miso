@@ -43,7 +43,7 @@ common cpp
       -DWASM
   elif impl(mhs)
     cpp-options:
-      -DMHS -DMISO_TEXT
+      -DMHS
   else
     cpp-options:
       -DVANILLA
@@ -309,6 +309,7 @@ library
   elif arch(wasm32)
     hs-source-dirs:
       ffi/wasm
+      ffi/jsstring
     build-depends:
       ghc-experimental < 9.1500,
       template-haskell >= 2.21 && < 2.25
@@ -320,7 +321,9 @@ library
   elif impl(mhs)
     hs-source-dirs:
       ffi/mhs
+      ffi/jsstring
     other-modules:
+      Data.JSString
       GHC.Natural
       GHC.OverloadedLabels
       GHC.StaticPtr

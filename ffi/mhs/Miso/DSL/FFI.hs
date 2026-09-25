@@ -17,7 +17,8 @@
 --
 -- This mirrors the WASM FFI layer (ffi/wasm), using the 'GHC.Wasm.Prim'
 -- module of MicroHs, which provides 'JSVal', 'JSString', 'freeJSVal' and
--- the callback functions.  'MisoString' is 'Text' on this backend
+-- the callback functions.  'MisoString' is 'JSString' on this backend (or
+-- 'Text' with MISO_TEXT)
 -- (i.e., MISO_TEXT is always defined).
 -----------------------------------------------------------------------------
 module Miso.DSL.FFI
@@ -91,10 +92,12 @@ module Miso.DSL.FFI
   , parseDouble
   , parseWord
   , parseFloat
+#ifdef MISO_TEXT
   , toString_Int
   , toString_Double
   , toString_Float
   , toString_Word
+#endif
   , textFromJSString
   , textToJSString
   , JSException
@@ -357,6 +360,7 @@ fromJSValUnchecked_Maybe jsval = do
 -- | Parses like JS's @parseInt@: leading\/trailing whitespace and
 -- trailing garbage are ignored, a leading @+\/-@ is allowed, and a
 -- @0x@\/@0X@ prefix is read as hexadecimal.
+#ifdef MISO_TEXT
 parseInt :: Text -> Maybe Int
 parseInt input = applySign <$> digits unsigned
   where
@@ -408,4 +412,29 @@ toString_Float = T.pack . show
 -----------------------------------------------------------------------------
 toString_Word :: Word -> Text
 toString_Word = T.pack . show
+#else
+foreign import javascript unsafe "return parseInt($1);"
+  parseInt_Unchecked :: JSString -> Double
+-----------------------------------------------------------------------------
+parseInt :: JSString -> Maybe Int
+parseInt string =
+  case parseInt_Unchecked string of
+    double | isNaN double -> Nothing
+           | otherwise -> Just (round double)
+-----------------------------------------------------------------------------
+parseWord :: JSString -> Maybe Word
+parseWord string = fromIntegral <$> parseInt string
+-----------------------------------------------------------------------------
+foreign import javascript unsafe "return parseFloat($1);"
+  parseDouble_Unchecked :: JSString -> Double
+-----------------------------------------------------------------------------
+parseDouble :: JSString -> Maybe Double
+parseDouble string =
+  case parseDouble_Unchecked string of
+    double | isNaN double -> Nothing
+           | otherwise -> Just double
+-----------------------------------------------------------------------------
+parseFloat :: JSString -> Maybe Float
+parseFloat string = realToFrac <$> parseDouble string
+#endif
 -----------------------------------------------------------------------------

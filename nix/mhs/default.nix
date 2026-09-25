@@ -8,7 +8,7 @@
 self: super:
 let
   src = import ../source.nix super;
-  version = "0.15.3.0";
+  version = "0.16.6.0";
   # Package database of a derivation, as seen by mhs/mcabal.
   cabalDir = drv: "${drv}/lib/mcabal";
   mhsDir = drv: "${cabalDir drv}/mhs-${version}";
@@ -98,7 +98,9 @@ rec {
     installPhase = ''
       runHook preInstall
       ${copyDB microhs-packages}
-      ${mcabal} -q -f"-template-haskell -aeson -native -production -ssr -benchmark text" install
+      # -text: MisoString is Data.JSString, as on the other client backends
+      # (wasm, GHCJS).  Flip to "text" for MisoString = Data.Text; both build.
+      ${mcabal} -q -f"-template-haskell -aeson -native -production -ssr -benchmark -text" install
       runHook postInstall
     '';
   };

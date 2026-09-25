@@ -37,7 +37,7 @@ common cpp
       -DWASM
   elif impl(mhs)
     cpp-options:
-      -DMHS -DMISO_TEXT
+      -DMHS
   else
     cpp-options:
       -DVANILLA
