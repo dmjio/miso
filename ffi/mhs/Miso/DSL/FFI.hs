@@ -104,14 +104,12 @@ module Miso.DSL.FFI
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad
-import           Data.Char (isSpace)
-import qualified Data.List as L
+import           Data.Char (isDigit, isSpace)
 import           Data.List (dropWhileEnd)
 import           Data.Text (Text)
 import qualified Data.Text as T
 import           Numeric (readHex)
 import           Prelude hiding (length)
-import           Text.Read (readMaybe)
 -----------------------------------------------------------------------------
 import           GHC.Wasm.Prim
 -----------------------------------------------------------------------------
@@ -382,21 +380,31 @@ parseInt input = applySign <$> digits unsigned
 parseWord :: Text -> Maybe Word
 parseWord string = fromIntegral <$> parseInt string
 -----------------------------------------------------------------------------
--- | Parses like JS's @parseFloat@: leading\/trailing whitespace and
--- trailing garbage are ignored, and a leading @+\/-@ is allowed.
+-- | Parses like @Data.Text.Read.double@ (as the wasm backend does):
+-- surrounding whitespace and trailing garbage are ignored, a leading
+-- @+\/-@ is allowed, and there must be at least one integer digit.
 parseDouble :: Text -> Maybe Double
 parseDouble input =
-  case stripped of
-    ('+' : rest) -> go rest
-    _            -> go stripped
+  case T.unpack (T.strip input) of
+    ('-' : rest) -> negate <$> unsigned rest
+    ('+' : rest) -> unsigned rest
+    s            -> unsigned s
   where
-    stripped = dropWhile isSpace (T.unpack input)
-    -- Try successively shorter prefixes, so trailing garbage is ignored.
-    go s = firstJust [ readMaybe p | p <- reverse (prefixes s) ]
-    prefixes s = [ take n s | n <- [1 .. L.length s] ]
-    firstJust (Just x : _) = Just x
-    firstJust (_ : xs) = firstJust xs
-    firstJust [] = Nothing
+    unsigned s =
+      case span isDigit s of
+        ("", _)     -> Nothing
+        (int, rest) ->
+          let (frac, rest') = fraction rest
+          in Just (read (int ++ frac ++ expo rest'))
+    fraction ('.' : ds) | (f@(_:_), r) <- span isDigit ds = ('.' : f, r)
+    fraction r = ("", r)
+    expo (e : ds) | e == 'e' || e == 'E' =
+      case ds of
+        ('-' : xs) | (x@(_:_), _) <- span isDigit xs -> "e-" ++ x
+        ('+' : xs) | (x@(_:_), _) <- span isDigit xs -> 'e' : x
+        _          | (x@(_:_), _) <- span isDigit ds -> 'e' : x
+        _ -> ""
+    expo _ = ""
 -----------------------------------------------------------------------------
 parseFloat :: Text -> Maybe Float
 parseFloat string = realToFrac <$> parseDouble string
