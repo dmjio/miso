@@ -1764,6 +1764,16 @@ main = withJS $ do
         (`shouldBe` Just ("foo" :: String)) =<< liftIO (fromJSVal =<< toJSVal ("foo" :: String))
       it "Should marshal a Text" $ do
         (`shouldBe` Just ("foo" :: Text)) =<< liftIO (fromJSVal =<< toJSVal ("foo" :: Text))
+      it "Should marshal a URI (toJSVal and toObject)" $ do
+        let uri = URI "a/b" "frag" (M.fromList [("q", Just "1")])
+            field o k = liftIO (fromJSValUnchecked =<< o ! k)
+            check o = do
+              (`shouldBe` ("a/b" :: MisoString)) =<< field o "uriPath"
+              (`shouldBe` ("frag" :: MisoString)) =<< field o "uriFragment"
+              qs <- liftIO (o ! "uriQueryString")
+              (`shouldBe` ("1" :: MisoString)) =<< field qs "q"
+        check =<< liftIO (toJSVal uri)
+        check =<< liftIO (unObject <$> toObject uri)
 
     describe "StaticKey / Fingerprint tests" $ do
       it "serializes Fingerprint 0 0 as 32 zero hex chars" $ do
