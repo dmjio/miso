@@ -1,5 +1,5 @@
-{-# LANGUAGE CPP #-}
 -----------------------------------------------------------------------------
+{-# LANGUAGE CPP                 #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE TypeFamilies        #-}

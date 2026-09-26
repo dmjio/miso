@@ -1,5 +1,5 @@
-{-# LANGUAGE CPP #-}
 -----------------------------------------------------------------------------
+{-# LANGUAGE CPP                        #-}
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE RecordWildCards            #-}
 {-# LANGUAGE OverloadedStrings          #-}

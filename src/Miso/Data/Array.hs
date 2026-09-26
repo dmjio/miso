@@ -1,5 +1,5 @@
-{-# LANGUAGE CPP #-}
 -----------------------------------------------------------------------------
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}

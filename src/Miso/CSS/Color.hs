@@ -1,5 +1,5 @@
-{-# LANGUAGE CPP #-}
 -----------------------------------------------------------------------------
+{-# LANGUAGE CPP                   #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE FlexibleInstances     #-}

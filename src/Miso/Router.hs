@@ -1,5 +1,5 @@
-{-# LANGUAGE CPP #-}
 -----------------------------------------------------------------------------
+{-# LANGUAGE CPP                        #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE DerivingStrategies         #-}

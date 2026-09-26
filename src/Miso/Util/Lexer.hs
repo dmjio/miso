@@ -1,5 +1,5 @@
-{-# LANGUAGE CPP #-}
 -----------------------------------------------------------------------------
+{-# LANGUAGE CPP #-}
 -- |
 -- Module      :  Miso.Util.Lexer
 -- Copyright   :  (C) 2016-2026 David M. Johnson
