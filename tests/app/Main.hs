@@ -737,8 +737,8 @@ main = withJS $ do
         decodePure "{\"a\":true,\"b\":1.1}"
           `shouldBe` Right (JSON.object [("a",JSON.Bool True),("b",JSON.Number 1.1)])
 
-#ifndef __MHS__
     describe "Miso.JSON generic encoding tests" $ do
+#ifndef __MHS__
       -- Nullary sum constructors → bare String (allNullaryToStringTag = True)
       it "encodes nullary sum constructors as bare strings" $ do
         JSON.toJSON Red   `shouldBe` JSON.String "Red"
@@ -748,6 +748,7 @@ main = withJS $ do
         (JSON.fromJSON (JSON.toJSON Red)   :: JSON.Result Color) `shouldBe` JSON.Success Red
         (JSON.fromJSON (JSON.toJSON Green) :: JSON.Result Color) `shouldBe` JSON.Success Green
         (JSON.fromJSON (JSON.toJSON Blue)  :: JSON.Result Color) `shouldBe` JSON.Success Blue
+#endif
       -- Single-constructor record → flat object, no tag
       it "encodes single-constructor records as flat objects" $ do
         JSON.toJSON (Point 3 4)
@@ -755,6 +756,7 @@ main = withJS $ do
       it "round-trips single-constructor records" $ do
         (JSON.fromJSON (JSON.toJSON (Point 3 4)) :: JSON.Result Point)
           `shouldBe` JSON.Success (Point 3 4)
+#ifndef __MHS__
       -- Single-constructor positional → unwrapped value
       it "encodes single-constructor positional as unwrapped value" $ do
         JSON.toJSON (Wrapper 42) `shouldBe` JSON.Number 42
@@ -892,6 +894,7 @@ main = withJS $ do
         -- decoding with matching opts succeeds
         JSON.parseEither (JSON.genericParseJSON opts) val
           `shouldBe` Right (CamelRecord "John" "Doe")
+#endif
       -- #7: full string round-trip via encodePure / decodePure
       it "round-trips Point through encodePure/decodePure" $ do
         let s = JSON.encodePure (Point 7 8)
@@ -901,6 +904,7 @@ main = withJS $ do
                 JSON.Success x -> Right (x :: Point)
                 JSON.Error e   -> Left (S.unpack e)
         result `shouldBe` Right (Point 7 8)
+#ifndef __MHS__
       it "round-trips Animal through encodePure/decodePure" $ do
         let s = JSON.encodePure (Cat "Mittens" 9)
             result = do
@@ -934,6 +938,7 @@ main = withJS $ do
           `shouldSatisfy` \case
             JSON.Error _ -> True
             _            -> False
+#endif
       -- #10: encodePure escapes special characters in strings (Bug 2 fix)
       it "encodePure escapes double quotes in strings" $ do
         JSON.encodePure (JSON.String "say \"hello\"")
@@ -945,7 +950,6 @@ main = withJS $ do
         JSON.encodePure (JSON.object [("ke\"y", JSON.Bool True)])
           `shouldBe` "{\"ke\\\"y\":true}"
 
-#endif
     -- toJSONList: String (i.e. [Char]) serializes as a JSON string while
     -- other lists serialize as JSON arrays. This replaces the old
     -- OVERLAPPING/OVERLAPPABLE ToJSON String / ToJSON [a] instances.
@@ -1190,8 +1194,8 @@ main = withJS $ do
     describe "Inline JS tests" $ do
      it "Should use inline js" $ do
        (`shouldBe` 42) =<< liftIO (getAge (Person "larry" 42))
-#ifndef __MHS__
     describe "Router tests" $ do
+#ifndef __MHS__
       it "should call fromRoute on Index" $ do
         fromRoute Index `shouldBe` [ IndexToken ]
       it "should call fromRoute on Home" $ do
@@ -1216,8 +1220,10 @@ main = withJS $ do
                  , uriFragment = ""
                  , uriQueryString = M.fromList [("bar", Just "12"), ("lol", Just "11")]
                  }
+#endif
       it "should call fromMisoString on Int" $ do
         S.fromMisoStringEither "10" `shouldBe` Right (10 :: Int)
+#ifndef __MHS__
       it "should call href on Index" $ do
         Miso.Router.href_ Index `shouldBe` Property "href" "/"
       it "should call href on Home" $ do
@@ -1249,6 +1255,7 @@ main = withJS $ do
       --   toRoute "/widget/10/foo/other?bar=12&lol=11"
       --     `shouldBe`
       --       Right (Widget (Capture 10) (Path "foo") (Capture "other") (QueryParam (Just 12)) (QueryParam (Just 11)))
+#endif
 
       it "should lexTokens on query params/flags" $ do
         lexTokens "/foo?bar=12" `shouldBe`
@@ -1260,7 +1267,6 @@ main = withJS $ do
         lexTokens "/foo?bar#cool" `shouldBe`
           Right [CaptureOrPathToken "foo", QueryParamToken "bar" Nothing, FragmentToken "cool"]
 
-#endif
     describe "MisoString tests" $ do
       it "Should pack" $ do
         S.unpack (S.pack "foo") `shouldBe`
