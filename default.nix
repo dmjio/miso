@@ -193,14 +193,29 @@ rec {
   '';
 
   # Same as playwright-wasm, but miso and the integration tests are built with
-  # MicroHs (mhs), see nix/mhs/default.nix.
-  inherit (pkgs) microhs microhs-packages miso-mhs sample-app-mhs-bundle miso-tests-mhs-bundle;
+  # MicroHs (mhs), see nix/mhs/default.nix.  playwright-mhs uses the mhs
+  # target browser (WebAssembly), playwright-mhs-js browser_js (JavaScript).
+  inherit (pkgs) microhs microhs-packages miso-mhs sample-app-mhs-bundle miso-tests-mhs-bundle miso-tests-mhs-js-bundle;
   playwright-mhs = pkgs.writeScriptBin "playwright" ''
     #!${pkgs.stdenv.shell}
     export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
     export PATH="${pkgs.lib.makeBinPath [ pkgs.http-server pkgs.bun ]}:$PATH"
     bun install playwright@${pkgs.playwright-driver.version}
     http-server ${pkgs.miso-tests-mhs-bundle} &
+    bun run ts/echo-server.ts &
+    cd tests
+    bun run ../ts/playwright.ts
+    exit_code=$?
+    pkill http-server
+    pkill -f echo-server
+    exit "$exit_code"
+  '';
+  playwright-mhs-js = pkgs.writeScriptBin "playwright" ''
+    #!${pkgs.stdenv.shell}
+    export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
+    export PATH="${pkgs.lib.makeBinPath [ pkgs.http-server pkgs.bun ]}:$PATH"
+    bun install playwright@${pkgs.playwright-driver.version}
+    http-server ${pkgs.miso-tests-mhs-js-bundle} &
     bun run ts/echo-server.ts &
     cd tests
     bun run ../ts/playwright.ts

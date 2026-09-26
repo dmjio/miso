@@ -136,8 +136,12 @@ rec {
 
   # The integration tests (tests/app/Main.hs) built with mhs for the browser,
   # driven by ts/playwright.ts (see playwright-mhs in default.nix).
-  miso-tests-mhs-bundle = super.stdenv.mkDerivation {
-    pname = "miso-tests-mhs-bundle";
+  # target is a section of mhs.conf: browser (WebAssembly) or browser_js
+  # (JavaScript only, -sWASM=0).
+  miso-tests-mhs-bundle = mkTestsBundle "browser";
+  miso-tests-mhs-js-bundle = mkTestsBundle "browser_js";
+  mkTestsBundle = target: super.stdenv.mkDerivation {
+    pname = "miso-tests-mhs-bundle-${target}";
     version = "1.14.0.0";
     src = src.miso-tests;
     nativeBuildInputs = [ microhs super.emscripten ];
@@ -150,7 +154,7 @@ rec {
       export EM_CACHE=$TMPDIR/emcache
       cp -r ${super.emscripten}/share/emscripten/cache $EM_CACHE
       chmod -R u+w $EM_CACHE
-      ${mcabal} --options=-tbrowser build
+      ${mcabal} --options=-t${target} build
       runHook postBuild
     '';
     installPhase = ''
