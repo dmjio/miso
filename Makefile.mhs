@@ -21,8 +21,6 @@
 # Revisions are kept in step with nix/source.nix -- change them in both.
 #####################################################################
 
-MHS_VERSION   := 0.16.6.0
-
 # MicroHs with the JSVal/JavaScript FFI and browser targets: dmjio/MicroHs,
 # branch rts-standalone.  Upstream augustss/MicroHs will not work.
 MICROHS_URL   := https://github.com/dmjio/MicroHs
