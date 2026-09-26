@@ -26,7 +26,7 @@ MHS_VERSION   := 0.16.6.0
 # MicroHs with the JSVal/JavaScript FFI and browser targets: dmjio/MicroHs,
 # branch rts-standalone.  Upstream augustss/MicroHs will not work.
 MICROHS_URL   := https://github.com/dmjio/MicroHs
-MICROHS_REV   := d58bb4ebd825f29470e7047d61cc4adc7e95d67f
+MICROHS_REV   := 05240a5cc9407b946a471fa0a8c039d7adbc319c
 
 GHC_COMPAT_URL := https://github.com/augustss/ghc-compat
 GHC_COMPAT_REV := e04bd70e4040d52cd1d319387bda7514000b58a0
