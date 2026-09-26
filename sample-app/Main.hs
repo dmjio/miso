@@ -220,7 +220,10 @@ updateModel = \case
               occupied .= newOcc
               when ate $ do
                 score += 1
-                io $ pickFood newOcc >>= pure . PlaceFood
+                -- a full board has no free cell for pickFood to find
+                if Set.size newOcc == gridSize * gridSize
+                  then phase .= GameOver
+                  else io $ pickFood newOcc >>= pure . PlaceFood
 
 ----------------------------------------------------------------------------
 -- View
