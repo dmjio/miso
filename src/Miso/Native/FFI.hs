@@ -21,9 +21,7 @@ module Miso.Native.FFI
   ) where
 ----------------------------------------------------------------------------
 #ifdef __MHS__
-#ifdef __MHS__
 import Prelude hiding (mapM, mapM_, sequence, sequence_)
-#endif
 import Control.Monad hiding (forM, forM_, mapM, mapM_, sequence, sequence_)
 import Data.Foldable (forM_, mapM_, sequence_)
 import Data.Traversable (forM, mapM, sequence)

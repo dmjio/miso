@@ -191,11 +191,7 @@ import           GHC.Generics
 import           GHC.TypeLits
 import           Data.Kind
 #ifdef __MHS__
-#ifdef __MHS__
 import           Prelude hiding (mapM, mapM_, sequence, sequence_, setField, (!!))
-#else
-import           Prelude hiding (setField, (!!))
-#endif
 #else
 import           Prelude hiding ((!!))
 #endif
@@ -234,11 +230,7 @@ instance (GToJSVal a, GToJSVal b) => GToJSVal (a :*: b) where
   gToJSVal (x :*: y) o = gToJSVal x o >> gToJSVal y o
   {-# INLINE gToJSVal #-}
 -----------------------------------------------------------------------------
-#ifdef __MHS__
-instance (GToJSVal a, GToJSVal b) => GToJSVal (a :+: b) where
-#else
 instance (TypeError ('Text "Sum types unsupported"), GToJSVal a, GToJSVal b) => GToJSVal (a :+: b) where
-#endif
   gToJSVal = \case
     L1 x -> gToJSVal x
     R1 x -> gToJSVal x
@@ -381,11 +373,7 @@ instance (GFromJSVal a, GFromJSVal b) => GFromJSVal (a :*: b) where
   gFromJSVal o = runMaybeT $ (:*:) <$> MaybeT (gFromJSVal o) <*> MaybeT (gFromJSVal o)
   {-# INLINE gFromJSVal #-}
 -----------------------------------------------------------------------------
-#ifdef __MHS__
-instance (GFromJSVal a, GFromJSVal b) => GFromJSVal (a :+: b) where
-#else
 instance (TypeError ('Text "Sum types unsupported"), GFromJSVal a, GFromJSVal b) => GFromJSVal (a :+: b) where
-#endif
   gFromJSVal o = do
     x <- fmap L1 <$> gFromJSVal o
     case x of

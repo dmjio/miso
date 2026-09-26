@@ -121,11 +121,7 @@ module Miso.Media
   ) where
 -----------------------------------------------------------------------------
 #ifdef __MHS__
-#ifdef __MHS__
 import Prelude hiding (mapM, mapM_, sequence, sequence_, setField)
-#else
-import Prelude hiding (setField)
-#endif
 #endif
 #ifdef __MHS__
 import           Control.Monad hiding (forM, forM_, mapM, mapM_, sequence, sequence_)
