@@ -1356,7 +1356,7 @@ foreign import javascript unsafe
   encodePretty_ffi :: JSVal -> Int -> IO MisoString
 #endif
 -----------------------------------------------------------------------------
-#if defined(WASM) || defined(MHS)
+#if defined(WASM) || defined(__MHS__)
 #ifdef MISO_TEXT
 foreign import javascript unsafe
   "return JSON.stringify($1, null, $2);"
@@ -1414,7 +1414,7 @@ foreign import javascript unsafe
   jsonStringify :: JSVal -> IO MisoString
 #endif
 -----------------------------------------------------------------------------
-#if defined(WASM) || defined(MHS)
+#if defined(WASM) || defined(__MHS__)
 #ifdef MISO_TEXT
 foreign import javascript unsafe
   "return JSON.stringify($1);"
@@ -1446,7 +1446,7 @@ foreign import javascript unsafe
   jsonParse :: MisoString -> IO JSVal
 #endif
 -----------------------------------------------------------------------------
-#if defined(WASM) || defined(MHS)
+#if defined(WASM) || defined(__MHS__)
 #ifdef MISO_TEXT
 foreign import javascript unsafe
   "return JSON.parse($1);"
@@ -1595,7 +1595,7 @@ fromJSVal_Value jsval_ = do
     toObject = mkObject
 #endif
 -----------------------------------------------------------------------------
-#if defined(WASM) || defined(MHS)
+#if defined(WASM) || defined(__MHS__)
 fromJSVal_Value :: JSVal -> IO (Maybe Value)
 fromJSVal_Value jsval = do
   typeof jsval >>= \case
@@ -1651,7 +1651,7 @@ foreign import javascript unsafe
   typeof :: JSVal -> IO Int
 #endif
 -----------------------------------------------------------------------------
-#if defined(WASM) || defined(MHS)
+#if defined(WASM) || defined(__MHS__)
 foreign import javascript unsafe
  "return globalThis.miso.typeOf($1);"
   typeof :: JSVal -> IO Int
@@ -1663,7 +1663,7 @@ foreign import javascript unsafe
   typeof :: JSVal -> IO Int
 #endif
 -----------------------------------------------------------------------------
-#if defined(WASM) || defined(MHS)
+#if defined(WASM) || defined(__MHS__)
 -- | Convert a Miso JSON t'Value' to a raw JavaScript value via FFI.
 toJSVal_Value :: Value -> IO JSVal
 toJSVal_Value = \case
