@@ -179,7 +179,7 @@ import           Miso.String (ToMisoString, FromMisoString, fromMisoStringEither
 import qualified Miso.String as MS
 -----------------------------------------------------------------------------
 -- | Type used for representing capture variables
-newtype Capture sym a = Capture a
+newtype Capture (sym :: Symbol) a = Capture a
   deriving stock (Eq, Show)
   deriving newtype (ToMisoString, FromMisoString)
 -----------------------------------------------------------------------------
