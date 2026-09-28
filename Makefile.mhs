@@ -24,7 +24,7 @@
 # MicroHs with the JSVal/JavaScript FFI and browser targets: dmjio/MicroHs,
 # branch jsval.  Upstream augustss/MicroHs will not work.
 MICROHS_URL   := https://github.com/dmjio/MicroHs
-MICROHS_REV   := 2e148dc6def6acc80b011def2a76b9d8d591a30b
+MICROHS_REV   := 37b3943dcdd8300c14b30859554b8042bdc1add7
 
 GHC_COMPAT_URL := https://github.com/augustss/ghc-compat
 GHC_COMPAT_REV := e04bd70e4040d52cd1d319387bda7514000b58a0
