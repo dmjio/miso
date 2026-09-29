@@ -14,6 +14,9 @@ in
   # JS tooling
   inherit (js) rspeedy;
 
+  # MicroHs (mhs) toolchain, see nix/mhs/default.nix
+  inherit (import ./mhs self super) microhs microhs-packages;
+
   # Reusable Lynx bundler (GHC-JS app -> .lynx.bundle). `self` is the final
   # overlayed pkgs, so it already has rspeedy/bun. See nix/lib/mk-lynx-bundle.nix.
   mkLynxBundle = import ./lib/mk-lynx-bundle.nix self;

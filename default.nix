@@ -192,6 +192,9 @@ rec {
     exit "$exit_code"
   '';
 
+  # MicroHs (mhs) toolchain and the packages miso depends on, see nix/mhs/default.nix
+  inherit (pkgs) microhs microhs-packages;
+
   # Same as playwright-wasm, but miso is built with the 'aeson' cabal flag
   # (Miso.JSON defined in terms of Data.Aeson). Nix-native now (see
   # miso-tests-aeson-wasm-bundle-ghc9141 above) -- unblocked by the nixpkgs
