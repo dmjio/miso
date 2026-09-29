@@ -45,3 +45,4 @@ sample-app-native/android/app/src/main/assets/main.lynx.bundle.sha256
 .mcabal/
 .emcache/
 dist-mcabal/
+/sample-app/public-mhs/

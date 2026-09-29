@@ -54,3 +54,32 @@ build-js86:
 	cp -v ../dist-newstyle/build/x86_64-linux/ghcjs-8.6.0.1/app-0.1.0.0/x/app/build/app/app.jsexe/all.js .
 	rm -rf public
 	cp -rv static public
+
+# Build with MicroHs (mhs) for the browser, via emscripten.  Run these in
+# the MicroHs shell (nix develop .#mhs), which provides mhs, mcabal and emcc:
+#
+#   make mhs          # miso from ../src
+#   make mhs-mcabal   # the installed miso package (after 'mcabal install' in ..)
+#   make serve-mhs    # http://localhost:8080
+#
+# This needs miso's MicroHs support (ffi/mhs, the impl(mhs) arm of miso.cabal).
+# MHS_TARGET is a section of MicroHs's mhs.conf: browser (WebAssembly)
+# or browser_js (JavaScript only, -sWASM=0).
+MHS_TARGET=browser
+# -js embeds js/miso.js in the output (like js-sources in miso.cabal when built with mcabal)
+MHS_FLAGS=-XCPP -DMHS -i../src -i../ffi/mhs -i../ffi/jsstring -js ../js/miso.js
+
+mhs:
+	mkdir -p public-mhs
+	cp static-mhs/index.html public-mhs/
+	mhs $(MHS_FLAGS) -t$(MHS_TARGET) Main -opublic-mhs/app.js
+
+# The same via mcabal: js-sources are embedded automatically.
+mhs-mcabal:
+	mcabal --options=-t$(MHS_TARGET) build
+	mkdir -p public-mhs
+	cp static-mhs/index.html public-mhs/
+	cp dist-mcabal/bin/mhs/app public-mhs/app.js
+
+serve-mhs:
+	http-server public-mhs
