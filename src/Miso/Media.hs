@@ -1,4 +1,5 @@
 -----------------------------------------------------------------------------
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -----------------------------------------------------------------------------
@@ -119,7 +120,16 @@ module Miso.Media
   , mediaEvents
   ) where
 -----------------------------------------------------------------------------
+#ifdef __MHS__
+import Prelude hiding (mapM, mapM_, sequence, sequence_, setField)
+#endif
+#ifdef __MHS__
+import           Control.Monad hiding (forM, forM_, mapM, mapM_, sequence, sequence_)
+import           Data.Foldable (forM_, mapM_, sequence_)
+import           Data.Traversable (forM, mapM, sequence)
+#else
 import           Control.Monad
+#endif
 -----------------------------------------------------------------------------
 import           Miso.DSL
 import           Miso.Event

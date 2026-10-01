@@ -68,8 +68,17 @@ module Miso.Reload
   , liveWithContext
   ) where
 -----------------------------------------------------------------------------
+#ifdef __MHS__
+import Prelude hiding (setField, mapM, mapM_, sequence, sequence_)
+import           Control.Concurrent
+-- MicroHs's Control.Monad traversals are list-only
+import           Control.Monad hiding (forM, forM_, mapM, mapM_, sequence, sequence_)
+import           Data.Foldable (forM_, mapM_, sequence_)
+import           Data.Traversable (forM, mapM)
+#else
 import           Control.Concurrent
 import           Control.Monad
+#endif
 -----------------------------------------------------------------------------
 import           Miso.DSL ((!), jsg, setField)
 import qualified Miso.FFI.Internal as FFI

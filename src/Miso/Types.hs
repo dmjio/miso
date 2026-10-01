@@ -1303,7 +1303,20 @@ data URI
   , uriQueryString :: M.Map MisoString (Maybe MisoString)
   -- ^ Query parameters. @'Just' v@ for @?key=v@ pairs; 'Nothing' for bare flags (@?flag@).
   } deriving stock (Show, Eq, Generic)
+#ifndef __MHS__
     deriving anyclass (ToJSVal, ToObject)
+#else
+-- MicroHs has no Generic-based defaults
+instance ToObject URI where
+  toObject URI {..} = do
+    o <- create
+    setField o "uriPath" =<< toJSVal uriPath
+    setField o "uriFragment" =<< toJSVal uriFragment
+    setField o "uriQueryString" =<< toJSVal uriQueryString
+    pure o
+instance ToJSVal URI where
+  toJSVal uri = toJSVal =<< toObject uri
+#endif
 ----------------------------------------------------------------------------
 -- | Empty t'URI'.
 emptyURI :: URI

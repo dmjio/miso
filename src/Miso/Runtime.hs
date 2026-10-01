@@ -130,7 +130,15 @@ import           Data.Proxy (Proxy(Proxy))
 import           Control.Category ((.))
 import           Control.Concurrent
 import           Control.Exception (SomeException, catch)
+#ifdef __MHS__
+-- MicroHs's Prelude/Control.Monad mapM, mapM_, forM, forM_ are list-only,
+-- the Foldable/Traversable ones are in Data.Foldable and Data.Traversable
+import           Control.Monad (when, void, (<=<), zipWithM_, forever, foldM, unless)
+import           Data.Foldable (Foldable(..), forM_, mapM_, sequence_, traverse_, for_, concat, concatMap, and, or, any, all, notElem, find)
+import           Data.Traversable (forM, mapM, traverse, for)
+#else
 import           Control.Monad (forM, forM_, when, void, (<=<), zipWithM_, forever, foldM, unless)
+#endif
 import           Control.Monad.Reader (ask, asks)
 import           Control.Monad.State hiding (state)
 import qualified Miso.JSON as JSON
@@ -149,7 +157,11 @@ import qualified Data.IntMap.Strict as IM
 import           Data.IORef (IORef, newIORef, atomicModifyIORef', readIORef, atomicWriteIORef)
 import qualified Data.Sequence as S
 import           Data.Sequence (Seq)
+#ifdef __MHS__
+import           Control.Concurrent (ThreadStatus(ThreadDied, ThreadFinished), threadStatus)
+#else
 import           GHC.Conc (ThreadStatus(ThreadDied, ThreadFinished), threadStatus)
+#endif
 import           Data.Word (Word64)
 import           GHC.Fingerprint (Fingerprint(..))
 import           Numeric (readHex)
@@ -157,10 +169,18 @@ import           GHC.StaticPtr (StaticKey, staticKey, deRefStaticPtr)
 #ifdef NATIVE
 import           GHC.StaticPtr (unsafeLookupStaticPtr)
 #endif
+#ifdef __MHS__
+import           Prelude hiding (setField, (.), mapM, mapM_, sequence, sequence_, null, length, elem, notElem, sum, product, maximum, minimum, foldr, foldl, foldr1, foldl1, concat, concatMap, and, or, any, all)
+#else
 import           Prelude hiding ((.))
+#endif
 import           System.IO.Unsafe (unsafePerformIO)
+#ifdef __MHS__
+import           System.Mem (performGC)
+#else
 import           System.Mem.StableName (makeStableName)
 import           System.Mem (performMajorGC)
+#endif
 #ifdef BENCH
 import           Text.Printf
 #endif
@@ -391,10 +411,15 @@ mkGetModel vcompId initialModel = do
 -- and a redraw / propagation is necessary. Pointer equality via 'StableName'
 -- is used as a fast path before falling back to 'Eq'.
 dirtyCheck :: Eq a => a -> a -> Bool
+#ifdef __MHS__
+-- MicroHs has no stable names, so only the structural comparison is done.
+dirtyCheck c n = c /= n
+#else
 dirtyCheck c n = unsafePerformIO $ do
   currentName <- c `seq` makeStableName c
   updatedName <- n `seq` makeStableName n
   pure (currentName /= updatedName && c /= n)
+#endif
 -----------------------------------------------------------------------------
 -- | Checks if the Component is mounted before executing actions
 isMounted :: ComponentId -> IO Bool
@@ -662,7 +687,7 @@ dequeue q =
                 (process, rest) -> do
                   let updated =
                         q & queueSchedule .~ remaining
-                          & queue.at vcompId .~ do if null rest then Nothing else Just rest
+                          & queue . at vcompId .~ do if null rest then Nothing else Just rest
                   Just (vcompId, process, updated)
 -----------------------------------------------------------------------------
 -- | Dequeues everything from the Queue at a specific @ComponentId@, draining
@@ -678,7 +703,7 @@ dequeueAt vcompId q =
     Just actions -> do
       -- dmj: remove from schedule, extract all events
       let updated = q & queueSchedule %~ S.filter (/=vcompId)
-                      & queue.at vcompId .~ Nothing
+                      & queue . at vcompId .~ Nothing
       (updated, actions)
 -----------------------------------------------------------------------------
 globalWaiter :: Waiter
@@ -1148,7 +1173,11 @@ cleanup Proxy live domRef = do
     unless isnull $ do
       void $ (domRef # "abort") ()
     yield
+#ifdef __MHS__
+    performGC
+#else
     performMajorGC
+#endif
 -----------------------------------------------------------------------------
 -- | componentMap
 --
@@ -1236,7 +1265,7 @@ unmountComponent cs@ComponentState {..} = do
   freeLifecycleHooks cs
   freeEventHandlers _componentId
   modifyComponent _componentParentId $ do
-    children.at _componentId .= Nothing
+    children . at _componentId .= Nothing
   atomicModifyIORef' components $ \m -> (IM.delete _componentId m, ())
 #ifdef NATIVE
   when bts $ do

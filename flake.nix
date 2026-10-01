@@ -171,6 +171,60 @@
               '';
             };
 
+          # MicroHs shell: mhs and mcabal (with a writable package database
+          # that already contains miso, see nix/mhs/default.nix), emscripten
+          # for the browser target, and node/bun/http-server to run the result.
+          #
+          #   nix develop .#mhs
+          #   make -C sample-app mhs-mcabal   # the installed miso package
+          #   make -C sample-app mhs          # miso from ../src (when hacking on miso)
+          #   make -C sample-app serve-mhs
+          mhs =
+            let
+              mhsVersion = pkgs.microhs.version;
+              # mhs/mcabal look for packages in the (read-only) store copy of the
+              # database, so add the writable one from the shell hook, unless a
+              # package path was given explicitly or this is e.g. --version
+              # (which mhs only accepts on its own).
+              withPkgPath = exe: pkgs.writeShellScriptBin exe ''
+                if [ $# -eq 1 ] && [ "''${1#--}" != "$1" ]; then
+                  exec ${pkgs.microhs}/bin/${exe} "$@"
+                fi
+                case " $* " in
+                  *" -a"*) exec ${pkgs.microhs}/bin/${exe} "$@" ;;
+                  *)       exec ${pkgs.microhs}/bin/${exe} -a"$CABALDIR/mhs-${mhsVersion}" "$@" ;;
+                esac
+              '';
+            in
+            pkgs.mkShell {
+              name = "The miso ${system} MicroHs shell";
+              packages = with pkgs; [
+                (withPkgPath "mhs")
+                (withPkgPath "mcabal")
+                microhs
+                emscripten
+                gnumake
+                bun
+                nodejs
+                http-server
+              ];
+              shellHook = ''
+                export CABALDIR=$PWD/.mcabal
+                if [ ! -d "$CABALDIR" ]; then
+                  echo "Copying the MicroHs package database (with miso) to $CABALDIR"
+                  cp -r ${pkgs.miso-mhs}/lib/mcabal "$CABALDIR"
+                  chmod -R u+w "$CABALDIR"
+                fi
+                # emcc needs a writable cache
+                export EM_CACHE=$PWD/.emcache
+                if [ ! -d "$EM_CACHE" ]; then
+                  cp -r ${pkgs.emscripten}/share/emscripten/cache "$EM_CACHE"
+                  chmod -R u+w "$EM_CACHE"
+                fi
+                echo "MicroHs ${mhsVersion} shell: packages in $CABALDIR (rm -rf it to reset)"
+              '';
+            };
+
           # WASM shell
           wasm =
             pkgs.mkShell {

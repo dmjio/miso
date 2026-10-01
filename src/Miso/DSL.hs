@@ -112,9 +112,13 @@
 module Miso.DSL
   ( -- * Classes
     ToJSVal (..)
+#ifndef __MHS__
   , GToJSVal (..)
+#endif
   , FromJSVal (..)
+#ifndef __MHS__
   , GFromJSVal (..)
+#endif
   , ToArgs (..)
   , ToObject (..)
     -- * Types
@@ -173,14 +177,24 @@ import           Control.Applicative
 #ifndef VANILLA
 import           Data.Text (Text)
 #endif
+#ifdef __MHS__
+import           Control.Monad hiding (forM, forM_, mapM, mapM_, sequence, sequence_)
+import           Data.Foldable (forM_, mapM_, sequence_)
+import           Data.Traversable (forM, mapM, sequence)
+#else
 import           Control.Monad
+#endif
 import           Control.Monad.Trans.Maybe
 import qualified Data.Map.Strict as M
 import           Data.Map.Strict (Map)
 import           GHC.Generics
 import           GHC.TypeLits
 import           Data.Kind
+#ifdef __MHS__
+import           Prelude hiding (mapM, mapM_, sequence, sequence_, setField, (!!))
+#else
 import           Prelude hiding ((!!))
+#endif
 -----------------------------------------------------------------------------
 import           Miso.DSL.FFI
 import           Miso.JSON (Value, fromJSVal_Value, toJSVal_Value)
@@ -189,12 +203,15 @@ import           Miso.String
 -- | A class for marshaling Haskell values into JS
 class ToJSVal a where
   toJSVal :: a -> IO JSVal
+#ifndef __MHS__
   default toJSVal :: (Generic a, GToJSVal (Rep a)) => a -> IO JSVal
   toJSVal x = do
     o <- create
     gToJSVal (from x) o
     toJSVal o
+#endif
 -----------------------------------------------------------------------------
+#ifndef __MHS__
 -- | Internal: writes a t'GHC.Generics.Generic' representation into a JS object
 -- field by field. Backs the default 'ToJSVal' implementation; you should not
 -- need to write instances.
@@ -233,6 +250,7 @@ instance GToJSVal U1 where
 instance GToJSVal V1 where
   gToJSVal _ _ = pure ()
   {-# INLINE gToJSVal #-}
+#endif
 -----------------------------------------------------------------------------
 instance ToJSVal Bool where
   toJSVal = toJSVal_Bool
@@ -318,14 +336,17 @@ instance FromJSVal Value where
 -- | A class for marshaling JS values into Haskell
 class FromJSVal a where
   fromJSVal :: JSVal -> IO (Maybe a)
+#ifndef __MHS__
   default fromJSVal :: (Generic a, GFromJSVal (Rep a)) => JSVal -> IO (Maybe a)
   fromJSVal x = fmap to <$> gFromJSVal (Object x)
+#endif
   fromJSValUnchecked :: JSVal -> IO a
   fromJSValUnchecked x = do
     fromJSVal x >>= \case
       Nothing -> error "fromJSValUnchecked: failure"
       Just y -> pure y
 -----------------------------------------------------------------------------
+#ifndef __MHS__
 -- | Internal: rebuilds a t'GHC.Generics.Generic' representation from a JS
 -- object, yielding 'Nothing' when a field is missing or ill-typed. Backs the
 -- default 'FromJSVal' implementation.
@@ -365,6 +386,7 @@ instance (FromJSVal a, Selector s) => GFromJSVal (S1 s (K1 i a)) where
     where
       name = selName (undefined :: S1 s (K1 i a) ())
   {-# INLINE gFromJSVal #-}
+#endif
 -----------------------------------------------------------------------------
 instance FromJSVal Int where
   fromJSVal = fromJSVal_Int
@@ -784,11 +806,13 @@ instance ToObject JSVal where
 -- | A class for creating JS objects.
 class ToObject a where
   toObject :: a -> IO Object
+#ifndef __MHS__
   default toObject :: (Generic a, GToJSVal (Rep a)) => a -> IO Object
   toObject x = do
     o <- create
     gToJSVal (from x) o
     pure o
+#endif
 -----------------------------------------------------------------------------
 instance ToJSVal a => ToObject (IO a) where
   toObject action = Object <$> (toJSVal =<< action)

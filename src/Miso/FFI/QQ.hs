@@ -92,9 +92,18 @@ module Miso.FFI.QQ
   ( js
   ) where
 ----------------------------------------------------------------------------
+#ifdef __MHS__
+import Prelude hiding (mapM, mapM_, sequence, sequence_)
+#endif
 import           Control.Applicative
 import           Data.Data
+#ifdef __MHS__
+import           Control.Monad hiding (forM, forM_, mapM, mapM_, sequence, sequence_)
+import           Data.Foldable (forM_, mapM_, sequence_)
+import           Data.Traversable (forM, mapM, sequence)
+#else
 import           Control.Monad
+#endif
 import           System.IO.Unsafe (unsafePerformIO)
 import           Language.Haskell.TH.Lib
 import           Language.Haskell.TH.Quote

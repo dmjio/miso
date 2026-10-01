@@ -230,10 +230,19 @@ module Miso.FFI.Internal
    , getRandomValue
    ) where
 -----------------------------------------------------------------------------
+#ifdef __MHS__
+import           Control.Monad (void, (<=<), when, unless)
+import           Data.Foldable (forM_)
+#else
 import           Control.Monad (void, forM_, (<=<), when, unless)
+#endif
 import           Data.Map.Strict (Map)
 import           Data.Maybe
+#ifdef __MHS__
+import           Prelude hiding (setField, (!!))
+#else
 import           Prelude hiding ((!!))
+#endif
 -----------------------------------------------------------------------------
 import           Miso.DSL
 import           Miso.String

@@ -12,6 +12,11 @@ dist
 # nix
 result*
 
+# MicroHs shell (nix develop .#mhs)
+.mcabal/
+.emcache/
+dist-mcabal/
+
 # emacs
 *~
 
@@ -36,8 +41,12 @@ sample-app-native/build
 # haddocks
 haddocks/
 /sample-app/public/
+/sample-app/public-mhs/
 
 .gradle
 sample-app-native/android/app/src/main/assets/main.lynx.bundle
 sample-app-native/android/app/src/main/assets/main.lynx.bundle.sha256
 
+
+# MicroHs bootstrap (make -f Makefile.mhs)
+.mhs-bootstrap/

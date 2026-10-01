@@ -54,7 +54,13 @@ import           Data.Functor (void)
 import           Data.Ix (Ix (inRange))
 import           Data.Maybe (catMaybes)
 import           Numeric (readHex)
+#ifdef __MHS__
+import           Prelude hiding (mapM, mapM_, sequence, sequence_, null)
+import Data.Foldable (mapM_, sequence_)
+import Data.Traversable (mapM, sequence)
+#else
 import           Prelude hiding (null)
+#endif
 ----------------------------------------------------------------------------
 import           Miso.String (fromMisoString, ToMisoString (toMisoString), MisoString)
 import           Miso.Util (oneOf)
@@ -100,6 +106,7 @@ string' = char '"' *> (toMisoString <$> many character) <* char '"'
       , escapedCharacter
       ]
     hexDigit = satisfy isHexDigit
+    escaped :: Lexer a -> Lexer a
     escaped = (char '\\' *>)
     escapedCharacter = escaped $ oneOf
       [ char '"'
@@ -125,8 +132,10 @@ string' = char '"' *> (toMisoString <$> many character) <* char '"'
             else
               pure $ chr high
       ]
+    highSurrogateRange, lowSurrogateRange :: (Int, Int)
     highSurrogateRange = (0xD800, 0xDBFF)
     lowSurrogateRange = (0xDC00, 0xDFFF)
+    unicodeHexQuad :: Lexer Int
     unicodeHexQuad = char 'u' *> do
         [(num, "")] <- readHex <$> replicateM 4 hexDigit
         pure num

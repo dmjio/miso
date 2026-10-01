@@ -103,6 +103,15 @@ jobs:
      - name: (WASM) Miso integration tests
        run: nix-build -A playwright-wasm && ./result/bin/playwright
 
+     - name: (MHS WASM) Miso integration tests built with MicroHs (browser)
+       run: nix-build -A playwright-mhs && ./result/bin/playwright
+
+     - name: Nix garbage collection
+       run: cabal clean && nix-collect-garbage -d
+
+     - name: (MHS JS) Miso integration tests built with MicroHs (browser_js)
+       run: nix-build -A playwright-mhs-js && ./result/bin/playwright
+
      - name: Nix garbage collection
        run: cabal clean && nix-collect-garbage -d
 

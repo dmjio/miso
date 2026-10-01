@@ -46,6 +46,6 @@ executable app
   main-is:
     Main.hs
   build-depends:
-    base, miso
+    base, miso, containers
   default-language:
     Haskell2010
