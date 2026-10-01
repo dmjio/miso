@@ -51,6 +51,11 @@
           # Miso's overlays (provides rspeedy, ghcNative, mkLynxBundle, ...)
           overlays = [ (import ./nix/overlay.nix { ghcWasmMeta = inputs.ghc-wasm-meta; }) ];
         };
+        # The GHC of a cross package set, for a dev shell.  As a plain entry
+        # in mkShell's `packages` (nativeBuildInputs) it gets spliced to the
+        # GHC for the build platform, a native ghc, and the shell has no
+        # javascript-unknown-ghcjs-ghc.
+        crossGhc = hsPkgs: hsPkgs.ghc.__spliced.hostTarget or hsPkgs.ghc;
       in
       {
         # Reusable helpers for downstream flakes:
@@ -281,7 +286,7 @@
                 }
               '';
               packages = with pkgs; [
-                 pkgsCross.ghcjs.haskell.packages.ghc9141.ghc
+                 (crossGhc pkgsCross.ghcjs.haskell.packages.ghc9141)
                  bun
                  gnumake
                  http-server
@@ -310,7 +315,7 @@
                 }
               '';
               packages = with pkgs; [
-                 pkgsCross.ghcjs.haskell.packages.ghcNative.ghc
+                 (crossGhc pkgsCross.ghcjs.haskell.packages.ghcNative)
                  gnumake
                  http-server
                  cabal-install
