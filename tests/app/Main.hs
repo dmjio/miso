@@ -1895,7 +1895,14 @@ main = withJS $ do
         clickHandler <- liftIO (bubbles ! "click")
         clickStaticKey <- liftIO (clickHandler ! "staticKey")
         clickStaticKeyUndefined <- liftIO (isUndefined clickStaticKey)
+#ifdef NATIVE
         clickStaticKeyUndefined `shouldBe` False
+#else
+        -- Without @native@ there is no 'OnStatic': 'event' builds a plain 'On',
+        -- so no handler carries a staticKey (the web runtime never reads one).
+        -- See Note [Functor View] in "Miso.Types".
+        clickStaticKeyUndefined `shouldBe` True
+#endif
 #endif
 
 #ifndef __MHS__
@@ -2141,6 +2148,97 @@ main = withJS $ do
         -- middle, rendering as an internal stray space ("x y" instead of "xy").
         toHtmlWith () () ("" :: MisoString) (div_ [] [ "x", withModel text, withModel text, "y" ])
           `shouldBe` "<div>xy</div>"
+
+#ifndef NATIVE
+    describe "Functor View tests" $ do
+      let -- Simulate a user click on the element with the given @id@.
+          clickOn :: MisoString -> IO ()
+          clickOn elemId = void $ eval
+            ("document.getElementById('" <> elemId <> "').click()")
+          -- A root counter whose view embeds a sub-view built against a
+          -- different @action@ type, mapped into 'Action' with 'fmap'.
+          mappedRoot :: View () () Int () -> App Int Action
+          mappedRoot sub = component (0 :: Int) (\AddOne -> this += 1) $ \n ->
+            div_ []
+              [ span_ [ id_ "fmap-count" ] [ text (ms n) ]
+              , (\() -> AddOne) <$> sub
+              ]
+          countIs :: MisoString -> IO Bool
+          countIs n = pollFor propagationAttempts ((== n) <$> readText "fmap-count")
+
+      it "fmap maps the action of an 'On' handler" $ do
+        liftIO $ startApp defaultEvents $
+          mappedRoot (button_ [ id_ "fmap-on", onClick () ] [ "+" ])
+        liftIO (clickOn "fmap-on")
+        (`shouldBe` True) =<< liftIO (countIs "1")
+
+#ifndef __MHS__
+      it "fmap maps the action of a static 'event' handler" $ do
+        -- Without @native@, 'event' builds an 'On', so a @static@ handler is
+        -- mapped like any other.
+        liftIO $ startApp defaultEvents $
+          mappedRoot $ button_
+            [ id_ "fmap-static"
+            , event (static (onMain "click" emptyDecoder (\() _ _ -> ())))
+            ]
+            [ "+" ]
+        liftIO (clickOn "fmap-static")
+        (`shouldBe` True) =<< liftIO (countIs "1")
+
+      it "event builds a plain 'On' without native" $ do
+        let isOn :: Attribute Int Action -> Bool
+            isOn = \case
+              On {} -> True
+              _ -> False
+        isOn (event (static (onMain "click" emptyDecoder (\() _ _ -> AddOne))))
+          `shouldBe` True
+#endif
+
+      it "fmap maps handlers under ambient accessors" $ do
+        liftIO $ startApp defaultEvents $
+          mappedRoot $ vmodel $ \_ ->
+            vfrag [ button_ [ id_ "fmap-vmodel", onClick () ] [ "+" ] ]
+        liftIO (clickOn "fmap-vmodel")
+        (`shouldBe` True) =<< liftIO (countIs "1")
+
+      it "fmap composes" $ do
+        -- fmap (g . f) == fmap g . fmap f, observed through dispatch: the
+        -- clicked 2 must arrive as (2 + 1) * 10.
+        let sub :: View () () Int Int
+            sub = button_ [ id_ "fmap-compose", onClick 2 ] [ "+" ]
+            root :: App Int Int
+            root = component (0 :: Int) (\k -> this += k) $ \n ->
+              div_ []
+                [ span_ [ id_ "fmap-count" ] [ text (ms n) ]
+                , fmap (* 10) (fmap (+ 1) sub)
+                ]
+        liftIO $ startApp defaultEvents root
+        liftIO (clickOn "fmap-compose")
+        (`shouldBe` True) =<< liftIO (countIs "30")
+
+      it "fmap stops at component boundaries" $ do
+        -- The mounted child keeps its own @action@ type and sink: clicking
+        -- its button increments the /child's/ model, untouched by the
+        -- parent's mapping.
+        let parent :: App () ()
+            parent = component () noop $ \_ ->
+              const () <$> div_ [] [ mount_ testComponent ]
+        liftIO $ startApp defaultEvents parent
+        mountedComponents >>= (`shouldBe` 2)
+        liftIO (clickOn "foo")
+        bumped <- liftIO $ pollFor propagationAttempts $ do
+          ComponentState {..} <-
+            (IM.! 2) <$> readIORef components :: IO (ComponentState () () Int Action)
+          pure (_componentModel == 1)
+        bumped `shouldBe` True
+
+      it "fmap preserves rendered markup" $ do
+        let v :: View () () Int Bool
+            v = div_ [ id_ "x", class_ "y", onClick True ]
+                  [ "a", vmodel (text . ms), vfrag [ span_ [] [ "b" ] ] ]
+        toHtmlWith () () (3 :: Int) (fmap not v)
+          `shouldBe` toHtmlWith () () (3 :: Int) v
+#endif
 
     describe "Miso.DSL `await` tests" $ do
       it "Successful Promise resolution should result in a value" $ do

@@ -1425,7 +1425,9 @@ buildVTree events_ parentId_ vcompId hydrate live snk logLevel_ ctxRef_ ctx_ pro
     isEvent :: Attribute model action -> Bool
     isEvent = \case
       On {} -> True
+#ifdef NATIVE
       OnStatic {} -> True
+#endif
       _ -> False
 
     -- Shared construction for @VComp@ and @VCompStatic@. The only difference is
@@ -1546,6 +1548,7 @@ setAttrs vnode_@(Object jval) attrs snk vcompId logLevel events model_ = do
       FFI.set "pendingStaticKey" jsNull vnode_
       FFI.set "pendingMainThread" False vnode_
       callback model_ snk (VTree vnode_) logLevel events
+#ifdef NATIVE
     OnStatic ptr ->
       -- Stash the handler's 'StaticKey' and owning @ComponentId@ on the node
       -- so 'onWithOptions' can attach them to the per-event object; the native
@@ -1559,6 +1562,7 @@ setAttrs vnode_@(Object jval) attrs snk vcompId logLevel events model_ = do
           FFI.set "pendingComponentId" vcompId vnode_
           FFI.set "pendingMainThread" False vnode_
           eventHandlerInstall model_ snk (VTree vnode_) logLevel events
+#endif
     Styles styles -> do
       cssObj <- getProp "css" vnode_
       forM_ (M.toList styles) $ \(k,v) -> do

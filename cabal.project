@@ -13,3 +13,8 @@ if arch(wasm32)
 
 package miso
   flags: +template-haskell +native
+
+-- Must mirror miso's 'native' flag above: the test suite uses NATIVE to know
+-- which instances miso exports (no Functor View under native).
+package miso-tests
+  flags: +native

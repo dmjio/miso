@@ -242,7 +242,6 @@ module Miso.Types
   , ms
   ) where
 -----------------------------------------------------------------------------
-import           Data.Function
 import qualified Data.Map.Strict as M
 import           Data.Set (Set)
 import qualified Data.Set as S
@@ -1036,9 +1035,20 @@ data EventHandler model action = forall result. EventHandler
 -- div_    [ event (static (onScroll HandleScroll)) ]
 -- @
 --
+-- Under the @native@ flag this builds an @OnStatic@, which keeps the
+-- 'StaticKey' so the main thread can rebuild the handler. Without @native@
+-- there is no main thread to ship the key to, so the handler is dereferenced
+-- here and embedded as a plain 'On' — identical runtime behavior, and what
+-- lets 'Attribute' and 'View' be lawful 'Functor's on those builds.
+--
 -- @since 1.13.0.0
 event :: StaticPtr (EventHandler model action) -> Attribute model action
+#ifdef NATIVE
 event = OnStatic
+#else
+event ptr = case deRefStaticPtr ptr of
+  EventHandler {..} -> On eventHandlerInstall
+#endif
 -----------------------------------------------------------------------------
 -- | Attribute of a vnode in a t'View'.
 --
@@ -1046,23 +1056,29 @@ data Attribute model action
   = Property MisoString Value
   | ClassList [MisoString]
   | On (model -> Sink action -> VTree -> LogLevel -> Events -> IO ())
-  -- ^ A fully-applied @static@ event handler; the main thread rebuilds it from
-  -- the 'StaticKey' alone. See 'event'.
+  -- ^ An event handler installer: given the current @model@ and the
+  -- component's 'Sink', attaches a listener to the vnode. Built by
+  -- 'Miso.Event.on' and friends (and, without @native@, by 'event').
+#ifdef NATIVE
   | OnStatic (StaticPtr (EventHandler model action))
-  -- ^ A @static@ handler /constructor/ plus a runtime @payload@ (often @model@
-  -- data) supplied separately and JSON-shipped across the dual-thread boundary,
-  -- so the handler can reach the main thread with runtime data. The @action@
-  -- stays outside the existential; only @payload@ is hidden. Handler-identity
-  -- diffing is by 'StaticKey' (JS-side, @ts\/miso\/dom.ts@). See @eventWith@.
+  -- ^ A fully-applied @static@ event handler; the main thread rebuilds it from
+  -- the 'StaticKey' alone. Handler-identity diffing is by 'StaticKey'
+  -- (JS-side, @ts\/miso\/dom.ts@). See 'event'.
+  --
+  -- Only present under the @native@ flag. Elsewhere 'event' builds an 'On'
+  -- directly; see Note [Functor View].
+#endif
   | Styles (M.Map MisoString MisoString)
 -----------------------------------------------------------------------------
 instance Eq (Attribute model action) where
   Property k1 v1 == Property k2 v2 = k1 == k2 && v1 == v2
   ClassList x == ClassList y = x == y
   Styles x == Styles y = x == y
+#ifdef NATIVE
   -- Compare by handler identity ('StaticKey') only. Payload diffing is a JS
   -- concern (@ts\/miso\/dom.ts@) over the stashed value.
-  OnStatic ptr1 == OnStatic ptr2 = on (==) staticKey ptr1 ptr2
+  OnStatic ptr1 == OnStatic ptr2 = staticKey ptr1 == staticKey ptr2
+#endif
   _ == _ = False
 -----------------------------------------------------------------------------
 instance Show (Attribute model action) where
@@ -1073,13 +1089,91 @@ instance Show (Attribute model action) where
       MS.unpack (MS.intercalate " " classes)
     On _ ->
       "<event-handler>"
+#ifdef NATIVE
     OnStatic ptr ->
       "<event-handler-with: " <> show (staticKey ptr) <> ">"
+#endif
     Styles styles ->
       MS.unpack $ MS.concat
         [ k <> "=" <> v <> ";"
         | (k, v) <- M.toList styles
         ]
+-----------------------------------------------------------------------------
+-- Note [Functor View]
+-- ~~~~~~~~~~~~~~~~~~~
+-- 'View' and 'Attribute' are 'Functor's in @action@ on every build /except/
+-- the Lynx dual-thread (@native@) one, where neither instance exists.
+--
+-- The obstacle is 'OnStatic'. Under @native@ a main-thread handler is not a
+-- closure the main thread can call: the background thread ships only its
+-- 'StaticKey', and @dispatchMainThreadEvent@ (in "Miso.Runtime") rebuilds the
+-- t'EventHandler' from that key and sinks its result straight into the owning
+-- component's @_componentSink@. That is sound only because every 'OnStatic'
+-- reachable from component @C@'s view has @C@'s @action@ type.
+--
+-- @fmap f@ would break that. A 'StaticPtr' cannot be mapped over — a static
+-- key names a /closed/ expression in the binary's static pointer table, and
+-- @f . deRefStaticPtr p@ has no entry there — and @f@ itself is an arbitrary
+-- runtime closure that cannot cross the thread boundary. Carrying @f@ next to
+-- the pointer does not help: the main thread never sees it, so it would sink
+-- an unmapped @a@ where an @action@ is expected. Demoting 'OnStatic' to 'On'
+-- under @fmap@ is type-safe but unlawful: @fmap id@ would silently move a
+-- main-thread handler onto the background thread.
+--
+-- Without @native@ there is no main thread and nothing ever dispatches by
+-- key: the web runtime dereferences the pointer locally and installs the
+-- handler, and @ts\/miso\/dom.ts@ skips event-key diffing entirely. There
+-- 'OnStatic' is just an 'On' that also carries a key nobody reads, so it is
+-- compiled out and 'event' builds the 'On' directly. With every constructor
+-- of 'Attribute' then covariant in @action@, both instances are lawful.
+--
+-- Consequence: code using 'fmap' \/ '<$>' \/ '<$' on a 'View' compiles for
+-- the web backends (JS, WASM, MicroHs, GHCJS, vanilla\/SSR) and fails to
+-- compile under @native@ with a missing-instance error.
+--
+#ifndef NATIVE
+-----------------------------------------------------------------------------
+-- | Map the @action@ an 'Attribute' produces.
+--
+-- Not available under the @native@ flag; see Note [Functor View].
+--
+-- @since 1.15.0.0
+instance Functor (Attribute model) where
+  fmap f = \case
+    Property k v -> Property k v
+    ClassList classes -> ClassList classes
+    On handler -> On $ \model_ sink -> handler model_ (sink . f)
+    Styles styles -> Styles styles
+-----------------------------------------------------------------------------
+-- | Map the @action@ a 'View' produces, e.g. to embed a sub-view whose
+-- handlers emit a child action type into a parent's view:
+--
+-- @
+-- data Action = ChildAction Child.Action | ...
+--
+-- view model = div_ [] [ ChildAction \<$\> Child.view model ]
+-- @
+--
+-- Mapping stops at component boundaries: a mounted child t'Component'
+-- ('VComp' \/ 'VCompStatic') owns its own @action@ type and sink, and is
+-- left untouched. Ambient accessors ('VContext', 'VProps', 'VModel') map
+-- the 'View' they produce.
+--
+-- Not available under the @native@ flag; see Note [Functor View].
+--
+-- @since 1.15.0.0
+instance Functor (View context props model) where
+  fmap f = \case
+    VNode ns tag attrs kids direct ->
+      VNode ns tag (fmap f <$> attrs) (fmap f <$> kids) direct
+    VText key_ txt -> VText key_ txt
+    VComp comp -> VComp comp
+    VCompStatic ptr props -> VCompStatic ptr props
+    VFrag key_ kids -> VFrag key_ (fmap f <$> kids)
+    VContext g -> VContext (fmap f . g)
+    VProps g -> VProps (fmap f . g)
+    VModel g -> VModel (fmap f . g)
+#endif
 -----------------------------------------------------------------------------
 -- | 'IsString' instance
 instance IsString (View context props model action) where

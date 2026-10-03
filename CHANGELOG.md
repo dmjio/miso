@@ -2,6 +2,30 @@
 
 All notable changes to `miso` are documented here.
 
+## Unreleased
+
+### Added
+
+- **`Functor` instances for `View` and `Attribute` (non-`native` builds).**
+  `fmap` / `<$>` / `<$` map the `action` a view or attribute produces, so a
+  sub-view written against one `action` type can be embedded in another
+  (`ChildAction <$> Child.view m`). These existed before 1.13.0.0 and were
+  dropped when the Lynx dual-thread runtime landed. Mapping stops at component
+  boundaries (`VComp` / `VCompStatic` keep their own `action`), and passes
+  through the ambient accessors `VContext` / `VProps` / `VModel`. **Not
+  available under the `native` flag**: a main-thread (`OnStatic`) handler
+  crosses threads as a bare `StaticKey` that the main thread re-dispatches at
+  the owning component's `action` type, and an arbitrary mapping function
+  can't travel with it. See `Note [Functor View]` in `Miso.Types`.
+
+### Changed
+
+- **Breaking: `OnStatic` exists only under the `native` flag.** Elsewhere
+  `event` now dereferences the `StaticPtr` itself and builds a plain `On`.
+  Runtime behavior is unchanged — no web backend ever dispatched by
+  `StaticKey` — but code that pattern-matches on `OnStatic` must be guarded
+  with `#ifdef NATIVE` (or match `On` instead).
+
 ## 1.14.0.0
 
 ### Added
