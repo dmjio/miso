@@ -295,7 +295,9 @@ renderAttrs (Property key value) =
   , stringUtf8 "\""
   ]
 renderAttrs (On _) = mempty
+#ifdef NATIVE
 renderAttrs (OnStatic _) = mempty
+#endif
 renderAttrs (Styles styles_) =
   mconcat
   [ "style"

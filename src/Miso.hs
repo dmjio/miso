@@ -253,6 +253,26 @@
 --
 -- A full list of element smart constructors built on 'node' (e.g. 'Miso.Html.Element.Miso.Html.Element.div_') can be found in "Miso.Html.Element".
 --
+-- == Mapping actions
+--
+-- 'View' and 'Attribute' are 'Functor's in @action@, so a sub-view written
+-- against one @action@ type can be embedded in a view of another:
+--
+-- @
+-- data Action = CounterAction Counter.Action | ...
+--
+-- view model = 'Miso.Html.Element.div_' [] [ CounterAction '<$>' Counter.view (counter model) ]
+-- @
+--
+-- Mapping stops at component boundaries: a mounted child t'Miso.Types.Component'
+-- keeps its own @action@ type and sink.
+--
+-- __These instances do not exist under the @native@ (Lynx dual-thread) flag.__
+-- There a main-thread handler crosses threads as a bare 'GHC.StaticPtr.StaticKey'
+-- that the main thread re-dispatches at the owning component's @action@ type,
+-- and an arbitrary mapping function cannot travel with it. See
+-- Note [Functor View] in "Miso.Types".
+--
 -- = The global @context@
 --
 -- @context@ is miso's analogue of [React Context](https://react.dev/learn/passing-data-deeply-with-context):
@@ -773,7 +793,7 @@
 --   = 'Property' 'MisoString' 'Miso.JSON.Value'          -- ^ DOM property (key/value)
 --   | 'ClassList' ['MisoString']             -- ^ 'CSS' class list
 --   | 'On' (model -> 'Sink' action -> ...)   -- ^ Fully-applied event handler
---   | 'OnStatic' (@StaticPtr@ ('EventHandler' model action)) -- ^ @static@ handler, rebuilt on the main thread (dual-thread)
+--   | @OnStatic@ (@StaticPtr@ ('EventHandler' model action)) -- ^ @static@ handler, rebuilt on the main thread (@native@ only)
 --   | 'Styles' ('Data.Map.Strict.Map' 'MisoString' 'MisoString') -- ^ Inline style map
 -- @
 --

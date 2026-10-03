@@ -54,7 +54,7 @@ import Data.Foldable (mapM_, sequence_)
 import Data.Traversable (mapM, sequence)
 #endif
 -----------------------------------------------------------------------------
-import           Control.Monad (when)
+import           Control.Monad (unless, when)
 import qualified Data.Map.Strict as M
 import qualified Data.IntMap.Strict as IM
 import           Data.IORef
@@ -237,11 +237,19 @@ onWithOptions phase options eventName Decoder{..} toAction =
     isMainThread <- fromJSVal pendingMT :: IO (Maybe Bool)
     when (isMainThread == Just True) $ do
       pendingKey <- getProp "pendingStaticKey" n
-      mKey <- fromJSVal pendingKey :: IO (Maybe MisoString)
-      maybe (pure ()) (\k -> FFI.set "staticKey" (k :: MisoString) eventHandlerObject) mKey
-      pendingCid <- getProp "pendingComponentId" n
-      mCid <- fromJSVal pendingCid :: IO (Maybe Int)
-      maybe (pure ()) (\c -> FFI.set "componentId" (c :: Int) eventHandlerObject) mCid
+      -- A 'mainThread' handler installed through a plain 'On' (e.g. 'event'
+      -- without @native@, where there is no 'OnStatic') has a null
+      -- @pendingStaticKey@: 'setAttrs' resets it. Test for null explicitly —
+      -- the JS backend's @fromJSVal@ at 'MisoString' is unchecked and would
+      -- yield @Just null@. With no key the handler can't be dispatched on the
+      -- main thread, so attach neither the key nor the @ComponentId@.
+      noKey <- (||) <$> isNull pendingKey <*> isUndefined pendingKey
+      unless noKey $ do
+        mKey <- fromJSVal pendingKey :: IO (Maybe MisoString)
+        maybe (pure ()) (\k -> FFI.set "staticKey" (k :: MisoString) eventHandlerObject) mKey
+        pendingCid <- getProp "pendingComponentId" n
+        mCid <- fromJSVal pendingCid :: IO (Maybe Int)
+        maybe (pure ()) (\c -> FFI.set "componentId" (c :: Int) eventHandlerObject) mCid
     FFI.set eventName eo (Object eventObj)
     -- The handler object is now reachable from the node; release the scratch
     -- handles. @decodeAtVal@, @cb@ and @n@ are captured by the callback and

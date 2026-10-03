@@ -16,10 +16,21 @@ flag interactive
   default: False
   manual: True
 
+flag native
+  default: False
+  manual: True
+  description:
+    Must match miso's own @native@ flag. Defines NATIVE so tests can tell
+    which instances miso exports (e.g. no Functor View under native).
+
 common warnings
   ghc-options: -Wall
 
 common cpp
+  if flag(native)
+    cpp-options:
+      -DNATIVE
+
   if impl(ghcjs) || arch(javascript)
     cpp-options:
       -DGHCJS_BOTH
