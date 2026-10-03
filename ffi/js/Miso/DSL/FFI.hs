@@ -200,9 +200,16 @@ isUndefined_ffi :: JSVal -> Bool
 isUndefined_ffi = isUndefined
 {-# INLINE isUndefined_ffi #-}
 -----------------------------------------------------------------------------
-freeFunction_ffi :: JSVal -> IO ()
-freeFunction_ffi _ = pure ()
-{-# INLINE freeFunction_ffi #-}
+-- | Releases a callback created by 'syncCallback' / 'asyncCallback'.
+-- The JS RTS keeps every callback in @h$extraRoots@ (a permanent GC root)
+-- until @h$release@ is called, so this must not be a no-op.
+foreign import javascript unsafe
+#if GHCJS_NEW
+  "(($1) => { h$release($1); })"
+#else
+  "h$release($1);"
+#endif
+  freeFunction_ffi :: JSVal -> IO ()
 -----------------------------------------------------------------------------
 -- | No-op on GHCJS: 'JSVal's are ordinary JS references collected by the JS GC.
 freeJSVal_ffi :: JSVal -> IO ()
