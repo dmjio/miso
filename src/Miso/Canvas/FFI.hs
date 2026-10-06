@@ -20,6 +20,11 @@
 -- numbers.  On MicroHs this made the canvas benchmark in @sample-app@
 -- about 3.5 times faster (78 to 22 ms per frame for 1000 rectangles).
 --
+-- 'fillStyleRGB', 'strokeStyleRGB', 'shadowColorRGB' and their @RGBA@
+-- variants take the colour as numbers and build the @rgb(…)@ string in
+-- JavaScript, instead of 'Miso.CSS.Color.renderColor' building it from
+-- Haskell (several string operations across the FFI per colour).
+--
 -- Operations that return a value (gradients, patterns, image data) stay on
 -- the generic path in "Miso.Canvas".  The native GHC backend has no
 -- JavaScript FFI, so there these are the generic calls as before.
@@ -69,6 +74,12 @@ module Miso.Canvas.FFI
   , shadowColor
   , fillStyle
   , strokeStyle
+  , fillStyleRGB
+  , fillStyleRGBA
+  , strokeStyleRGB
+  , strokeStyleRGBA
+  , shadowColorRGB
+  , shadowColorRGBA
   ) where
 -----------------------------------------------------------------------------
 import           Miso.String (MisoString)
@@ -79,6 +90,7 @@ import           Miso.DSL.FFI (textToJSString)
 #endif
 #else
 import           Control.Monad (void)
+import           Miso.CSS.Color (Color (..), renderColor)
 import           Miso.DSL (JSVal, (#), setField)
 #endif
 -----------------------------------------------------------------------------
@@ -224,6 +236,24 @@ foreign import javascript unsafe "(($1,$2) => { $1.fillStyle = $2; })"
 -----------------------------------------------------------------------------
 foreign import javascript unsafe "(($1,$2) => { $1.strokeStyle = $2; })"
   strokeStyle :: JSVal -> JSVal -> IO ()
+-----------------------------------------------------------------------------
+foreign import javascript unsafe "(($1,$2,$3,$4) => { $1.fillStyle = 'rgb(' + $2 + ',' + $3 + ',' + $4 + ')'; })"
+  fillStyleRGB :: JSVal -> Int -> Int -> Int -> IO ()
+-----------------------------------------------------------------------------
+foreign import javascript unsafe "(($1,$2,$3,$4,$5) => { $1.fillStyle = 'rgba(' + $2 + ',' + $3 + ',' + $4 + ',' + $5 + ')'; })"
+  fillStyleRGBA :: JSVal -> Int -> Int -> Int -> Double -> IO ()
+-----------------------------------------------------------------------------
+foreign import javascript unsafe "(($1,$2,$3,$4) => { $1.strokeStyle = 'rgb(' + $2 + ',' + $3 + ',' + $4 + ')'; })"
+  strokeStyleRGB :: JSVal -> Int -> Int -> Int -> IO ()
+-----------------------------------------------------------------------------
+foreign import javascript unsafe "(($1,$2,$3,$4,$5) => { $1.strokeStyle = 'rgba(' + $2 + ',' + $3 + ',' + $4 + ',' + $5 + ')'; })"
+  strokeStyleRGBA :: JSVal -> Int -> Int -> Int -> Double -> IO ()
+-----------------------------------------------------------------------------
+foreign import javascript unsafe "(($1,$2,$3,$4) => { $1.shadowColor = 'rgb(' + $2 + ',' + $3 + ',' + $4 + ')'; })"
+  shadowColorRGB :: JSVal -> Int -> Int -> Int -> IO ()
+-----------------------------------------------------------------------------
+foreign import javascript unsafe "(($1,$2,$3,$4,$5) => { $1.shadowColor = 'rgba(' + $2 + ',' + $3 + ',' + $4 + ',' + $5 + ')'; })"
+  shadowColorRGBA :: JSVal -> Int -> Int -> Int -> Double -> IO ()
 #elif defined(ghcjs_HOST_OS) || defined(wasm32_HOST_ARCH) || defined(__MHS__)
 -- GHCJS, the GHC wasm backend and MicroHs: the code is a statement.
 foreign import javascript unsafe "$1.clearRect($2,$3,$4,$5)"
@@ -354,6 +384,24 @@ foreign import javascript unsafe "$1.fillStyle = $2"
 -----------------------------------------------------------------------------
 foreign import javascript unsafe "$1.strokeStyle = $2"
   strokeStyle :: JSVal -> JSVal -> IO ()
+-----------------------------------------------------------------------------
+foreign import javascript unsafe "$1.fillStyle = 'rgb(' + $2 + ',' + $3 + ',' + $4 + ')'"
+  fillStyleRGB :: JSVal -> Int -> Int -> Int -> IO ()
+-----------------------------------------------------------------------------
+foreign import javascript unsafe "$1.fillStyle = 'rgba(' + $2 + ',' + $3 + ',' + $4 + ',' + $5 + ')'"
+  fillStyleRGBA :: JSVal -> Int -> Int -> Int -> Double -> IO ()
+-----------------------------------------------------------------------------
+foreign import javascript unsafe "$1.strokeStyle = 'rgb(' + $2 + ',' + $3 + ',' + $4 + ')'"
+  strokeStyleRGB :: JSVal -> Int -> Int -> Int -> IO ()
+-----------------------------------------------------------------------------
+foreign import javascript unsafe "$1.strokeStyle = 'rgba(' + $2 + ',' + $3 + ',' + $4 + ',' + $5 + ')'"
+  strokeStyleRGBA :: JSVal -> Int -> Int -> Int -> Double -> IO ()
+-----------------------------------------------------------------------------
+foreign import javascript unsafe "$1.shadowColor = 'rgb(' + $2 + ',' + $3 + ',' + $4 + ')'"
+  shadowColorRGB :: JSVal -> Int -> Int -> Int -> IO ()
+-----------------------------------------------------------------------------
+foreign import javascript unsafe "$1.shadowColor = 'rgba(' + $2 + ',' + $3 + ',' + $4 + ',' + $5 + ')'"
+  shadowColorRGBA :: JSVal -> Int -> Int -> Int -> Double -> IO ()
 #else
 -- Native GHC: no JavaScript FFI, the generic DSL as before.
 clearRect :: JSVal -> Double -> Double -> Double -> Double -> IO ()
@@ -484,5 +532,23 @@ fillStyle ctx v = setField ctx "fillStyle" v
 -----------------------------------------------------------------------------
 strokeStyle :: JSVal -> JSVal -> IO ()
 strokeStyle ctx v = setField ctx "strokeStyle" v
+-----------------------------------------------------------------------------
+fillStyleRGB :: JSVal -> Int -> Int -> Int -> IO ()
+fillStyleRGB ctx r g b = setField ctx "fillStyle" (renderColor (RGB r g b))
+-----------------------------------------------------------------------------
+fillStyleRGBA :: JSVal -> Int -> Int -> Int -> Double -> IO ()
+fillStyleRGBA ctx r g b a = setField ctx "fillStyle" (renderColor (RGBA r g b a))
+-----------------------------------------------------------------------------
+strokeStyleRGB :: JSVal -> Int -> Int -> Int -> IO ()
+strokeStyleRGB ctx r g b = setField ctx "strokeStyle" (renderColor (RGB r g b))
+-----------------------------------------------------------------------------
+strokeStyleRGBA :: JSVal -> Int -> Int -> Int -> Double -> IO ()
+strokeStyleRGBA ctx r g b a = setField ctx "strokeStyle" (renderColor (RGBA r g b a))
+-----------------------------------------------------------------------------
+shadowColorRGB :: JSVal -> Int -> Int -> Int -> IO ()
+shadowColorRGB ctx r g b = setField ctx "shadowColor" (renderColor (RGB r g b))
+-----------------------------------------------------------------------------
+shadowColorRGBA :: JSVal -> Int -> Int -> Int -> Double -> IO ()
+shadowColorRGBA ctx r g b a = setField ctx "shadowColor" (renderColor (RGBA r g b a))
 #endif
 -----------------------------------------------------------------------------

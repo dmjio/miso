@@ -189,7 +189,7 @@ import qualified Miso.Canvas.FFI as C
 import qualified Miso.FFI as FFI
 import           Miso.FFI (Image)
 import           Miso.Types
-import           Miso.CSS (Color, renderColor)
+import           Miso.CSS (Color (..), renderColor)
 -----------------------------------------------------------------------------
 -- | Another variant of canvas, this is not specialized to 'ReaderT'. This is
 -- useful when building applications with three.js, or other libraries where
@@ -613,6 +613,8 @@ createRadialGradient = call "createRadialGradient"
 -----------------------------------------------------------------------------
 -- | [ctx.fillStyle = "red"](https://www.w3schools.com/tags/canvas_fillstyle.asp)
 fillStyle :: StyleArg -> Canvas ()
+fillStyle (ColorArg (RGB r g b)) = ctxIO $ \ctx -> C.fillStyleRGB ctx r g b
+fillStyle (ColorArg (RGBA r g b a)) = ctxIO $ \ctx -> C.fillStyleRGBA ctx r g b a
 fillStyle arg = ctxIO $ \ctx -> toJSVal arg >>= C.fillStyle ctx
 -----------------------------------------------------------------------------
 -- | [ctx.lineCap = "butt"](https://www.w3schools.com/tags/canvas_lineCap.asp)
@@ -637,6 +639,8 @@ shadowBlur v = ctxIO $ \ctx -> C.shadowBlur ctx v
 -----------------------------------------------------------------------------
 -- | [ctx.shadowColor = "red"](https://www.w3schools.com/tags/canvas_shadowColor.asp)
 shadowColor :: Color -> Canvas ()
+shadowColor (RGB r g b) = ctxIO $ \ctx -> C.shadowColorRGB ctx r g b
+shadowColor (RGBA r g b a) = ctxIO $ \ctx -> C.shadowColorRGBA ctx r g b a
 shadowColor v = ctxIO $ \ctx -> C.shadowColor ctx (C.jsString (renderColor v))
 -----------------------------------------------------------------------------
 -- | [ctx.shadowOffsetX = 20](https://www.w3schools.com/tags/canvas_shadowOffsetX.asp)
@@ -649,6 +653,8 @@ shadowOffsetY v = ctxIO $ \ctx -> C.shadowOffsetY ctx v
 -----------------------------------------------------------------------------
 -- | [ctx.strokeStyle = "red"](https://www.w3schools.com/tags/canvas_strokeStyle.asp)
 strokeStyle :: StyleArg -> Canvas ()
+strokeStyle (ColorArg (RGB r g b)) = ctxIO $ \ctx -> C.strokeStyleRGB ctx r g b
+strokeStyle (ColorArg (RGBA r g b a)) = ctxIO $ \ctx -> C.strokeStyleRGBA ctx r g b a
 strokeStyle arg = ctxIO $ \ctx -> toJSVal arg >>= C.strokeStyle ctx
 -----------------------------------------------------------------------------
 -- | [ctx.scale(width,height)](https://www.w3schools.com/tags/canvas_scale.asp)
