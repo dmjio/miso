@@ -1,6 +1,6 @@
 // Measure the canvas benchmark's frame rate with Playwright.
 //
-//   node bench.mjs [url] [seconds] [rects]
+//   node bench.mjs [url] [seconds] [rects] [mode]     (mode: canvas | staged)
 //
 // Loads the page with ?rects=N, then
 // collects the "fps: N ms/frame: T rects: M" console lines the app logs once a second
@@ -10,6 +10,7 @@ import { chromium } from 'playwright';
 const url = process.argv[2] ?? 'http://localhost:8123/';
 const seconds = Number(process.argv[3] ?? 12);
 const rects = Number(process.argv[4] ?? 1000);
+const mode = process.argv[5] ?? 'canvas';
 
 // HEADED=1 runs a visible Chromium, which composites with the GPU; headless
 // Chromium rasterises the canvas in software and reports lower frame rates.
@@ -24,7 +25,7 @@ page.on('console', (msg) => {
 });
 page.on('pageerror', (e) => console.error('page error:', e.message));
 
-await page.goto(`${url}?rects=${rects}`);
+await page.goto(`${url}?rects=${rects}&mode=${mode}`);
 await page.waitForSelector('#bench', { timeout: 60000 });
 await page.waitForTimeout(seconds * 1000);
 await browser.close();

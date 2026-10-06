@@ -67,6 +67,14 @@ mhs:
 	cp static-mhs/index.html public-mhs/
 	mhs $(MHS_FLAGS) -t$(MHS_TARGET) Main -opublic-mhs/app.js
 
+# With a MicroHs that has the 2ltt (staging) branch merged into jsval: also
+# builds the staged renderer (?mode=staged), whose frame function is generated
+# at compile time.  Newer jsval recognises .js files by suffix (no -js flag).
+mhs-staged:
+	mkdir -p public-mhs
+	cp static-mhs/index.html public-mhs/
+	mhs $(subst -js ,,$(MHS_FLAGS)) -DSTAGED -t$(MHS_TARGET) Main -opublic-mhs/app.js
+
 # The same via mcabal (needs 'mcabal install' of miso first): js-sources are embedded automatically.
 mhs-mcabal:
 	mcabal --options=-t$(MHS_TARGET) build
