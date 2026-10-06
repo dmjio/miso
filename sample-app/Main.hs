@@ -27,7 +27,7 @@ import qualified Miso.CSS.Color as Color
 import qualified Miso.Html as H
 import qualified Miso.Html.Property as P
 import           Miso.Lens
-import           Miso.String (ms)
+import           Miso.String (MisoString, ms)
 import           Miso.Subscription.Canvas (canvasSub)
 ----------------------------------------------------------------------------
 -- | Component model state
@@ -101,9 +101,9 @@ app stats n = component (Model (mkRects n)) (updateModel stats) viewModel
 updateModel :: IORef Stats -> Action -> Effect context props Model Action
 updateModel stats = \case
   InitCanvas domRef ->
-    startSub "canvas" $ canvasSub domRef "2d" (drawScene stats)
+    startSub ("canvas" :: MisoString) $ canvasSub domRef "2d" (drawScene stats)
   StopCanvas ->
-    stopSub "canvas"
+    stopSub ("canvas" :: MisoString)
   MoreRects ->
     rects %= \rs -> mkRects (2 * length rs)
   FewerRects ->
@@ -186,12 +186,16 @@ fmod x m = x - fromIntegral (toInt (x / m)) * m
 ----------------------------------------------------------------------------
 -- | Initial rectangle count: @?rects=N@ in the URL, else 1000.
 initialRects :: IO Int
-#ifdef __MHS__
+#if defined(__MHS__) || defined(wasm32_HOST_ARCH) || defined(javascript_HOST_ARCH)
 initialRects = do
   n <- js_rectsParam
   pure (if n > 0 then n else 1000)
-
+#endif
+#if defined(__MHS__) || defined(wasm32_HOST_ARCH)
 foreign import javascript unsafe "Number(new URLSearchParams(location.search).get('rects')) || 0"
+  js_rectsParam :: IO Int
+#elif defined(javascript_HOST_ARCH)
+foreign import javascript unsafe "(() => Number(new URLSearchParams(location.search).get('rects')) || 0)"
   js_rectsParam :: IO Int
 #else
 initialRects = pure 1000
