@@ -1,5 +1,6 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE CPP               #-}
+{-# LANGUAGE OverloadedStrings #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Canvas.FFI
@@ -72,7 +73,7 @@ module Miso.Canvas.FFI
 -----------------------------------------------------------------------------
 import           Miso.String (MisoString)
 #if defined(GHCJS_NEW) || defined(ghcjs_HOST_OS) || defined(wasm32_HOST_ARCH) || defined(__MHS__)
-import           Miso.DSL.FFI (JSVal, JSString)
+import           Miso.DSL.FFI (JSVal, JSString (..))
 #ifdef MISO_TEXT
 import           Miso.DSL.FFI (textToJSString)
 #endif
