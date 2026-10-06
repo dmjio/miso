@@ -162,6 +162,8 @@ library
     Miso
     Miso.Canvas
     Miso.Canvas.FFI
+    Miso.Canvas.Draw
+    Miso.Canvas.Draw.Run
     Miso.Cookie
     Miso.Concurrent
     Miso.Date

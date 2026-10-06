@@ -12,11 +12,17 @@
 -- as @fps: N ms/frame: T rects: M@ so it can be read by automated tests
 -- (see bench.mjs).  @?rects=N@ in the URL sets the count.
 --
--- Built with @-DSTAGED@ (a MicroHs with the 2ltt branch, @make mhs-staged@)
--- the app also has a staged renderer, selected with @?mode=staged@: the
--- frame is a JavaScript function generated at compile time from "Scene",
--- the rectangles live in an array in wasm memory, and Haskell makes one
--- call per frame.
+-- @?mode=@ selects the renderer:
+--
+-- * @canvas@ (default): 'drawScene', hand written against "Miso.Canvas".
+-- * @run@: 'Scene.benchScene' executed through the 'Run' instance of
+--   'Draw', i.e. "Miso.Canvas" calls with the entity loop in Haskell.
+-- * @staged@ (needs @-DSTAGED@, a MicroHs with the 2ltt branch, @make
+--   mhs-staged@): the same 'Scene.benchScene' compiled to a JavaScript frame
+--   function at compile time by the 'JSGen' instance; Haskell makes one
+--   call per frame.
+--
+-- @run@ and @staged@ read the rectangles from an array in wasm memory.
 module Main where
 ----------------------------------------------------------------------------
 import           Control.Monad (forM_)
@@ -32,29 +38,32 @@ import qualified Miso.Canvas as Canvas
 import qualified Miso.CSS.Color as Color
 import qualified Miso.Html as H
 import qualified Miso.Html.Property as P
-import           Miso.Lens
 import           Miso.String (ms)
 import           Miso.Subscription.Canvas (canvasSub)
-#ifdef STAGED
 import           Control.Monad.Reader (ask)
-import           Data.Word (Word8)
 import           Foreign.Marshal.Alloc (free, mallocBytes)
-import           Foreign.Ptr (Ptr, castPtr)
-import           System.IO.Unsafe (unsafePerformIO)
+import           Foreign.Ptr (Ptr)
 import           Foreign.Storable (pokeElemOff)
+import           System.IO.Unsafe (unsafePerformIO)
+import           Miso.Canvas.Draw
+import           Miso.Canvas.Draw.Run
+import           Scene (benchScene)
+#ifdef STAGED
 import           Staged (codeString)
-import           Scene (renderFrame, benchScene, stride)
 #endif
 ----------------------------------------------------------------------------
 -- | Component model state
 data Model
   = Model
-  { _rects :: [Rect]
+  { _count :: Int
     -- ^ rectangles drawn per frame
+  , _rects :: [Rect]
+    -- ^ the first @_count@ rectangles of the fixed layout, 'mkRects'
   } deriving (Show, Eq)
 ----------------------------------------------------------------------------
-rects :: Lens Model [Rect]
-rects = lens _rects $ \record field -> record { _rects = field }
+-- | Set the rectangle count; the layout follows.
+setCount :: Int -> Model -> Model
+setCount n m = m { _count = n, _rects = mkRects n }
 ----------------------------------------------------------------------------
 data Rect
   = Rect
@@ -104,37 +113,37 @@ main :: IO ()
 main = do
   stats <- newIORef (Stats 0 0 0)
   n <- initialRects
-  staged <- stagedMode
-  startApp defaultEvents (app stats staged n)
+  mode <- renderMode
+  startApp defaultEvents (app stats mode n)
 ----------------------------------------------------------------------------
 -- | WASM export, required when compiling w/ the WASM backend.
 #ifdef WASM
 foreign export javascript "hs_start" main :: IO ()
 #endif
 ----------------------------------------------------------------------------
-app :: IORef Stats -> Bool -> Int -> App Model Action
-app stats staged n = component (Model (mkRects n)) (updateModel stats staged) viewModel
+app :: IORef Stats -> Mode -> Int -> App Model Action
+app stats mode n = component (setCount n (Model 0 [])) (updateModel stats mode) viewModel
 ----------------------------------------------------------------------------
-updateModel :: IORef Stats -> Bool -> Action -> Effect context props Model Action
-updateModel stats staged = \case
-  InitCanvas domRef
-#ifdef STAGED
-    | staged -> startSub "canvas" $ stagedCanvasSub domRef stats
-#endif
-    | otherwise -> startSub "canvas" $ canvasSub domRef "2d" (drawScene stats)
+updateModel :: IORef Stats -> Mode -> Action -> Effect context props Model Action
+updateModel stats mode = \case
+  InitCanvas domRef ->
+    startSub "canvas" $ canvasSub domRef "2d" $ case mode of
+      ModeCanvas -> drawScene stats
+      ModeRun -> drawRun stats
+      ModeStaged -> drawStaged stats
   StopCanvas ->
     stopSub "canvas"
   MoreRects ->
-    rects %= \rs -> mkRects (2 * length rs)
+    modify $ \m -> setCount (2 * _count m) m
   FewerRects ->
-    rects %= \rs -> mkRects (max 1 (length rs `div` 2))
+    modify $ \m -> setCount (max 1 (_count m `div` 2)) m
 ----------------------------------------------------------------------------
 viewModel :: Model -> View () () Model Action
 viewModel m =
   H.div_ []
   [ H.div_ []
     [ H.button_ [ H.onClick FewerRects ] [ "fewer rects" ]
-    , text (" " <> ms (length (m ^. rects)) <> " rects per frame ")
+    , text (" " <> ms (_count m) <> " rects per frame ")
     , H.button_ [ H.onClick MoreRects ] [ "more rects" ]
     ]
   , H.canvas_
@@ -155,11 +164,11 @@ drawScene stats t m = do
   Canvas.fillRect (0, 0, canvasWidth, canvasHeight)
   Canvas.save ()
   Canvas.translate (fmod (t * 0.05) 40 - 20, fmod (t * 0.03) 40 - 20)
-  forM_ (m ^. rects) $ \(Rect x y size c) -> do
+  forM_ (_rects m) $ \(Rect x y size c) -> do
     Canvas.fillStyle (Canvas.color c)
     Canvas.fillRect (x, y, size, size)
   Canvas.restore ()
-  let n = length (m ^. rects)
+  let n = _count m
   fps <- liftIO (tick stats t n)
   Canvas.fillStyle (Canvas.color Color.white)
   Canvas.font "16px monospace"
@@ -204,61 +213,56 @@ fmod x m = x - fromIntegral (toInt (x / m)) * m
     toInt = floor
 #endif
 ----------------------------------------------------------------------------
--- | @?mode=staged@ in the URL selects the staged renderer (when built in).
-stagedMode :: IO Bool
-#ifdef STAGED
-stagedMode = (/= 0) <$> js_stagedParam
+-- | Which renderer @?mode=@ asks for.
+data Mode = ModeCanvas | ModeRun | ModeStaged
 
-foreign import javascript unsafe "new URLSearchParams(location.search).get('mode') === 'staged' ? 1 : 0"
-  js_stagedParam :: IO Int
-#else
-stagedMode = pure False
+renderMode :: IO Mode
+renderMode = do
+  m <- js_modeParam
+  pure $ case m of
+    1 -> ModeRun
+#ifdef STAGED
+    2 -> ModeStaged
 #endif
+    _ -> ModeCanvas
+
+foreign import javascript unsafe "(function(m){ return m === 'run' ? 1 : m === 'staged' ? 2 : 0; })(new URLSearchParams(location.search).get('mode'))"
+  js_modeParam :: IO Int
 ----------------------------------------------------------------------------
-#ifdef STAGED
--- | The frame function's source, generated by the compiler: the splice runs
--- 'renderFrame' at compile time and leaves a string literal behind.
-frameSource :: String
-frameSource = ~(codeString (renderFrame benchScene))
+-- | The entity array for the 'run' and 'staged' renderers, rebuilt when the
+-- model's rectangle count changes: the array and its count.  (Keyed on the
+-- count, not the list: comparing 10000 rectangles every frame would cost
+-- more Haskell time than the frame itself.)
+entities :: IORef (Maybe (Ptr Double, Int))
+entities = unsafePerformIO (newIORef Nothing)
+{-# NOINLINE entities #-}
 
--- | The staged renderer.  The entity array is rebuilt when the model's
--- rectangles change; each frame is one JavaScript call.
-stagedCanvasSub :: DOMRef -> IORef Stats -> Sub Model Action
-stagedCanvasSub domRef stats = canvasSub domRef "2d" draw
-  where
-    draw t m = do
-      ctx <- Canvas.canvasContextRef <$> ask
-      liftIO $ do
-        st <- readIORef stagedState
-        (frameFn, arr, n) <- case st of
-          Just (f, a, rs, n) | rs == m ^. rects -> pure (f, a, n)
-          _ -> do
-            f <- case st of
-              Just (f, a, _, _) -> free a >> pure f
-              Nothing -> eval (ms frameSource)
-            (a, n) <- fillEntities (m ^. rects)
-            writeIORef stagedState (Just (f, a, m ^. rects, n))
-            pure (f, a, n)
-        fps <- tick stats t n
-        js_frame frameFn ctx arr n t fps
+-- | The array for the model's rectangles.
+currentEntities :: Model -> IO (Ptr Double, Int)
+currentEntities m = do
+  st <- readIORef entities
+  case st of
+    Just (a, n) | n == _count m -> pure (a, n)
+    _ -> do
+      case st of
+        Just (a, _) -> free a
+        Nothing -> pure ()
+      (a, n) <- fillEntities (_rects m)
+      writeIORef entities (Just (a, n))
+      pure (a, n)
 
--- | Frame function, entity array, the rectangles it was built from, their count.
-stagedState :: IORef (Maybe (JSVal, Ptr Word8, [Rect], Int))
-stagedState = unsafePerformIO (newIORef Nothing)
-{-# NOINLINE stagedState #-}
-
--- | Write the rectangles into a fresh array of 'stride' doubles each.
-fillEntities :: [Rect] -> IO (Ptr Word8, Int)
+-- | Write the rectangles into a fresh array of 'entityStride' doubles each.
+fillEntities :: [Rect] -> IO (Ptr Double, Int)
 fillEntities rs = do
   let n = length rs
-  arr <- mallocBytes (max 1 n * stride * 8)
+  arr <- mallocBytes (max 1 n * entityStride * 8)
   let go _ [] = pure ()
       go i (Rect x y size c : rest) = do
         let (r, g, b) = case c of
               Color.RGB r' g' b' -> (r', g', b')
               Color.RGBA r' g' b' _ -> (r', g', b')
               _ -> (0, 0, 0)
-            o = i * stride
+            o = i * entityStride
         pokeElemOff arr o x
         pokeElemOff arr (o + 1) y
         pokeElemOff arr (o + 2) size
@@ -267,14 +271,46 @@ fillEntities rs = do
         pokeElemOff arr (o + 5) (fromIntegral b)
         go (i + 1) rest
   go 0 rs
-  pure (castPtrW arr, n)
-  where
-    castPtrW :: Ptr Double -> Ptr Word8
-    castPtrW = castPtr
+  pure (arr, n)
+----------------------------------------------------------------------------
+-- | 'benchScene' through the 'Run' instance: Miso.Canvas calls, loop in Haskell.
+drawRun :: IORef Stats -> Double -> Model -> Canvas ()
+drawRun stats t m = do
+  (arr, n) <- liftIO (currentEntities m)
+  fps <- liftIO (tick stats t n)
+  runDraw benchScene (RunEnv arr n t fps)
+----------------------------------------------------------------------------
+#ifdef STAGED
+-- | The frame function's source, generated by the compiler: the splice runs
+-- 'genFrame' at compile time and leaves a string literal behind.
+frameSource :: String
+frameSource = ~(codeString (genFrame benchScene))
+
+-- | 'benchScene' through the 'JSGen' instance: one JavaScript call per frame.
+drawStaged :: IORef Stats -> Double -> Model -> Canvas ()
+drawStaged stats t m = do
+  ctx <- ask
+  liftIO $ do
+    (arr, n) <- currentEntities m
+    fn <- readIORef frameFn >>= \mf -> case mf of
+      Just f -> pure f
+      Nothing -> do
+        f <- eval (ms frameSource)
+        writeIORef frameFn (Just f)
+        pure f
+    fps <- tick stats t n
+    js_frame fn ctx arr n t fps
+
+frameFn :: IORef (Maybe JSVal)
+frameFn = unsafePerformIO (newIORef Nothing)
+{-# NOINLINE frameFn #-}
 
 -- frame(ctx, heap, base, count, t, fps); Module.HEAPF64 is current after memory growth.
 foreign import javascript unsafe "$1($2, Module.HEAPF64, $3, $4, $5, $6)"
-  js_frame :: JSVal -> JSVal -> Ptr Word8 -> Int -> Double -> Double -> IO ()
+  js_frame :: JSVal -> JSVal -> Ptr Double -> Int -> Double -> Double -> IO ()
+#else
+drawStaged :: IORef Stats -> Double -> Model -> Canvas ()
+drawStaged = drawScene
 #endif
 ----------------------------------------------------------------------------
 -- | Initial rectangle count: @?rects=N@ in the URL, else 1000.

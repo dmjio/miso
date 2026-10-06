@@ -1,6 +1,6 @@
 // Measure the canvas benchmark's frame rate with Playwright.
 //
-//   node bench.mjs [url] [seconds] [rects] [mode]     (mode: canvas | staged)
+//   node bench.mjs [url] [seconds] [rects] [mode]     (mode: canvas | run | staged)
 //
 // Loads the page with ?rects=N, then
 // collects the "fps: N ms/frame: T rects: M" console lines the app logs once a second
