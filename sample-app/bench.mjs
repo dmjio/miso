@@ -11,8 +11,10 @@ const url = process.argv[2] ?? 'http://localhost:8123/';
 const seconds = Number(process.argv[3] ?? 12);
 const rects = Number(process.argv[4] ?? 1000);
 
+// HEADED=1 runs a visible Chromium, which composites with the GPU; headless
+// Chromium rasterises the canvas in software and reports lower frame rates.
 const browser = await chromium.launch({
-  headless: true,
+  headless: !process.env.HEADED,
 });
 const page = await browser.newPage();
 const samples = [];
