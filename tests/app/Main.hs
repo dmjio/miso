@@ -41,12 +41,15 @@ import           Numeric.Natural (Natural)
 import           GHC.StaticPtr (StaticKey)
 #endif
 import qualified Data.Text as T
+import qualified Data.ByteString.Lazy as BL
 import           Control.Monad.State
 -----------------------------------------------------------------------------
 import           Miso
 import qualified Miso.JSON as JSON
 import           Miso.Random
 import           Miso.Router
+import           Miso.UUID (UUID)
+import qualified Miso.UUID as UUID
 import qualified Miso.String as S
 import qualified Miso.Data.Map as MDM
 import qualified Miso.Data.Set as MDS
@@ -1083,6 +1086,67 @@ main = withJS $ do
         let xs = flip evalState (mkStdGen 1) $ replicateM 10 (state next)
         let ys = flip evalState (mkStdGen 2) $ replicateM 10 (state next)
         xs `shouldNotBe` ys
+
+    describe "Miso.UUID tests" $ do
+      let u = UUID.fromWords64 0x550e8400e29b41d4 0xa716446655440000
+          sample = "550e8400-e29b-41d4-a716-446655440000"
+      it "Should parse a UUID, normalizing to lowercase" $ do
+        UUID.fromString sample `shouldBe` Just u
+        UUID.fromString "550E8400-E29B-41D4-A716-446655440000" `shouldBe` Just u
+        UUID.toString u `shouldBe` sample
+      it "Should reject malformed UUIDs" $ do
+        UUID.fromString "" `shouldBe` Nothing
+        UUID.fromString "550e8400-e29b-41d4-a716-44665544000" `shouldBe` Nothing
+        UUID.fromString "550e8400-e29b-41d4-a716-4466554400000" `shouldBe` Nothing
+        UUID.fromString "550e8400xe29b-41d4-a716-446655440000" `shouldBe` Nothing
+        UUID.fromString "g50e8400-e29b-41d4-a716-446655440000" `shouldBe` Nothing
+      it "Should show and read the unquoted form" $ do
+        show u `shouldBe` sample
+        show (Just u) `shouldBe` ("Just " <> sample)
+        read (" " <> sample) `shouldBe` u
+        reads (sample <> " rest") `shouldBe` [(u, " rest")]
+        (reads "nope" :: [(UUID, String)]) `shouldBe` []
+      it "Should convert to and from words" $ do
+        UUID.toWords64 u `shouldBe` (0x550e8400e29b41d4, 0xa716446655440000)
+        UUID.toWords u `shouldBe` (0x550e8400, 0xe29b41d4, 0xa7164466, 0x55440000)
+        UUID.fromWords 0x550e8400 0xe29b41d4 0xa7164466 0x55440000 `shouldBe` u
+      it "Should convert to and from bytes" $ do
+        BL.unpack (UUID.toByteString u) `shouldBe`
+          [ 0x55, 0x0e, 0x84, 0x00, 0xe2, 0x9b, 0x41, 0xd4
+          , 0xa7, 0x16, 0x44, 0x66, 0x55, 0x44, 0x00, 0x00
+          ]
+        UUID.fromByteString (UUID.toByteString u) `shouldBe` Just u
+        UUID.fromByteString (BL.pack [1, 2, 3]) `shouldBe` Nothing
+      it "Should convert to and from Text and ASCII bytes" $ do
+        UUID.toText u `shouldBe` T.pack sample
+        UUID.fromText (UUID.toText u) `shouldBe` Just u
+        UUID.fromASCIIBytes (UUID.toASCIIBytes u) `shouldBe` Just u
+        UUID.fromLazyASCIIBytes (UUID.toLazyASCIIBytes u) `shouldBe` Just u
+      it "Should recognize the nil UUID" $ do
+        UUID.fromWords64 0 0 `shouldBe` UUID.nil
+        UUID.toString UUID.nil `shouldBe` "00000000-0000-0000-0000-000000000000"
+        UUID.toString (UUID.fromWords64 maxBound maxBound) `shouldBe` "ffffffff-ffff-ffff-ffff-ffffffffffff"
+        UUID.null UUID.nil `shouldBe` True
+        UUID.null u `shouldBe` False
+      it "Should convert to and from MisoString" $ do
+        toMisoString u `shouldBe` "550e8400-e29b-41d4-a716-446655440000"
+        S.fromMisoStringEither "550e8400-e29b-41d4-a716-446655440000" `shouldBe` Right u
+      it "Should encode and decode JSON" $ do
+        JSON.toJSON u `shouldBe` JSON.String "550e8400-e29b-41d4-a716-446655440000"
+        JSON.fromJSON (JSON.toJSON u) `shouldBe` JSON.Success u
+        (JSON.fromJSON (JSON.String "nope") :: JSON.Result UUID) `shouldSatisfy` isError
+      it "Should marshal to and from JSVal" $ do
+        (`shouldBe` Just u) =<< liftIO (fromJSVal =<< toJSVal u)
+      it "Should capture a UUID in a route" $ do
+        fromRoute u `shouldBe` [ CaptureOrPathToken "550e8400-e29b-41d4-a716-446655440000" ]
+        either (const Nothing) Just (toRoute (prettyRoute u)) `shouldBe` Just u
+      it "Should generate distinct v4 UUIDs" $ do
+        x <- liftIO UUID.nextRandom
+        y <- liftIO UUID.nextRandom
+        x `shouldNotBe` y
+        UUID.fromString (UUID.toString x) `shouldBe` Just x
+        take 1 (drop 14 (UUID.toString x)) `shouldBe` "4"
+        take 1 (drop 19 (UUID.toString x)) `shouldSatisfy` (`elem` ["8", "9", "a", "b"])
 
     describe "Miso.Lens tests" $ do
       it "Should convert between VL and Miso.Lens.Lens" $ do

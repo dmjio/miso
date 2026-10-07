@@ -72,7 +72,7 @@ executable component-tests
   main-is:
     Main.hs
   build-depends:
-    base, miso, miso-tests, containers, mtl, text
+    base, miso, miso-tests, bytestring, containers, mtl, text
   hs-source-dirs:
     app
   ghc-options:
