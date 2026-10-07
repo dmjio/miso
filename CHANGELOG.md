@@ -18,6 +18,18 @@ All notable changes to `miso` are documented here.
   the owning component's `action` type, and an arbitrary mapping function
   can't travel with it. See `Note [Functor View]` in `Miso.Types`.
 
+- **`Miso.UUID`.** A `UUID` type backed by `MisoString`, with an API that
+  mirrors `Data.UUID` from the `uuid` package: `toString` / `fromString`,
+  `toText` / `fromText`, strict and lazy ASCII `ByteString` conversions,
+  `toByteString` / `fromByteString` (16 bytes, network order), `toWords` /
+  `fromWords`, `toWords64` / `fromWords64`, `nil` and `null`. `nextRandom`
+  generates a v4 UUID with the browser's `crypto.randomUUID()`, which is only
+  available in secure contexts (HTTPS or `localhost`). Parsing accepts the
+  `8-4-4-4-12` form in either case and normalizes it to lowercase; `Show` and
+  `Read` use the unquoted form, like `Data.UUID`. Instances are provided for
+  `ToMisoString` / `FromMisoString`, `ToJSON` / `FromJSON`, `ToJSVal` /
+  `FromJSVal`, and `Router` (as a route capture).
+
 ### Changed
 
 - **Breaking: `OnStatic` exists only under the `native` flag.** Elsewhere
