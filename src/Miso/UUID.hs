@@ -1,5 +1,4 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 -----------------------------------------------------------------------------
 -- |
@@ -86,12 +85,13 @@ import           Data.List (intercalate)
 import qualified Data.List as List
 import qualified Data.Text as T
 import           Data.Word (Word32, Word64)
+import           Prelude hiding (null)
 -----------------------------------------------------------------------------
+import           Miso.DSL (FromJSVal (..), ToJSVal (..), jsg, (#))
 import           Miso.JSON (FromJSON (..), ToJSON (..))
 import qualified Miso.JSON as JSON
-import           Miso.Prelude hiding (null)
 import           Miso.Router (Router (..), capture, toPath)
-import           Miso.String (FromMisoString (..), ToMisoString (..))
+import           Miso.String (FromMisoString (..), MisoString, ToMisoString (..), fromMisoString)
 import           Miso.Util.Parser (ParseError)
 import qualified Miso.Util.Parser as Parser
 -----------------------------------------------------------------------------
