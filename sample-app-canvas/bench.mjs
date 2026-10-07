@@ -4,10 +4,12 @@
 //
 // Loads the page with ?rects=N, then
 // collects the "fps: N ms/frame: T rects: M" console lines the app logs once a second
-// and prints their median.  Serve public-mhs first (make serve-mhs).
+// and prints their median.  Build and serve a backend first: make build optim
+// && make serve (GHC wasm), make build-js && make serve (GHC JavaScript), or
+// make mhs && make serve-mhs (MicroHs); http-server listens on 8080.
 import { chromium } from 'playwright';
 
-const url = process.argv[2] ?? 'http://localhost:8123/';
+const url = process.argv[2] ?? 'http://localhost:8080/';
 const seconds = Number(process.argv[3] ?? 12);
 const rects = Number(process.argv[4] ?? 1000);
 

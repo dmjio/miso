@@ -17,7 +17,7 @@
 -- a method name marshalled to a JavaScript string, a property lookup, an
 -- argument array, and a 'JSVal' handle for every argument and the result,
 -- on each operation.  A direct import does one call with the numbers as
--- numbers.  On MicroHs this made the canvas benchmark in @sample-app@
+-- numbers.  On MicroHs this made the canvas benchmark in @sample-app-canvas@
 -- about 3.5 times faster (78 to 22 ms per frame for 1000 rectangles).
 --
 -- 'fillStyleRGB', 'strokeStyleRGB', 'shadowColorRGB' and their @RGBA@
