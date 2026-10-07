@@ -33,7 +33,7 @@
 --
 -- -- Generate a fresh identifier
 -- freshId :: IO t'UUID'
--- freshId = UUID.'newV4'
+-- freshId = UUID.'nextRandom'
 --
 -- -- Check for the nil UUID
 -- isUnset :: t'UUID' -> Bool
@@ -51,7 +51,7 @@ module Miso.UUID
     -- ** Functions
   , nil
   , null
-  , newV4
+  , nextRandom
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad ((<=<))
@@ -123,6 +123,6 @@ instance Router UUID where
   routeParser = capture
 -----------------------------------------------------------------------------
 -- | Generate a v4 'UUID' using a cryptographically secure random number generator.
-newV4 :: IO UUID
-newV4 = UUID <$> (fromJSValUnchecked =<< (jsg "crypto" # "randomUUID") ())
+nextRandom :: IO UUID
+nextRandom = UUID <$> (fromJSValUnchecked =<< (jsg "crypto" # "randomUUID") ())
 -----------------------------------------------------------------------------
