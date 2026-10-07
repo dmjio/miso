@@ -185,10 +185,11 @@ import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.Reader (ReaderT, runReaderT, ask)
 -----------------------------------------------------------------------------
 import           Miso.DSL hiding (call)
+import qualified Miso.Canvas.FFI as C
 import qualified Miso.FFI as FFI
 import           Miso.FFI (Image)
 import           Miso.Types
-import           Miso.CSS (Color, renderColor)
+import           Miso.CSS (Color (..), renderColor)
 -----------------------------------------------------------------------------
 -- | Another variant of canvas, this is not specialized to 'ReaderT'. This is
 -- useful when building applications with three.js, or other libraries where
@@ -484,6 +485,10 @@ call name arg = do
   liftIO $ fromJSValUnchecked =<< do
     ctx # name $ arg
 -----------------------------------------------------------------------------
+-- | Run a direct import ("Miso.Canvas.FFI") against the context.
+ctxIO :: (CanvasContext2D -> IO ()) -> Canvas ()
+ctxIO f = ask >>= liftIO . f
+-----------------------------------------------------------------------------
 -- | Property setter specialized to t'Canvas'.
 --
 -- @
@@ -501,87 +506,87 @@ type Canvas a = ReaderT CanvasContext2D IO a
 -----------------------------------------------------------------------------
 -- | [ctx.globalCompositeOperation = "source-over"](https://www.w3schools.com/tags/canvas_globalcompositeoperation.asp)
 globalCompositeOperation :: CompositeOperation -> Canvas ()
-globalCompositeOperation = set "globalCompositeOperation"
+globalCompositeOperation v = ctxIO $ \ctx -> C.globalCompositeOperation ctx (C.jsString (renderCompositeOperation v))
 -----------------------------------------------------------------------------
 -- | [ctx.clearRect(x,y,width,height)](https://www.w3schools.com/tags/canvas_clearrect.asp)
 clearRect :: (Double, Double, Double, Double) -> Canvas ()
-clearRect = call "clearRect"
+clearRect (a, b, c, d) = ctxIO $ \ctx -> C.clearRect ctx a b c d
 -----------------------------------------------------------------------------
 -- | [ctx.fillRect(x,y,width,height)](https://www.w3schools.com/tags/canvas_fillrect.asp)
 fillRect :: (Double, Double, Double, Double) -> Canvas ()
-fillRect = call "fillRect"
+fillRect (a, b, c, d) = ctxIO $ \ctx -> C.fillRect ctx a b c d
 -----------------------------------------------------------------------------
 -- | [ctx.strokeRect(x,y,width,height)](https://www.w3schools.com/tags/canvas_strokerect.asp)
 strokeRect :: (Double, Double, Double, Double) -> Canvas ()
-strokeRect = call "strokeRect"
+strokeRect (a, b, c, d) = ctxIO $ \ctx -> C.strokeRect ctx a b c d
 -----------------------------------------------------------------------------
 -- | [ctx.beginPath()](https://www.w3schools.com/tags/canvas_beginpath.asp)
 beginPath :: () -> Canvas ()
-beginPath = call "beginPath"
+beginPath () = ctxIO C.beginPath
 -----------------------------------------------------------------------------
 -- | [ctx.closePath()](https://www.w3schools.com/tags/canvas_closepath.asp)
 closePath :: () -> Canvas ()
-closePath = call "closePath"
+closePath () = ctxIO C.closePath
 -----------------------------------------------------------------------------
 -- | [ctx.moveTo(x,y)](https://www.w3schools.com/tags/canvas_moveto.asp)
 moveTo :: Coord -> Canvas ()
-moveTo = call "moveTo"
+moveTo (a, b) = ctxIO $ \ctx -> C.moveTo ctx a b
 -----------------------------------------------------------------------------
 -- | [ctx.lineTo(x,y)](https://www.w3schools.com/tags/canvas_lineto.asp)
 lineTo :: Coord -> Canvas ()
-lineTo = call "lineTo"
+lineTo (a, b) = ctxIO $ \ctx -> C.lineTo ctx a b
 -----------------------------------------------------------------------------
 -- | [ctx.fill()](https://www.w3schools.com/tags/canvas_fill.asp)
 fill :: () -> Canvas ()
-fill = call "fill"
+fill () = ctxIO C.fill
 -----------------------------------------------------------------------------
 -- | [ctx.rect(x,y,width,height)](https://www.w3schools.com/tags/canvas_rect.asp)
 rect :: (Double, Double, Double, Double) -> Canvas ()
-rect = call "rect"
+rect (a, b, c, d) = ctxIO $ \ctx -> C.rect ctx a b c d
 -----------------------------------------------------------------------------
 -- | [ctx.stroke()](https://www.w3schools.com/tags/canvas_stroke.asp)
 stroke :: () -> Canvas ()
-stroke = call "stroke"
+stroke () = ctxIO C.stroke
 -----------------------------------------------------------------------------
 -- | [ctx.bezierCurveTo(cp1x,cp1y,cp2x,cp2y,x,y)](https://www.w3schools.com/tags/canvas_beziercurveto.asp)
 bezierCurveTo :: (Double, Double, Double, Double, Double, Double) -> Canvas ()
-bezierCurveTo = call "bezierCurveTo"
+bezierCurveTo (a, b, c, d, e, f) = ctxIO $ \ctx -> C.bezierCurveTo ctx a b c d e f
 -----------------------------------------------------------------------------
 -- | [context.arc(x, y, r, sAngle, eAngle, counterclockwise)](https://www.w3schools.com/tags/canvas_arc.asp)
 arc :: (Double, Double, Double, Double, Double) -> Canvas ()
-arc = call "arc"
+arc (a, b, c, d, e) = ctxIO $ \ctx -> C.arc ctx a b c d e
 -----------------------------------------------------------------------------
 -- | [context.arcTo(x1, y1, x2, y2, r)](https://www.w3schools.com/tags/canvas_arcto.asp)
 arcTo :: (Double, Double, Double, Double, Double) -> Canvas ()
-arcTo = call "arcTo"
+arcTo (a, b, c, d, e) = ctxIO $ \ctx -> C.arcTo ctx a b c d e
 -----------------------------------------------------------------------------
 -- | [context.quadraticCurveTo(cpx,cpy,x,y)](https://www.w3schools.com/tags/canvas_quadraticcurveto.asp)
 quadraticCurveTo :: (Double, Double, Double, Double) -> Canvas ()
-quadraticCurveTo = call "quadraticCurveTo"
+quadraticCurveTo (a, b, c, d) = ctxIO $ \ctx -> C.quadraticCurveTo ctx a b c d
 -----------------------------------------------------------------------------
 -- | [context.direction = "ltr"](https://www.w3schools.com/tags/canvas_direction.asp)
 direction :: DirectionType -> Canvas ()
-direction = set "direction"
+direction v = ctxIO $ \ctx -> C.direction ctx (C.jsString (renderDirectionType v))
 -----------------------------------------------------------------------------
 -- | [context.fillText(text,x,y)](https://www.w3schools.com/tags/canvas_filltext.asp)
 fillText :: (MisoString, Double, Double) -> Canvas ()
-fillText = call "fillText"
+fillText (s, x, y) = ctxIO $ \ctx -> C.fillText ctx (C.jsString s) x y
 -----------------------------------------------------------------------------
 -- | [context.font = "italic small-caps bold 12px arial"](https://www.w3schools.com/tags/canvas_font.asp)
 font :: MisoString -> Canvas ()
-font = set "font"
+font f = ctxIO $ \ctx -> C.font ctx (C.jsString f)
 -----------------------------------------------------------------------------
 -- | [ctx.strokeText()](https://www.w3schools.com/tags/canvas_stroketext.asp)
 strokeText :: (MisoString, Double, Double) -> Canvas ()
-strokeText = call "strokeText"
+strokeText (s, x, y) = ctxIO $ \ctx -> C.strokeText ctx (C.jsString s) x y
 -----------------------------------------------------------------------------
 -- | [ctx.textAlign = "start"](https://www.w3schools.com/tags/canvas_textalign.asp)
 textAlign :: TextAlignType -> Canvas ()
-textAlign = set "textAlign"
+textAlign v = ctxIO $ \ctx -> C.textAlign ctx (C.jsString (renderTextAlignType v))
 -----------------------------------------------------------------------------
 -- | [ctx.textBaseline = "top"](https://www.w3schools.com/tags/canvas_textBaseLine.asp)
 textBaseline :: TextBaselineType -> Canvas ()
-textBaseline = set "textBaseline"
+textBaseline v = ctxIO $ \ctx -> C.textBaseline ctx (C.jsString (renderTextBaselineType v))
 -----------------------------------------------------------------------------
 -- | [gradient.addColorStop(stop,color)](https://www.w3schools.com/tags/canvas_addcolorstop.asp)
 addColorStop
@@ -608,71 +613,77 @@ createRadialGradient = call "createRadialGradient"
 -----------------------------------------------------------------------------
 -- | [ctx.fillStyle = "red"](https://www.w3schools.com/tags/canvas_fillstyle.asp)
 fillStyle :: StyleArg -> Canvas ()
-fillStyle = set "fillStyle"
+fillStyle (ColorArg (RGB r g b)) = ctxIO $ \ctx -> C.fillStyleRGB ctx r g b
+fillStyle (ColorArg (RGBA r g b a)) = ctxIO $ \ctx -> C.fillStyleRGBA ctx r g b a
+fillStyle arg = ctxIO $ \ctx -> toJSVal arg >>= C.fillStyle ctx
 -----------------------------------------------------------------------------
 -- | [ctx.lineCap = "butt"](https://www.w3schools.com/tags/canvas_lineCap.asp)
 lineCap :: LineCapType -> Canvas ()
-lineCap = set "lineCap"
+lineCap v = ctxIO $ \ctx -> C.lineCap ctx (C.jsString (renderLineCapType v))
 -----------------------------------------------------------------------------
 -- | [ctx.lineJoin = "bevel"](https://www.w3schools.com/tags/canvas_lineJoin.asp)
 lineJoin :: LineJoinType -> Canvas ()
-lineJoin = set "lineJoin"
+lineJoin v = ctxIO $ \ctx -> C.lineJoin ctx (C.jsString (renderLineJoinType v))
 -----------------------------------------------------------------------------
 -- | [ctx.lineWidth = 10](https://www.w3schools.com/tags/canvas_lineWidth.asp)
 lineWidth :: Double -> Canvas ()
-lineWidth = set "lineWidth"
+lineWidth v = ctxIO $ \ctx -> C.lineWidth ctx v
 -----------------------------------------------------------------------------
 -- | [ctx.miterLimit = 10](https://www.w3schools.com/tags/canvas_miterLimit.asp)
 miterLimit :: Double -> Canvas ()
-miterLimit = set "miterLimit"
+miterLimit v = ctxIO $ \ctx -> C.miterLimit ctx v
 -----------------------------------------------------------------------------
 -- | [ctx.shadowBlur = 10](https://www.w3schools.com/tags/canvas_shadowBlur.asp)
 shadowBlur :: Double -> Canvas ()
-shadowBlur = set "shadowBlur"
+shadowBlur v = ctxIO $ \ctx -> C.shadowBlur ctx v
 -----------------------------------------------------------------------------
 -- | [ctx.shadowColor = "red"](https://www.w3schools.com/tags/canvas_shadowColor.asp)
 shadowColor :: Color -> Canvas ()
-shadowColor = set "shadowColor"
+shadowColor (RGB r g b) = ctxIO $ \ctx -> C.shadowColorRGB ctx r g b
+shadowColor (RGBA r g b a) = ctxIO $ \ctx -> C.shadowColorRGBA ctx r g b a
+shadowColor v = ctxIO $ \ctx -> C.shadowColor ctx (C.jsString (renderColor v))
 -----------------------------------------------------------------------------
 -- | [ctx.shadowOffsetX = 20](https://www.w3schools.com/tags/canvas_shadowOffsetX.asp)
 shadowOffsetX :: Double -> Canvas ()
-shadowOffsetX = set "shadowOffsetX"
+shadowOffsetX v = ctxIO $ \ctx -> C.shadowOffsetX ctx v
 -----------------------------------------------------------------------------
 -- | [ctx.shadowOffsetY = 20](https://www.w3schools.com/tags/canvas_shadowOffsetY.asp)
 shadowOffsetY :: Double -> Canvas ()
-shadowOffsetY = set "shadowOffsetY"
+shadowOffsetY v = ctxIO $ \ctx -> C.shadowOffsetY ctx v
 -----------------------------------------------------------------------------
 -- | [ctx.strokeStyle = "red"](https://www.w3schools.com/tags/canvas_strokeStyle.asp)
 strokeStyle :: StyleArg -> Canvas ()
-strokeStyle = set "strokeStyle"
+strokeStyle (ColorArg (RGB r g b)) = ctxIO $ \ctx -> C.strokeStyleRGB ctx r g b
+strokeStyle (ColorArg (RGBA r g b a)) = ctxIO $ \ctx -> C.strokeStyleRGBA ctx r g b a
+strokeStyle arg = ctxIO $ \ctx -> toJSVal arg >>= C.strokeStyle ctx
 -----------------------------------------------------------------------------
 -- | [ctx.scale(width,height)](https://www.w3schools.com/tags/canvas_scale.asp)
 scale :: (Double, Double) -> Canvas ()
-scale = call "scale"
+scale (a, b) = ctxIO $ \ctx -> C.scale ctx a b
 -----------------------------------------------------------------------------
 -- | [ctx.rotate(angle)](https://www.w3schools.com/tags/canvas_rotate.asp)
 rotate :: Double -> Canvas ()
-rotate = call "rotate"
+rotate a = ctxIO $ \ctx -> C.rotate ctx a
 -----------------------------------------------------------------------------
 -- | [ctx.translate(angle)](https://www.w3schools.com/tags/canvas_translate.asp)
 translate :: Coord -> Canvas ()
-translate = call "translate"
+translate (a, b) = ctxIO $ \ctx -> C.translate ctx a b
 -----------------------------------------------------------------------------
 -- | [ctx.transform(a,b,c,d,e,f)](https://www.w3schools.com/tags/canvas_transform.asp)
 transform :: (Double, Double, Double, Double, Double, Double) -> Canvas ()
-transform = call "transform"
+transform (a, b, c, d, e, f) = ctxIO $ \ctx -> C.transform ctx a b c d e f
 -----------------------------------------------------------------------------
 -- | [ctx.setTransform(a,b,c,d,e,f)](https://www.w3schools.com/tags/canvas_setTransform.asp)
 setTransform :: (Double, Double, Double, Double, Double, Double) -> Canvas ()
-setTransform = call "setTransform"
+setTransform (a, b, c, d, e, f) = ctxIO $ \ctx -> C.setTransform ctx a b c d e f
 ----------------------------------------------------------------------------
 -- | [ctx.drawImage(image,x,y)](https://www.w3schools.com/tags/canvas_drawImage.asp)
 drawImage :: (Image, Double, Double) -> Canvas ()
-drawImage = call "drawImage"
+drawImage (img, x, y) = ctxIO $ \ctx -> toJSVal img >>= \i -> C.drawImage ctx i x y
 -----------------------------------------------------------------------------
 -- | [ctx.drawImage(image,x,y)](https://www.w3schools.com/tags/canvas_drawImage.asp)
 drawImage' :: (Image, Double, Double, Double, Double) -> Canvas ()
-drawImage' = call "drawImage"
+drawImage' (img, x, y, w, h) = ctxIO $ \ctx -> toJSVal img >>= \i -> C.drawImage4 ctx i x y w h
 -----------------------------------------------------------------------------
 -- | [ctx.createImageData(width,height)](https://www.w3schools.com/tags/canvas_createImageData.asp)
 createImageData :: (Double, Double) -> Canvas ImageData
@@ -700,21 +711,21 @@ width (ImageData imgData) = liftIO $
 -----------------------------------------------------------------------------
 -- | [ctx.putImageData(imageData,x,y)](https://www.w3schools.com/tags/canvas_putImageData.asp)
 putImageData :: (ImageData, Double, Double) -> Canvas ()
-putImageData = call "putImageData"
+putImageData (d, x, y) = ctxIO $ \ctx -> toJSVal d >>= \v -> C.putImageData ctx v x y
 -----------------------------------------------------------------------------
 -- | [ctx.globalAlpha = 0.2](https://www.w3schools.com/tags/canvas_globalAlpha.asp)
 globalAlpha :: Double -> Canvas ()
-globalAlpha = set "globalAlpha"
+globalAlpha v = ctxIO $ \ctx -> C.globalAlpha ctx v
 -----------------------------------------------------------------------------
 -- | [ctx.clip()](https://www.w3schools.com/tags/canvas_clip.asp)
 clip :: () -> Canvas ()
-clip = call "clip"
+clip () = ctxIO C.clip
 -----------------------------------------------------------------------------
 -- | [ctx.save()](https://www.w3schools.com/tags/canvas_save.asp)
 save :: () -> Canvas ()
-save = call "save"
+save () = ctxIO C.save
 -----------------------------------------------------------------------------
 -- | [ctx.restore()](https://www.w3schools.com/tags/canvas_restore.asp)
 restore :: () -> Canvas ()
-restore = call "restore"
+restore () = ctxIO C.restore
 -----------------------------------------------------------------------------

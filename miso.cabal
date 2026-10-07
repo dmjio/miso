@@ -158,6 +158,7 @@ library
   exposed-modules:
     Miso
     Miso.Canvas
+    Miso.Canvas.FFI
     Miso.Cookie
     Miso.Concurrent
     Miso.Date
