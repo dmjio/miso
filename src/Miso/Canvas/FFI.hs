@@ -83,7 +83,7 @@ module Miso.Canvas.FFI
   ) where
 -----------------------------------------------------------------------------
 import           Miso.String (MisoString)
-#if defined(GHCJS_NEW) || defined(ghcjs_HOST_OS) || defined(wasm32_HOST_ARCH) || defined(__MHS__)
+#if defined(GHCJS_NEW) || defined(wasm32_HOST_ARCH) || defined(__MHS__)
 import           Miso.DSL.FFI (JSVal, JSString (..))
 #ifdef MISO_TEXT
 import           Miso.DSL.FFI (textToJSString)
@@ -95,7 +95,7 @@ import           Miso.DSL (JSVal, (#), setField)
 #endif
 -----------------------------------------------------------------------------
 -- | A 'MisoString' as the string the imports take.
-#if !(defined(GHCJS_NEW) || defined(ghcjs_HOST_OS) || defined(wasm32_HOST_ARCH) || defined(__MHS__))
+#if !(defined(GHCJS_NEW) || defined(wasm32_HOST_ARCH) || defined(__MHS__))
 jsString :: MisoString -> MisoString
 jsString s = s
 #elif defined(MISO_TEXT)
@@ -254,8 +254,8 @@ foreign import javascript unsafe "(($1,$2,$3,$4) => { $1.shadowColor = 'rgb(' + 
 -----------------------------------------------------------------------------
 foreign import javascript unsafe "(($1,$2,$3,$4,$5) => { $1.shadowColor = 'rgba(' + $2 + ',' + $3 + ',' + $4 + ',' + $5 + ')'; })"
   shadowColorRGBA :: JSVal -> Int -> Int -> Int -> Double -> IO ()
-#elif defined(ghcjs_HOST_OS) || defined(wasm32_HOST_ARCH) || defined(__MHS__)
--- GHCJS, the GHC wasm backend and MicroHs: the code is a statement.
+#elif defined(wasm32_HOST_ARCH) || defined(__MHS__)
+-- The GHC wasm backend and MicroHs: the code is a statement.
 foreign import javascript unsafe "$1.clearRect($2,$3,$4,$5)"
   clearRect :: JSVal -> Double -> Double -> Double -> Double -> IO ()
 -----------------------------------------------------------------------------
