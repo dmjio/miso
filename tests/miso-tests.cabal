@@ -31,15 +31,11 @@ common cpp
     cpp-options:
       -DNATIVE
 
-  if impl(ghcjs) || arch(javascript)
+  if arch(javascript)
     cpp-options:
       -DGHCJS_BOTH
 
-  if impl(ghcjs)
-    cpp-options:
-      -DGHCJS_OLD
-
-  elif arch(javascript)
+  if arch(javascript)
     cpp-options:
       -DGHCJS_NEW
 
@@ -78,7 +74,7 @@ executable component-tests
   ghc-options:
     -funbox-strict-fields -O2 -ferror-spans -fspecialise-aggressively -Wall
 
-  if arch(javascript) || impl(ghcjs)
+  if arch(javascript)
     cpp-options:
       -DGHCJS_BROWSER
 

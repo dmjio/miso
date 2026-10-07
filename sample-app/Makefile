@@ -4,8 +4,6 @@ all: update build optim
 
 js: update-js build-js
 
-js86: configure-js86 update-js86 build-js86
-
 update:
 	wasm32-wasi-cabal update
 
@@ -42,18 +40,6 @@ build-js:
 	rm -rf public
 	cp -rv static public
 	bunx swc ./all.js -o public/index.js
-
-configure-js86:
-	cabal configure --ghcjs
-
-update-js86:
-	cabal update --ghcjs
-
-build-js86:
-	cabal build --ghcjs
-	cp -v ../dist-newstyle/build/x86_64-linux/ghcjs-8.6.0.1/app-0.1.0.0/x/app/build/app/app.jsexe/all.js .
-	rm -rf public
-	cp -rv static public
 
 # Build with MicroHs (mhs) for the browser, via emscripten.
 # MHS_TARGET is a section of MicroHs's mhs.conf: browser (WebAssembly)

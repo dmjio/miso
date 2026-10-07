@@ -1344,12 +1344,6 @@ decode s
   | otherwise = Nothing
 #endif
 -----------------------------------------------------------------------------
-#ifdef GHCJS_OLD
-foreign import javascript unsafe
-  "$r = JSON.stringify($1, null, $2)"
-  encodePretty_ffi :: JSVal -> Int -> IO MisoString
-#endif
------------------------------------------------------------------------------
 #ifdef GHCJS_NEW
 foreign import javascript unsafe
   "(($1) => { return JSON.stringify($1, null, $2); })"
@@ -1402,11 +1396,6 @@ defConfig :: Config
 defConfig = Config 4
 -----------------------------------------------------------------------------
 -- | Call @JSON.stringify()@ on a JavaScript value, returning a JSON string.
-#ifdef GHCJS_OLD
-foreign import javascript unsafe
-  "$r = JSON.stringify($1)"
-  jsonStringify :: JSVal -> IO MisoString
-#endif
 -----------------------------------------------------------------------------
 #ifdef GHCJS_NEW
 foreign import javascript unsafe
@@ -1434,11 +1423,6 @@ jsonStringify _ = error "jsonStringify: not implemented"
 #endif
 -----------------------------------------------------------------------------
 -- | Call @JSON.parse()@ on a JSON string, returning a raw JavaScript value.
-#ifdef GHCJS_OLD
-foreign import javascript unsafe
-  "$r = JSON.parse($1)"
-  jsonParse :: MisoString -> IO JSVal
-#endif
 -----------------------------------------------------------------------------
 #ifdef GHCJS_NEW
 foreign import javascript unsafe
@@ -1654,12 +1638,6 @@ foreign import javascript unsafe
 #if defined(WASM) || defined(__MHS__)
 foreign import javascript unsafe
  "return globalThis.miso.typeOf($1);"
-  typeof :: JSVal -> IO Int
-#endif
------------------------------------------------------------------------------
-#ifdef GHCJS_OLD
-foreign import javascript unsafe
-  "$r = globalThis.miso.typeOf($1);"
   typeof :: JSVal -> IO Int
 #endif
 -----------------------------------------------------------------------------

@@ -26,16 +26,13 @@ source-repository head
    location: https://github.com/haskell-miso/miso.git
 
 common cpp
-  if impl(ghcjs) || arch(javascript)
+  if arch(javascript)
     cpp-options:
       -DGHCJS_BOTH
   if flag(native)
     cpp-options:
       -DNATIVE
-  if impl(ghcjs)
-    cpp-options:
-      -DGHCJS_OLD
-  elif arch(javascript)
+  if arch(javascript)
     cpp-options:
       -DGHCJS_NEW
   elif arch(wasm32)
@@ -69,7 +66,7 @@ common cpp
       -DMISO_TEXT
 
 common client
-  if impl(ghcjs) || arch(javascript) || arch(wasm32) || impl(mhs)
+  if arch(javascript) || arch(wasm32) || impl(mhs)
     if flag(native) && flag(production)
       js-sources:
         js/miso-native.prod.js
@@ -296,15 +293,11 @@ library
     cbits/foreign.c
 
   -- FFI declarations
-  if arch(javascript) || impl(ghcjs)
+  if arch(javascript)
     hs-source-dirs:
       ffi/js
     build-depends:
       ghcjs-base < 0.9
-
-    if impl(ghcjs)
-      build-depends:
-        ghcjs-prim < 0.2
 
   elif arch(wasm32)
     hs-source-dirs:

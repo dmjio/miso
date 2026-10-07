@@ -1,6 +1,6 @@
 with (import ../default.nix {});
 {
   inherit pkgs;
-  inherit sample-app-js;
-  inherit sample-app;
+  sample-app-js = sample-app-js-9141;
+  sample-app = sample-app-ghc9141;
 }
