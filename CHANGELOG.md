@@ -26,6 +26,12 @@ All notable changes to `miso` are documented here.
   `StaticKey` — but code that pattern-matches on `OnStatic` must be guarded
   with `#ifdef NATIVE` (or match `On` instead).
 
+- **Breaking: GHCJS 8.6 is no longer supported.** The GHC JavaScript backend
+  (`arch(javascript)`) is now the only JS target. The `GHCJS_OLD` code paths,
+  `impl(ghcjs)` conditionals and the `ghcjs-prim` dependency are removed, along
+  with the legacy nixpkgs pin (`legacyPkgs`) and its GHCJS 8.6 / GHC 8.6.5
+  Nix targets.
+
 ## 1.14.0.0
 
 ### Added
