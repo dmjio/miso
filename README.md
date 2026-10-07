@@ -347,9 +347,6 @@ iOS and Android applications are supported via [LynxJS](https://lynxjs.org). See
 
 By default, `miso` uses a pinned version of [`nixpkgs`](https://github.com/dmjio/miso/blob/master/nix/nixpkgs.json) known as `pkgs`.
 
-> [!NOTE]
-> `miso` also maintains a `legacyPkgs` nixpkgs pin for tools such as `nixops` and for builds using the original `GHCJS 8.6` backend.
-
 ### Binary cache
 
 Linux and macOS users can use a [binary cache](https://haskell-miso-cachix.cachix.org) to avoid rebuilding dependencies. Follow the setup instructions on [cachix](https://haskell-miso-cachix.cachix.org/).

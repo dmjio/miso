@@ -11,7 +11,7 @@
 {-# LANGUAGE DerivingStrategies  #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StaticPointers      #-}
-#if !defined(GHCJS_OLD) && !defined(__MHS__)
+#if !defined(__MHS__)
 {-# LANGUAGE QuasiQuotes #-}
 #endif
 -----------------------------------------------------------------------------
@@ -52,7 +52,7 @@ import qualified Miso.Data.Map as MDM
 import qualified Miso.Data.Set as MDS
 import qualified Miso.Data.Array as Array
 import qualified Miso.Date as D
-#if !defined(GHCJS_OLD) && !defined(__MHS__)
+#if !defined(__MHS__)
 import           Miso.FFI.QQ (js)
 #endif
 #ifndef __MHS__
@@ -330,7 +330,7 @@ isError _              = False
 getAge :: Person -> IO Int
 getAge = inline "return age;"
 ----------------------------------------------------------------------------
-#if !defined(GHCJS_OLD) && !defined(__MHS__)
+#if !defined(__MHS__)
 factorial :: Int -> IO Int
 factorial n = [js|
   let x = 1;
@@ -426,7 +426,7 @@ main = withJS $ do
         result `shouldBe` (Right Nothing :: Either MisoString (Maybe MisoString))
 
     -- dmj: these hit a local echo server (echo-server.ts, port 8081) started
-    -- by the playwright-wasm/playwright-js/playwright-ghcjs Nix scripts.
+    -- by the playwright-wasm/playwright-js Nix scripts.
     -- The echo server mimics the httpbin.org endpoints used below and sets
     -- the appropriate CORS headers so the browser can reach it from the
     -- test page served on port 8080.
@@ -871,7 +871,7 @@ main = withJS $ do
       it "round-trips nullary sibling of single-field list constructor" $ do
         (JSON.fromJSON (JSON.toJSON EmptyNested) :: JSON.Result NestedList)
           `shouldBe` JSON.Success EmptyNested
-#if !defined(GHCJS_OLD) && !defined(__MHS__)
+#if !defined(__MHS__)
       -- #3: omitNothingFields = True decode — missing key decodes as Nothing
       it "decodes missing key as Nothing when omitNothingFields was used" $ do
         let opts = JSON.defaultOptions { JSON.omitNothingFields = True }
@@ -1055,7 +1055,7 @@ main = withJS $ do
         (`shouldBe` False) =<< liftIO (MDS.isDisjoint k k)
         (`shouldBe` True) =<< liftIO (MDS.isDisjoint x y)
 
-#if !defined(GHCJS_OLD) && !defined(__MHS__)
+#if !defined(__MHS__)
     describe "inline JS QQ tests" $ do
       it "should use inline JS to calc factorial" $
         (`shouldBe` 120) =<< liftIO (factorial 5)
@@ -1249,12 +1249,10 @@ main = withJS $ do
         toRoute "/" `shouldBe` Right Index
       it "should call toRoute Home" $ do
         toRoute "/home" `shouldBe` Right Home
-
-      -- dmj: fails w/ ghcjs86 ... Generics-related it seems
-      -- it "should call toRoute Widget" $ do
-      --   toRoute "/widget/10/foo/other?bar=12&lol=11"
-      --     `shouldBe`
-      --       Right (Widget (Capture 10) (Path "foo") (Capture "other") (QueryParam (Just 12)) (QueryParam (Just 11)))
+      it "should call toRoute Widget" $ do
+        toRoute "/widget/10/foo/other?bar=12&lol=11"
+          `shouldBe`
+            Right (Widget (Capture 10) (Path "foo") (Capture "other") (QueryParam (Just 12)) (QueryParam (Just 11)))
 #endif
 
       it "should lexTokens on query params/flags" $ do

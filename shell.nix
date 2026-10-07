@@ -2,8 +2,8 @@
 
 with (import ./default.nix {});
 
-if pkg == "ghcjs9122"
-then miso-ghcjs-9122.env.overrideAttrs (drv: {
+if pkg == "ghcjs9141"
+then miso-ghcjs-9141.env.overrideAttrs (drv: {
   shellHook = ''
     export CC=${pkgs.emscripten}/bin/emcc
     mkdir -p ~/.emscripten_cache
@@ -12,7 +12,4 @@ then miso-ghcjs-9122.env.overrideAttrs (drv: {
     export EM_CACHE=~/.emscripten_cache
   '';
 })
-else
-if pkg == "ghcjs"
-then miso-ghcjs.env
-else miso-ghc-9122.env
+else miso-ghc-9141.env

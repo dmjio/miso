@@ -1,5 +1,4 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE CPP               #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE InterruptibleFFI  #-}
 -----------------------------------------------------------------------------
@@ -89,20 +88,11 @@ import           Control.Exception (throwIO)
 -----------------------------------------------------------------------------
 import qualified GHCJS.Marshal as Marshal
 import           GHCJS.Types
-#ifdef GHCJS_NEW
 import           GHC.JS.Prim
 import qualified GHC.JS.Foreign.Callback as Callback
-#elif GHCJS_OLD
-import           GHCJS.Prim
-import qualified GHCJS.Foreign.Callback as Callback
-#endif
 -----------------------------------------------------------------------------
 foreign import javascript safe
-#ifdef GHCJS_NEW
   "(($1,$2) => { return $1 === $2; })"
-#else
-  "$r = $1 === $2;"
-#endif
   eq :: JSVal -> JSVal -> Bool
 -----------------------------------------------------------------------------
 instance Eq JSVal where
@@ -130,43 +120,23 @@ fromJSVal_Bool = Marshal.fromJSVal
 {-# INLINE fromJSVal_Bool #-}
 -----------------------------------------------------------------------------
 foreign import javascript safe
-#ifdef GHCJS_NEW
   "(($1,$2) => { return new $1(...$2) })"
-#else
-  "$r = Reflect.construct($1, $2);"
-#endif
   new_ffi :: JSVal -> JSVal -> IO JSVal
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
-#if GHCJS_NEW
   "(($1) => { return eval($1); })"
-#else
-  "$r = eval($1);"
-#endif
   eval_ffi :: JSString -> IO JSVal
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
-#if GHCJS_NEW
   "(() => { return {}; })"
-#else
-  "$r = {};"
-#endif
   create_ffi :: IO JSVal
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
-#if GHCJS_NEW
   "(($1,$2) => { return $2[$1]; })"
-#else
-  "$r=$2[$1]"
-#endif
   getProp_ffi :: JSString -> JSVal -> IO JSVal
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
-#if GHCJS_NEW
   "(($1,$2,$3) => { return $3[$1]=$2; })"
-#else
-  "$3[$1]=$2"
-#endif
   setProp_ffi
     :: JSString
     -- ^ Key
@@ -185,11 +155,7 @@ fromJSVal_Double  = Marshal.fromJSVal
 {-# INLINE fromJSVal_Double #-}
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
-#if GHCJS_NEW
   "(($1,$2) => { return $2[$1]; })"
-#else
-  "$r=$2[$1]"
-#endif
   getPropIndex_ffi :: Int -> JSVal -> IO JSVal
 -----------------------------------------------------------------------------
 isNull_ffi :: JSVal -> Bool
@@ -204,11 +170,7 @@ isUndefined_ffi = isUndefined
 -- The JS RTS keeps every callback in @h$extraRoots@ (a permanent GC root)
 -- until @h$release@ is called, so this must not be a no-op.
 foreign import javascript unsafe
-#if GHCJS_NEW
   "(($1) => { h$release($1); })"
-#else
-  "h$release($1);"
-#endif
   freeFunction_ffi :: JSVal -> IO ()
 -----------------------------------------------------------------------------
 -- | No-op on GHCJS: 'JSVal's are ordinary JS references collected by the JS GC.
@@ -217,19 +179,11 @@ freeJSVal_ffi _ = pure ()
 {-# INLINE freeJSVal_ffi #-}
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
-#if GHCJS_NEW
   "(($1) => { return requestAnimationFrame($1); })"
-#else
-  "$r = requestAnimationFrame($1);"
-#endif
   requestAnimationFrame :: JSVal -> IO Int
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
-#if GHCJS_NEW
   "(($1) => { return cancelAnimationFrame($1); })"
-#else
-  "cancelAnimationFrame($1);"
-#endif
   cancelAnimationFrame :: Int -> IO ()
 -----------------------------------------------------------------------------
 toJSVal_JSString :: JSString -> IO JSVal
@@ -249,27 +203,15 @@ fromJSValUnchecked_Bool = Marshal.fromJSValUnchecked
 {-# INLINE fromJSValUnchecked_Bool #-}
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
-#if GHCJS_NEW
   "(($1,$2,$3) => { return $1.apply($2, $3); })"
-#else
-  "$r = $1.apply($2, $3);"
-#endif
   invokeFunction :: JSVal -> JSVal -> JSVal -> IO JSVal
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
-#if GHCJS_NEW
   "(($1) => { return Object.keys($1); })"
-#else
-  "$r = Object.keys($1);"
-#endif
   listProps_ffi :: JSVal -> IO JSVal
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
-#if GHCJS_NEW
   "(($1,$2,$3) => { return $3[$1]=$2; })"
-#else
-  "$3[$1]=$2"
-#endif
   setPropIndex_ffi
     :: Int
     -- ^ Key
@@ -280,11 +222,7 @@ foreign import javascript unsafe
     -> IO ()
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
-#if GHCJS_NEW
   "(() => { return globalThis; })"
-#else
-  "$r = globalThis"
-#endif
   global :: JSVal
 -----------------------------------------------------------------------------
 fromJSVal_List :: JSVal -> IO (Maybe [JSVal])
@@ -342,11 +280,7 @@ fromJSValUnchecked_Float = Marshal.fromJSValUnchecked
 -- | Suspends the current Haskell thread and yields to the JS event loop
 -- until the given JavaScript Promise resolves or rejects.
 foreign import javascript interruptible
-#if GHCJS_NEW
   "((promise, $c) => { promise.then(s => $c(null, s), e => $c(e, null)); })"
-#else
-  "$1.then(function(s) { $c(null, s); }, function(e) { $c(e, null); });"
-#endif
   awaitPromise_ffi :: JSVal -> IO (JSVal, JSVal)
 
 -- | Awaits a JS Promise. If the promise rejects, it throws a t'JSException',
@@ -401,11 +335,7 @@ syncCallback3' x = jsval <$> Callback.syncCallback3' x
 {-# INLINE syncCallback3' #-}
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
-#if GHCJS_NEW
   "(($1) => { return parseInt($1); })"
-#else
-  "$r = parseInt($1)"
-#endif
   parseInt_Unchecked :: JSString -> Double
 -----------------------------------------------------------------------------
 parseWord :: JSString -> Maybe Word
@@ -420,11 +350,7 @@ parseInt string =
 {-# INLINE parseInt #-}
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
-#if GHCJS_NEW
   "(($1) => { return parseFloat($1); })"
-#else
-  "$r = parseFloat($1)"
-#endif
   parseDouble_Unchecked :: JSString -> Double
 -----------------------------------------------------------------------------
 parseDouble :: JSString -> Maybe Double
@@ -439,19 +365,11 @@ parseFloat string = realToFrac <$> parseDouble string
 {-# INLINE parseFloat #-}
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
-#if GHCJS_NEW
   "(($1) => { return ($1).toString(); })"
-#else
-  "$r = String($1);"
-#endif
   toString_Int :: Int -> JSString
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
-#if GHCJS_NEW
   "(($1) => { return ($1).toString(); })"
-#else
-  "$r = String($1);"
-#endif
   toString_Double :: Double -> JSString
 -----------------------------------------------------------------------------
 -- Note: GHCJS narrows Float ops via Math.fround, so $1 already holds the
@@ -460,19 +378,11 @@ foreign import javascript unsafe
 -- precisions until re-parsing (narrowed back to f32) recovers the
 -- original value, giving the shortest round-tripping decimal.
 foreign import javascript unsafe
-#if GHCJS_NEW
   "(($1) => { for (var p = 1; p <= 9; p++) { var s = $1.toPrecision(p); if (Math.fround(parseFloat(s)) === $1) return String(parseFloat(s)); } return String($1); })"
-#else
-  "var floatVal = $1; var floatStr; for (var floatPrec = 1; floatPrec <= 9; floatPrec++) { floatStr = floatVal.toPrecision(floatPrec); if (Math.fround(parseFloat(floatStr)) === floatVal) break; } $r = String(parseFloat(floatStr));"
-#endif
   toString_Float :: Float -> JSString
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
-#if GHCJS_NEW
   "(($1) => { return ($1).toString(); })"
-#else
-  "$r = String($1);"
-#endif
   toString_Word :: Word -> JSString
 -----------------------------------------------------------------------------
 -- | High-resolution timestamp where one exists, wall clock where it does not.
@@ -480,10 +390,6 @@ foreign import javascript unsafe
 -- @performance@ is absent on Lynx's background-thread realm, so this cannot be
 -- a bare @performance.now()@; see 'Miso.FFI.Internal.now'.
 foreign import javascript unsafe
-#if GHCJS_NEW
   "(() => (typeof performance !== 'undefined' && performance && typeof performance.now === 'function') ? performance.now() : Date.now())"
-#else
-  "$r = (typeof performance !== 'undefined' && performance && typeof performance.now === 'function') ? performance.now() : Date.now();"
-#endif
   now_ffi :: IO Double
 -----------------------------------------------------------------------------
