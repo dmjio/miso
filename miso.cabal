@@ -219,6 +219,7 @@ library
     Miso.Util
     Miso.Util.Lexer
     Miso.Util.Parser
+    Miso.UUID
     Miso.WebSocket
 
   if flag(native)
