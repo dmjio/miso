@@ -117,11 +117,11 @@
 -- import qualified "Miso.Html.Event" as HE
 -- import qualified "Miso.Html.Property" as HP
 -- -----------------------------------------------------------------------------
---                       * - The type of the global @context@
---                       |  * - The type of the @props@ inherited from the parent t'Miso.Types.Component'
---                       |  |  * - The type of the current t'Miso.Types.Component' @model@
---                       |  |  |  * - The type of the action that updates the @model@
---                       |  |  |  |
+--                      * - The type of the global @context@
+--                      |  * - The type of the @props@ inherited from the parent t'Miso.Types.Component'
+--                      |  |  * - The type of the current t'Miso.Types.Component' @model@
+--                      |  |  |   * - The type of the action that updates the @model@
+--                      |  |  |   |
 -- counter :: t'Miso.Types.Component' () () 'Int' Action
 -- counter = 'Miso.Types.component' m u v
 --   where
@@ -138,11 +138,11 @@
 --       Add -> 'Miso.Lens.this' 'Miso.Lens.+=' 1
 --       Subtract -> 'Miso.Lens.this' 'Miso.Lens.-=' 1
 --
---                          * - The type of the global @context@
---                          |  * - The type of the @props@ inherited from the parent t'Miso.Types.Component'
---                          |  |  * - The type of the current t'Miso.Types.Component' @model@ (also 'Miso.Types.view'\'s sole argument)
---                          |  |  |     * - The type of the action that updates t'Miso.Types.Component' @model@
---                          |  |  |     |
+--                      * - The type of the global @context@
+--                      |  * - The type of the @props@ inherited from the parent t'Miso.Types.Component'
+--                      |  |  * - The type of the current t'Miso.Types.Component' @model@ (also 'Miso.Types.view'\'s sole argument)
+--                      |  |  |   * - The type of the action that updates t'Miso.Types.Component' @model@
+--                      |  |  |   |
 --     v :: 'Int' -> 'View' () () 'Int' Action
 --     v x = 'Miso.Types.vfrag'
 --       [ H.'Miso.Html.Element.button_' [ HE.'Miso.Html.Event.onClick' Add, HP.'Miso.Html.Property.id_' "add" ] [ "+" ]
