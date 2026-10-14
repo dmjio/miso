@@ -71,13 +71,13 @@ in
   };
 
   # MicroHs (mhs) with the JSVal / JavaScript FFI, browser targets and
-  # js-sources support (dmjio/MicroHs, branch jsval), plus the
+  # js-sources support (haskell-miso/MicroHs, branch jsval), plus the
   # packages miso needs when built with mhs.  See nix/mhs/default.nix.
   microhs = fetchFromGitHub {
-    owner = "dmjio";
+    owner = "haskell-miso";
     repo = "MicroHs";
-    rev = "c8fc0d8571a3b18f272b4b994abdb02c7248d17d";
-    hash = "sha256-4j/HZphTSu+y8fmTl0eHjNGvxjH4MTkxc9clkYWSnvw=";
+    rev = "f2ec3f831b5e66802fefeabe8691029ad47dd193";
+    hash = "sha256-BJc+GCDK6hiVbipDwlGzT5VL1qeGkNqJAW5zyE/Ik5Q=";
   };
   mhs-ghc-compat = fetchFromGitHub {
     owner = "augustss";

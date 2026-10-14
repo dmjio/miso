@@ -45,8 +45,8 @@ build-js:
 # MHS_TARGET is a section of MicroHs's mhs.conf: browser (WebAssembly)
 # or browser_js (JavaScript only, -sWASM=0).
 MHS_TARGET=browser
-# -js embeds js/miso.js in the output (like js-sources in miso.cabal when built with mcabal)
-MHS_FLAGS=-XCPP -DMHS -i../src -i../ffi/mhs -i../ffi/jsstring -js ../js/miso.js
+# A .js file is embedded in the output (like js-sources in miso.cabal when built with mcabal)
+MHS_FLAGS=-XCPP -DMHS -i../src -i../ffi/mhs -i../ffi/jsstring ../js/miso.js
 
 mhs:
 	mkdir -p public-mhs
