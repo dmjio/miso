@@ -28,10 +28,9 @@ const TIMEOUT_MS = 3 * 60 * 1000;
     }
   });
   // What the console does not show: uncaught exceptions (and WebAssembly
-  // traps), a crashed page, and requests that failed.
+  // traps), and a crashed page.
   page.on('pageerror', (err) => console.log(`pageerror: ${err.stack || err}`));
   page.on('crash', () => fail('ERROR: the page crashed'));
-  page.on('requestfailed', (req) => console.log(`request failed: ${req.url()} ${req.failure()?.errorText ?? ''}`));
   await page.goto('http://127.0.0.1:8080');
 
 })();
