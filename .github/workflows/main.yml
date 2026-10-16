@@ -95,6 +95,12 @@ jobs:
        run: nix-build -A playwright-wasm-aeson-text && ./result/bin/playwright
 
 
+     - name: Nix garbage collection
+       run: cabal clean && nix-collect-garbage -d
+
+     - name: (x86) HLS
+       run: nix develop .#hls --command bash -c 'haskell-language-server --version'
+
   build-bundle:
     runs-on: ubuntu-latest
     steps:
@@ -179,6 +185,9 @@ jobs:
 
      - name: (x86) Miso GHC (GHC 9.14.1) test suite
        run: nix develop --command bash -c 'cabal build exe:component-tests'
+
+     - name: (x86) HLS
+       run: nix develop .#hls --command bash -c 'haskell-language-server --version'
 
   build-ios:
     runs-on: macos-latest
