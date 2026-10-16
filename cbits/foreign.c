@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdint.h>
+#include "miso_reload.h"
 
 // dmj: like `foreign-store`, but just for a single Ptr.
 // this is used to store a StablePtr (IORef a), retrieved after a GHCi reload
