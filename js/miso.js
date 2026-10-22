@@ -1053,6 +1053,11 @@ function eventJSON(at, obj) {
   }
   return newObj;
 }
+function eventJSVal(at, obj) {
+  for (const a of at)
+    obj = obj == null ? undefined : obj[a];
+  return obj;
+}
 function containsDOMRef(vtree, target, context) {
   switch (vtree.type) {
     case 3 /* VFrag */:
@@ -1349,6 +1354,7 @@ globalThis["miso"] = {
   callSelect,
   callSetSelectionRange,
   eventJSON,
+  eventJSVal,
   fetchCore,
   eventSourceConnect,
   eventSourceClose,

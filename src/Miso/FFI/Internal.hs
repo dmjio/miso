@@ -115,6 +115,7 @@ module Miso.FFI.Internal
    , consoleLog'
    -- * JSON
    , eventJSON
+   , eventJSVal
    -- * Object
    , set
    , setValue
@@ -437,6 +438,15 @@ eventJSON
 eventJSON x y = do
   moduleMiso <- jsg "miso"
   moduleMiso # "eventJSON" $ [x,y]
+
+eventJSVal
+    :: JSVal -- ^ decodeAt :: [JSString]
+    -> JSVal -- ^ object with impure references to the DOM
+    -> IO JSVal
+{-# INLINABLE eventJSVal #-}
+eventJSVal x y = do
+  moduleMiso <- jsg "miso"
+  moduleMiso # "eventJSVal" $ [x,y]
 -----------------------------------------------------------------------------
 -- | Used to update the JavaScript reference post-diff.
 updateRef
