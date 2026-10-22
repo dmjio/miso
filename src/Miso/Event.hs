@@ -33,6 +33,7 @@ module Miso.Event
    , onMain
    , onCapture
    , onWithOptions
+   , onWithOptionsJSVal
    , onMainWithOptions
    , Phase (..)
    -- *** Lifecycle events
@@ -217,6 +218,69 @@ onWithOptions phase options eventName Decoder{..} toAction =
                 FFI.consoleError ("[COMPONENT]: No component found at ID: " <> ms vcompId)
               Just ComponentState {..} ->
                 sink (toAction event _componentModel domRef)
+    -- The runtime frees this callback when the vtree that owns it is
+    -- replaced; see Note [Freeing event handler callbacks] in "Miso.Runtime".
+    registerEventHandler cb
+    FFI.set "runEvent" cb eventHandlerObject
+    FFI.set "options" jsOptions eventHandlerObject
+    -- Only 'mainThread'-marked handlers carry their 'StaticKey' \/ @ComponentId@
+    -- (stashed on the node by 'setAttrs') onto the per-event object. That is what
+    -- puts them in the node's @eventKeys@, telling the native delegator to
+    -- dispatch this handler on the main thread. Unmarked handlers (and the
+    -- browser\/WASM runtime) leave these off and delegate to the background.
+    pendingMT <- getProp "pendingMainThread" n
+    isMainThread <- fromJSVal pendingMT :: IO (Maybe Bool)
+    when (isMainThread == Just True) $ do
+      pendingKey <- getProp "pendingStaticKey" n
+      mKey <- fromJSVal pendingKey :: IO (Maybe MisoString)
+      maybe (pure ()) (\k -> FFI.set "staticKey" (k :: MisoString) eventHandlerObject) mKey
+      pendingCid <- getProp "pendingComponentId" n
+      mCid <- fromJSVal pendingCid :: IO (Maybe Int)
+      maybe (pure ()) (\c -> FFI.set "componentId" (c :: Int) eventHandlerObject) mCid
+    FFI.set eventName eo (Object eventObj)
+    -- The handler object is now reachable from the node; release the scratch
+    -- handles. @decodeAtVal@, @cb@ and @n@ are captured by the callback and
+    -- must stay alive. See Note [Freeing VTree handles] in "Miso.Runtime".
+    mapM_ freeJSVal [eventsVal, eventObj, eo, jsOptions, pendingMT]
+
+onWithOptionsJSVal ::
+  -- | Event propagation phase: 'BUBBLE' (default) or 'CAPTURE'
+  Phase ->
+  -- | Propagation options (@preventDefault@, @stopPropagation@)
+  Options ->
+  -- | DOM event name (e.g. @\"click\"@, @\"keydown\"@)
+  MisoString ->
+  -- | Converts the decoded payload and the element's DOM reference to an @action@
+  (JSVal -> model -> DOMRef -> action) ->
+  Attribute model action
+onWithOptionsJSVal phase options eventName toAction =
+  On $ \_model sink (VTree n) logLevel events -> do
+    when (logLevel == DebugAll || logLevel == DebugEvents) $
+      case M.lookup eventName events of
+        Nothing ->
+          FFI.consoleError $
+            mconcat
+              [ "Event \"",
+                eventName,
+                "\" is not being listened on. To use this event, ",
+                "add to the 'events' Map in Component"
+              ]
+        _ -> pure ()
+    eventsVal <-
+      getProp "events" n
+    eventObj <-
+      case phase of
+        CAPTURE -> getProp "captures" (Object eventsVal)
+        BUBBLE -> getProp "bubbles" (Object eventsVal)
+    eventHandlerObject@(Object eo) <- create
+    jsOptions <- toJSVal options
+    cb <- FFI.asyncCallback2 $ \e domRef -> do
+      vcompId <- fromJSValUnchecked =<< getProp "pendingComponentId" n
+      IM.lookup vcompId <$> readIORef components >>= \case
+        Nothing ->
+          FFI.consoleError ("[COMPONENT]: No component found at ID: " <> ms vcompId)
+        Just ComponentState {..} ->
+          sink (toAction e _componentModel domRef)
     -- The runtime frees this callback when the vtree that owns it is
     -- replaced; see Note [Freeing event handler callbacks] in "Miso.Runtime".
     registerEventHandler cb
