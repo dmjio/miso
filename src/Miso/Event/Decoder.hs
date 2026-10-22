@@ -71,6 +71,7 @@
 module Miso.Event.Decoder
   ( -- ** Types
     Decoder (..)
+  , JSValDecoder (..)
   , DecodeTarget (..)
     -- ** Combinators
   , at
@@ -85,7 +86,7 @@ module Miso.Event.Decoder
 -----------------------------------------------------------------------------
 import Control.Applicative
 -----------------------------------------------------------------------------
-import Miso.DSL (ToJSVal(toJSVal))
+import Miso.DSL (JSVal, ToJSVal(toJSVal))
 import Miso.Event.Types
 import Miso.JSON
 import Miso.String
@@ -110,6 +111,14 @@ data Decoder a
   { decoder :: Value -> Parser a
     -- ^ FromJSON-based Event decoder
   , decodeAt :: DecodeTarget
+    -- ^ Location in DOM of where to decode
+  }
+
+data JSValDecoder a
+  = JSValDecoder
+  { jsValDecoder :: JSVal -> IO a
+    -- ^ FromJSON-based Event decoder
+  , jsValDecodeAt :: DecodeTarget
     -- ^ Location in DOM of where to decode
   }
 -----------------------------------------------------------------------------
