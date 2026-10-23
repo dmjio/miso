@@ -44,6 +44,49 @@ All notable changes to `miso` are documented here.
   with the legacy nixpkgs pin (`legacyPkgs`) and its GHCJS 8.6 / GHC 8.6.5
   Nix targets.
 
+- **`MisoString` on the WASM and MicroHs backends now behaves like
+  `Data.Text`**, which is what it is on the server, so client and server
+  agree. Positions and lengths count code points everywhere (`head`, `last`,
+  `tail`, `init`, `uncons`, `index`, `takeEnd`, `dropEnd`, `cons`, `snoc`,
+  `singleton`, `intersperse`, `justify*`, `maximum`, `minimum` used to see
+  the two halves of an emoji separately), and:
+  - `lines "a\n" == ["a"]` and `lines "" == []` (no trailing empty line);
+  - `words`, `strip`, `stripStart` and `stripEnd` use `isSpace`: `words`
+    splits on tabs and newlines too, and `strip` no longer removes U+FEFF,
+    U+2028 or U+2029;
+  - `replace` replaces every occurrence, literally (it replaced only the
+    first, and expanded `$&` in the replacement);
+  - `split p s` no longer appends an empty piece when `s` has no separator;
+  - `stripSuffix ""` and `dropEnd 0` / `takeEnd 0` leave the string alone;
+  - `commonPrefixes "foo" "foobar"` is `Just ("foo", "", "bar")`, not
+    `Nothing`;
+  - `chunksOf k ""` is `[]`, and `chunksOf` with `k < 0` no longer loops;
+  - `unfoldrN` keeps its characters in order and stops at `Nothing`;
+  - `pack`, string literals and `textToJSString` keep a leading U+FEFF (the
+    `TextDecoder` dropped it);
+  - `toLower` maps character by character (JavaScript's `toLowerCase`
+    turned a word-final `Σ` into `ς`);
+  - `head`, `last`, `init`, `index`, `maximum`, `minimum` and `count` fail
+    with a Haskell `error` instead of a JavaScript exception (which is fatal
+    on MicroHs);
+  - `compare` (`Ord`) uses code point order, so `Map MisoString` keys order
+    the same on client and server (JavaScript's `<` put emoji before
+    U+E000 to U+FFFF). The GHC JavaScript backend, whose `JSString` comes
+    from ghcjs-base, still compares code units.
+
+### Fixed
+
+- **`MisoString` on the WASM and MicroHs backends no longer does work one
+  character at a time over the FFI.** `length` allocated an array of the
+  whole string and `uncons` called it, so everything that walks a string was
+  O(n²): `lines` over 110 KB took minutes. Functions that take a Haskell
+  function (`map`, `filter`, the folds, `any`, `all`, `takeWhile`, `break`,
+  `groupBy`, `split`, `zip`, the scans, ...) made three FFI calls per
+  character; they now convert to `Text` once and slice the original string
+  for the result. Searching and splitting (`breakOn`, `splitOn`, `lines`,
+  `words`, `replace`, `strip`, `commonPrefixes`, ...) is one native call per
+  piece. See `scripts/bench-jsstring` for the benchmark.
+
 ## 1.14.0.0
 
 ### Added
