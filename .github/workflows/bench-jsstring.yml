@@ -1,0 +1,95 @@
+# Temporary: builds and runs scripts/bench-jsstring/wasm (GHC WASM in Node,
+# MicroHs WASM in headless Chromium) on pushes to this branch.
+name: JSString benchmark
+on:
+  push:
+    branches:
+      - jsstring-linear-bench
+    paths-ignore:
+      - .github/workflows/mhs-tests.yml
+
+jobs:
+  ghc:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: cachix/install-nix-action@v31.11.1
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      - uses: cachix/cachix-action@v17
+        with:
+          name: haskell-miso-cachix
+      - name: Build
+        run: |
+          set -o pipefail
+          nix develop .#wasm --accept-flake-config --command bash scripts/bench-jsstring/wasm/build.sh dist-bench 2>&1 | tee build.log
+      - name: Report build errors
+        if: failure()
+        run: |
+          log=$(grep -A12 -E "error|rror:" build.log | head -c 60000)
+          log=${log//'%'/'%25'}; log=${log//$'\r'/'%0D'}; log=${log//$'\n'/'%0A'}
+          echo "::error title=ghc build failed::${log}"
+      - name: Run
+        run: |
+          set -o pipefail
+          npm install --no-save --prefix scripts/bench-jsstring/wasm @bjorn3/browser_wasi_shim@0.3.0
+          node scripts/bench-jsstring/wasm/run.mjs dist-bench/bench.wasm dist-bench/ghc_wasm_jsffi.js all 2> stderr.txt | tee results.txt
+      - name: Report run diagnostics
+        if: always()
+        run: |
+          log=$( (wc -c results.txt stderr.txt; grep -v -E "^(PROP|BENCH)\|" results.txt | head -c 3000; echo "--- stderr"; head -c 20000 stderr.txt) 2>&1 )
+          log=${log//'%'/'%25'}; log=${log//$'\r'/'%0D'}; log=${log//$'\n'/'%0A'}
+          echo "::warning title=ghc run diagnostics::${log}"
+      - name: Report
+        if: always() && hashFiles('results.txt') != ''
+        run: |
+          BENCH_LABEL=ghc node scripts/bench-jsstring/wasm/summarize.mjs results.txt report.md --annotate
+          cat report.md >> "$GITHUB_STEP_SUMMARY"
+
+  mhs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: cachix/install-nix-action@v31.11.1
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      - uses: cachix/cachix-action@v17
+        with:
+          name: haskell-miso-cachix
+      - name: Build
+        run: |
+          set -o pipefail
+          nix develop .#mhs --accept-flake-config --command bash scripts/bench-jsstring/wasm/build-mhs.sh dist-bench-mhs 2>&1 | tee build.log
+      - name: Report build errors
+        if: failure()
+        run: |
+          log=$(grep -v -E "^(copying path|building '|unpacking|fetching|downloading|evaluating)" build.log | tail -c 12000)
+          log=${log//'%'/'%25'}; log=${log//$'\r'/'%0D'}; log=${log//$'\n'/'%0A'}
+          echo "::error title=mhs build failed::${log}"
+      - name: Run
+        run: |
+          set -o pipefail
+          npm install --no-save --prefix scripts/bench-jsstring/wasm playwright@1.48.2
+          npx --prefix scripts/bench-jsstring/wasm playwright install --with-deps chromium
+          node scripts/bench-jsstring/wasm/run-browser.mjs dist-bench-mhs/app.js 300 300 2> stderr.txt | tee results.txt
+      - name: Report run diagnostics
+        if: always()
+        run: |
+          log=$( (wc -c results.txt stderr.txt; grep -v -E "^(PROP|BENCH)\|" results.txt | head -c 3000; echo "--- stderr"; head -c 20000 stderr.txt) 2>&1 )
+          log=${log//'%'/'%25'}; log=${log//$'\r'/'%0D'}; log=${log//$'\n'/'%0A'}
+          echo "::warning title=mhs run diagnostics::${log}"
+      - name: Report
+        if: always() && hashFiles('results.txt') != ''
+        run: |
+          BENCH_LABEL=mhs node scripts/bench-jsstring/wasm/summarize.mjs results.txt report.md --annotate
+          cat report.md >> "$GITHUB_STEP_SUMMARY"

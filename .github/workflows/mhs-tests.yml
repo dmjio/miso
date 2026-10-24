@@ -1,0 +1,58 @@
+# Temporary: runs the MicroHs integration tests as Miso CI does, and reports
+# the failing ones as annotations.
+name: MicroHs tests
+on:
+  push:
+    branches:
+      - jsstring-linear-bench
+
+jobs:
+  mhs-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+     - uses: ners/simply-nix@2e89c5f0aaa5e4a7265dae7880e69d2c06efd6b5
+       with:
+         reclaim_space: true
+     - uses: actions/checkout@v4
+     - uses: cachix/cachix-action@v17
+       with:
+         name: haskell-miso-cachix
+     - name: Nix channel update
+       run: nix-channel --update
+     - name: (MHS WASM) Miso integration tests built with MicroHs (browser)
+       run: |
+         set -o pipefail
+         nix-build -A playwright-mhs 2>&1 | tail -n 200 > build.log
+         ./result/bin/playwright 2>&1 | tee tests.log
+     - name: Report
+       if: always()
+       run: |
+         log=$( (grep -E "✗|↳|ERROR|pageerror|failed|passed" tests.log 2>/dev/null | head -c 30000; echo "--- build tail"; grep -E "error|rror" -A6 build.log | tail -c 8000) 2>&1 )
+         log=${log//'%'/'%25'}; log=${log//$'\r'/'%0D'}; log=${log//$'\n'/'%0A'}
+         echo "::warning title=mhs tests::${log}"
+
+  js-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+     - uses: ners/simply-nix@2e89c5f0aaa5e4a7265dae7880e69d2c06efd6b5
+       with:
+         reclaim_space: true
+     - uses: actions/checkout@v4
+     - uses: cachix/cachix-action@v17
+       with:
+         name: haskell-miso-cachix
+     - name: Nix channel update
+       run: nix-channel --update
+     - name: (JS) Miso integration tests
+       run: |
+         set -o pipefail
+         nix-build -A playwright-js 2>&1 | tail -n 200 > build.log
+         ./result/bin/playwright 2>&1 | tee tests.log
+     - name: Report
+       if: always()
+       run: |
+         log=$( (grep -E "✗|↳|ERROR|pageerror|failed|passed" tests.log 2>/dev/null | head -c 30000; echo "--- build tail"; grep -E "error|rror" -A6 build.log | tail -c 8000) 2>&1 )
+         log=${log//'%'/'%25'}; log=${log//$'\r'/'%0D'}; log=${log//$'\n'/'%0A'}
+         echo "::warning title=js tests::${log}"

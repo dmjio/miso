@@ -603,6 +603,13 @@ benchmarks = do
     b "toString_Double" (\In{..} -> fS (O.toString_Double (fromIntegral size / 7))) (\In{..} -> fS (N.toString_Double (fromIntegral size / 7)))
     b "toString_Float" (\In{..} -> fS (O.toString_Float (fromIntegral size / 7))) (\In{..} -> fS (N.toString_Float (fromIntegral size / 7)))
     b "empty" (\In{..} -> fS (O.empty <> nine)) (\In{..} -> fS (N.empty <> nine))
+    -- Diagnostics (temporary): raw Data.Text operations on a converted string
+    b "diag: T.length . textFromJSString" (\In{..} -> fV (T.length (O.textFromJSString s))) (\In{..} -> fV (T.length (N.textFromJSString s)))
+    b "diag: T.length . T.takeWhile . textFromJSString" (\In{..} -> fV (T.length (T.takeWhile (/= '|') (O.textFromJSString s)))) (\In{..} -> fV (T.length (T.takeWhile (/= '|') (N.textFromJSString s))))
+    b "diag: T.any . textFromJSString" (\In{..} -> fV (T.any (== '|') (O.textFromJSString s))) (\In{..} -> fV (T.any (== '|') (N.textFromJSString s)))
+    b "diag: T.length (precomputed Text)" (\In{..} -> fV (T.length text)) (\In{..} -> fV (T.length text))
+    b "diag: T.length . T.takeWhile (precomputed Text)" (\In{..} -> fV (T.length (T.takeWhile (/= '|') text))) (\In{..} -> fV (T.length (T.takeWhile (/= '|') text)))
+    b "diag: take via N.take . T.length" (\In{..} -> fS (N.take (T.length (T.takeWhile (/= '|') (N.textFromJSString s))) s)) (\In{..} -> fS (N.takeWhile (/= '|') s))
     -- Instances
     b "compare" (\In{..} -> fV (compare s sPiped)) (\In{..} -> fV (compare s sPiped))
     b "(==)" (\In{..} -> fV (s == sPiped)) (\In{..} -> fV (s == sPiped))
