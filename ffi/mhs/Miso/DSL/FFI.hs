@@ -111,7 +111,10 @@ import qualified Data.Text as T
 import           Numeric (readHex)
 import           Prelude hiding (length)
 -----------------------------------------------------------------------------
-import           GHC.Wasm.Prim
+import           GHC.Wasm.Prim hiding (textToJSString)
+-- Data.JSString's textToJSString keeps a leading U+FEFF, which
+-- GHC.Wasm.Prim's drops.
+import           Data.JSString (textToJSString)
 -----------------------------------------------------------------------------
 foreign import javascript unsafe "$1 === $2"
   eq :: JSVal -> JSVal -> Bool

@@ -1712,6 +1712,95 @@ main = withJS $ do
         S.findIndex (=='a') "aba" `shouldBe`
           T.findIndex (=='a') "aba"
 
+      it "Should lines like Data.Text (trailing and blank lines)" $
+        forM_ ["", "\n", "foo\n", "foo\n\nbar\n", "\nfoo", "a\r\nb"] $ \s ->
+          fmap S.unpack (S.lines (S.pack s)) `shouldBe` fmap T.unpack (T.lines (T.pack s))
+
+      it "Should words like Data.Text (any isSpace separator)" $
+        forM_ ["", "   ", "foo\tbar\nbaz", "  foo  bar  ", "a\160b", "a\12288b", "a\8232b", "a\65279b"] $ \s ->
+          fmap S.unpack (S.words (S.pack s)) `shouldBe` fmap T.unpack (T.words (T.pack s))
+
+      it "Should split like Data.Text (no separator, empty, separators only)" $
+        forM_ ["b", "", "a", "aa", "bab"] $ \s ->
+          fmap S.unpack (S.split (=='a') (S.pack s)) `shouldBe` fmap T.unpack (T.split (=='a') (T.pack s))
+
+      it "Should splitOn, breakOn and breakOnEnd like Data.Text (overlaps, misses)" $
+        forM_ [("aa", "aaa"), ("ab", ""), (",", "a,,b,"), ("::", "a::b::c"), ("x", "abc"), ("\128512", "x\128512y")] $ \(n, h) -> do
+          fmap S.unpack (S.splitOn (S.pack n) (S.pack h)) `shouldBe` fmap T.unpack (T.splitOn (T.pack n) (T.pack h))
+          let (a, b) = S.breakOn (S.pack n) (S.pack h)
+              (a', b') = T.breakOn (T.pack n) (T.pack h)
+          (S.unpack a, S.unpack b) `shouldBe` (T.unpack a', T.unpack b')
+          let (c, d) = S.breakOnEnd (S.pack n) (S.pack h)
+              (c', d') = T.breakOnEnd (T.pack n) (T.pack h)
+          (S.unpack c, S.unpack d) `shouldBe` (T.unpack c', T.unpack d')
+
+      it "Should stripSuffix like Data.Text (empty and astral suffixes)" $
+        forM_ [("", "foo"), ("o", "foo"), ("\128512", "a\128512"), ("x", "foo")] $ \(p, s) ->
+          fmap S.unpack (S.stripSuffix (S.pack p) (S.pack s)) `shouldBe` fmap T.unpack (T.stripSuffix (T.pack p) (T.pack s))
+
+      it "Should count code points in length, take, drop and findIndex" $ do
+        let s = "a\128512b"
+        S.length (S.pack s) `shouldBe` T.length (T.pack s)
+        S.unpack (S.take 2 (S.pack s)) `shouldBe` T.unpack (T.take 2 (T.pack s))
+        S.unpack (S.drop 2 (S.pack s)) `shouldBe` T.unpack (T.drop 2 (T.pack s))
+        S.findIndex (=='b') (S.pack s) `shouldBe` T.findIndex (=='b') (T.pack s)
+
+      it "Should work on code points in head, last, tail, init, index and friends" $ do
+        let s = "\128512a\128513"
+            str f g = S.unpack (f (S.pack s)) `shouldBe` T.unpack (g (T.pack s))
+        S.head (S.pack s) `shouldBe` T.head (T.pack s)
+        S.last (S.pack s) `shouldBe` T.last (T.pack s)
+        S.index (S.pack s) 2 `shouldBe` T.index (T.pack s) 2
+        S.maximum (S.pack s) `shouldBe` T.maximum (T.pack s)
+        str S.tail T.tail
+        str S.init T.init
+        str (S.takeEnd 1) (T.takeEnd 1)
+        str (S.dropEnd 1) (T.dropEnd 1)
+        str (S.intersperse '-') (T.intersperse '-')
+        str (S.cons '\128514') (T.cons '\128514')
+        str (S.justifyLeft 5 '.') (T.justifyLeft 5 '.')
+        fmap (\(c, r) -> (c, S.unpack r)) (S.uncons (S.pack s)) `shouldBe` fmap (\(c, r) -> (c, T.unpack r)) (T.uncons (T.pack s))
+
+#ifndef GHCJS_BOTH
+      -- The JS backend's JSString (ghcjs-base) compares UTF-16 code units.
+      it "Should compare in code point order, like Data.Text" $
+        forM_ [("\128512", "\65279"), ("\128512", "\57344"), ("a", "b"), ("\128512a", "\128512b"), ("", "a")] $ \(a, b) ->
+          compare (S.pack a) (S.pack b) `shouldBe` compare (T.pack a) (T.pack b)
+#endif
+
+      it "Should keep a leading U+FEFF in pack and string literals" $ do
+        S.unpack (S.pack "\65279x") `shouldBe` "\65279x"
+        S.unpack ("\65279x" :: MisoString) `shouldBe` "\65279x"
+
+      it "Should toLower character by character, like Data.Text (no final sigma)" $
+        forM_ ["\931\927\931", "ABC \931", "plain"] $ \x ->
+          S.unpack (S.toLower (S.pack x)) `shouldBe` T.unpack (T.toLower (T.pack x))
+
+      it "Should replace every occurrence, literally" $
+        forM_ [("s", "k", "sassy"), ("$&", "X", "a$&b$&"), ("aa", "b", "aaa")] $ \(n, r, h) ->
+          S.unpack (S.replace (S.pack n) (S.pack r) (S.pack h)) `shouldBe` T.unpack (T.replace (T.pack n) (T.pack r) (T.pack h))
+
+      it "Should commonPrefixes, chunksOf, dropEnd, strip and unfoldrN like Data.Text" $ do
+        let three f (a, b, c) = (f a, f b, f c) :: (String, String, String)
+        -- Literal expectations: MicroHs's Data.Text has no commonPrefixes.
+        fmap (three S.unpack) (S.commonPrefixes "foo" "foobar") `shouldBe` Just ("foo", "", "bar")
+        fmap (three S.unpack) (S.commonPrefixes "foo" "bar") `shouldBe` Nothing
+        fmap S.unpack (S.chunksOf 3 "") `shouldBe` fmap T.unpack (T.chunksOf 3 "")
+        fmap S.unpack (S.chunksOf (-1) "abc") `shouldBe` fmap T.unpack (T.chunksOf (-1) "abc")
+        S.unpack (S.dropEnd 0 "abc") `shouldBe` T.unpack (T.dropEnd 0 "abc")
+        S.unpack (S.takeEnd 0 "abc") `shouldBe` T.unpack (T.takeEnd 0 "abc")
+        S.unpack (S.strip "\65279 a \8232") `shouldBe` T.unpack (T.strip "\65279 a \8232")
+        let upTo3 i = if i < (3 :: Int) then Just (toEnum (97 + i), i + 1) else Nothing
+        S.unpack (S.unfoldrN 10 upTo3 0) `shouldBe` T.unpack (T.unfoldrN 10 upTo3 0)
+        S.unpack (S.unfoldrN 2 upTo3 0) `shouldBe` T.unpack (T.unfoldrN 2 upTo3 0)
+
+      -- Splitting used to walk the string a character at a time, calling the
+      -- O(n) 'S.length' at every step: this took minutes.
+      it "Should split a large string into lines quickly" $ do
+        let big = S.replicate 10000 "a line of text\n"
+        length (S.lines big) `shouldBe` 10000
+        length (S.words big) `shouldBe` 40000
+
       it "Should count" $ do
         S.count "a" "aba" `shouldBe`
           T.count "a" "aba"
