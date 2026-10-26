@@ -199,11 +199,11 @@ module Miso.Event.Decoder
 -----------------------------------------------------------------------------
 import           Control.Applicative
 import           Control.Exception (SomeException, try)
+import           System.IO.Unsafe (unsafePerformIO)
 import qualified Control.Monad.Fail as Fail
 -----------------------------------------------------------------------------
-import           Miso.DSL (JSVal, ToArgs, FromJSVal(fromJSVal), ToJSVal(toJSVal), (!), (#), jsg, isNull, isUndefined)
+import           Miso.DSL (JSVal, ToArgs(toArgs), FromJSVal(fromJSVal, fromJSValUnchecked), ToJSVal(toJSVal), (!), call, eval, jsg, jsNull, isNull, isUndefined)
 import           Miso.Event.Types
-import qualified Miso.FFI.Internal as FFI
 import           Miso.JSON (Value, Parser, parseEither, withObject, (.:))
 import           Miso.String (MisoString, ms)
 -----------------------------------------------------------------------------
@@ -365,6 +365,37 @@ focusWith step get (Decoder d) = Decoder $ \c -> do
       Right (Left msg) -> failAt (next (cursorFocus c)) msg
       Right (Right v) -> d (next v)
 -----------------------------------------------------------------------------
+-- | @safeGet o k null@ reads @o[k]@; @safeGet o m args@ calls @o.m(...args)@.
+--
+-- Both run in JavaScript, inside a @try@: a getter or a method can throw, and
+-- not every backend turns a JavaScript exception thrown from an FFI call into
+-- a Haskell exception that 'try' can catch (the JS backend doesn't; the
+-- exception escapes to the scheduler and kills the thread).
+safeGet :: JSVal -> MisoString -> JSVal -> IO (Either MisoString JSVal)
+safeGet o k args = do
+  r <- call safeGetFunction jsNull (o, k, args)
+  err <- r ! "error"
+  ok <- isUndefined err
+  if ok
+    then Right <$> r ! "value"
+    else Left <$> fromJSValUnchecked err
+-----------------------------------------------------------------------------
+-- | The JavaScript half of 'safeGet', created once.
+safeGetFunction :: JSVal
+safeGetFunction = unsafePerformIO $ eval $ mconcat
+  [ "(function (o, k, args) {"
+  , "  try {"
+  , "    if (args === null) return { value: o[k] };"
+  , "    var f = o[k];"
+  , "    if (typeof f !== 'function') return { error: 'no such method' };"
+  , "    return { value: f.apply(o, args) };"
+  , "  } catch (e) {"
+  , "    return { error: 'threw ' + String(e) };"
+  , "  }"
+  , "})"
+  ]
+{-# NOINLINE safeGetFunction #-}
+-----------------------------------------------------------------------------
 -- | Focus the property @k@ of the current focus (@focus[k]@), and run a
 -- decoder there. Inherited properties and getters work (e.g. @\"target\"@,
 -- @\"clipboardData\"@, @\"width\"@ of a @DOMRect@).
@@ -379,7 +410,7 @@ focusWith step get (Decoder d) = Decoder $ \c -> do
 --
 -- @since 1.15.0.0
 member :: MisoString -> Decoder a -> Decoder a
-member k = focusWith ("." <> k) (fmap Right . (! k))
+member k = focusWith ("." <> k) (\o -> safeGet o k jsNull)
 -----------------------------------------------------------------------------
 -- | Focus a path of properties.
 --
@@ -402,7 +433,7 @@ members ks d = foldr member d ks
 --
 -- @since 1.15.0.0
 item :: Int -> Decoder a -> Decoder a
-item i = focusWith ("[" <> ms i <> "]") (fmap Right . (! ms i))
+item i = focusWith ("[" <> ms i <> "]") (\o -> safeGet o (ms i) jsNull)
 -----------------------------------------------------------------------------
 -- | Call the method @m@ of the focus with @args@ (see 'Miso.DSL.ToArgs':
 -- @()@ for no arguments, a value for one, a tuple or list for several), and
@@ -428,12 +459,8 @@ item i = focusWith ("[" <> ms i <> "]") (fmap Right . (! ms i))
 --
 -- @since 1.15.0.0
 invoke :: ToArgs args => MisoString -> args -> Decoder a -> Decoder a
-invoke m args = focusWith ("." <> m <> "()") $ \o -> do
-  method <- o ! m
-  missing <- isUndefined method
-  if missing
-    then pure (Left "no such method")
-    else Right <$> (o # m $ args)
+invoke m args = focusWith ("." <> m <> "()") $ \o ->
+  safeGet o m =<< toJSVal =<< toArgs args
 -----------------------------------------------------------------------------
 -- | Focus the event again, from anywhere in a decoder. A t'Decoder' starts
 -- at the event, so this is only needed after moving the focus elsewhere:
@@ -580,12 +607,15 @@ at path parser = Decoder $ \c ->
         Left msg -> failAt c msg
         Right x -> pure (Right x)
 -----------------------------------------------------------------------------
--- | JSON snapshot of the value at @path@ below @v@. @miso.eventJSON@ only
--- takes objects (it uses @in@), so a primitive is converted directly.
+-- | JSON snapshot of the value at @path@ below @v@, by @miso.eventJSON@
+-- (see 'Miso.FFI.Internal.eventJSON'). That only takes objects (it uses @in@), and throws
+-- on a primitive, which is then converted directly.
 snapshot :: [MisoString] -> JSVal -> IO (Maybe Value)
 snapshot path v = do
   pathVal <- toJSVal path
-  tryAny (FFI.eventJSON pathVal v) >>= \case
+  miso <- jsg "miso"
+  args <- toJSVal [pathVal, v]
+  safeGet miso "eventJSON" args >>= \case
     Right json -> fromJSVal json
     Left _ | null path -> fromJSVal v
            | otherwise -> pure Nothing
