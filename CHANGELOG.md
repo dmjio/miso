@@ -6,6 +6,33 @@ All notable changes to `miso` are documented here.
 
 ### Added
 
+- **Decoders read the live event, so they can call its methods** ([#1678](https://github.com/dmjio/miso/issues/1678)).
+  A `Decoder` is now a read-only observation of the DOM event that miso runs
+  while the browser dispatches it, instead of a JSON parser over a snapshot
+  that only kept strings, numbers and booleans. Decoders are built from a
+  small set of combinators in `Miso.Event.Decoder`: `member` / `members` /
+  `item` move to a property or element, `invoke` calls a method,
+  `atElement` / `atEvent` / `atGlobal` move to the handler's element, the
+  event or `globalThis`, and `fromJS` / `items` / `nullable` / `parseWith`
+  read what is there. `Decoder` is a `Monad` and an `Alternative`, so
+  decoders compose with `do` and fall back with `<|>` (a missing method or a
+  JavaScript exception is a decoding failure). Building a decoder does no
+  `IO`, so views stay pure.
+
+  ```haskell
+  pastedText :: Decoder MisoString
+  pastedText = member "clipboardData" (invoke "getData" ("text/plain" :: MisoString) fromJS)
+  ```
+
+  New decoders: `clipboardTextDecoder`, `clipboardDecoder`, `dropDecoder`,
+  `dataTransferDecoder`, `filesDecoder`, `fileInfoDecoder`, `domRectDecoder`,
+  `boundingClientRectDecoder`, `modifierStateDecoder`, `selectionTextDecoder`,
+  `inputSelectionDecoder` and `selectedOptionsDecoder`, with the payload
+  types `DataTransfer`, `FileInfo` and `DOMRect` in `Miso.Event.Types`. New
+  handlers in `Miso.Html.Event`: `onPaste`, `onPasteData`, `onDropData` and
+  `onFiles`. `runDecoder` runs a decoder against an event, for tests and
+  custom listeners. `sample-app` is now a tour of what decoders can read.
+
 - **`Functor` instances for `View` and `Attribute` (non-`native` builds).**
   `fmap` / `<$>` / `<$` map the `action` a view or attribute produces, so a
   sub-view written against one `action` type can be embedded in another
@@ -31,6 +58,22 @@ All notable changes to `miso` are documented here.
   `FromJSVal`, and `Router` (as a route capture).
 
 ### Changed
+
+- **Breaking: `Decoder` is abstract.** Its `decoder` and `decodeAt` fields
+  are gone; the `Decoder` constructor is no longer exported. `at` keeps
+  working as before, and `decodeAt` is now a function, so most decoders
+  change mechanically:
+
+  ```haskell
+  -- before
+  myDecoder = Decoder { decodeAt = DecodeTarget ["target"], decoder = parser }
+  -- after
+  myDecoder = at ["target"] parser          -- or: decodeAt (DecodeTarget ["target"]) parser
+  ```
+
+  `DecodeTargets` now tries each path in turn and uses the first one that
+  parses, as its documentation always said. Code that ran a decoder by hand
+  (`parseEither (decoder d) =<< eventJSON ...`) should use `runDecoder`.
 
 - **Event handlers run synchronously, during dispatch, on every backend.**
   `on` / `onWithOptions`, event delegation and `addEventListener` (and the
@@ -91,6 +134,10 @@ All notable changes to `miso` are documented here.
     from ghcjs-base, still compares code units.
 
 ### Fixed
+
+- **`windowSubWithOptions` `preventDefault` / `stopPropagation` on WASM.**
+  They ran in an asynchronous callback, which could run after the event had
+  been dispatched, when they no longer have any effect.
 
 - **`MisoString` on the WASM and MicroHs backends no longer does work one
   character at a time over the FFI.** `length` allocated an array of the

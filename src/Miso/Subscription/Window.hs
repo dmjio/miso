@@ -123,22 +123,28 @@ windowSubWithOptions
   -> (result -> action)
   -- ^ Callback fired with the decoded value on each event
   -> Sub model action
-windowSubWithOptions Options{..} eventName Decoder {..} toAction sink =
+windowSubWithOptions Options{..} eventName decoder toAction sink =
   createSub acquire release sink
     where
       release =
         FFI.windowRemoveEventListener eventName
-      acquire =
-        FFI.windowAddEventListener eventName $ \e -> do
-          decodeAtVal <- toJSVal decodeAt
-          v <- fromJSValUnchecked =<< FFI.eventJSON decodeAtVal e
-          case parseEither decoder v of
-            Left s ->
-              FFI.consoleError ("windowSubWithOptions: Parse error on " <> eventName <> ": " <> ms s)
-            Right r -> do
-              when _stopPropagation (FFI.eventStopPropagation e)
-              when _preventDefault (FFI.eventPreventDefault e)
-              sink (toAction r)
+      -- A synchronous listener, so that the decoder reads the event (and
+      -- @preventDefault@ \/ @stopPropagation@ act on it) while the browser is
+      -- still dispatching it. 'sink' does not block.
+      acquire = do
+        win <- jsg "window"
+        cb <- Function <$> FFI.syncCallback1 (listener win)
+        _ <- win # "addEventListener" $ (eventName, cb)
+        pure cb
+      listener win e = do
+        result <- runDecoder decoder e win
+        case result of
+          Left s ->
+            FFI.consoleError ("windowSubWithOptions: Parse error on " <> eventName <> ": " <> s)
+          Right r -> do
+            when _stopPropagation (FFI.eventStopPropagation e)
+            when _preventDefault (FFI.eventPreventDefault e)
+            sink (toAction r)
 -----------------------------------------------------------------------------
 -- | @window.addEventListener ("pointermove", (event) => handle(event))@
 -- A 'Sub' to handle t'PointerEvent's on window.

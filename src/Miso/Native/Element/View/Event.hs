@@ -104,7 +104,7 @@ import Control.Applicative (liftA2)
 #endif
 -----------------------------------------------------------------------------
 import qualified Data.Map as M
-import           Miso.Event (on, onMain, Decoder(..), DecodeTarget(..), Events, emptyDecoder, Phase(BUBBLE))
+import           Miso.Event (on, onMain, Decoder, DecodeTarget(..), decodeAt, Events, emptyDecoder, Phase(BUBBLE))
 import           Miso.JSON
 import           Miso.String (MisoString, isPrefixOf)
 import           Miso.Types (Attribute, EventHandler, DOMRef)
@@ -155,13 +155,12 @@ data TouchEvent
 ----------------------------------------------------------------------------
 -- | Touch decoder for use with events like 'onTap'
 touchDecoder :: Decoder TouchEvent
-touchDecoder = Decoder {..}
+touchDecoder = decodeAt (DecodeTarget ["changedTouches", "0"]) decoder
   where
     pair o x y = liftA2 (,) (o .: x) (o .: y)
     -- Lynx nests touch fields inside `changedTouches` / `touches` arrays (each a
     -- `Touch` with identifier/x/y/pageX/pageY/clientX/clientY); the browser-style
     -- flat root has no `identifier`. Read the first changed touch point.
-    decodeAt = DecodeTarget ["changedTouches", "0"]
     decoder = withObject "touchDecoder" $ \o ->
        TouchEvent
         <$> o .: "identifier"
@@ -213,9 +212,8 @@ instance FromJSON AnimationType where
 ----------------------------------------------------------------------------
 -- | Animation decoder for use with events like 'onAnimationStart'
 animationDecoder :: Decoder AnimationEvent
-animationDecoder = Decoder {..}
+animationDecoder = decodeAt (DecodeTarget mempty) decoder
   where
-    decodeAt = DecodeTarget mempty
     decoder = withObject "animationDecoder" $ \o -> do
       d <- o .: "params"
       aType <- d .: "animation_type"
@@ -256,9 +254,8 @@ data LayoutChangeDetailEvent
 --
 -- @since 1.13.0.0
 layoutChangeDetailDecoder :: Decoder LayoutChangeDetailEvent
-layoutChangeDetailDecoder = Decoder {..}
+layoutChangeDetailDecoder = decodeAt (DecodeTarget mempty) decoder
   where
-    decodeAt = DecodeTarget mempty
     decoder = withObject "LayoutChangeDetailEvent" $ \o -> do
       d <- o .: "detail"
       LayoutChangeDetailEvent
@@ -305,9 +302,8 @@ data UIAppearanceDetailEvent
 --
 -- @since 1.13.0.0
 uiAppearanceDetailDecoder :: Decoder UIAppearanceDetailEvent
-uiAppearanceDetailDecoder = Decoder {..}
+uiAppearanceDetailDecoder = decodeAt (DecodeTarget mempty) decoder
   where
-    decodeAt = DecodeTarget mempty
     decoder = withObject "UIAppearanceDetailEvent" $ \o -> do
       d <- o .: "detail"
       UIAppearanceDetailEvent

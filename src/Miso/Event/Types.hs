@@ -74,6 +74,9 @@ module Miso.Event.Types
     -- *** PointerEvent
   , PointerEvent (..)
   , PointerType (..)
+  , DataTransfer (..)
+  , FileInfo (..)
+  , DOMRect (..)
     -- *** Options
   , Options (..)
   , defaultOptions
@@ -168,6 +171,68 @@ instance FromJSON PointerType where
     "touch" -> pure TouchPointerType
     "pen"   -> pure PenPointerType
     x       -> pure (UnknownPointerType (ms x))
+-----------------------------------------------------------------------------
+-- | The contents of a
+-- <https://developer.mozilla.org/en-US/docs/Web/API/DataTransfer DataTransfer>,
+-- the object behind @event.clipboardData@ (@paste@, @copy@, @cut@) and
+-- @event.dataTransfer@ (@drop@, @dragover@, @dragenter@, ...).
+--
+-- The browser only lets a page read a @DataTransfer@ while the event is being
+-- dispatched, so it cannot be kept and read later: decode it with
+-- 'Miso.Event.Decoder.dataTransferDecoder' (or 'Miso.Event.Decoder.clipboardDecoder'
+-- \/ 'Miso.Event.Decoder.dropDecoder'), which reads it during dispatch.
+--
+-- @since 1.15.0.0
+data DataTransfer
+  = DataTransfer
+  { dataTransferTypes :: [MisoString]
+  -- ^ The formats present, in order (e.g. @[\"text\/plain\", \"text\/html\"]@).
+  -- Contains @\"Files\"@ when files are being dragged or pasted.
+  , dataTransferData :: [(MisoString, MisoString)]
+  -- ^ @(format, getData(format))@ for every format except @\"Files\"@
+  , dataTransferFiles :: [FileInfo]
+  -- ^ The files, if any (see 'FileInfo')
+  , dataTransferDropEffect :: MisoString
+  -- ^ @dropEffect@: @\"none\"@, @\"copy\"@, @\"link\"@ or @\"move\"@
+  , dataTransferEffectAllowed :: MisoString
+  -- ^ @effectAllowed@, e.g. @\"all\"@, @\"copyMove\"@ or @\"uninitialized\"@
+  } deriving (Show, Eq)
+-----------------------------------------------------------------------------
+-- | What is known about a
+-- <https://developer.mozilla.org/en-US/docs/Web/API/File File> without
+-- reading it. A file's contents can only be read asynchronously, so a decoder
+-- cannot return them; decode the @File@ itself as a 'JSVal'
+-- (see 'Miso.Event.Decoder.fromJS') and read it in @update@.
+--
+-- @since 1.15.0.0
+data FileInfo
+  = FileInfo
+  { fileName :: MisoString
+  -- ^ @name@, without a path
+  , fileType :: MisoString
+  -- ^ @type@, the MIME type (@\"\"@ when the browser cannot tell)
+  , fileSize :: Double
+  -- ^ @size@ in bytes
+  , fileLastModified :: Double
+  -- ^ @lastModified@, in milliseconds since the epoch
+  } deriving (Show, Eq)
+-----------------------------------------------------------------------------
+-- | A <https://developer.mozilla.org/en-US/docs/Web/API/DOMRect DOMRect>,
+-- as returned by @element.getBoundingClientRect()@. Coordinates are in CSS
+-- pixels, relative to the viewport.
+--
+-- @since 1.15.0.0
+data DOMRect
+  = DOMRect
+  { rectX :: Double
+  , rectY :: Double
+  , rectWidth :: Double
+  , rectHeight :: Double
+  , rectTop :: Double
+  , rectRight :: Double
+  , rectBottom :: Double
+  , rectLeft :: Double
+  } deriving (Show, Eq)
 -----------------------------------------------------------------------------
 -- | t'Options' for handling event propagation.
 data Options

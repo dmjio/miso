@@ -58,7 +58,6 @@ import           Control.Monad (unless, when)
 import qualified Data.Map.Strict as M
 import qualified Data.IntMap.Strict as IM
 import           Data.IORef
-import           Miso.JSON (parseEither)
 -----------------------------------------------------------------------------
 import           Miso.DSL
 import           Miso.Event.Decoder
@@ -191,7 +190,7 @@ onWithOptions
   -> (result -> model -> DOMRef -> action)
   -- ^ Converts the decoded payload and the element's DOM reference to an @action@
   -> Attribute model action
-onWithOptions phase options eventName Decoder{..} toAction =
+onWithOptions phase options eventName decoder toAction =
   On $ \_model sink (VTree n) logLevel events -> do
     when (logLevel == DebugAll || logLevel == DebugEvents) $
       case M.lookup eventName events of
@@ -211,12 +210,15 @@ onWithOptions phase options eventName Decoder{..} toAction =
         BUBBLE -> getProp "bubbles" (Object eventsVal)
     eventHandlerObject@(Object eo) <- create
     jsOptions <- toJSVal options
-    decodeAtVal <- toJSVal decodeAt
-    -- Synchronous: see Note [Synchronous event callbacks].
+    -- A synchronous callback: the decoder must run while the browser is
+    -- still dispatching the event, because some event data (e.g. a
+    -- DataTransfer's getData) can only be read then. Nothing here blocks:
+    -- 'sink' only enqueues the action and wakes the scheduler.
+    -- See Note [Synchronous event callbacks] and Note [Decoding during
+    -- dispatch] in "Miso.Event.Decoder".
     cb <- FFI.syncCallback2 $ \e domRef -> do
-        Just v <- fromJSVal =<< FFI.eventJSON decodeAtVal e
-        case parseEither decoder v of
-          Left msg -> FFI.consoleError ("[EVENT DECODE ERROR]: " <> ms msg)
+        runDecoder decoder e domRef >>= \case
+          Left msg -> FFI.consoleError ("[EVENT DECODE ERROR]: " <> eventName <> ": " <> msg)
           Right event -> do
             vcompId <- fromJSValUnchecked =<< getProp "pendingComponentId" n
             IM.lookup vcompId <$> readIORef components >>= \case
@@ -253,7 +255,7 @@ onWithOptions phase options eventName Decoder{..} toAction =
         maybe (pure ()) (\c -> FFI.set "componentId" (c :: Int) eventHandlerObject) mCid
     FFI.set eventName eo (Object eventObj)
     -- The handler object is now reachable from the node; release the scratch
-    -- handles. @decodeAtVal@, @cb@ and @n@ are captured by the callback and
+    -- handles. @cb@ and @n@ are captured by the callback and
     -- must stay alive. See Note [Freeing VTree handles] in "Miso.Runtime".
     mapM_ freeJSVal [eventsVal, eventObj, eo, jsOptions, pendingMT]
 -----------------------------------------------------------------------------

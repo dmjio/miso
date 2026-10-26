@@ -128,6 +128,12 @@ module Miso.Html.Event
   -- *** Drop
   , onDrop
   , onDropWithOptions
+  , onDropData
+  -- *** Clipboard
+  , onPaste
+  , onPasteData
+  -- *** Files
+  , onFiles
   -- *** Select
   , onSelect
   -- *** Pointer
@@ -494,6 +500,83 @@ onDropWithOptions
   -> Attribute model action
 onDropWithOptions options action =
   onWithOptions BUBBLE options "drop" emptyDecoder (\() _ _ -> action)
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/drop_event
+--
+-- Receives what was dropped (see t'DataTransfer'): its formats, the data of
+-- each format, and the dropped files. This has @preventDefault@ enabled, so
+-- the browser doesn't also open a dropped file or link.
+--
+-- An element only accepts a drop if its @dragover@ handler prevents the
+-- default, so pair this with one:
+--
+-- @
+-- div_
+--   [ 'onDragOverWithOptions' 'preventDefault' DragOver
+--   , 'onDropData' Dropped
+--   ]
+--   [ \"Drop files here\" ]
+-- @
+--
+-- Add 'dragEvents' to your component's @events@. To read a dropped file's
+-- contents, see 'filesDecoder'.
+--
+-- @since 1.15.0.0
+onDropData
+  :: (DataTransfer -> action)
+  -- ^ Callback receiving the dropped t'DataTransfer'
+  -> Attribute model action
+onDropData f =
+  onWithOptions BUBBLE preventDefault "drop" dropDecoder (\dt _ _ -> f dt)
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/API/Element/paste_event
+--
+-- Receives the pasted plain text, @event.clipboardData.getData(\"text\/plain\")@
+-- (@\"\"@ when what was pasted has no text, e.g. only an image). The paste
+-- still happens; to handle it yourself instead, use
+-- @'onWithOptions' 'BUBBLE' 'preventDefault' \"paste\" 'clipboardTextDecoder'@.
+--
+-- @
+-- textarea_ [ 'onPaste' Pasted ] []
+-- @
+--
+-- Add 'clipboardEvents' to your component's @events@.
+--
+-- @since 1.15.0.0
+onPaste
+  :: (MisoString -> action)
+  -- ^ Callback receiving the pasted text
+  -> Attribute model action
+onPaste f = on "paste" clipboardTextDecoder (\txt _ _ -> f txt)
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/API/Element/paste_event
+--
+-- Like 'onPaste', but receives everything that was pasted (see
+-- t'DataTransfer'): every format with its data (e.g. @text\/html@ alongside
+-- @text\/plain@) and any pasted files.
+--
+-- @since 1.15.0.0
+onPasteData
+  :: (DataTransfer -> action)
+  -- ^ Callback receiving the pasted t'DataTransfer'
+  -> Attribute model action
+onPasteData f = on "paste" clipboardDecoder (\dt _ _ -> f dt)
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/change_event
+--
+-- For an @\<input type=file\>@: receives the chosen files (see
+-- t'FileInfo').
+--
+-- @
+-- input_ [ type_ \"file\", multiple_ True, 'onFiles' Chose ]
+-- @
+--
+-- @since 1.15.0.0
+onFiles
+  :: ([FileInfo] -> action)
+  -- ^ Callback receiving the chosen files
+  -> Attribute model action
+onFiles f = on "change" filesDecoder (\fs _ _ -> f fs)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/submit
 --
