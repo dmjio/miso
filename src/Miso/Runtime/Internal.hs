@@ -47,11 +47,12 @@ module Miso.Runtime.Internal
   , ComponentState(..)
   , ComponentIds
   , schedulerThread
+  , globalQueue
   , unmountComponent
   , freeLifecycleHooks
   , module FFI
   ) where
 ----------------------------------------------------------------------------
-import Miso.Runtime (components, ComponentState(..), ComponentIds, componentIds, rootComponentId, schedulerThread, unmountComponent, freeLifecycleHooks)
+import Miso.Runtime (components, ComponentState(..), ComponentIds, componentIds, rootComponentId, schedulerThread, globalQueue, unmountComponent, freeLifecycleHooks)
 import Miso.FFI.Internal as FFI
 ----------------------------------------------------------------------------

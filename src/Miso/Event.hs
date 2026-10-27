@@ -212,7 +212,8 @@ onWithOptions phase options eventName Decoder{..} toAction =
     eventHandlerObject@(Object eo) <- create
     jsOptions <- toJSVal options
     decodeAtVal <- toJSVal decodeAt
-    cb <- FFI.asyncCallback2 $ \e domRef -> do
+    -- Synchronous: see Note [Synchronous event callbacks].
+    cb <- FFI.syncCallback2 $ \e domRef -> do
         Just v <- fromJSVal =<< FFI.eventJSON decodeAtVal e
         case parseEither decoder v of
           Left msg -> FFI.consoleError ("[EVENT DECODE ERROR]: " <> ms msg)
@@ -255,6 +256,24 @@ onWithOptions phase options eventName Decoder{..} toAction =
     -- handles. @decodeAtVal@, @cb@ and @n@ are captured by the callback and
     -- must stay alive. See Note [Freeing VTree handles] in "Miso.Runtime".
     mapM_ freeJSVal [eventsVal, eventObj, eo, jsOptions, pendingMT]
+-----------------------------------------------------------------------------
+-- Note [Synchronous event callbacks]
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-- Event handlers ('onWithOptions', the delegator, and 'Miso.FFI.addEventListener',
+-- which the subscriptions use) are *synchronous* callbacks on every backend.
+-- A handler has to run while the browser is still dispatching the event:
+-- afterwards 'preventDefault' and 'stopPropagation' do nothing, and the
+-- event's state (a DataTransfer's data, the selection, the layout) may be gone.
+-- An asynchronous callback is not guaranteed to run before dispatch ends; on
+-- the WASM backend it runs after it whenever the event is re-entrant (fired
+-- from Haskell, e.g. by element.blur()) or the scheduler is busy.
+--
+-- A synchronous callback must not block: nothing on this path does (decoding
+-- reads JavaScript values, and a component's sink is 'atomicModifyIORef''
+-- plus a non-blocking 'tryPutMVar'). The action is processed later by the
+-- scheduler thread. On WASM, the thread a sync callback wakes only runs if
+-- something runs the RTS scheduler loop afterwards; see Note [Running the
+-- scheduler after a sync callback] in ffi/wasm/Miso/DSL/FFI.hs.
 -----------------------------------------------------------------------------
 -- | Fire an action immediately after the DOM element is inserted into the document.
 --
