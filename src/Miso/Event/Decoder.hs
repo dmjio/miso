@@ -418,7 +418,8 @@ step :: JSVal -> MisoString -> Maybe JSVal -> IO Step
 step o k margs = do
   let js = stepFunctions
   r <- call (jsStep js) jsNull (o, k, maybe jsNull id margs)
-  mapM_ freeJSVal margs
+  -- 'maybe', not 'mapM_' / 'sequence': under MicroHs those take lists only.
+  maybe (pure ()) freeJSVal margs
   if r /= jsFailed js
     then pure (StepOk r)
     else do
@@ -445,7 +446,7 @@ focusWith
   -> Decoder a
 focusWith label key getArgs (Decoder d) = Decoder $ \c -> do
   let next v = c { cursorFocus = v, cursorPath = label : cursorPath c }
-  tryAny (step (cursorFocus c) key =<< sequence getArgs) >>= \case
+  tryAny (step (cursorFocus c) key =<< maybe (pure Nothing) (fmap Just) getArgs) >>= \case
     Right (StepOk v) -> d (next v)
     Right StepNullish -> failAt c ("cannot read " <> label <> " of null or undefined")
     Right (StepFailed msg) -> failAt (next (cursorFocus c)) msg
