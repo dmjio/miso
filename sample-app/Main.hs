@@ -90,9 +90,11 @@ updateModel = \case
 ----------------------------------------------------------------------------
 -- * Decoders
 --
--- Every decoder starts at the event. 'member' moves to a property, 'invoke'
--- calls a method, 'atElement' moves to the element the handler is on,
--- 'atGlobal' to @window@, and 'fromJS' reads the value it has reached.
+-- Decoders use the "Miso.DSL" operators, as 'IO' code does: '!' reads a
+-- property, '#' calls a method, and 'global' is @window@. 'currentEvent' is the
+-- event, 'currentElement' the element the handler is on, and 'fromJS'
+-- converts a value to Haskell. A read from @null@, a missing method or a
+-- JavaScript exception makes the decoder fail, and '<|>' can fall back.
 ----------------------------------------------------------------------------
 -- | @paste@: the pasted plain text,
 -- @event.clipboardData.getData(\"text\/plain\")@.
@@ -101,8 +103,9 @@ updateModel = \case
 -- only be read while the paste event is being dispatched, which is when
 -- decoders run.
 pastedText :: Decoder MisoString
-pastedText =
-  member "clipboardData" (invoke "getData" ("text/plain" :: MisoString) fromJS)
+pastedText = do
+  clipboard <- currentEvent >>= (! "clipboardData")
+  fromJS =<< (clipboard # "getData") ("text/plain" :: MisoString)
 ----------------------------------------------------------------------------
 -- | Shows a 'DataTransfer' decoded by 'clipboardDecoder' (as used by
 -- 'onPasteData') or 'dropDecoder'. Copy some formatted text from another
@@ -122,20 +125,22 @@ describeDataTransfer dt = commas $
 dropped :: Decoder (DataTransfer, [JSVal])
 dropped =
   (,) <$> dropDecoder
-      <*> member "dataTransfer" (member "files" (items fromJS))
+      <*> (currentEvent >>= (! "dataTransfer") >>= (! "files") >>= items fromJS)
 ----------------------------------------------------------------------------
 -- | @click@: where on the element the click landed, in percent of its width
 -- and height.
 --
 -- @element.getBoundingClientRect()@ is measured as the click happens.
--- 'atElement' is the element with the handler. (@event.currentTarget@
+-- 'currentElement' is the element with the handler. (@event.currentTarget@
 -- would be the mount point, since miso delegates events, and
 -- @event.target@ may be a child of the element.)
 clickInElement :: Decoder (Double, Double)
 clickInElement = do
-  rect <- atElement (invoke "getBoundingClientRect" () domRectDecoder)
-  x <- member "clientX" fromJS
-  y <- member "clientY" fromJS
+  element <- currentElement
+  rect <- domRectDecoder =<< (element # "getBoundingClientRect") ()
+  e <- currentEvent
+  x <- fromJS =<< e ! "clientX"
+  y <- fromJS =<< e ! "clientY"
   pure ( 100 * (x - rectLeft rect) / rectWidth rect
        , 100 * (y - rectTop rect) / rectHeight rect
        )
@@ -144,22 +149,27 @@ clickInElement = do
 -- ('modifierStateDecoder'), for the usual \"Caps Lock is on\" warning on a
 -- password field.
 capsLock :: Decoder Bool
-capsLock = invoke "getModifierState" ("CapsLock" :: MisoString) fromJS
+capsLock = do
+  e <- currentEvent
+  fromJS =<< (e # "getModifierState") ("CapsLock" :: MisoString)
 ----------------------------------------------------------------------------
 -- | @keydown@: the key pressed, whether it is auto-repeating, and whether
 -- Shift is held, the last one read with a method call.
 keyDetails :: Decoder (MisoString, MisoString, Bool, Bool)
-keyDetails =
-  (,,,) <$> member "key" fromJS
-        <*> member "code" fromJS
-        <*> member "repeat" fromJS
-        <*> invoke "getModifierState" ("Shift" :: MisoString) fromJS
+keyDetails = do
+  e <- currentEvent
+  (,,,) <$> (fromJS =<< e ! "key")
+        <*> (fromJS =<< e ! "code")
+        <*> (fromJS =<< e ! "repeat")
+        <*> (fromJS =<< (e # "getModifierState") ("Shift" :: MisoString))
 ----------------------------------------------------------------------------
 -- | @mouseup@: the text selected in the page,
 -- @window.getSelection().toString()@ ('selectionTextDecoder').
--- 'atGlobal' reads browser state at the moment of the event.
+-- 'global' is @window@, read at the moment of the event.
 selectedText :: Decoder MisoString
-selectedText = atGlobal (invoke "getSelection" () (invoke "toString" () fromJS))
+selectedText = do
+  selection <- (global # "getSelection") ()
+  fromJS =<< (selection # "toString") ()
 ----------------------------------------------------------------------------
 -- | @select@ \/ @keyup@ \/ @click@ in a text field: the caret, or the
 -- selected range, @(target.selectionStart, target.selectionEnd)@.
@@ -168,98 +178,106 @@ selectedText = atGlobal (invoke "getSelection" () (invoke "toString" () fromJS))
 -- not have these: miso leaves them out of it, because Safari throws when
 -- they are read on some inputs.
 caret :: Decoder (Int, Int)
-caret =
-  member "target" $
-    (,) <$> member "selectionStart" fromJS
-        <*> member "selectionEnd" fromJS
+caret = do
+  target <- currentEvent >>= (! "target")
+  (,) <$> (fromJS =<< target ! "selectionStart")
+      <*> (fromJS =<< target ! "selectionEnd")
 ----------------------------------------------------------------------------
 -- | @change@ on a @\<select multiple\>@: the value of every selected
 -- option, from @target.selectedOptions@, an @HTMLCollection@
 -- ('selectedOptionsDecoder').
 selectedOptions :: Decoder [MisoString]
 selectedOptions =
-  members ["target", "selectedOptions"] (items (member "value" fromJS))
+  currentEvent >>= (! "target") >>= (! "selectedOptions")
+    >>= items (\option -> fromJS =<< option ! "value")
 ----------------------------------------------------------------------------
 -- | @input@: whether the field is valid and, if not, the browser's message.
--- @target.validity@ is an object, which 'members' walks into.
+-- @target.validity@ is an object, so '!' twice.
 validity :: Decoder (Bool, MisoString)
-validity =
-  member "target" $
-    (,) <$> members ["validity", "valid"] fromJS
-        <*> member "validationMessage" fromJS
+validity = do
+  target <- currentEvent >>= (! "target")
+  (,) <$> (target ! "validity" >>= (! "valid") >>= fromJS)
+      <*> (fromJS =<< target ! "validationMessage")
 ----------------------------------------------------------------------------
 -- | @input@: what kind of edit happened (@insertText@,
 -- @deleteContentBackward@, @insertFromPaste@, ...) and the inserted text,
 -- which is @null@ for deletions, hence 'nullable'.
 inputDetails :: Decoder (MisoString, Maybe MisoString)
-inputDetails =
-  (,) <$> member "inputType" fromJS
-      <*> member "data" (nullable fromJS)
+inputDetails = do
+  e <- currentEvent
+  (,) <$> (fromJS =<< e ! "inputType")
+      <*> (nullable fromJS =<< e ! "data")
 ----------------------------------------------------------------------------
 -- | @click@: the nodes the event travelled through, innermost first,
 -- @event.composedPath()@. The last one is @window@, which has no
 -- @nodeName@, so '<|>' falls back to \"window\".
 eventPath :: Decoder [MisoString]
-eventPath =
-  invoke "composedPath" () (items (member "nodeName" fromJS <|> pure "window"))
+eventPath = do
+  e <- currentEvent
+  path <- (e # "composedPath") ()
+  items (\node -> (fromJS =<< node ! "nodeName") <|> pure "window") path
 ----------------------------------------------------------------------------
 -- | @click@ anywhere in a list: the @id@ of the @\<li\>@ the click was in,
 -- @event.target.closest(\"li\").id@, so one handler on the list serves
 -- every item. @closest@ returns @null@ outside an item, hence 'nullable'.
 clickedItem :: Decoder (Maybe MisoString)
-clickedItem =
-  member "target" $
-    invoke "closest" ("li" :: MisoString) (nullable (member "id" fromJS))
+clickedItem = do
+  target <- currentEvent >>= (! "target")
+  li <- (target # "closest") ("li" :: MisoString)
+  nullable (\item -> fromJS =<< item ! "id") li
 ----------------------------------------------------------------------------
 -- | @click@: the element's background colour as the browser computed it,
 -- @window.getComputedStyle(element).backgroundColor@.
---
--- The element is read first, then passed as an argument: decoders compose
--- with @do@.
 computedBackground :: Decoder MisoString
 computedBackground = do
-  element <- atElement fromJS
-  atGlobal (invoke "getComputedStyle" (element :: JSVal) (member "backgroundColor" fromJS))
+  element <- currentElement
+  style <- (global # "getComputedStyle") element
+  fromJS =<< style ! "backgroundColor"
 ----------------------------------------------------------------------------
 -- | @pointermove@: how many pointer events the browser merged into this
 -- one, @event.getCoalescedEvents().length@. In a browser without
--- @getCoalescedEvents@, 'invoke' fails and '<|>' falls back to 1.
+-- @getCoalescedEvents@, '#' fails and '<|>' falls back to 1.
 coalescedCount :: Decoder Int
-coalescedCount =
-  invoke "getCoalescedEvents" () (member "length" fromJS) <|> pure 1
+coalescedCount = do
+  e <- currentEvent
+  (fromJS =<< (! "length") =<< (e # "getCoalescedEvents") ()) <|> pure 1
 ----------------------------------------------------------------------------
 -- | @scroll@: how far the element is scrolled, and whether it reached the
 -- bottom, from its @scrollTop@, @scrollHeight@ and @clientHeight@.
 scrollPosition :: Decoder (Double, Bool)
-scrollPosition = atElement $ do
-  top <- member "scrollTop" fromJS
-  height <- member "scrollHeight" fromJS
-  visible <- member "clientHeight" fromJS
+scrollPosition = do
+  element <- currentElement
+  top <- fromJS =<< element ! "scrollTop"
+  height <- fromJS =<< element ! "scrollHeight"
+  visible <- fromJS =<< element ! "clientHeight"
   pure (top, top + visible >= height - 1)
 ----------------------------------------------------------------------------
 -- | @wheel@: @deltaY@ and its unit, @deltaMode@ (0: pixels, 1: lines,
 -- 2: pages).
 wheelDelta :: Decoder (Double, Int)
-wheelDelta = (,) <$> member "deltaY" fromJS <*> member "deltaMode" fromJS
+wheelDelta = do
+  e <- currentEvent
+  (,) <$> (fromJS =<< e ! "deltaY") <*> (fromJS =<< e ! "deltaMode")
 ----------------------------------------------------------------------------
 -- | @touchstart@ \/ @touchmove@: every finger on the screen,
 -- @event.touches@, a @TouchList@ ('items' reads any array-like).
 touchPoints :: Decoder [(Double, Double)]
 touchPoints =
-  member "touches" $
-    items ((,) <$> member "clientX" fromJS <*> member "clientY" fromJS)
+  currentEvent >>= (! "touches") >>= items (\touch ->
+    (,) <$> (fromJS =<< touch ! "clientX") <*> (fromJS =<< touch ! "clientY"))
 ----------------------------------------------------------------------------
 -- | @focusin@: the @id@ of the element that now has focus,
 -- @document.activeElement.id@.
 focusedId :: Decoder MisoString
-focusedId = atGlobal (members ["document", "activeElement", "id"] fromJS)
+focusedId = global ! "document" >>= (! "activeElement") >>= (! "id") >>= fromJS
 ----------------------------------------------------------------------------
 -- | Any event: properties every event has.
 eventBasics :: Decoder (MisoString, Double, Bool)
-eventBasics =
-  (,,) <$> member "type" fromJS
-       <*> member "timeStamp" fromJS
-       <*> member "isTrusted" fromJS
+eventBasics = do
+  e <- currentEvent
+  (,,) <$> (fromJS =<< e ! "type")
+       <*> (fromJS =<< e ! "timeStamp")
+       <*> (fromJS =<< e ! "isTrusted")
 ----------------------------------------------------------------------------
 -- * View
 ----------------------------------------------------------------------------

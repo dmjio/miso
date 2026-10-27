@@ -9,20 +9,24 @@ All notable changes to `miso` are documented here.
 - **Decoders read the live event, so they can call its methods** ([#1678](https://github.com/dmjio/miso/issues/1678)).
   A `Decoder` is now a read-only observation of the DOM event that miso runs
   while the browser dispatches it, instead of a JSON parser over a snapshot
-  that only kept strings, numbers and booleans. Decoders are built from a
-  small set of combinators in `Miso.Event.Decoder`: `member` / `members` /
-  `item` move to a property or element, `invoke` calls a method,
-  `atElement` / `atEvent` / `atGlobal` move to the handler's element, the
-  event or `globalThis`, and `fromJS` / `items` / `nullable` / `parseWith`
-  read what is there. `Decoder` is a `Monad` and an `Alternative`, so
-  decoders compose with `do` and fall back with `<|>` (a missing method or a
-  JavaScript exception is a decoding failure). Building a decoder does no
-  `IO`, so views stay pure. Decoders use no `eval`, so they work under a
+  that only kept strings, numbers and booleans. Decoders are written with
+  the `Miso.DSL` operators: `!`, `!!`, `#`, `jsg` and `jsgf` are now methods
+  of a `MonadJS` class with instances for `IO` and `Decoder`, so the same
+  code reads JavaScript in both. `currentEvent` and `currentElement` are the
+  event and the handler's element, and `fromJS` / `items` / `nullable` /
+  `parseWith` turn a `JSVal` into a Haskell value. `Decoder` is a `Monad`
+  and an `Alternative`, so decoders compose with `do` and fall back with
+  `<|>`: in a `Decoder`, a read from `null`, a missing method or a
+  JavaScript exception is a decoding failure rather than an exception.
+  `Decoder` has no `MonadIO`, so building a decoder does no `IO` and views
+  stay pure. Decoders use no `eval`, so they work under a
   Content-Security-Policy without `'unsafe-eval'`.
 
   ```haskell
   pastedText :: Decoder MisoString
-  pastedText = member "clipboardData" (invoke "getData" ("text/plain" :: MisoString) fromJS)
+  pastedText = do
+    clipboard <- currentEvent >>= (! "clipboardData")
+    fromJS =<< (clipboard # "getData") ("text/plain" :: MisoString)
   ```
 
   New decoders: `clipboardTextDecoder`, `clipboardDecoder`, `dropDecoder`,
@@ -34,7 +38,7 @@ All notable changes to `miso` are documented here.
   `onFiles`. `runDecoder` runs a decoder against an event, for tests and
   custom listeners. `sample-app` is now a tour of what decoders can read.
 
-  `parsed` reads the focus with its `FromJSON` instance, checking the
+  `parsed` reads a value with its `FromJSON` instance, checking the
   JavaScript type on every backend (`fromJS` does not on the JS backend);
   `valueDecoder`, `checkedDecoder` and `keycodeDecoder` now use it.
   `parseFields` parses just the named properties, read in one call;

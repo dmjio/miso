@@ -70,13 +70,19 @@
 -- = Property access and method calls
 --
 -- @
--- obj '!' \"name\"          -- get obj.name   :: IO JSVal
--- obj '!!' 3            -- get obj[3]     :: IO JSVal
--- obj '#' \"push\" [val]   -- call obj.push(val) :: IO JSVal
+-- obj '!' \"name\"          -- get obj.name
+-- obj '!!' 3            -- get obj[3]
+-- obj '#' \"push\" [val]   -- call obj.push(val)
 -- 'setField' obj \"x\" 10  -- obj.x = 10
 -- 'getProp' \"x\" obj      -- obj.x
 -- 'setProp' \"x\" 10 obj   -- obj.x = 10
 -- @
+--
+-- '!', '!!' and '#' are methods of 'MonadJS', so the
+-- same code reads JavaScript in 'IO' and in a 'Miso.Event.Decoder.Decoder'.
+-- In 'IO' a JavaScript exception is thrown; in a
+-- 'Miso.Event.Decoder.Decoder' it, and a read from @null@ or @undefined@,
+-- is a decoding failure.
 --
 -- = Object creation
 --
@@ -121,6 +127,7 @@ module Miso.DSL
 #endif
   , ToArgs (..)
   , ToObject (..)
+  , MonadJS (..)
     -- * Types
   , JSVal
   , Object (..)
@@ -135,10 +142,8 @@ module Miso.DSL
   , jsg5
   , jsgf
   , global
-  , (#)
   , setField
   , (<##)
-  , (!)
   , listProps
   , call
   , new
@@ -152,7 +157,6 @@ module Miso.DSL
   , cancelAnimationFrame
   , freeFunction
   , freeJSVal
-  , (!!)
   , isUndefined
   , isNull
   , jsNull
@@ -603,10 +607,47 @@ infixr 1 <##
   setPropIndex_ffi k v' o'
 {-# INLINABLE (<##) #-}
 -----------------------------------------------------------------------------
--- | Retrieves a property from an Object
-(!) :: ToObject o => o -> MisoString -> IO JSVal
-(!) = flip getProp
-{-# INLINABLE (!) #-}
+-- | Reading properties and calling methods of JavaScript values.
+--
+-- In 'IO', a JavaScript exception thrown by a getter or a method is thrown.
+-- In a 'Miso.Event.Decoder.Decoder', it is a decoding failure, and so is
+-- reading from @null@ or @undefined@ and calling a method that doesn't
+-- exist (see "Miso.Event.Decoder").
+--
+-- @since 1.15.0.0
+class Monad m => MonadJS m where
+  -- | Retrieves a property from an Object
+  (!) :: ToObject o => o -> MisoString -> m JSVal
+  -- | Lookup a property based on its index
+  (!!) :: ToObject o => o -> Int -> m JSVal
+  -- | Calls a JS function on an t'Object' at a field with specified arguments.
+  (#) :: (ToObject o, ToArgs args) => o -> MisoString -> args -> m JSVal
+-----------------------------------------------------------------------------
+infixr 2 #
+-----------------------------------------------------------------------------
+instance MonadJS IO where
+  (!) = flip getProp
+  {-# INLINE (!) #-}
+  o !! k = getPropIndex_ffi k =<< toJSVal =<< toObject o
+  {-# INLINE (!!) #-}
+  (#) o k args = do
+    o' <- toJSVal =<< toObject o
+    func <- getProp_ffi
+#ifdef MISO_TEXT
+      (textToJSString k)
+#else
+      k
+#endif
+      o'
+    args' <- toJSVal =<< toArgs args
+    result <- invokeFunction func o' args'
+    -- @func@ and the argument array are temporaries nobody else can reach;
+    -- release them eagerly (see 'freeJSVal'). The argument elements may be the
+    -- caller's handles, so only the array itself is freed.
+    freeJSVal func
+    freeJSVal args'
+    pure result
+  {-# INLINE (#) #-}
 -----------------------------------------------------------------------------
 -- | Lists the properties on a JS Object.
 listProps :: Object -> IO [MisoString]
@@ -633,28 +674,6 @@ call o this args = do
   freeJSVal args'
   pure result
 {-# INLINABLE call #-}
------------------------------------------------------------------------------
--- | Calls a JS function on an t'Object' at a field with specified arguments.
-infixr 2 #
-(#) :: (ToObject object, ToArgs args) => object -> MisoString -> args -> IO JSVal
-(#) o k args = do
-  o' <- toJSVal =<< toObject o
-  func <- getProp_ffi
-#ifdef MISO_TEXT
-    (textToJSString k)
-#else
-    k
-#endif
-    o'
-  args' <- toJSVal =<< toArgs args
-  result <- invokeFunction func o' args'
-  -- @func@ and the argument array are temporaries nobody else can reach;
-  -- release them eagerly (see 'freeJSVal'). The argument elements may be the
-  -- caller's handles, so only the array itself is freed.
-  freeJSVal func
-  freeJSVal args'
-  pure result
-{-# INLINABLE (#) #-}
 -----------------------------------------------------------------------------
 -- | Calls a JavaScript t'Function' with the given arguments and marshals
 -- the result back into Haskell.
@@ -948,11 +967,6 @@ instance FromJSVal Object where
     missing <- (||) <$> isUndefined x <*> isNull x
     pure $ if missing then Nothing else Just (Object x)
   {-# INLINE fromJSVal #-}
------------------------------------------------------------------------------
--- | Lookup a property based on its index
-(!!) :: ToObject object => object -> Int -> IO JSVal
-(!!) o k = getPropIndex_ffi k =<< toJSVal =<< toObject o
-{-# INLINABLE (!!) #-}
 -----------------------------------------------------------------------------
 -- | Checks if a t'JSVal' is undefined
 isUndefined :: ToJSVal val => val -> IO Bool

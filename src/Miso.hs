@@ -772,11 +772,13 @@
 -- @
 -- -- | The @value@ property of an event target: @event.target.value@
 -- 'valueDecoder' :: t'Decoder' 'MisoString'
--- 'valueDecoder' = 'Miso.Event.member' \"target\" ('Miso.Event.member' \"value\" 'Miso.Event.fromJS')
+-- 'valueDecoder' = 'Miso.Event.currentEvent' '>>=' ('Miso.DSL.!' \"target\") '>>=' ('Miso.DSL.!' \"value\") '>>=' 'Miso.Event.fromJS'
 --
 -- -- | Pasted text: @event.clipboardData.getData(\"text\/plain\")@
 -- 'Miso.Event.clipboardTextDecoder' :: t'Decoder' 'MisoString'
--- 'Miso.Event.clipboardTextDecoder' = 'Miso.Event.member' \"clipboardData\" ('Miso.Event.invoke' \"getData\" (\"text\/plain\" :: 'MisoString') 'Miso.Event.fromJS')
+-- 'Miso.Event.clipboardTextDecoder' = do
+--   clipboard <- 'Miso.Event.currentEvent' '>>=' ('Miso.DSL.!' \"clipboardData\")
+--   'Miso.Event.fromJS' '=<<' (clipboard 'Miso.DSL.#' \"getData\") (\"text\/plain\" :: 'MisoString')
 -- @
 --
 -- = Attributes / Properties

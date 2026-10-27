@@ -228,7 +228,7 @@ bumpComponent = component 0 (\Bump -> this += 1) $ \n ->
     ]
 -----------------------------------------------------------------------------
 -- | Run a t'Decoder' against the JavaScript value @eventExpr@ evaluates to,
--- with the value of @elementExpr@ as the element 'atElement' focuses.
+-- with the value of @elementExpr@ as the element 'currentElement' returns.
 decodeJS :: MisoString -> MisoString -> Decoder a -> IO (Either MisoString a)
 decodeJS eventExpr elementExpr d = do
   e <- eval eventExpr
@@ -2076,7 +2076,7 @@ main = withJS $ do
         ComponentState {..} <- liftIO $ (IM.! 1) <$> readIORef components
         VTree (Object ref) <- liftIO (readIORef _componentVTree)
         parentDomRef <- liftIO (ref ! "domRef")
-        childParentField <- liftIO (ref ! "children" !! 0 ! "parent")
+        childParentField <- liftIO (ref ! "children" >>= (!! 0) >>= (! "parent"))
         childParentFieldDOMRef <- liftIO (childParentField ! "domRef")
         parentFieldNull <- liftIO (isNull childParentField)
         parentFieldNull `shouldBe` False
@@ -2547,61 +2547,75 @@ main = withJS $ do
 #endif
 
     describe "Miso.Event.Decoder tests" $ do
-      it "member and fromJS read nested properties" $ do
-        r <- liftIO $ decodeEvent "({ a: { n: 42, s: 'hi' } })" $
-          member "a" ((,) <$> member "n" fromJS <*> member "s" fromJS)
+      it "! and fromJS read nested properties" $ do
+        r <- liftIO $ decodeEvent "({ a: { n: 42, s: 'hi' } })" $ do
+          a <- currentEvent >>= (! "a")
+          (,) <$> (fromJS =<< a ! "n") <*> (fromJS =<< a ! "s")
         r `shouldBe` Right (42 :: Int, "hi" :: MisoString)
 
-      it "members follows a path" $ do
+      it "! chains through a path" $ do
         r <- liftIO $ decodeEvent "({ a: { b: { c: true } } })" $
-          members ["a", "b", "c"] fromJS
+          currentEvent >>= (! "a") >>= (! "b") >>= (! "c") >>= fromJS
         r `shouldBe` Right True
 
-      it "says where a decoder failed" $ do
+      it "says which step failed" $ do
         r <- liftIO $ decodeEvent "({ a: {} })" $
-          members ["a", "missing", "c"] (fromJS :: Decoder Int)
-        r `shouldBe` Left "event.a.missing: cannot read .c of null or undefined"
+          currentEvent >>= (! "a") >>= (! "missing") >>= (! "c") >>= (fromJS :: JSVal -> Decoder Int)
+        r `shouldBe` Left "cannot read .c of null or undefined"
 
       it "fromJS rejects undefined, nullable accepts it" $ do
-        r1 <- liftIO $ decodeEvent "({ a: null })" (member "a" (fromJS :: Decoder Int))
+        let a = currentEvent >>= (! "a")
+        r1 <- liftIO $ decodeEvent "({ a: null })" (a >>= fromJS :: Decoder Int)
         isLeft r1 `shouldBe` True
-        r2 <- liftIO $ decodeEvent "({ a: null })" (member "a" (nullable (fromJS :: Decoder Int)))
+        r2 <- liftIO $ decodeEvent "({ a: null })" (a >>= nullable fromJS :: Decoder (Maybe Int))
         r2 `shouldBe` Right Nothing
-        r3 <- liftIO $ decodeEvent "({ a: 7 })" (member "a" (nullable (fromJS :: Decoder Int)))
+        r3 <- liftIO $ decodeEvent "({ a: 7 })" (a >>= nullable fromJS :: Decoder (Maybe Int))
         r3 `shouldBe` Right (Just 7)
 
-      it "item and items read arrays and array-likes" $ do
-        r1 <- liftIO $ decodeEvent "({ xs: [10, 20, 30] })" $
-          member "xs" ((,) <$> item 1 fromJS <*> items fromJS)
+      it "!! and items read arrays and array-likes" $ do
+        r1 <- liftIO $ decodeEvent "({ xs: [10, 20, 30] })" $ do
+          xs <- currentEvent >>= (! "xs")
+          (,) <$> (fromJS =<< xs !! 1) <*> items fromJS xs
         r1 `shouldBe` Right (20 :: Int, [10, 20, 30 :: Int])
         r2 <- liftIO $ decodeEvent "({ xs: { length: 2, 0: 'x', 1: 'y' } })" $
-          member "xs" (items fromJS)
+          currentEvent >>= (! "xs") >>= items fromJS
         r2 `shouldBe` Right ["x", "y" :: MisoString]
 
-      it "invoke calls a method with its arguments and this" $ do
-        r <- liftIO $ decodeEvent "({ k: 1, add(a, b) { return a + b + this.k; } })" $
-          invoke "add" (2 :: Int, 3 :: Int) fromJS
+      it "# calls a method with its arguments and this" $ do
+        r <- liftIO $ decodeEvent "({ k: 1, add(a, b) { return a + b + this.k; } })" $ do
+          e <- currentEvent
+          fromJS =<< (e # "add") (2 :: Int, 3 :: Int)
         r `shouldBe` Right (6 :: Int)
 
-      it "invoke fails on a missing method, and <|> falls back" $ do
-        r1 <- liftIO $ decodeEvent "({})" (invoke "nope" () (fromJS :: Decoder Int))
-        r1 `shouldBe` Left "event.nope(): no such method"
-        r2 <- liftIO $ decodeEvent "({})" (invoke "nope" () fromJS <|> pure (0 :: Int))
+      it "# fails on a missing method, and <|> falls back" $ do
+        let nope = currentEvent >>= \e -> (e # "nope") () >>= fromJS
+        r1 <- liftIO $ decodeEvent "({})" (nope :: Decoder Int)
+        r1 `shouldBe` Left ".nope(): no such method"
+        r2 <- liftIO $ decodeEvent "({})" (nope <|> pure (0 :: Int))
         r2 `shouldBe` Right 0
 
-      it "invoke turns a JavaScript exception into a failure" $ do
-        r1 <- liftIO $ decodeEvent "({ boom() { throw new Error('boom'); } })" $
-          invoke "boom" () (fromJS :: Decoder Int)
+      it "# turns a JavaScript exception into a failure" $ do
+        let boom = currentEvent >>= \e -> (e # "boom") () >>= fromJS
+            ev = "({ boom() { throw new Error('boom'); } })"
+        r1 <- liftIO $ decodeEvent ev (boom :: Decoder Int)
         isLeft r1 `shouldBe` True
-        r2 <- liftIO $ decodeEvent "({ boom() { throw new Error('boom'); } })" $
-          invoke "boom" () fromJS <|> pure (0 :: Int)
+        r2 <- liftIO $ decodeEvent ev (boom <|> pure (0 :: Int))
         r2 `shouldBe` Right 0
 
       it "failDecoder and fail report their message" $ do
-        r1 <- liftIO $ decodeEvent "({ a: 1 })" (member "a" (failDecoder "nope" :: Decoder ()))
-        r1 `shouldBe` Left "event.a: nope"
+        r1 <- liftIO $ decodeEvent "({ a: 1 })" (failDecoder "nope" :: Decoder ())
+        r1 `shouldBe` Left "nope"
         r2 <- liftIO $ decodeEvent "({})" (fail "bad" :: Decoder ())
-        r2 `shouldBe` Left "event: bad"
+        r2 `shouldBe` Left "bad"
+
+      it "the same code reads JavaScript in IO and in a Decoder" $ do
+        let firstName :: MonadJS m => JSVal -> m JSVal
+            firstName o = o ! "names" >>= (!! 0)
+        o <- liftIO (eval ("({ names: ['ada', 'grace'] })" :: MisoString))
+        fromIO <- liftIO (fromJSValUnchecked =<< firstName o)
+        fromDecoder <- liftIO (runDecoder (firstName o >>= fromJS) o o)
+        fromIO `shouldBe` ("ada" :: MisoString)
+        fromDecoder `shouldBe` Right ("ada" :: MisoString)
 
       it "clipboardTextDecoder reads clipboardData.getData('text/plain')" $ do
         r <- liftIO $ decodeEvent pasteEventJS clipboardTextDecoder
@@ -2667,13 +2681,14 @@ main = withJS $ do
           selectedOptionsDecoder
         r `shouldBe` Right ["a", "c"]
 
-      it "atGlobal focuses globalThis" $ do
-        r <- liftIO $ decodeEvent "({})" (atGlobal (members ["document", "body", "nodeName"] fromJS))
+      it "global is globalThis" $ do
+        r <- liftIO $ decodeEvent "({})" (global ! "document" >>= (! "body") >>= (! "nodeName") >>= fromJS)
         r `shouldBe` Right ("BODY" :: MisoString)
 
-      it "atEvent returns to the event from elsewhere" $ do
+      it "currentEvent and currentElement" $ do
         r <- liftIO $ decodeJS "({ kind: 'event' })" "({ kind: 'element' })" $
-          atElement ((,) <$> member "kind" fromJS <*> atEvent (member "kind" fromJS))
+          (,) <$> (currentElement >>= (! "kind") >>= fromJS)
+              <*> (currentEvent >>= (! "kind") >>= fromJS)
         r `shouldBe` Right ("element" :: MisoString, "event" :: MisoString)
 
       it "valueDecoder and checkedDecoder read event.target" $ do
@@ -2702,7 +2717,7 @@ main = withJS $ do
         (`shouldBe` Right ("v" :: MisoString)) =<<
           liftIO (decodeEvent ev (decodeAt (DecodeTargets [["nope"], ["target"]]) parseValue))
         (`shouldBe` Right ("v" :: MisoString)) =<<
-          liftIO (decodeEvent ev (member "target" (parseWith parseValue)))
+          liftIO (decodeEvent ev (currentEvent >>= (! "target") >>= parseWith parseValue))
 
       it "decodes a paste event while it is dispatched" $ do
         _ <- liftIO (startApp (defaultEvents <> clipboardEvents) pasteComponent)

@@ -214,8 +214,9 @@ data Geolocation
 -----------------------------------------------------------------------------
 instance FromJSVal Geolocation where
   fromJSVal geo = do
-    lat <- fromJSVal =<< geo ! "coords" ! "latitude"
-    lon <- fromJSVal =<< geo ! "coords" ! "longitude"
-    acc <- fromJSVal =<< geo ! "coords" ! "accuracy"
+    coords <- geo ! "coords"
+    lat <- fromJSVal =<< coords ! "latitude"
+    lon <- fromJSVal =<< coords ! "longitude"
+    acc <- fromJSVal =<< coords ! "accuracy"
     pure (Geolocation <$> lat <*> lon <*> acc)
 -----------------------------------------------------------------------------
