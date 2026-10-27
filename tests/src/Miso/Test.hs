@@ -126,6 +126,7 @@ import           Control.Monad
 import           System.Exit
 -----------------------------------------------------------------------------
 import           Miso
+import           Miso.DSL (global, setField)
 import           Miso.Lens
 -----------------------------------------------------------------------------
 -- | Used to group a bunch of expectations using 'it'. Testing out
@@ -149,8 +150,12 @@ it
   -- ^ Test holding multiple expectations
   -> Test ()
 it name action = do
+  testGroup <- use currentTestGroup
+  let phase p = liftIO (markPhase (p <> testGroup <> " > " <> name))
+  phase "before: "
   preamble <- use beforeAction
   liftIO preamble
+  phase "running: "
   total += 1
   currentTestName .= name
   Clocked {..} <- clock action
@@ -161,18 +166,23 @@ it name action = do
   if successful
     then passed += 1
     else failed += 1
-  testGroup <- use currentTestGroup
   caughtEx <- use caughtException
   when (successful || caughtEx) $ do
     liftIO $ prettyTest CurrentTest
       { duration = time
       , ..
       }
+  phase "after: "
   conclusion <- use afterAction
   liftIO conclusion
   currentTestResult .= True
   currentErrorMessage .= mempty
   caughtException .= False
+-----------------------------------------------------------------------------
+-- | Records where the run is in @globalThis.misoTestPhase@, so that the test
+-- driver can report where a hung run stopped (see @ts/playwright.ts@).
+markPhase :: MisoString -> IO ()
+markPhase = setField global "misoTestPhase"
 -----------------------------------------------------------------------------
 data CurrentTest
   = CurrentTest
