@@ -2676,6 +2676,25 @@ main = withJS $ do
           atElement ((,) <$> member "kind" fromJS <*> atEvent (member "kind" fromJS))
         r `shouldBe` Right ("element" :: MisoString, "event" :: MisoString)
 
+      it "valueDecoder and checkedDecoder read event.target" $ do
+        (`shouldBe` Right "typed") =<<
+          liftIO (decodeEvent "({ target: { value: 'typed' } })" valueDecoder)
+        (`shouldBe` Right (Checked True)) =<<
+          liftIO (decodeEvent "({ target: { checked: true } })" checkedDecoder)
+        r <- liftIO $ decodeEvent "({ target: null })" valueDecoder
+        isLeft r `shouldBe` True
+
+      it "keycodeDecoder falls back to which, then charCode" $ do
+        (`shouldBe` Right (KeyCode 13)) =<< liftIO (decodeEvent "({ keyCode: 13, which: 1 })" keycodeDecoder)
+        (`shouldBe` Right (KeyCode 65)) =<< liftIO (decodeEvent "({ which: 65 })" keycodeDecoder)
+        (`shouldBe` Right (KeyCode 97)) =<< liftIO (decodeEvent "({ charCode: 97 })" keycodeDecoder)
+
+      it "keyInfoDecoder reads the key code and the modifier keys" $ do
+        r <- liftIO $ decodeEvent
+          "({ keyCode: 65, shiftKey: true, metaKey: false, ctrlKey: true, altKey: false })"
+          keyInfoDecoder
+        r `shouldBe` Right (KeyInfo 65 True False True False)
+
       it "at and decodeAt still parse JSON snapshots" $ do
         let ev = "({ target: { value: 'v' } })"
             parseValue = JSON.withObject "target" (JSON..: "value")

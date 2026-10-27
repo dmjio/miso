@@ -128,14 +128,13 @@ windowSubWithOptions Options{..} eventName decoder toAction sink =
     where
       release =
         FFI.windowRemoveEventListener eventName
-      -- A synchronous listener, so that the decoder reads the event (and
-      -- @preventDefault@ \/ @stopPropagation@ act on it) while the browser is
-      -- still dispatching it. 'sink' does not block.
+      -- 'FFI.addEventListener' is synchronous, so the decoder reads the event
+      -- (and @preventDefault@ \/ @stopPropagation@ act on it) while the
+      -- browser is still dispatching it. See Note [Synchronous event
+      -- callbacks] in "Miso.Event".
       acquire = do
         win <- jsg "window"
-        cb <- Function <$> FFI.syncCallback1 (listener win)
-        _ <- win # "addEventListener" $ (eventName, cb)
-        pure cb
+        FFI.addEventListener win eventName (listener win)
       listener win e = do
         result <- runDecoder decoder e win
         case result of

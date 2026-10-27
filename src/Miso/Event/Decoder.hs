@@ -199,10 +199,9 @@ module Miso.Event.Decoder
 -----------------------------------------------------------------------------
 import           Control.Applicative
 import           Control.Exception (SomeException, try)
-import           System.IO.Unsafe (unsafePerformIO)
 import qualified Control.Monad.Fail as Fail
 -----------------------------------------------------------------------------
-import           Miso.DSL (JSVal, ToArgs(toArgs), FromJSVal(fromJSVal, fromJSValUnchecked), ToJSVal(toJSVal), (!), call, eval, jsg, jsNull, isNull, isUndefined)
+import           Miso.DSL (JSVal, ToArgs(toArgs), FromJSVal(fromJSVal, fromJSValUnchecked), ToJSVal(toJSVal), (!), call, jsg, jsNull, isNull, isUndefined)
 import           Miso.Event.Types
 import           Miso.JSON (Value, Parser, parseEither, withObject, (.:))
 import           Miso.String (MisoString, ms)
@@ -225,7 +224,8 @@ instance ToJSVal DecodeTarget where
 -- (most recent step first).
 data Cursor
   = Cursor
-  { cursorEvent :: JSVal
+  { cursorJS :: StepFunctions
+  , cursorEvent :: JSVal
   , cursorElement :: JSVal
   , cursorFocus :: JSVal
   , cursorPath :: [MisoString]
@@ -288,12 +288,15 @@ runDecoder
   -- ^ The element 'atElement' focuses
   -> IO (Either MisoString a)
 runDecoder (Decoder d) event element = do
-  result <- tryAny $ d Cursor
-    { cursorEvent = event
-    , cursorElement = element
-    , cursorFocus = event
-    , cursorPath = ["event"]
-    }
+  result <- tryAny $ do
+    js <- stepFunctions
+    d Cursor
+      { cursorJS = js
+      , cursorEvent = event
+      , cursorElement = element
+      , cursorFocus = event
+      , cursorPath = ["event"]
+      }
   pure $ case result of
     Left e -> Left ("event: " <> ms (show e))
     Right r -> r
@@ -305,21 +308,21 @@ runDecoder (Decoder d) event element = do
 --
 --   * a DataTransfer (event.clipboardData, event.dataTransfer) is
 --     "protected": getData returns "" and files is empty;
---   * preventDefault and stopPropagation do nothing;
 --   * the layout, the selection, the focused element, ... may have changed.
 --
--- So 'Miso.Event.onWithOptions' and 'Miso.Subscription.Window.windowSubWithOptions'
--- install *synchronous* callbacks and call 'runDecoder' in them. (Before
--- 1.15 they were asynchronous: on the wasm and JS backends an asynchronous
--- callback is not guaranteed to finish before dispatch does; on wasm this
--- also made preventDefault from a 'windowSubWithOptions' unreliable.)
--- A synchronous callback must not
--- block, and nothing on that path does: running a Decoder only reads
--- JavaScript values, and a component's sink only enqueues the action and
--- does a non-blocking 'tryPutMVar' to wake the scheduler. The action itself
--- is processed later by the scheduler thread, as before.
+-- 'Miso.Event.onWithOptions', 'Miso.Subscription.Window.windowSubWithOptions'
+-- and the miso-native main-thread dispatcher call 'runDecoder' from a
+-- synchronous callback; see Note [Synchronous event callbacks] in
+-- "Miso.Event". Running a Decoder only reads JavaScript values, so it never
+-- blocks.
 --
--- The main-thread (MTS) dispatcher of miso-native already ran synchronously.
+-- Each step that moves the focus is one call to @miso.decoderStep@ (in
+-- ts/miso/event.ts), which never throws: a getter or a method can throw, and
+-- not every backend turns a JavaScript exception raised inside an FFI call
+-- into a Haskell exception that 'try' can catch (the JS backend doesn't; the
+-- exception escapes to the scheduler and kills the thread). It lives in the
+-- miso bundle, not in an @eval@ string, so decoders work under a
+-- Content-Security-Policy without @'unsafe-eval'@.
 -----------------------------------------------------------------------------
 tryAny :: IO a -> IO (Either SomeException a)
 tryAny = try
@@ -346,55 +349,60 @@ failAt c msg = pure (Left (location c <> ": " <> msg))
 failDecoder :: MisoString -> Decoder a
 failDecoder msg = Decoder $ \c -> failAt c msg
 -----------------------------------------------------------------------------
--- | Move the focus to a value computed from the current focus, then run a
--- decoder there. Fails, instead of throwing, when the focus is
--- @null@ \/ @undefined@ or when JavaScript throws.
+-- | @miso.decoderStep@ and @miso.decoderFailure@ (see Note [Decoding during
+-- dispatch]), looked up once per event.
+data StepFunctions
+  = StepFunctions
+  { jsMiso :: JSVal
+  , jsStep :: JSVal
+  , jsFailure :: JSVal
+  }
+-----------------------------------------------------------------------------
+stepFunctions :: IO StepFunctions
+stepFunctions = do
+  miso <- jsg "miso"
+  StepFunctions miso <$> miso ! "decoderStep" <*> miso ! "decoderFailure"
+-----------------------------------------------------------------------------
+-- | The outcome of one @miso.decoderStep@.
+data Step
+  = StepOk JSVal
+  | StepNullish
+  -- ^ The step started from @null@ or @undefined@
+  | StepFailed MisoString
+-----------------------------------------------------------------------------
+-- | @step js o k null@ reads @o[k]@; @step js o m args@ calls @o.m(...args)@.
+step :: StepFunctions -> JSVal -> MisoString -> JSVal -> IO Step
+step js o k args = do
+  r <- call (jsStep js) jsNull (o, k, args)
+  failure <- call (jsFailure js) jsNull [r]
+  ok <- isNull failure
+  if ok
+    then pure (StepOk r)
+    else do
+      nullish <- fromJSValUnchecked =<< failure ! "nullish"
+      if nullish
+        then pure StepNullish
+        else StepFailed <$> (fromJSValUnchecked =<< failure ! "message")
+-----------------------------------------------------------------------------
+-- | Move the focus with one @miso.decoderStep@, then run a decoder there.
+-- Fails, instead of throwing, when the focus is @null@ \/ @undefined@ or
+-- when JavaScript throws.
 focusWith
   :: MisoString
   -- ^ The step, for error messages (e.g. @\".target\"@)
-  -> (JSVal -> IO (Either MisoString JSVal))
+  -> MisoString
+  -- ^ The property or method name
+  -> IO JSVal
+  -- ^ @null@ to read the property, or the arguments to call the method with
   -> Decoder a
   -> Decoder a
-focusWith step get (Decoder d) = Decoder $ \c -> do
-  let next v = c { cursorFocus = v, cursorPath = step : cursorPath c }
-  nullish <- isNullish (cursorFocus c)
-  if nullish
-    then failAt c ("cannot read " <> step <> " of null or undefined")
-    else tryAny (get (cursorFocus c)) >>= \case
-      Left e -> failAt (next (cursorFocus c)) ("threw " <> ms (show e))
-      Right (Left msg) -> failAt (next (cursorFocus c)) msg
-      Right (Right v) -> d (next v)
------------------------------------------------------------------------------
--- | @safeGet o k null@ reads @o[k]@; @safeGet o m args@ calls @o.m(...args)@.
---
--- Both run in JavaScript, inside a @try@: a getter or a method can throw, and
--- not every backend turns a JavaScript exception thrown from an FFI call into
--- a Haskell exception that 'try' can catch (the JS backend doesn't; the
--- exception escapes to the scheduler and kills the thread).
-safeGet :: JSVal -> MisoString -> JSVal -> IO (Either MisoString JSVal)
-safeGet o k args = do
-  r <- call safeGetFunction jsNull (o, k, args)
-  err <- r ! "error"
-  ok <- isUndefined err
-  if ok
-    then Right <$> r ! "value"
-    else Left <$> fromJSValUnchecked err
------------------------------------------------------------------------------
--- | The JavaScript half of 'safeGet', created once.
-safeGetFunction :: JSVal
-safeGetFunction = unsafePerformIO $ eval $ mconcat
-  [ "(function (o, k, args) {"
-  , "  try {"
-  , "    if (args === null) return { value: o[k] };"
-  , "    var f = o[k];"
-  , "    if (typeof f !== 'function') return { error: 'no such method' };"
-  , "    return { value: f.apply(o, args) };"
-  , "  } catch (e) {"
-  , "    return { error: 'threw ' + String(e) };"
-  , "  }"
-  , "})"
-  ]
-{-# NOINLINE safeGetFunction #-}
+focusWith label key getArgs (Decoder d) = Decoder $ \c -> do
+  let next v = c { cursorFocus = v, cursorPath = label : cursorPath c }
+  tryAny (step (cursorJS c) (cursorFocus c) key =<< getArgs) >>= \case
+    Right (StepOk v) -> d (next v)
+    Right StepNullish -> failAt c ("cannot read " <> label <> " of null or undefined")
+    Right (StepFailed msg) -> failAt (next (cursorFocus c)) msg
+    Left e -> failAt (next (cursorFocus c)) ("threw " <> ms (show e))
 -----------------------------------------------------------------------------
 -- | Focus the property @k@ of the current focus (@focus[k]@), and run a
 -- decoder there. Inherited properties and getters work (e.g. @\"target\"@,
@@ -410,7 +418,7 @@ safeGetFunction = unsafePerformIO $ eval $ mconcat
 --
 -- @since 1.15.0.0
 member :: MisoString -> Decoder a -> Decoder a
-member k = focusWith ("." <> k) (\o -> safeGet o k jsNull)
+member k = focusWith ("." <> k) k (pure jsNull)
 -----------------------------------------------------------------------------
 -- | Focus a path of properties.
 --
@@ -433,7 +441,7 @@ members ks d = foldr member d ks
 --
 -- @since 1.15.0.0
 item :: Int -> Decoder a -> Decoder a
-item i = focusWith ("[" <> ms i <> "]") (\o -> safeGet o (ms i) jsNull)
+item i = focusWith ("[" <> ms i <> "]") (ms i) (pure jsNull)
 -----------------------------------------------------------------------------
 -- | Call the method @m@ of the focus with @args@ (see 'Miso.DSL.ToArgs':
 -- @()@ for no arguments, a value for one, a tuple or list for several), and
@@ -459,8 +467,7 @@ item i = focusWith ("[" <> ms i <> "]") (\o -> safeGet o (ms i) jsNull)
 --
 -- @since 1.15.0.0
 invoke :: ToArgs args => MisoString -> args -> Decoder a -> Decoder a
-invoke m args = focusWith ("." <> m <> "()") $ \o ->
-  safeGet o m =<< toJSVal =<< toArgs args
+invoke m args = focusWith ("." <> m <> "()") m (toJSVal =<< toArgs args)
 -----------------------------------------------------------------------------
 -- | Focus the event again, from anywhere in a decoder. A t'Decoder' starts
 -- at the event, so this is only needed after moving the focus elsewhere:
@@ -587,7 +594,9 @@ parseWith = at []
 -- parse it. This is how decoders were written before 1.15:
 --
 -- @
--- 'valueDecoder' = 'at' [\"target\"] $ 'withObject' \"target\" $ \\o -> o '.:' \"value\"
+-- -- event.target.value
+-- targetValue :: t'Decoder' 'MisoString'
+-- targetValue = 'at' [\"target\"] $ 'withObject' \"target\" $ \\o -> o '.:' \"value\"
 -- @
 --
 -- Unlike 'members', a path that runs into @null@ or @undefined@ gives the
@@ -599,7 +608,7 @@ at
   -- ^ JSON parser applied to the snapshot at that path
   -> Decoder a
 at path parser = Decoder $ \c ->
-  tryAny (snapshot path (cursorFocus c)) >>= \case
+  tryAny (snapshot (cursorJS c) path (cursorFocus c)) >>= \case
     Left e -> failAt c ("threw " <> ms (show e))
     Right Nothing -> failAt c "could not convert this value to JSON"
     Right (Just v) ->
@@ -610,15 +619,14 @@ at path parser = Decoder $ \c ->
 -- | JSON snapshot of the value at @path@ below @v@, by @miso.eventJSON@
 -- (see 'Miso.FFI.Internal.eventJSON'). That only takes objects (it uses @in@), and throws
 -- on a primitive, which is then converted directly.
-snapshot :: [MisoString] -> JSVal -> IO (Maybe Value)
-snapshot path v = do
+snapshot :: StepFunctions -> [MisoString] -> JSVal -> IO (Maybe Value)
+snapshot js path v = do
   pathVal <- toJSVal path
-  miso <- jsg "miso"
   args <- toJSVal [pathVal, v]
-  safeGet miso "eventJSON" args >>= \case
-    Right json -> fromJSVal json
-    Left _ | null path -> fromJSVal v
-           | otherwise -> pure Nothing
+  step js (jsMiso js) "eventJSON" args >>= \case
+    StepOk json -> fromJSVal json
+    _ | null path -> fromJSVal v
+      | otherwise -> pure Nothing
 -----------------------------------------------------------------------------
 -- | A JSON decoder at a t'DecodeTarget'. For 'DecodeTargets', the first
 -- path whose snapshot parses wins.
@@ -643,28 +651,34 @@ emptyDecoder = pure ()
 -----------------------------------------------------------------------------
 -- | Retrieves either "keyCode", "which" or "charCode" field in t'Decoder'
 keycodeDecoder :: Decoder KeyCode
-keycodeDecoder = at [] $ withObject "event" $ \o ->
-  KeyCode <$> (o .: "keyCode" <|> o .: "which" <|> o .: "charCode")
+keycodeDecoder = KeyCode <$> keyCodeField
 -----------------------------------------------------------------------------
 -- | Retrieves either "keyCode", "which" or "charCode" field in t'Decoder',
 -- along with shift, ctrl, meta and alt.
 keyInfoDecoder :: Decoder KeyInfo
-keyInfoDecoder = at [] $ withObject "event" $ \o ->
+keyInfoDecoder =
   KeyInfo
-    <$> (o .: "keyCode" <|> o .: "which" <|> o .: "charCode")
-    <*> o .: "shiftKey"
-    <*> o .: "metaKey"
-    <*> o .: "ctrlKey"
-    <*> o .: "altKey"
+    <$> (KeyCode <$> keyCodeField)
+    <*> member "shiftKey" fromJS
+    <*> member "metaKey" fromJS
+    <*> member "ctrlKey" fromJS
+    <*> member "altKey" fromJS
 -----------------------------------------------------------------------------
--- | Retrieves "value" field in t'Decoder'
+-- | @event.keyCode@, else @event.which@, else @event.charCode@.
+keyCodeField :: Decoder Int
+keyCodeField = member "keyCode" fromJS <|> member "which" fromJS <|> member "charCode" fromJS
+-----------------------------------------------------------------------------
+-- | Retrieves "value" field in t'Decoder': @event.target.value@.
+--
+-- Reads that one property. (Before 1.15 this took a JSON snapshot of every
+-- property of @event.target@ on each event, which on an element includes
+-- getters such as @offsetWidth@ that force a layout.)
 valueDecoder :: Decoder MisoString
-valueDecoder = at ["target"] $ withObject "target" $ \o -> o .: "value"
+valueDecoder = member "target" (member "value" fromJS)
 -----------------------------------------------------------------------------
--- | Retrieves "checked" field in t'Decoder'
+-- | Retrieves "checked" field in t'Decoder': @event.target.checked@.
 checkedDecoder :: Decoder Checked
-checkedDecoder = at ["target"] $ withObject "target" $ \o ->
-  Checked <$> (o .: "checked")
+checkedDecoder = member "target" (Checked <$> member "checked" fromJS)
 -----------------------------------------------------------------------------
 -- | Pointer t'Decoder' for use with events like "onpointerover"
 pointerDecoder :: Decoder PointerEvent

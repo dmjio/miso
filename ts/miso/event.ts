@@ -220,6 +220,45 @@ function propagateWhileAble<T>(vtree: VTree<T>, event: Event): void {
     }
   }
 }
+/* A failed step of a decoder (see Miso.Event.Decoder). `nullish` is true when
+   the step could not start because the value it starts from is null or
+   undefined; the Haskell side then reports the failure at that value.
+*/
+class DecoderFailure {
+  message: string;
+  nullish: boolean;
+  constructor(message: string, nullish: boolean) {
+    this.message = message;
+    this.nullish = nullish;
+  }
+}
+/* One step of a decoder (see Miso.Event.Decoder): with `args === null`, read
+   `obj[key]`; otherwise call the method `obj[key](...args)` with `obj` as
+   `this`. Returns the value, or a DecoderFailure (test with decoderFailure).
+   Never throws: a getter or a method can throw, and not every Haskell backend
+   can catch a JavaScript exception raised inside an FFI call.
+*/
+export function decoderStep(obj: any, key: string, args: Array<any> | null): any {
+  if (obj === null || obj === undefined) return new DecoderFailure('', true);
+  try {
+    if (args === null) return obj[key];
+    const f = obj[key];
+    if (typeof f !== 'function') return new DecoderFailure('no such method', false);
+    return f.apply(obj, args);
+  } catch (e) {
+    let shown: string;
+    try {
+      shown = String(e);
+    } catch (_) {
+      shown = 'an exception';
+    }
+    return new DecoderFailure('threw ' + shown, false);
+  }
+}
+/* The DecoderFailure `v` is, or null when `v` is a value. */
+export function decoderFailure(v: any): DecoderFailure | null {
+  return v instanceof DecoderFailure ? v : null;
+}
 /* Walks down obj following the path described by `at`, then filters primitive
        values (string, numbers and booleans). Sort of like JSON.stringify(), but
        on an Event that is stripped of impure references.

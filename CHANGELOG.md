@@ -17,7 +17,8 @@ All notable changes to `miso` are documented here.
   read what is there. `Decoder` is a `Monad` and an `Alternative`, so
   decoders compose with `do` and fall back with `<|>` (a missing method or a
   JavaScript exception is a decoding failure). Building a decoder does no
-  `IO`, so views stay pure.
+  `IO`, so views stay pure. Decoders use no `eval`, so they work under a
+  Content-Security-Policy without `'unsafe-eval'`.
 
   ```haskell
   pastedText :: Decoder MisoString
@@ -71,9 +72,23 @@ All notable changes to `miso` are documented here.
   myDecoder = at ["target"] parser          -- or: decodeAt (DecodeTarget ["target"]) parser
   ```
 
-  `DecodeTargets` now tries each path in turn and uses the first one that
-  parses, as its documentation always said. Code that ran a decoder by hand
-  (`parseEither (decoder d) =<< eventJSON ...`) should use `runDecoder`.
+  Code that ran a decoder by hand (`parseEither (decoder d) =<< eventJSON ...`)
+  should use `runDecoder`.
+
+- **Breaking: `DecodeTargets` runs the parser on each path in turn.** The
+  first path whose snapshot parses wins, as its documentation always said.
+  Before, the parser was run once, on a JSON *array* holding one snapshot per
+  path. A parser written for that array still compiles but now fails at
+  runtime (an `[EVENT DECODE ERROR]` in the console): parse a single
+  snapshot instead.
+
+- **`valueDecoder`, `checkedDecoder`, `keycodeDecoder` and `keyInfoDecoder`
+  read only the properties they need** (`event.target.value`, ...) instead of
+  taking a JSON snapshot of every property of the event or its target. The
+  snapshot of an element read getters such as `offsetWidth`, forcing a layout
+  on every keystroke. On form controls the decoded values are the same; on
+  an element whose `value` is not a string (`<li>`, `<progress>`) the value
+  is no longer rejected, and some backends do not check the type.
 
 - **Event handlers run synchronously, during dispatch, on every backend.**
   `on` / `onWithOptions`, event delegation and `addEventListener` (and the
