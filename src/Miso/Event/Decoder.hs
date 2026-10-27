@@ -205,7 +205,7 @@ import qualified Control.Monad.Fail as Fail
 -----------------------------------------------------------------------------
 import           Miso.DSL (JSVal, ToArgs(toArgs), FromJSVal(fromJSVal, fromJSValUnchecked), ToJSVal(toJSVal), (!), call, freeJSVal, jsg, jsNull, isNull, isUndefined)
 import           Miso.Event.Types
-import           Miso.JSON (FromJSON(parseJSON), Value(Null), Parser, parseEither, withObject, (.:))
+import           Miso.JSON (FromJSON(parseJSON), Value(Null, String), Parser, parseEither, withObject, (.:))
 import           Miso.String (MisoString, ms)
 import           System.IO.Unsafe (unsafePerformIO)
 -----------------------------------------------------------------------------
@@ -225,11 +225,14 @@ instance ToJSVal DecodeTarget where
 -----------------------------------------------------------------------------
 -- | Where a t'Decoder' is looking. The path is only used for error messages
 -- (most recent step first).
+--
+-- The 'JSVal' fields are strict: see Note [Evaluated JSVals in argument
+-- lists].
 data Cursor
   = Cursor
-  { cursorEvent :: JSVal
-  , cursorElement :: JSVal
-  , cursorFocus :: JSVal
+  { cursorEvent :: !JSVal
+  , cursorElement :: !JSVal
+  , cursorFocus :: !JSVal
   , cursorPath :: [MisoString]
   }
 -----------------------------------------------------------------------------
@@ -339,7 +342,22 @@ runDecoder (Decoder d) event element = do
 -- A step frees the handles it allocates (argument arrays, the error
 -- object), as the rest of the runtime does on hot paths. It cannot free the
 -- value it steps to: that is the new focus, and a decoder may return it
--- ('fromJS' at 'JSVal').
+-- ('fromJS' at 'JSVal'). Nor can it free a JSON result that is a string:
+-- on WASM the 'MisoString' in @'Miso.JSON.String'@ shares its handle (see
+-- 'jsonStep').
+-----------------------------------------------------------------------------
+-- Note [Evaluated JSVals in argument lists]
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-- A step passes the focus to @miso.decoderStep@ inside an argument list
+-- ('call' with a tuple, 'toJSVal' of a list). On the JS backend, a 'JSVal'
+-- in such a list must already be evaluated: when it was the thunk
+-- @'jsGlobal' 'stepFunctions'@, @decoderStep@ received the 'StepFunctions'
+-- heap object instead of @globalThis@, so @'atGlobal' ('member'
+-- \"document\" ...)@ read @undefined@.
+--
+-- So the 'JSVal' fields of 'Cursor' (and of 'StepFunctions') are strict:
+-- every focus is evaluated when the cursor is built, before any step
+-- passes it to JavaScript.
 -----------------------------------------------------------------------------
 tryAny :: IO a -> IO (Either SomeException a)
 tryAny = try
@@ -370,11 +388,11 @@ failDecoder msg = Decoder $ \c -> failAt c msg
 -- dispatch]), and @globalThis@, looked up once.
 data StepFunctions
   = StepFunctions
-  { jsMiso :: JSVal
-  , jsStep :: JSVal
-  , jsFailed :: JSVal
-  , jsError :: JSVal
-  , jsGlobal :: JSVal
+  { jsMiso :: !JSVal
+  , jsStep :: !JSVal
+  , jsFailed :: !JSVal
+  , jsError :: !JSVal
+  , jsGlobal :: !JSVal
   }
 -----------------------------------------------------------------------------
 stepFunctions :: StepFunctions
@@ -709,12 +727,18 @@ snapshot path v =
 -----------------------------------------------------------------------------
 -- | Call a JSON-producing helper of the miso bundle (with a JavaScript array
 -- of arguments, which this frees) and convert its result to a 'Value'.
+--
+-- The result's handle is freed unless the 'Value' is a string: on WASM,
+-- 'fromJSVal' makes a JavaScript string into a 'MisoString' that /is/ that
+-- handle, so freeing it would leave the decoded string dangling.
 jsonStep :: MisoString -> JSVal -> IO (Either MisoString Value)
 jsonStep helper args =
   step (jsMiso stepFunctions) helper (Just args) >>= \case
     StepOk json -> do
       value <- fromJSVal json
-      freeJSVal json
+      case value of
+        Just (String _) -> pure ()
+        _ -> freeJSVal json
       pure (maybe (Left "could not convert this value to JSON") Right value)
     StepNullish -> pure (Left "could not convert this value to JSON")
     StepFailed msg -> pure (Left msg)
