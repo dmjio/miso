@@ -69,7 +69,7 @@ function fetchCore(url, method, body, requestHeaders, successful, errorful, resp
       } else if (responseType === "none") {
         return null;
       }
-    }).then((body) => successful({ error: null, body, headers, status })).catch((body) => errorful({ error: null, body, headers, status }));
+    }).then((body2) => successful({ error: null, body: body2, headers, status })).catch((body2) => errorful({ error: null, body: body2, headers, status }));
   } catch (err) {
     errorful({ body: null, error: err.message, headers, status });
   }
@@ -361,8 +361,8 @@ function diffVText(c, n, context) {
 }
 function replace(c, n, parent, context) {
   if (c.type === 3 /* VFrag */) {
-    const lastRef = getLastDOMRef(c);
-    const anchor = lastRef ? lastRef.nextSibling : context.nextSibling(c);
+    const lastRef2 = getLastDOMRef(c);
+    const anchor = lastRef2 ? lastRef2.nextSibling : context.nextSibling(c);
     destroy(c, parent, context);
     if (anchor) {
       createElement(parent, 2 /* INSERT_BEFORE */, anchor, n, context);
@@ -1022,24 +1022,24 @@ function propagateWhileAble(vtree, event) {
     }
   }
 }
-
-class DecoderFailure {
-  message;
-  nullish;
-  constructor(message, nullish) {
-    this.message = message;
-    this.nullish = nullish;
-  }
+var decoderFailed = Object.freeze({});
+var lastDecoderError = { message: "", nullish: false };
+function decoderError() {
+  return lastDecoderError;
+}
+function decoderFail(message, nullish) {
+  lastDecoderError = { message, nullish };
+  return decoderFailed;
 }
 function decoderStep(obj, key, args) {
   if (obj === null || obj === undefined)
-    return new DecoderFailure("", true);
+    return decoderFail("", true);
   try {
     if (args === null)
       return obj[key];
     const f = obj[key];
     if (typeof f !== "function")
-      return new DecoderFailure("no such method", false);
+      return decoderFail("no such method", false);
     return f.apply(obj, args);
   } catch (e) {
     let shown;
@@ -1048,11 +1048,26 @@ function decoderStep(obj, key, args) {
     } catch (_) {
       shown = "an exception";
     }
-    return new DecoderFailure("threw " + shown, false);
+    return decoderFail("threw " + shown, false);
   }
 }
-function decoderFailure(v) {
-  return v instanceof DecoderFailure ? v : null;
+function decoderSnapshot(obj) {
+  if (obj === null || obj === undefined)
+    return null;
+  const t = typeof obj;
+  if (t === "string" || t === "number" || t === "boolean")
+    return obj;
+  return eventJSON([], obj);
+}
+function decoderPick(obj, keys) {
+  const picked = {};
+  for (const key of keys) {
+    const v = obj[key];
+    const t = typeof v;
+    if (t === "string" || t === "number" || t === "boolean")
+      picked[key] = v;
+  }
+  return picked;
 }
 function eventJSON(at, obj) {
   if (typeof at[0] === "object") {
@@ -1111,12 +1126,12 @@ function getAllPropertyNames(obj) {
 
 // ts/miso/context/dom.ts
 var eventContext = {
-  addEventListener: (mount, event, listener, capture, signal) => {
+  addEventListener: (mount, event, listener2, capture, signal) => {
     const options = { capture };
     if (signal) {
       options["signal"] = signal;
     }
-    mount.addEventListener(event, listener, options);
+    mount.addEventListener(event, listener2, options);
   },
   delegator: (mount, events, getVTree, debug, ctx) => {
     delegator(mount, events, getVTree, debug, ctx);
@@ -1284,17 +1299,17 @@ function collapseSiblingTextNodes(vs) {
   }
   return adjusted;
 }
-function hydrate(logLevel, mountPoint, vtree, context, drawingContext) {
+function hydrate(logLevel, mountPoint, vtree, context, drawingContext2) {
   if (!vtree || !mountPoint)
     return false;
   if (mountPoint.nodeType === 3)
     return false;
-  if (!walk(logLevel, vtree, context.firstChild(mountPoint), context, drawingContext)) {
+  if (!walk(logLevel, vtree, context.firstChild(mountPoint), context, drawingContext2)) {
     if (logLevel) {
       console.warn("[DEBUG_HYDRATE] Could not copy DOM into virtual DOM, falling back to diff");
     }
     while (context.firstChild(mountPoint))
-      drawingContext.removeChild(mountPoint, context.lastChild(mountPoint));
+      drawingContext2.removeChild(mountPoint, context.lastChild(mountPoint));
     return false;
   } else {
     if (logLevel) {
@@ -1311,14 +1326,14 @@ function nextAfter(tree, current) {
   const lastRef = getLastDOMRef(tree);
   return lastRef ? lastRef.nextSibling : current;
 }
-function walk(logLevel, vtree, node, context, drawingContext) {
+function walk(logLevel, vtree, node, context, drawingContext2) {
   switch (vtree.type) {
     case 0 /* VComp */:
       let mounted = vtree.mount(node.parentNode);
       vtree.componentId = mounted.componentId;
       vtree.child = mounted.componentTree;
       mounted.componentTree.parent = vtree;
-      if (!walk(logLevel, vtree.child, node, context, drawingContext)) {
+      if (!walk(logLevel, vtree.child, node, context, drawingContext2)) {
         return false;
       }
       break;
@@ -1329,7 +1344,7 @@ function walk(logLevel, vtree, node, context, drawingContext) {
           diagnoseError(logLevel, child, null);
           return false;
         }
-        if (!walk(logLevel, child, node, context, drawingContext))
+        if (!walk(logLevel, child, node, context, drawingContext2))
           return false;
         node = nextAfter(child, node);
       }
@@ -1348,7 +1363,7 @@ function walk(logLevel, vtree, node, context, drawingContext) {
       }
       vtree.domRef = node;
       vtree.children = collapseSiblingTextNodes(vtree.children);
-      callCreated(node, vtree, drawingContext);
+      callCreated(node, vtree, drawingContext2);
       let domCursor = node.firstChild;
       for (var i = 0;i < vtree.children.length; i++) {
         const vdomChild = vtree.children[i];
@@ -1356,7 +1371,7 @@ function walk(logLevel, vtree, node, context, drawingContext) {
           diagnoseError(logLevel, vdomChild, null);
           return false;
         }
-        if (!walk(logLevel, vdomChild, domCursor, context, drawingContext)) {
+        if (!walk(logLevel, vdomChild, domCursor, context, drawingContext2)) {
           return false;
         }
         domCursor = nextAfter(vdomChild, domCursor);
@@ -1382,7 +1397,10 @@ globalThis["miso"] = {
   callSetSelectionRange,
   eventJSON,
   decoderStep,
-  decoderFailure,
+  decoderFailed,
+  decoderError,
+  decoderSnapshot,
+  decoderPick,
   fetchCore,
   eventSourceConnect,
   eventSourceClose,

@@ -34,6 +34,14 @@ All notable changes to `miso` are documented here.
   `onFiles`. `runDecoder` runs a decoder against an event, for tests and
   custom listeners. `sample-app` is now a tour of what decoders can read.
 
+  `parsed` reads the focus with its `FromJSON` instance, checking the
+  JavaScript type on every backend (`fromJS` does not on the JS backend);
+  `valueDecoder`, `checkedDecoder` and `keycodeDecoder` now use it.
+  `parseFields` parses just the named properties, read in one call;
+  `pointerDecoder` now uses it instead of snapshotting the whole event.
+  When every path of a `DecodeTargets` fails, the error lists why each one
+  did. `some` and `many` on `Decoder` fail instead of looping forever.
+
 - **`Functor` instances for `View` and `Attribute` (non-`native` builds).**
   `fmap` / `<$>` / `<$` map the `action` a view or attribute produces, so a
   sub-view written against one `action` type can be embedded in another
