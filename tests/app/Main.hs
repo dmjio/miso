@@ -51,6 +51,9 @@ import           Miso.Router
 import           Miso.UUID (UUID)
 import qualified Miso.UUID as UUID
 import qualified Miso.String as S
+import           Miso.Subscription.Keyboard (Arrows (..), arrowsSub)
+import           Miso.Subscription.Util (createSub)
+import qualified Miso.FFI as FFI
 import qualified Miso.Data.Map as MDM
 import qualified Miso.Data.Set as MDS
 import qualified Miso.Data.Array as Array
@@ -67,7 +70,7 @@ import           Miso.Html
 import           Miso.JSON.Parser (decodePure)
 import           Miso.Html.Property
 import           Miso.Cookie (Cookie (..), cookieValue, defaultCookie, cookieSet_, cookieGet_, cookieDelete_, cookieDeleteWith_, cookieGetAll_)
-import           Miso.Runtime.Internal (ComponentState (..), components, componentIds, schedulerThread, unmountComponent)
+import           Miso.Runtime.Internal (ComponentState (..), components, componentIds, globalQueue, schedulerThread, unmountComponent)
 -----------------------------------------------------------------------------
 -- | Clears the component state and DOM between each test.
 --
@@ -75,8 +78,16 @@ import           Miso.Runtime.Internal (ComponentState (..), components, compone
 -- 'startAppWithContext' forked ('Miso.Reload' does the same before remounting).
 clearComponentState :: IO ()
 clearComponentState = do
+  -- Stop every component's subscriptions, which removes their listeners
+  -- (createSub's release): a listener left behind would keep sinking actions
+  -- into a later test's component with the same id.
+  comps <- readIORef components :: IO (IM.IntMap (ComponentState () () () ()))
+  forM_ (IM.elems comps) $ \cs -> mapM_ killThread . M.elems =<< readIORef (_componentSubThreads cs)
   writeIORef components mempty
   writeIORef componentIds initialComponentId
+  -- Actions a test left queued would otherwise reach the next test's
+  -- component with the same id (ids restart), which has another action type.
+  writeIORef globalQueue mempty
   _ <- try @SomeException (readIORef schedulerThread >>= killThread)
   pure ()
 -----------------------------------------------------------------------------
@@ -156,6 +167,64 @@ propagationAttempts = 100
 readText :: MisoString -> IO MisoString
 readText elemId = fromJSValUnchecked =<< eval
   ("document.getElementById('" <> elemId <> "').textContent")
+-----------------------------------------------------------------------------
+newtype ArrowsAction = SetArrows MisoString
+  deriving stock (Show, Eq, Generic)
+#ifndef __MHS__
+  deriving anyclass (JSON.FromJSON, JSON.ToJSON)
+#endif
+-----------------------------------------------------------------------------
+-- | Shows the arrow keys held down, from 'arrowsSub' (which listens on
+-- @window@ via 'Miso.FFI.Internal.addEventListener').
+arrowsComponent :: Component () () MisoString ArrowsAction
+arrowsComponent =
+  (component "0,0" (\(SetArrows a) -> this .= a) $ \a ->
+    span_ [ id_ "arrows-out" ] [ text a ])
+  { subs = [ arrowsSub (\(Arrows x y) -> SetArrows (ms x <> "," <> ms y)) ] }
+-----------------------------------------------------------------------------
+data BlurAction = Blurred
+  deriving stock (Show, Eq, Generic)
+#ifndef __MHS__
+  deriving anyclass (JSON.FromJSON, JSON.ToJSON)
+#endif
+-----------------------------------------------------------------------------
+-- | A window @keydown@ listener that blurs the input, like Finch's Enter key.
+-- @blur()@ fires @blur@ synchronously, so the delegator and the 'onBlur'
+-- handler run re-entrantly, inside the @keydown@ callback.
+blurOnKeyComponent :: Component () () MisoString BlurAction
+blurOnKeyComponent =
+  (component "" (\Blurred -> this .= "blurred") $ \s ->
+    div_ []
+      [ input_ [ id_ "blur-input", onBlur Blurred ]
+      , span_ [ id_ "blur-out" ] [ text s ]
+      ])
+  { subs = [ blurOnKey ] }
+  where
+    blurOnKey = createSub acquire (\(win, cb) -> FFI.removeEventListener win "keydown" cb)
+    acquire = do
+      win <- jsg "window"
+      -- The listener outlives the test (only the scheduler is killed between
+      -- tests), so it must cope with the input being gone: blur() on null
+      -- throws in JavaScript, which can stop the whole runtime.
+      cb <- FFI.addEventListener win "keydown" $ \_ -> do
+        el <- jsg "document" # "getElementById" $ ["blur-input" :: MisoString]
+        gone <- isNull el
+        unless gone $ void (el # "blur" $ ())
+      pure (win, cb)
+-----------------------------------------------------------------------------
+data BumpAction = Bump
+  deriving stock (Show, Eq, Generic)
+#ifndef __MHS__
+  deriving anyclass (JSON.FromJSON, JSON.ToJSON)
+#endif
+-----------------------------------------------------------------------------
+-- | A counter, clicked from the browser's event loop in the test below.
+bumpComponent :: Component () () Int BumpAction
+bumpComponent = component 0 (\Bump -> this += 1) $ \n ->
+  div_ []
+    [ button_ [ id_ "bump-btn", onClick Bump ] [ "+" ]
+    , span_ [ id_ "bump-out" ] [ text (ms n) ]
+    ]
 -----------------------------------------------------------------------------
 testComponent :: Component () () Int Action
 testComponent = component (0 :: Int) update_ $ \_ -> button_ [ id_ "foo", onClick AddOne ] [ "click me " ]
@@ -2389,6 +2458,53 @@ main = withJS $ do
                   [ "a", vmodel (text . ms), vfrag [ span_ [] [ "b" ] ] ]
         toHtmlWith () () (3 :: Int) (fmap not v)
           `shouldBe` toHtmlWith () () (3 :: Int) v
+
+    describe "Event callback tests" $ do
+      it "arrowsSub receives window keydown events" $ do
+        -- 'arrowsSub' listens with a synchronous 'addEventListener' callback.
+        -- The sub thread installs it asynchronously after mount, so keep
+        -- dispatching until the view shows the key.
+        _ <- liftIO (startApp defaultEvents arrowsComponent)
+        up <- liftIO $ pollFor propagationAttempts $ do
+          _ <- eval $ mconcat
+            [ "(() => { const ev = new KeyboardEvent('keydown');"
+            , " Object.defineProperty(ev, 'keyCode', { value: 38 });"
+            , " window.dispatchEvent(ev); })()"
+            :: MisoString
+            ]
+          (== "0,1") <$> readText "arrows-out"
+        up `shouldBe` True
+
+      it "an addEventListener callback can fire delegated events re-entrantly" $ do
+        _ <- liftIO (startApp defaultEvents blurOnKeyComponent)
+        blurred <- liftIO $ pollFor propagationAttempts $ do
+          _ <- eval $ mconcat
+            [ "(() => { document.getElementById('blur-input').focus();"
+            , " window.dispatchEvent(new KeyboardEvent('keydown')); })()"
+            :: MisoString
+            ]
+          (== "blurred") <$> readText "blur-out"
+        blurred `shouldBe` True
+
+      it "an event from the browser's event loop updates the view without help" $ do
+        -- Other tests dispatch from inside 'eval', on a Haskell thread whose
+        -- scheduler loop then runs whatever the handler woke. A real event
+        -- comes from the browser's event loop instead: click from a
+        -- 'setTimeout', and wait on a single Promise (no Haskell timers that
+        -- would run the scheduler loop) that reads the view 200ms later.
+        -- See Note [Running the scheduler after a sync callback].
+        _ <- liftIO (startApp defaultEvents bumpComponent)
+        mounted <- liftIO $ pollFor propagationAttempts $
+          fromJSValUnchecked =<< eval ("document.getElementById('bump-btn') !== null" :: MisoString)
+        mounted `shouldBe` True
+        shown <- liftIO $ fromJSValUnchecked =<< await =<< eval
+          ( mconcat
+            [ "new Promise(res => setTimeout(() => {"
+            , " document.getElementById('bump-btn').click();"
+            , " setTimeout(() => res(document.getElementById('bump-out').textContent), 200);"
+            , " }, 0))"
+            ] :: MisoString )
+        shown `shouldBe` ("1" :: MisoString)
 #endif
 
     describe "Miso.DSL `await` tests" $ do

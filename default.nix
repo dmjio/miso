@@ -130,9 +130,16 @@ rec {
   inherit (pkgs)
     bun;
 
+  # A fontconfig configuration for the Playwright browsers.  Outside NixOS
+  # (e.g. the Ubuntu CI runner) nix's fontconfig finds no configuration, and
+  # headless Chromium aborts (Skia FontConfigInterface: "Not implemented")
+  # as soon as a page lays out a form control such as a <textarea>.
+  playwright-fontconfig = pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts ]; };
+
   playwright-js = pkgs.writeScriptBin "playwright" ''
     #!${pkgs.stdenv.shell}
     export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
+    export FONTCONFIG_FILE=${playwright-fontconfig}
     export PATH="${pkgs.lib.makeBinPath [ pkgs.http-server pkgs.bun ]}:$PATH"
     bun install playwright@${pkgs.playwright-driver.version}
     http-server ${pkgs.pkgsCross.ghcjs.haskell.packages.ghc9141.miso-tests}/bin/component-tests.jsexe &
@@ -150,6 +157,7 @@ rec {
   playwright-wasm = pkgs.writeScriptBin "playwright" ''
     #!${pkgs.stdenv.shell}
     export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
+    export FONTCONFIG_FILE=${playwright-fontconfig}
     export PATH="${pkgs.lib.makeBinPath [ pkgs.http-server pkgs.bun ]}:$PATH"
     bun install playwright@${pkgs.playwright-driver.version}
     http-server ${miso-tests-wasm-bundle-ghc9141}/component-tests.wasmexe &
@@ -169,6 +177,7 @@ rec {
   playwright-mhs = pkgs.writeScriptBin "playwright" ''
     #!${pkgs.stdenv.shell}
     export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
+    export FONTCONFIG_FILE=${playwright-fontconfig}
     export PATH="${pkgs.lib.makeBinPath [ pkgs.http-server pkgs.bun ]}:$PATH"
     bun install playwright@${pkgs.playwright-driver.version}
     http-server ${pkgs.miso-tests-mhs-bundle} &
@@ -183,6 +192,7 @@ rec {
   playwright-mhs-js = pkgs.writeScriptBin "playwright" ''
     #!${pkgs.stdenv.shell}
     export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
+    export FONTCONFIG_FILE=${playwright-fontconfig}
     export PATH="${pkgs.lib.makeBinPath [ pkgs.http-server pkgs.bun ]}:$PATH"
     bun install playwright@${pkgs.playwright-driver.version}
     http-server ${pkgs.miso-tests-mhs-js-bundle} &
@@ -203,6 +213,7 @@ rec {
   playwright-wasm-aeson = pkgs.writeScriptBin "playwright" ''
     #!${pkgs.stdenv.shell}
     export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
+    export FONTCONFIG_FILE=${playwright-fontconfig}
     export PATH="${pkgs.lib.makeBinPath [ pkgs.http-server pkgs.bun ]}:$PATH"
     bun install playwright@${pkgs.playwright-driver.version}
     http-server ${miso-tests-aeson-wasm-bundle-ghc9141}/component-tests.wasmexe &
@@ -221,6 +232,7 @@ rec {
   playwright-wasm-aeson-text = pkgs.writeScriptBin "playwright" ''
     #!${pkgs.stdenv.shell}
     export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
+    export FONTCONFIG_FILE=${playwright-fontconfig}
     export PATH="${pkgs.lib.makeBinPath [ pkgs.http-server pkgs.bun ]}:$PATH"
     bun install playwright@${pkgs.playwright-driver.version}
     http-server ${miso-tests-aeson-text-wasm-bundle-ghc9141}/component-tests.wasmexe &

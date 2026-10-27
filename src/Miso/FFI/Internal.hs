@@ -303,11 +303,7 @@ addEventListener
   -> IO Function
 {-# INLINABLE addEventListener #-}
 addEventListener self name cb = do
-#ifdef GHCJS_BOTH
   cb_ <- Function <$> syncCallback1 cb
-#else
-  cb_ <- Function <$> asyncCallback1 cb
-#endif
   void $ self # "addEventListener" $ (name, cb_)
   pure cb_
 -----------------------------------------------------------------------------
@@ -607,11 +603,11 @@ delegator :: JSVal -> JSVal -> Bool -> IO JSVal -> IO ()
 {-# INLINABLE delegator #-}
 delegator mountPoint events debug getVTree = do
   ctx <- getEventContext
-#ifdef WASM
-  cb <- asyncCallback1 $ \continuation -> void (call continuation global =<< getVTree)
-#else
+  -- Synchronous on every backend: handlers must run while the browser is
+  -- still dispatching the event (see Note [Synchronous event callbacks] in
+  -- "Miso.Event"). @getVTree@ must not block (it is a 'readIORef'),
+  -- since the WASM backend forbids blocking in a synchronous callback.
   cb <- syncCallback1 $ \continuation -> void (call continuation global =<< getVTree)
-#endif
   d <- toJSVal debug
   eventContext <- getEventContext
   void $ eventContext # "delegator" $ [mountPoint,events,cb,d,ctx]

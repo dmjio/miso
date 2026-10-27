@@ -32,6 +32,22 @@ All notable changes to `miso` are documented here.
 
 ### Changed
 
+- **Event handlers run synchronously, during dispatch, on every backend.**
+  `on` / `onWithOptions`, event delegation and `addEventListener` (and the
+  subscriptions built on it: `windowSub`, `windowSubWithOptions`,
+  `keyboardSub`, `arrowsSub`, `onLineSub`, `uriSub`, ...) now call their
+  callback synchronously. On WASM they were asynchronous, so a handler could
+  run after the browser had finished dispatching the event: `preventDefault`
+  / `stopPropagation` then did nothing (#1334), and event data that only
+  exists during dispatch (a `DataTransfer`) was gone. On WASM, a synchronous
+  callback is now followed by a round of the RTS scheduler loop, so the
+  actions it queued are processed right away (#1683). A callback passed to
+  `addEventListener` must not block (`threadDelay`, `await`, `takeMVar`,
+  ...): on WASM, `threadDelay` or `await` in a synchronous callback raises
+  `WouldBlockException`, which stops the Haskell runtime if uncaught; on the
+  JS backend the callback is silently abandoned. Hand blocking work to the
+  `sink` (or `forkIO` it) instead.
+
 - **Breaking: `OnStatic` exists only under the `native` flag.** Elsewhere
   `event` now dereferences the `StaticPtr` itself and builds a plain `On`.
   Runtime behavior is unchanged — no web backend ever dispatched by

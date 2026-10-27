@@ -91,6 +91,7 @@ module Miso.DSL.FFI
   ) where
 -----------------------------------------------------------------------------
 import           Data.Text (Text)
+import           Control.Exception (finally)
 import           Control.Monad
 import           Data.JSString (textFromJSString, textToJSString)
 #ifdef MISO_TEXT
@@ -300,44 +301,83 @@ foreign import javascript "wrapper"
     -> IO JSVal
 -----------------------------------------------------------------------------
 foreign import javascript "wrapper sync"
-  syncCallback
+  syncCallback_ffi
     :: IO ()
     -> IO JSVal
 -----------------------------------------------------------------------------
 foreign import javascript "wrapper sync"
-  syncCallback1
+  syncCallback1_ffi
     :: (JSVal -> IO ())
     -> IO JSVal
 -----------------------------------------------------------------------------
 foreign import javascript "wrapper sync"
-  syncCallback2
+  syncCallback2_ffi
     :: (JSVal -> JSVal -> IO ())
     -> IO JSVal
 -----------------------------------------------------------------------------
 foreign import javascript "wrapper sync"
-  syncCallback3
+  syncCallback3_ffi
     :: (JSVal -> JSVal -> JSVal -> IO ())
     -> IO JSVal
 -----------------------------------------------------------------------------
 foreign import javascript "wrapper sync"
-  syncCallback'
+  syncCallback'_ffi
     :: IO JSVal
     -> IO JSVal
 -----------------------------------------------------------------------------
 foreign import javascript "wrapper sync"
-  syncCallback1'
+  syncCallback1'_ffi
     :: (JSVal -> IO JSVal)
     -> IO JSVal
 -----------------------------------------------------------------------------
 foreign import javascript "wrapper sync"
-  syncCallback2'
+  syncCallback2'_ffi
     :: (JSVal -> JSVal -> IO JSVal)
     -> IO JSVal
 -----------------------------------------------------------------------------
 foreign import javascript "wrapper sync"
-  syncCallback3'
+  syncCallback3'_ffi
     :: (JSVal -> JSVal -> JSVal -> IO JSVal)
     -> IO JSVal
+-----------------------------------------------------------------------------
+-- Note [Running the scheduler after a sync callback]
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-- A sync callback runs the RTS only until its own thread finishes. A thread
+-- it wakes (e.g. the miso scheduler, woken by a component's sink) is left in
+-- the run queue, and nothing runs the async JSFFI scheduler loop for it (see
+-- Note [Async JSFFI scheduler] in GHC's rts/wasm/scheduler.cmm), so it would
+-- wait for some unrelated async callback (a timer, a Promise) to come along.
+-- When the browser calls a sync event listener, that left actions unprocessed
+-- and the view stale until then.
+--
+-- So every sync callback ends by scheduling a round of the scheduler loop
+-- ('rts_scheduleWork', a @setImmediate@), as an async callback would.
+foreign import ccall unsafe "rts_scheduleWork"
+  rts_scheduleWork :: IO ()
+-----------------------------------------------------------------------------
+syncCallback :: IO () -> IO JSVal
+syncCallback f = syncCallback_ffi (f `finally` rts_scheduleWork)
+-----------------------------------------------------------------------------
+syncCallback1 :: (JSVal -> IO ()) -> IO JSVal
+syncCallback1 f = syncCallback1_ffi (\a -> f a `finally` rts_scheduleWork)
+-----------------------------------------------------------------------------
+syncCallback2 :: (JSVal -> JSVal -> IO ()) -> IO JSVal
+syncCallback2 f = syncCallback2_ffi (\a b -> f a b `finally` rts_scheduleWork)
+-----------------------------------------------------------------------------
+syncCallback3 :: (JSVal -> JSVal -> JSVal -> IO ()) -> IO JSVal
+syncCallback3 f = syncCallback3_ffi (\a b c -> f a b c `finally` rts_scheduleWork)
+-----------------------------------------------------------------------------
+syncCallback' :: IO JSVal -> IO JSVal
+syncCallback' f = syncCallback'_ffi (f `finally` rts_scheduleWork)
+-----------------------------------------------------------------------------
+syncCallback1' :: (JSVal -> IO JSVal) -> IO JSVal
+syncCallback1' f = syncCallback1'_ffi (\a -> f a `finally` rts_scheduleWork)
+-----------------------------------------------------------------------------
+syncCallback2' :: (JSVal -> JSVal -> IO JSVal) -> IO JSVal
+syncCallback2' f = syncCallback2'_ffi (\a b -> f a b `finally` rts_scheduleWork)
+-----------------------------------------------------------------------------
+syncCallback3' :: (JSVal -> JSVal -> JSVal -> IO JSVal) -> IO JSVal
+syncCallback3' f = syncCallback3'_ffi (\a b c -> f a b c `finally` rts_scheduleWork)
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """

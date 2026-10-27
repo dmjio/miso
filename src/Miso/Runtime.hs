@@ -90,6 +90,7 @@ module Miso.Runtime
   , components
   , modifyContextAll
   , schedulerThread
+  , globalQueue
   , componentIds
   , rootComponentId
   , componentId
