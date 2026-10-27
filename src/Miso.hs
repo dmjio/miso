@@ -767,21 +767,16 @@
 --
 -- * Decoding events
 --
--- After an event has been raised, one can extract information from the event for use in their application. This is accomplished through a t'Decoder'. Many common decoders are available for use in "Miso.Event.Decoder".
+-- After an event has been raised, one can extract information from the event for use in their application. This is accomplished through a t'Decoder', a read-only observation of the live event that miso runs while the browser dispatches it. Many common decoders are available for use in "Miso.Event.Decoder".
 --
 -- @
--- data t'Decoder' a
---   = t'Decoder'
---   { 'decoder' :: 'Miso.JSON.Value' -> 'Miso.Util.Parser.Parser' a
---   , 'decodeAt' :: t'DecodeTarget'
---   }
---
--- -- | Example of a custom t'Decoder' for the @value@ property of an event target.
+-- -- | The @value@ property of an event target: @event.target.value@
 -- 'valueDecoder' :: t'Decoder' 'MisoString'
--- 'valueDecoder' = t'Decoder' {..}
---   where
---     'Miso.Event.decodeAt' = t'Miso.Event.DecodeTarget' ["target"]
---     'Miso.Event.decoder' = 'Miso.JSON.withObject' "target" $ \\o -> o 'Miso.JSON..:' "value"
+-- 'valueDecoder' = 'Miso.Event.member' \"target\" ('Miso.Event.member' \"value\" 'Miso.Event.fromJS')
+--
+-- -- | Pasted text: @event.clipboardData.getData(\"text\/plain\")@
+-- 'Miso.Event.clipboardTextDecoder' :: t'Decoder' 'MisoString'
+-- 'Miso.Event.clipboardTextDecoder' = 'Miso.Event.member' \"clipboardData\" ('Miso.Event.invoke' \"getData\" (\"text\/plain\" :: 'MisoString') 'Miso.Event.fromJS')
 -- @
 --
 -- = Attributes / Properties

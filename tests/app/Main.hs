@@ -17,6 +17,7 @@
 -----------------------------------------------------------------------------
 module Main where
 -----------------------------------------------------------------------------
+import           Control.Applicative ((<|>))
 import           Control.Concurrent (newEmptyMVar, putMVar, takeMVar, threadDelay, killThread)
 import           Control.Monad.Reader
 import           Control.Exception (try, evaluate, SomeException)
@@ -224,6 +225,44 @@ bumpComponent = component 0 (\Bump -> this += 1) $ \n ->
   div_ []
     [ button_ [ id_ "bump-btn", onClick Bump ] [ "+" ]
     , span_ [ id_ "bump-out" ] [ text (ms n) ]
+    ]
+-----------------------------------------------------------------------------
+-- | Run a t'Decoder' against the JavaScript value @eventExpr@ evaluates to,
+-- with the value of @elementExpr@ as the element 'atElement' focuses.
+decodeJS :: MisoString -> MisoString -> Decoder a -> IO (Either MisoString a)
+decodeJS eventExpr elementExpr d = do
+  e <- eval eventExpr
+  el <- eval elementExpr
+  runDecoder d e el
+-----------------------------------------------------------------------------
+-- | 'decodeJS' where the element is the event itself.
+decodeEvent :: MisoString -> Decoder a -> IO (Either MisoString a)
+decodeEvent expr = decodeJS expr expr
+-----------------------------------------------------------------------------
+-- | A paste event whose clipboardData is a DataTransfer holding @text/plain@
+-- \"pasted\", and @text/html@ \"<b>pasted</b>\".
+pasteEventJS :: MisoString
+pasteEventJS = mconcat
+  [ "(() => { const dt = new DataTransfer();"
+  , " dt.setData('text/plain', 'pasted');"
+  , " dt.setData('text/html', '<b>pasted</b>');"
+  , " const ev = new Event('paste', { bubbles: true });"
+  , " Object.defineProperty(ev, 'clipboardData', { value: dt });"
+  , " return ev; })()"
+  ]
+-----------------------------------------------------------------------------
+data PasteAction = Pasted MisoString
+  deriving stock (Show, Eq, Generic)
+#ifndef __MHS__
+  deriving anyclass (JSON.FromJSON, JSON.ToJSON)
+#endif
+-----------------------------------------------------------------------------
+-- | Shows the last text pasted into its textarea.
+pasteComponent :: Component () () MisoString PasteAction
+pasteComponent = component "" (\(Pasted t) -> this .= t) $ \pasted ->
+  div_ []
+    [ textarea_ [ id_ "paste-target", onPaste Pasted ]
+    , span_ [ id_ "paste-out" ] [ text pasted ]
     ]
 -----------------------------------------------------------------------------
 testComponent :: Component () () Int Action
@@ -2506,6 +2545,183 @@ main = withJS $ do
             ] :: MisoString )
         shown `shouldBe` ("1" :: MisoString)
 #endif
+
+    describe "Miso.Event.Decoder tests" $ do
+      it "member and fromJS read nested properties" $ do
+        r <- liftIO $ decodeEvent "({ a: { n: 42, s: 'hi' } })" $
+          member "a" ((,) <$> member "n" fromJS <*> member "s" fromJS)
+        r `shouldBe` Right (42 :: Int, "hi" :: MisoString)
+
+      it "members follows a path" $ do
+        r <- liftIO $ decodeEvent "({ a: { b: { c: true } } })" $
+          members ["a", "b", "c"] fromJS
+        r `shouldBe` Right True
+
+      it "says where a decoder failed" $ do
+        r <- liftIO $ decodeEvent "({ a: {} })" $
+          members ["a", "missing", "c"] (fromJS :: Decoder Int)
+        r `shouldBe` Left "event.a.missing: cannot read .c of null or undefined"
+
+      it "fromJS rejects undefined, nullable accepts it" $ do
+        r1 <- liftIO $ decodeEvent "({ a: null })" (member "a" (fromJS :: Decoder Int))
+        isLeft r1 `shouldBe` True
+        r2 <- liftIO $ decodeEvent "({ a: null })" (member "a" (nullable (fromJS :: Decoder Int)))
+        r2 `shouldBe` Right Nothing
+        r3 <- liftIO $ decodeEvent "({ a: 7 })" (member "a" (nullable (fromJS :: Decoder Int)))
+        r3 `shouldBe` Right (Just 7)
+
+      it "item and items read arrays and array-likes" $ do
+        r1 <- liftIO $ decodeEvent "({ xs: [10, 20, 30] })" $
+          member "xs" ((,) <$> item 1 fromJS <*> items fromJS)
+        r1 `shouldBe` Right (20 :: Int, [10, 20, 30 :: Int])
+        r2 <- liftIO $ decodeEvent "({ xs: { length: 2, 0: 'x', 1: 'y' } })" $
+          member "xs" (items fromJS)
+        r2 `shouldBe` Right ["x", "y" :: MisoString]
+
+      it "invoke calls a method with its arguments and this" $ do
+        r <- liftIO $ decodeEvent "({ k: 1, add(a, b) { return a + b + this.k; } })" $
+          invoke "add" (2 :: Int, 3 :: Int) fromJS
+        r `shouldBe` Right (6 :: Int)
+
+      it "invoke fails on a missing method, and <|> falls back" $ do
+        r1 <- liftIO $ decodeEvent "({})" (invoke "nope" () (fromJS :: Decoder Int))
+        r1 `shouldBe` Left "event.nope(): no such method"
+        r2 <- liftIO $ decodeEvent "({})" (invoke "nope" () fromJS <|> pure (0 :: Int))
+        r2 `shouldBe` Right 0
+
+      it "invoke turns a JavaScript exception into a failure" $ do
+        r1 <- liftIO $ decodeEvent "({ boom() { throw new Error('boom'); } })" $
+          invoke "boom" () (fromJS :: Decoder Int)
+        isLeft r1 `shouldBe` True
+        r2 <- liftIO $ decodeEvent "({ boom() { throw new Error('boom'); } })" $
+          invoke "boom" () fromJS <|> pure (0 :: Int)
+        r2 `shouldBe` Right 0
+
+      it "failDecoder and fail report their message" $ do
+        r1 <- liftIO $ decodeEvent "({ a: 1 })" (member "a" (failDecoder "nope" :: Decoder ()))
+        r1 `shouldBe` Left "event.a: nope"
+        r2 <- liftIO $ decodeEvent "({})" (fail "bad" :: Decoder ())
+        r2 `shouldBe` Left "event: bad"
+
+      it "clipboardTextDecoder reads clipboardData.getData('text/plain')" $ do
+        r <- liftIO $ decodeEvent pasteEventJS clipboardTextDecoder
+        r `shouldBe` Right "pasted"
+
+      it "clipboardDecoder reads every format of the DataTransfer" $ do
+        r <- liftIO $ decodeEvent pasteEventJS clipboardDecoder
+        fmap dataTransferTypes r `shouldBe` Right ["text/plain", "text/html"]
+        fmap dataTransferData r `shouldBe`
+          Right [("text/plain", "pasted"), ("text/html", "<b>pasted</b>")]
+        fmap dataTransferFiles r `shouldBe` Right []
+
+      it "dropDecoder reads dropped files" $ do
+        r <- liftIO $ decodeEvent
+          (mconcat
+            [ "(() => { const dt = new DataTransfer();"
+            , " dt.items.add(new File(['abc'], 'a.txt', { type: 'text/plain', lastModified: 1000 }));"
+            , " const ev = new Event('drop');"
+            , " Object.defineProperty(ev, 'dataTransfer', { value: dt });"
+            , " return ev; })()"
+            ])
+          dropDecoder
+        fmap (elem "Files" . dataTransferTypes) r `shouldBe` Right True
+        fmap dataTransferData r `shouldBe` Right []
+        fmap dataTransferFiles r `shouldBe` Right [FileInfo "a.txt" "text/plain" 3 1000]
+
+      it "boundingClientRectDecoder measures the handler's element" $ do
+        r <- liftIO $ decodeJS "new Event('click')"
+          (mconcat
+            [ "(() => { const el = document.createElement('div');"
+            , " el.style.cssText = 'position: fixed; left: 10px; top: 20px; width: 100px; height: 50px';"
+            , " document.body.appendChild(el);"
+            , " return el; })()"
+            ])
+          boundingClientRectDecoder
+        fmap (\rect -> (rectLeft rect, rectTop rect, rectWidth rect, rectHeight rect)) r
+          `shouldBe` Right (10, 20, 100, 50)
+
+      it "modifierStateDecoder calls getModifierState" $ do
+        let ev = "new KeyboardEvent('keydown', { modifierCapsLock: true })"
+        (`shouldBe` Right True) =<< liftIO (decodeEvent ev (modifierStateDecoder "CapsLock"))
+        (`shouldBe` Right False) =<< liftIO (decodeEvent ev (modifierStateDecoder "NumLock"))
+
+      it "inputSelectionDecoder reads selectionStart and selectionEnd" $ do
+        r <- liftIO $ decodeEvent
+          (mconcat
+            [ "(() => { const el = document.createElement('input');"
+            , " document.body.appendChild(el);"
+            , " el.value = 'hello'; el.setSelectionRange(1, 3);"
+            , " return { target: el }; })()"
+            ])
+          inputSelectionDecoder
+        r `shouldBe` Right (1, 3)
+
+      it "selectedOptionsDecoder reads every selected option" $ do
+        r <- liftIO $ decodeEvent
+          (mconcat
+            [ "(() => { const el = document.createElement('select'); el.multiple = true;"
+            , " for (const v of ['a', 'b', 'c']) { const o = document.createElement('option');"
+            , " o.value = v; o.selected = v !== 'b'; el.appendChild(o); }"
+            , " return { target: el }; })()"
+            ])
+          selectedOptionsDecoder
+        r `shouldBe` Right ["a", "c"]
+
+      it "atGlobal focuses globalThis" $ do
+        r <- liftIO $ decodeEvent "({})" (atGlobal (members ["document", "body", "nodeName"] fromJS))
+        r `shouldBe` Right ("BODY" :: MisoString)
+
+      it "atEvent returns to the event from elsewhere" $ do
+        r <- liftIO $ decodeJS "({ kind: 'event' })" "({ kind: 'element' })" $
+          atElement ((,) <$> member "kind" fromJS <*> atEvent (member "kind" fromJS))
+        r `shouldBe` Right ("element" :: MisoString, "event" :: MisoString)
+
+      it "valueDecoder and checkedDecoder read event.target" $ do
+        (`shouldBe` Right "typed") =<<
+          liftIO (decodeEvent "({ target: { value: 'typed' } })" valueDecoder)
+        (`shouldBe` Right (Checked True)) =<<
+          liftIO (decodeEvent "({ target: { checked: true } })" checkedDecoder)
+        r <- liftIO $ decodeEvent "({ target: null })" valueDecoder
+        isLeft r `shouldBe` True
+
+      it "keycodeDecoder falls back to which, then charCode" $ do
+        (`shouldBe` Right (KeyCode 13)) =<< liftIO (decodeEvent "({ keyCode: 13, which: 1 })" keycodeDecoder)
+        (`shouldBe` Right (KeyCode 65)) =<< liftIO (decodeEvent "({ which: 65 })" keycodeDecoder)
+        (`shouldBe` Right (KeyCode 97)) =<< liftIO (decodeEvent "({ charCode: 97 })" keycodeDecoder)
+
+      it "keyInfoDecoder reads the key code and the modifier keys" $ do
+        r <- liftIO $ decodeEvent
+          "({ keyCode: 65, shiftKey: true, metaKey: false, ctrlKey: true, altKey: false })"
+          keyInfoDecoder
+        r `shouldBe` Right (KeyInfo 65 True False True False)
+
+      it "at and decodeAt still parse JSON snapshots" $ do
+        let ev = "({ target: { value: 'v' } })"
+            parseValue = JSON.withObject "target" (JSON..: "value")
+        (`shouldBe` Right "v") =<< liftIO (decodeEvent ev valueDecoder)
+        (`shouldBe` Right ("v" :: MisoString)) =<<
+          liftIO (decodeEvent ev (decodeAt (DecodeTargets [["nope"], ["target"]]) parseValue))
+        (`shouldBe` Right ("v" :: MisoString)) =<<
+          liftIO (decodeEvent ev (member "target" (parseWith parseValue)))
+
+      it "decodes a paste event while it is dispatched" $ do
+        _ <- liftIO (startApp (defaultEvents <> clipboardEvents) pasteComponent)
+        mounted <- liftIO $ pollFor propagationAttempts $
+          fromJSValUnchecked =<< eval ("document.getElementById('paste-target') !== null" :: MisoString)
+        mounted `shouldBe` True
+        -- Change the clipboard data right after dispatching: if the decoder
+        -- ran after dispatch, it would see the new data instead.
+        _ <- liftIO $ eval $ mconcat
+          [ "(() => { const dt = new DataTransfer();"
+          , " dt.setData('text/plain', 'during dispatch');"
+          , " const ev = new Event('paste', { bubbles: true });"
+          , " Object.defineProperty(ev, 'clipboardData', { value: dt });"
+          , " document.getElementById('paste-target').dispatchEvent(ev);"
+          , " dt.setData('text/plain', 'after dispatch'); })()"
+          ]
+        pasted <- liftIO $ pollFor propagationAttempts $
+          (== "during dispatch") <$> readText "paste-out"
+        pasted `shouldBe` True
 
     describe "Miso.DSL `await` tests" $ do
       it "Successful Promise resolution should result in a value" $ do

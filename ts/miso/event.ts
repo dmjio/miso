@@ -220,6 +220,69 @@ function propagateWhileAble<T>(vtree: VTree<T>, event: Event): void {
     }
   }
 }
+/* What decoderStep returns when a step fails; decoderError() says why. One
+   shared value, so that the Haskell side can test for failure with a single
+   `===` (see Miso.Event.Decoder).
+*/
+export const decoderFailed: object = Object.freeze({});
+/* Why the last decoderStep returned decoderFailed. `nullish` is true when the
+   step could not start because the value it starts from is null or
+   undefined; the Haskell side then reports the failure at that value.
+*/
+let lastDecoderError = { message: '', nullish: false };
+export function decoderError(): { message: string; nullish: boolean } {
+  return lastDecoderError;
+}
+function decoderFail(message: string, nullish: boolean): object {
+  lastDecoderError = { message: message, nullish: nullish };
+  return decoderFailed;
+}
+/* One step of a decoder (see Miso.Event.Decoder): with `args === null`, read
+   `obj[key]`; otherwise call the method `obj[key](...args)` with `obj` as
+   `this`. Returns the value, or decoderFailed. Never throws: a getter or a
+   method can throw, and not every Haskell backend can catch a JavaScript
+   exception raised inside an FFI call.
+*/
+export function decoderStep(obj: any, key: string, args: Array<any> | null): any {
+  if (obj === null || obj === undefined) return decoderFail('', true);
+  try {
+    if (args === null) return obj[key];
+    const f = obj[key];
+    if (typeof f !== 'function') return decoderFail('no such method', false);
+    return f.apply(obj, args);
+  } catch (e) {
+    let shown: string;
+    try {
+      shown = String(e);
+    } catch (_) {
+      shown = 'an exception';
+    }
+    return decoderFail('threw ' + shown, false);
+  }
+}
+/* The JSON snapshot of `obj` that a decoder's JSON parser sees: null for
+   null and undefined, a string, number or boolean as it is, and eventJSON of
+   anything else. (eventJSON itself only takes objects.)
+*/
+export function decoderSnapshot(obj: any): any {
+  if (obj === null || obj === undefined) return null;
+  const t = typeof obj;
+  if (t === 'string' || t === 'number' || t === 'boolean') return obj;
+  return eventJSON([], obj);
+}
+/* The string, number and boolean properties of `obj` among `keys`, as a
+   plain object: a snapshot of only the properties a decoder needs, in one
+   call.
+*/
+export function decoderPick(obj: any, keys: Array<string>): Object {
+  const picked = {};
+  for (const key of keys) {
+    const v = obj[key];
+    const t = typeof v;
+    if (t === 'string' || t === 'number' || t === 'boolean') picked[key] = v;
+  }
+  return picked;
+}
 /* Walks down obj following the path described by `at`, then filters primitive
        values (string, numbers and booleans). Sort of like JSON.stringify(), but
        on an Event that is stripped of impure references.

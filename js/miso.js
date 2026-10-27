@@ -1022,6 +1022,53 @@ function propagateWhileAble(vtree, event) {
     }
   }
 }
+var decoderFailed = Object.freeze({});
+var lastDecoderError = { message: "", nullish: false };
+function decoderError() {
+  return lastDecoderError;
+}
+function decoderFail(message, nullish) {
+  lastDecoderError = { message, nullish };
+  return decoderFailed;
+}
+function decoderStep(obj, key, args) {
+  if (obj === null || obj === undefined)
+    return decoderFail("", true);
+  try {
+    if (args === null)
+      return obj[key];
+    const f = obj[key];
+    if (typeof f !== "function")
+      return decoderFail("no such method", false);
+    return f.apply(obj, args);
+  } catch (e) {
+    let shown;
+    try {
+      shown = String(e);
+    } catch (_) {
+      shown = "an exception";
+    }
+    return decoderFail("threw " + shown, false);
+  }
+}
+function decoderSnapshot(obj) {
+  if (obj === null || obj === undefined)
+    return null;
+  const t = typeof obj;
+  if (t === "string" || t === "number" || t === "boolean")
+    return obj;
+  return eventJSON([], obj);
+}
+function decoderPick(obj, keys) {
+  const picked = {};
+  for (const key of keys) {
+    const v = obj[key];
+    const t = typeof v;
+    if (t === "string" || t === "number" || t === "boolean")
+      picked[key] = v;
+  }
+  return picked;
+}
 function eventJSON(at, obj) {
   if (typeof at[0] === "object") {
     var ret = [];
@@ -1349,6 +1396,11 @@ globalThis["miso"] = {
   callSelect,
   callSetSelectionRange,
   eventJSON,
+  decoderStep,
+  decoderFailed,
+  decoderError,
+  decoderSnapshot,
+  decoderPick,
   fetchCore,
   eventSourceConnect,
   eventSourceClose,

@@ -1,5 +1,5 @@
 import { diff } from './miso/dom';
-import { eventJSON, delegateEvent, delegator } from './miso/event';
+import { eventJSON, decoderStep, decoderFailed, decoderError, decoderSnapshot, decoderPick, delegateEvent, delegator } from './miso/event';
 import { eventContext, drawingContext } from './miso/context/dom';
 import { hydrate } from './miso/hydrate';
 
@@ -104,6 +104,11 @@ export {
   callSelect,
   callSetSelectionRange,
   eventJSON,
+  decoderStep,
+  decoderFailed,
+  decoderError,
+  decoderSnapshot,
+  decoderPick,
   fetchCore,
   websocketConnect,
   websocketClose,

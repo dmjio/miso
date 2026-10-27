@@ -4,6 +4,29 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title> sample-app (MicroHs) </title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 0; background: #f6f6f4; color: #1d1d1b; }
+      .page { max-width: 760px; margin: 0 auto; padding: 24px 16px 64px; }
+      .demo { background: #fff; border: 1px solid #e2e2dc; border-radius: 8px; padding: 16px; margin: 16px 0; }
+      .demo h2 { font-size: 1.1rem; margin: 0 0 4px; }
+      .reads code { font-size: 0.85rem; color: #5a5a55; }
+      .try { margin: 12px 0; }
+      .try textarea, .try input:not([type=file]), .try select { width: 100%; box-sizing: border-box; font: inherit; padding: 6px; }
+      .out { background: #f0f0ec; border-radius: 4px; padding: 8px; min-height: 1.2em; margin: 0; white-space: pre-wrap; word-break: break-word; }
+      .box, .dropzone { border: 2px dashed #b9b9b0; border-radius: 6px; padding: 24px; text-align: center; user-select: none; }
+      .tinted { background: #dbe9f7; }
+      .inner { display: inline-block; padding: 6px 10px; background: #eeeee8; border-radius: 4px; }
+      .scroller { height: 120px; overflow-y: auto; border: 1px solid #e2e2dc; padding: 0 8px; }
+      .demo ul { cursor: pointer; }
+      @media (prefers-color-scheme: dark) {
+        body { background: #1b1b1a; color: #e9e9e4; }
+        .demo { background: #252524; border-color: #3a3a37; }
+        .reads code { color: #a9a9a2; }
+        .out { background: #30302e; }
+        .inner { background: #3a3a37; }
+        .tinted { background: #24364a; }
+      }
+    </style>
   </head>
   <body>
     <script src="app.js"></script>

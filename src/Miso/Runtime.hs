@@ -143,8 +143,8 @@ import           Control.Monad (forM, forM_, when, void, (<=<), zipWithM_, forev
 import           Control.Monad.Reader (ask, asks)
 import           Control.Monad.State hiding (state)
 import qualified Miso.JSON as JSON
-import           Miso.JSON (FromJSON, ToJSON, Result(..), Value, encode, fromJSON, jsonStringify, toJSON, parseEither)
-import           Miso.Event.Decoder (Decoder(decoder, decodeAt))
+import           Miso.JSON (FromJSON, ToJSON, Result(..), Value, encode, fromJSON, jsonStringify, toJSON)
+import           Miso.Event.Decoder (runDecoder)
 
 #if __GLASGOW_HASKELL__ < 910
 import           Data.Foldable (foldl')
@@ -2666,16 +2666,11 @@ dispatchMainThreadEvent arg =
               -- convert pair — no JS installer round-trip (no scratch node,
               -- no throwaway 'asyncCallback2') needed on this, the hot path
               -- for every main-thread event.
-              decodeAtVal <- toJSVal (decodeAt eventHandlerDecoder)
-              mv <- fromJSVal =<< FFI.eventJSON decodeAtVal eventVal
-              case mv of
-                Nothing ->
-                  FFI.consoleError "[MTS dispatch] eventJSON returned no value"
-                Just v -> case parseEither (decoder eventHandlerDecoder) v of
-                  Left msg ->
-                    FFI.consoleError ("[MTS dispatch] decode error: " <> ms msg)
-                  Right result ->
-                    _componentSink (eventHandlerConvert result _componentModel targetVal)
+              runDecoder eventHandlerDecoder eventVal targetVal >>= \case
+                Left msg ->
+                  FFI.consoleError ("[MTS dispatch] decode error: " <> msg)
+                Right result ->
+                  _componentSink (eventHandlerConvert result _componentModel targetVal)
 -----------------------------------------------------------------------------
 -- | Register 'dispatchMainThreadEvent' on @globalThis.runtime@ so the MTS
 -- delegator can invoke it synchronously. MTS only.
