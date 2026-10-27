@@ -209,7 +209,7 @@ module Miso.Event.Decoder
 -----------------------------------------------------------------------------
 import           Prelude hiding ((!!))
 import           Control.Applicative
-import           Control.Exception (SomeException, try)
+import           Control.Exception (SomeException, evaluate, try)
 import qualified Control.Monad.Fail as Fail
 -----------------------------------------------------------------------------
 import           Miso.DSL (JSVal, MonadJS(..), ToArgs(toArgs), FromJSVal(fromJSVal, fromJSValUnchecked), ToJSVal(toJSVal), ToObject(toObject), call, freeJSVal, global, jsg, jsNull, isNull, isUndefined)
@@ -234,10 +234,12 @@ instance ToJSVal DecodeTarget where
 -----------------------------------------------------------------------------
 -- | What a t'Decoder' runs against: the event, and the element whose
 -- handler is running.
+--
+-- The fields are strict: see Note [Evaluated JSVals in argument lists].
 data Env
   = Env
-  { envEvent :: JSVal
-  , envElement :: JSVal
+  { envEvent :: !JSVal
+  , envElement :: !JSVal
   }
 -----------------------------------------------------------------------------
 -- | Reads a value of type @a@ from a DOM event, during dispatch. See the
@@ -349,7 +351,22 @@ runDecoder (Decoder d) event element = do
 --
 -- A step frees the handles it allocates (argument arrays, the error
 -- object), as the rest of the runtime does on hot paths. It cannot free the
--- value it steps to: the decoder may return it ('fromJS' at 'JSVal').
+-- value it steps to: the decoder may return it ('fromJS' at 'JSVal'). Nor
+-- can it free a JSON result that is a string: on WASM the 'MisoString' in
+-- @'Miso.JSON.String'@ shares its handle (see 'jsonStep').
+-----------------------------------------------------------------------------
+-- Note [Evaluated JSVals in argument lists]
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-- A step passes the value it reads from to @miso.decoderStep@ inside an
+-- argument list ('call' with a tuple, 'toJSVal' of a list). On the JS
+-- backend, a 'JSVal' in such a list must already be evaluated: an
+-- unevaluated thunk reaches JavaScript as a heap object, not the value
+-- (@global ! \"document\"@ read @undefined@ from it).
+--
+-- The value comes from the user's code (the receiver of '!', '!!', '#', or
+-- the argument of 'parseWith' and 'parseFields'), so every step 'evaluate's
+-- it before building the argument list. The fields of 'Env' and
+-- 'StepFunctions' are strict for the same reason.
 -----------------------------------------------------------------------------
 tryAny :: IO a -> IO (Either SomeException a)
 tryAny = try
@@ -374,10 +391,10 @@ failDecoder msg = Decoder $ \_ -> pure (Left msg)
 -- dispatch]), looked up once.
 data StepFunctions
   = StepFunctions
-  { jsMiso :: JSVal
-  , jsStep :: JSVal
-  , jsFailed :: JSVal
-  , jsError :: JSVal
+  { jsMiso :: !JSVal
+  , jsStep :: !JSVal
+  , jsFailed :: !JSVal
+  , jsError :: !JSVal
   }
 -----------------------------------------------------------------------------
 stepFunctions :: StepFunctions
@@ -429,7 +446,7 @@ stepTo
   -> Decoder JSVal
 stepTo label key getArgs o = Decoder $ \_ -> do
   result <- tryAny $ do
-    v <- toJSVal =<< toObject o
+    v <- evaluate =<< toJSVal =<< toObject o
     step v key =<< sequence getArgs
   pure $ case result of
     Right (StepOk v) -> Right v
@@ -538,7 +555,7 @@ nullable d v = Decoder $ \env -> do
 -- @since 1.15.0.0
 parseWith :: (Value -> Parser a) -> JSVal -> Decoder a
 parseWith parser v = Decoder $ \_ ->
-  parseResult parser <$> tryAny (snapshot [] v)
+  parseResult parser <$> tryAny (snapshot [] =<< evaluate v)
 -----------------------------------------------------------------------------
 -- | Parse a value with its 'FromJSON' instance: @'parseWith' 'parseJSON'@.
 --
@@ -570,7 +587,8 @@ parseFields :: [MisoString] -> (Value -> Parser a) -> JSVal -> Decoder a
 parseFields keys parser v = Decoder $ \_ -> do
   result <- tryAny $ do
     keysVal <- toJSVal keys
-    args <- toJSVal [v, keysVal]
+    v' <- evaluate v
+    args <- toJSVal [v', keysVal]
     freeJSVal keysVal
     jsonStep "decoderPick" args
   pure (parseResult parser result)
