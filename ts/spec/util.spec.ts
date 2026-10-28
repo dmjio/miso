@@ -58,6 +58,23 @@ describe ('Utils tests', () => {
       expect(expected.size).toBe(node.classList.size);
   });
 
+  test('Should split class on all ASCII whitespace', () => {
+      let node : VNode<number> = vnode({});
+      populateClass(node, ["foo\tbar", "baz\nqux\r\nquux", "\f a  \t b \n"]);
+      var expected = new Set(["foo", "bar", "baz", "qux", "quux", "a", "b"]);
+      expect(node.classList).toEqual(expected);
+      /* every token is one classList.add accepts */
+      var div = document.createElement('div');
+      for (const c of node.classList) div.classList.add(c);
+      expect(div.classList.length).toBe(expected.size);
+  });
+
+  test('Should not split class on non-ASCII whitespace', () => {
+      let node : VNode<number> = vnode({});
+      populateClass(node, ["foo bar"]);
+      expect(node.classList).toEqual(new Set(["foo bar"]));
+  });
+
 });
 
 describe('Fetch tests', () => {

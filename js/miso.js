@@ -175,7 +175,7 @@ function populateClass(vnode, classes) {
     vnode.classList = new Set;
   }
   for (const str of classes) {
-    for (const c of str.trim().split(" ")) {
+    for (const c of str.split(/[\t\n\f\r ]+/)) {
       if (c)
         vnode.classList.add(c);
     }
