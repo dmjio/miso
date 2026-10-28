@@ -92,6 +92,17 @@ All notable changes to `miso` are documented here.
 
 ### Fixed
 
+- **WASM: `startApp` no longer evaluates `miso.js` a second time after
+  `withJS`.** `initComponent` (behind `startApp`, `miso`, `renderApp`,
+  `prerender`, `reload` and `live`) evaluated it unconditionally, replacing
+  `globalThis.miso` and dropping anything set on it in between. It now loads
+  `miso.js` only if `withJS` has not. `renderApp` also loads `miso.js` before
+  installing its drawing context: it wrote to `globalThis.miso` before
+  anything had created it, so it always threw on WASM. The `withJS` Haddock
+  now says that `main` must use it before calling anything that reads
+  `globalThis.miso` (`Miso.FFI`, `Miso.Random`, `Miso.JSON.decode`, ...)
+  ahead of `startApp`.
+
 - **`MisoString` on the WASM and MicroHs backends no longer does work one
   character at a time over the FFI.** `length` allocated an array of the
   whole string and `uncons` called it, so everything that walks a string was

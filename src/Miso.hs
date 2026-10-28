@@ -2207,6 +2207,8 @@ renderApp
   -- ^ t'Miso.Types.Component' application
   -> IO ()
 renderApp events renderer comp_ = do
-  FFI.setDrawingContext renderer
+  -- @setDrawingContext@ writes to @globalThis.miso@, which on WASM only
+  -- exists once miso.js is loaded.
+  withJS (FFI.setDrawingContext renderer)
   initComponent events Draw False () comp_ Nothing () Nothing
 ----------------------------------------------------------------------------

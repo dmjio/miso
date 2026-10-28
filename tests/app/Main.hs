@@ -2032,6 +2032,15 @@ main = withJS $ do
         liftIO (startApp mempty testComponent)
         mountedComponents >>= (`shouldBe` 1)
 
+      it "Should keep globalThis.miso when mounting after withJS" $ do
+        -- startApp must not evaluate miso.js again: that would replace
+        -- globalThis.miso and drop anything set on it in between.
+        _ <- liftIO $ eval ("globalThis.miso.sentinel = true;" :: MisoString)
+        liftIO (startApp mempty testComponent)
+        kept <- liftIO $ fromJSValUnchecked =<< eval ("globalThis.miso.sentinel === true" :: MisoString)
+        _ <- liftIO $ eval ("delete globalThis.miso.sentinel;" :: MisoString)
+        kept `shouldBe` True
+
       it "Should have parent field present on VDOM nodes" $ do
         _ <- liftIO (startApp mempty testComponent)
         ComponentState {..} <- liftIO $ (IM.! 1) <$> readIORef components
