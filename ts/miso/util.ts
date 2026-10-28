@@ -219,6 +219,10 @@ export function eventSourceClose (
 
 /* Initializes the classList field to an Empty Set
    Populates with the contents of 'classes'
+
+   Each string is split on ASCII whitespace (tab, LF, FF, CR, space), as the
+   HTML parser splits a class attribute. 'classList.add' throws on a token
+   containing any of these, so splitting on ' ' alone is not enough.
  */
 export function populateClass<T> (
   vnode: VNode<T>,
@@ -228,7 +232,7 @@ export function populateClass<T> (
       vnode.classList = new Set();
     }
     for (const str of classes) {
-        for (const c of str.trim().split(' ')) {
+        for (const c of str.split(/[\t\n\f\r ]+/)) {
            if (c) vnode.classList.add(c);
         }
     }

@@ -92,6 +92,13 @@ All notable changes to `miso` are documented here.
 
 ### Fixed
 
+- **A tab, newline, form feed or carriage return in a class no longer
+  breaks rendering.** `class_` / `classes_` / `classList_` strings were split
+  on spaces only, so `"foo\tbar"` reached `classList.add` as one token, which
+  throws `InvalidCharacterError` mid-patch, while server rendering of the same
+  view worked. Classes are now split on ASCII whitespace, as the HTML parser
+  splits a `class` attribute. Broken since 1.9.0.
+
 - **`MisoString` on the WASM and MicroHs backends no longer does work one
   character at a time over the FFI.** `length` allocated an array of the
   whole string and `uncons` called it, so everything that walks a string was
