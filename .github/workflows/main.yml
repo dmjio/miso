@@ -95,6 +95,31 @@ jobs:
        run: nix-build -A playwright-wasm-aeson-text && ./result/bin/playwright
 
 
+  # The hls dev shell (nix develop .#hls): builds haskell-language-server for
+  # GHC 9.14.1 (see nix/hls.nix) and checks that it type-checks miso. The
+  # cachix action pushes what it builds, so the shell is prebuilt for others.
+  build-hls:
+    runs-on: ubuntu-latest
+    steps:
+     - uses: ners/simply-nix@2e89c5f0aaa5e4a7265dae7880e69d2c06efd6b5 # main, no tagged releases; pinned 2026-09
+       with:
+         reclaim_space: true
+     - uses: actions/checkout@v7.0.1
+     - uses: cachix/cachix-action@v17
+       with:
+         name: haskell-miso-cachix
+         authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+
+     - name: (x86) hls dev shell (GHC 9.14.1)
+       run: nix --extra-experimental-features 'nix-command flakes' build .#devShells.x86_64-linux.hls -L --no-link
+
+     - name: haskell-language-server type-checks miso
+       run: |
+         nix --extra-experimental-features 'nix-command flakes' develop .#hls --command bash -c '
+           haskell-language-server-wrapper --version
+           haskell-language-server-wrapper typecheck src/Miso/Util.hs src/Miso/Event/Types.hs src/Miso/Runtime.hs
+         '
+
   build-bundle:
     runs-on: ubuntu-latest
     steps:

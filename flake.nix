@@ -128,13 +128,16 @@
                   ];
             });
 
-          # Shell for hls dev
+          # Shell for hls dev: GHC 9.14.1, with haskell-language-server built
+          # for it (see nix/hls.nix). The other tools don't depend on the
+          # project's GHC, so they come prebuilt from nixpkgs.
           hls =
-            pkgs.haskell.packages.ghc9141.miso.env.overrideAttrs (drv: {
-              buildInputs = with pkgs; with haskell.packages.ghc9141;
-                drv.buildInputs ++
-                  [ just bun ormolu haskell-language-server cabal-install ghcid tailwindcss_4
-                  ];
+            let hlsPkgs = import ./nix/hls.nix pkgs;
+            in hlsPkgs.miso.env.overrideAttrs (drv: {
+              buildInputs = drv.buildInputs ++
+                [ hlsPkgs.haskell-language-server
+                  pkgs.just pkgs.bun pkgs.ormolu pkgs.cabal-install pkgs.ghcid pkgs.tailwindcss_4
+                ];
             });
 
           # Shell for JavaScript / TypeScript development
