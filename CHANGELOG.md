@@ -92,6 +92,17 @@ All notable changes to `miso` are documented here.
 
 ### Fixed
 
+- **WASM: `startApp` no longer evaluates `miso.js` a second time after
+  `withJS`.** `initComponent` (behind `startApp`, `miso`, `renderApp`,
+  `prerender`, `reload` and `live`) evaluated it unconditionally, replacing
+  `globalThis.miso` and dropping anything set on it in between. It now loads
+  `miso.js` only if `withJS` has not. `renderApp` also loads `miso.js` before
+  installing its drawing context: it wrote to `globalThis.miso` before
+  anything had created it, so it always threw on WASM. The `withJS` Haddock
+  now says that `main` must use it before calling anything that reads
+  `globalThis.miso` (`Miso.FFI`, `Miso.Random`, `Miso.JSON.decode`, ...)
+  ahead of `startApp`.
+  
 - **A tab, newline, form feed or carriage return in a class no longer
   breaks rendering.** `class_` / `classes_` / `classList_` strings were split
   on spaces only, so `"foo\tbar"` reached `classList.add` as one token, which

@@ -2369,10 +2369,9 @@ initComponent
   -> Maybe StaticKey
   -> IO ()
 initComponent events hydrate live initialContext comp_@Component {..} key props sk = do
-#ifdef WASM
-      $(evalFile MISO_JS_PATH)
-      atomicWriteIORef loadedJS True
-#endif
+      -- 'withJS' loads miso.js only if it is not loaded yet. Evaluating it
+      -- again would replace @globalThis.miso@, dropping anything set on it
+      -- since (e.g. the drawing context 'Miso.renderApp' installs).
       withJS $ do
         let proxy = Proxy :: Proxy context
         -- The one @context@ cell for this app, created before anything that
@@ -2929,6 +2928,13 @@ dispatchEvent ctx protocol payload = do
 -- On WASM, @miso.js@ is evaluated once on first call and skipped on subsequent calls.
 -- It is safe to call 'withJS' directly (e.g. when implementing WASM tests in Playwright);
 -- 'Miso.startApp' \/ 'Miso.miso' call it for you.
+--
+-- On WASM, @globalThis.miso@ does not exist until @miso.js@ is loaded, so
+-- code in @main@ that uses it before 'Miso.startApp' (e.g. 'Miso.FFI.mathRandom',
+-- "Miso.Random", or 'Miso.JSON.decode') must run inside 'withJS'. Without it
+-- the call throws a @TypeError@ from a synchronous JavaScript import, which
+-- stops the Haskell runtime and cannot be caught. On the JavaScript backend
+-- @miso.js@ is linked in and 'withJS' just runs the action.
 --
 withJS
   :: IO a
