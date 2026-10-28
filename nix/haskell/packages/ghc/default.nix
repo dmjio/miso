@@ -23,4 +23,10 @@ self: super:
   cryptonite = dontCheck super.cryptonite;
   monad-logger = doJailbreak super.monad-logger;
   string-interpolate = doJailbreak super.string-interpolate;
+
+  /* haskell-language-server on GHC 9.14 (base 4.22); mirrors HLS's own
+     cabal.project allow-newer and nixpkgs haskell-updates. Drop once
+     these land in the pinned nixpkgs. */
+  hie-compat = doJailbreak super.hie-compat;             # base <4.22, via hiedb
+  ghc-trace-events = doJailbreak super.ghc-trace-events; # base <4.22
 }
