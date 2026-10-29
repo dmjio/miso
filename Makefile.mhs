@@ -24,7 +24,7 @@
 # MicroHs with the JSVal/JavaScript FFI and browser targets: haskell-miso/MicroHs,
 # branch jsval.  Upstream augustss/MicroHs will not work.
 MICROHS_URL   := https://github.com/haskell-miso/MicroHs
-MICROHS_REV   := 1d84237d75bdd55df834ca50f95cb03ee4daea97
+MICROHS_REV   := 5fc133639cbe5bd40f451e79fceed508b9df6982
 
 GHC_COMPAT_URL := https://github.com/augustss/ghc-compat
 GHC_COMPAT_REV := e04bd70e4040d52cd1d319387bda7514000b58a0

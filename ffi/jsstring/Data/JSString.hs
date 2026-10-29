@@ -212,14 +212,11 @@ viaText :: (Text -> Text) -> JSString -> JSString
 {-# INLINE viaText #-}
 viaText f = fromText . f . toText
 -----------------------------------------------------------------------------
--- | Keeps a leading U+FEFF, which "GHC.Wasm.Prim"'s 'toJSString' drops (its
--- 'TextDecoder' strips one byte order mark): on GHC this goes through
--- 'textToJSString', on MicroHs it puts the mark back.
+-- | Keeps a leading U+FEFF: both conversions decode with @ignoreBOM@.
 pack :: String -> JSString
 {-# INLINE pack #-}
 #ifdef __MHS__
-pack s@('\xFEFF' : _) = js_bom <> toJSString s
-pack s = toJSString s
+pack = toJSString
 #else
 pack = textToJSString . T.pack
 #endif
@@ -1237,14 +1234,9 @@ zipWith f l r = fromText (T.zipWith f (toText l) (toText r))
 #endif
 -----------------------------------------------------------------------------
 #ifdef __MHS__
--- | MicroHs's own conversion, keeping a leading U+FEFF (see 'pack').
+-- | MicroHs's own conversion (it keeps a leading U+FEFF).
 textToJSString :: Text -> JSString
-textToJSString t
-  | T.singleton '\xFEFF' `T.isPrefixOf` t = js_bom <> Prim.textToJSString t
-  | otherwise = Prim.textToJSString t
------------------------------------------------------------------------------
-foreign import javascript unsafe "'\\uFEFF'"
-  js_bom :: JSString
+textToJSString = Prim.textToJSString
 #else
 -- One encoder and one decoder for the life of the page, rather than one per
 -- conversion. @ignoreBOM@ keeps a leading U+FEFF, which a default decoder
