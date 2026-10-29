@@ -76,8 +76,8 @@ in
   microhs = fetchFromGitHub {
     owner = "haskell-miso";
     repo = "MicroHs";
-    rev = "1d84237d75bdd55df834ca50f95cb03ee4daea97";
-    hash = "sha256-MT5m0cNDKfZWDx917bN3tsJlr5sm09j+u/STl11KXLE=";
+    rev = "5fc133639cbe5bd40f451e79fceed508b9df6982";
+    hash = "sha256-siSCYN8xk8P2FeDtYteMj3y3+wcMAB9j1PzA2pbQYZs=";
   };
   mhs-ghc-compat = fetchFromGitHub {
     owner = "augustss";
