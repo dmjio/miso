@@ -178,6 +178,7 @@ module Miso.CSS
   , boxShadow
   , boxSizing
   , clipPath
+  , content
   , accentColor
   , appearance
   , backdropFilter
@@ -1137,6 +1138,11 @@ boxSizing x = "box-sizing" =: x
 --
 clipPath :: MisoString -> Style
 clipPath x = "clip-path" =: x
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/content
+--
+content :: MisoString -> Style
+content x = "content" =: x
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/accent-color
 --
