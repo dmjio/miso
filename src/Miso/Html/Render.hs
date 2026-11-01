@@ -214,6 +214,18 @@ renderBuilder :: context -> props -> model -> View context props model action ->
 renderBuilder _ _ _ (VText _ "")    = fromMisoString " "
 renderBuilder _ _ _ (VText _ s)     = fromMisoString s
 renderBuilder _ _ _ (VNode _ "doctype" [] [] _) = "<!doctype html>"
+renderBuilder ctx_ props_ model_ (VNode ns tag attrs children ref)
+  -- A textarea's value is its content: browsers ignore a value attribute on
+  -- it, so render the value property as (escaped) text, as the server-only
+  -- 'Miso.Html.Element.textarea_' does with VANILLA.
+  | tag == "textarea", not (Prelude.null values) =
+      renderBuilder ctx_ props_ model_
+        (VNode ns tag others (children <> [ VText Nothing (htmlEncode (ms v)) | v <- values ]) ref)
+  where
+    values = [ v | Property "value" (String v) <- attrs ]
+    others = [ a | a <- attrs, not (isValue a) ]
+    isValue (Property "value" _) = True
+    isValue _ = False
 renderBuilder ctx_ props_ model_ (VNode ns tag attrs children _) = mconcat
   [ "<"
   , fromMisoString tag
@@ -274,7 +286,7 @@ renderAttrs (ClassList classes) =
   mconcat
   [ "class"
   , stringUtf8 "=\""
-  , fromMisoString (MS.unwords classes)
+  , fromMisoString (htmlEncode (MS.unwords classes))
   , stringUtf8 "\""
   ]
 renderAttrs (Property key (Bool enabled)) -- dmj: account for boolean properties
@@ -291,7 +303,7 @@ renderAttrs (Property key value) =
   mconcat
   [ fromMisoString key
   , stringUtf8 "=\""
-  , toHtmlFromJSON value
+  , attributeValue value
   , stringUtf8 "\""
   ]
 renderAttrs (On _) = mempty
@@ -304,9 +316,9 @@ renderAttrs (Styles styles_) =
   , stringUtf8 "=\""
   , mconcat
     [ mconcat
-      [ fromMisoString k
+      [ fromMisoString (htmlEncode k)
       , charUtf8 ':'
-      , fromMisoString v
+      , fromMisoString (htmlEncode v)
       , charUtf8 ';'
       ]
     | (k,v) <- M.toList styles_
@@ -347,6 +359,14 @@ collapseSiblingTextNodes ctx_ props_ model_ = go
 ----------------------------------------------------------------------------
 -- | Helper for turning JSON into Text
 -- Object, Array and Null are kind of non-sensical here
+-- | A property's value inside a double-quoted attribute: escaped, so that a
+-- @\"@, @&@ or @<@ in it cannot end the attribute or the tag.
+attributeValue :: Value -> Builder
+attributeValue (String t) = fromMisoString (htmlEncode (ms t))
+attributeValue (Object o) = fromMisoString (htmlEncode (ms (show o)))
+attributeValue (Array a)  = fromMisoString (htmlEncode (ms (show a)))
+attributeValue v          = toHtmlFromJSON v
+-----------------------------------------------------------------------------
 toHtmlFromJSON :: Value -> Builder
 toHtmlFromJSON (String t)   = fromMisoString (ms t)
 toHtmlFromJSON (Number t)   = fromMisoString $ ms (show t)

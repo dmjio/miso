@@ -1428,6 +1428,14 @@ jsonStringify _ = error "jsonStringify: not implemented"
 foreign import javascript unsafe
   "(($1) => { return JSON.parse($1); })"
   jsonParse :: MisoString -> IO JSVal
+-----------------------------------------------------------------------------
+-- | 'jsonParse' made total, for 'eitherDecode': @[value]@ when the string is
+-- JSON, and the error message (a string) when it is not.  @JSON.parse@ throws
+-- on invalid input, and a throwing import is not a 'Left'; @undefined@ is no
+-- good as the failure value either, since it would decode as 'Null'.
+foreign import javascript unsafe
+  "(($1) => { try { return [JSON.parse($1)]; } catch (e) { return String(e && e.message !== undefined ? e.message : e); } })"
+  jsonParseTotal :: MisoString -> IO JSVal
 #endif
 -----------------------------------------------------------------------------
 #if defined(WASM) || defined(__MHS__)
@@ -1437,10 +1445,26 @@ foreign import javascript unsafe
   jsonParse_JSString :: JSString -> IO JSVal
 jsonParse :: MisoString -> IO JSVal
 jsonParse = jsonParse_JSString . textToJSString
+-- | 'jsonParse' made total, for 'eitherDecode': @[value]@ when the string is
+-- JSON, and the error message (a string) when it is not.  @JSON.parse@ throws
+-- on invalid input, and a throwing import is not a 'Left'; @undefined@ is no
+-- good as the failure value either, since it would decode as 'Null'.
+foreign import javascript unsafe
+  "try { return [JSON.parse($1)]; } catch (e) { return String(e && e.message !== undefined ? e.message : e); }"
+  jsonParseTotal_JSString :: JSString -> IO JSVal
+jsonParseTotal :: MisoString -> IO JSVal
+jsonParseTotal = jsonParseTotal_JSString . textToJSString
 #else
 foreign import javascript unsafe
   "return JSON.parse($1);"
   jsonParse :: MisoString -> IO JSVal
+-- | 'jsonParse' made total, for 'eitherDecode': @[value]@ when the string is
+-- JSON, and the error message (a string) when it is not.  @JSON.parse@ throws
+-- on invalid input, and a throwing import is not a 'Left'; @undefined@ is no
+-- good as the failure value either, since it would decode as 'Null'.
+foreign import javascript unsafe
+  "try { return [JSON.parse($1)]; } catch (e) { return String(e && e.message !== undefined ? e.message : e); }"
+  jsonParseTotal :: MisoString -> IO JSVal
 #endif
 #endif
 -----------------------------------------------------------------------------
@@ -1462,13 +1486,20 @@ eitherDecode string =
 #else
 eitherDecode :: FromJSON a => MisoString -> Either MisoString a
 eitherDecode string = unsafePerformIO $ do
-  (jsonParse string >>= fromJSVal_Value) >>= \case
-    Nothing ->
-      pure $ Left ("eitherDecode: " <> string)
-    Just result ->
-      pure (case fromJSON result of
-        Success x -> Right x
-        Error err -> Left err)
+  parsed <- jsonParseTotal string
+  typeof parsed >>= \case
+    4 -> do -- [value]: the string is JSON
+      (getPropIndex_ffi 0 parsed >>= fromJSVal_Value) >>= \case
+        Nothing ->
+          pure $ Left ("eitherDecode: " <> string)
+        Just result ->
+          pure (case fromJSON result of
+            Success x -> Right x
+            Error err -> Left err)
+    _ -> -- the message of JSON.parse's SyntaxError
+      fromJSVal_Value parsed >>= \case
+        Just (String message) -> pure $ Left ("eitherDecode: " <> ms message)
+        _ -> pure $ Left ("eitherDecode: " <> string)
 #endif
 ----------------------------------------------------------------------------
 -- | Convert a JSON 'Value' to a Haskell type, returning a 'Result'.
