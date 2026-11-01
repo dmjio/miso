@@ -114,7 +114,9 @@ All notable changes to `miso` are documented here.
   a `value` attribute on a `<textarea>`, so prerendering from any backend but
   `VANILLA` (where `textarea_` already moved the value) produced an empty
   textarea. The value is now rendered, escaped, after the textarea's
-  children.
+  children. An empty value leaves the textarea empty (on `VANILLA` it
+  rendered as a single space, which became the textarea's value), and a
+  leading newline survives parsing (the HTML parser drops the first one).
 
 - **WASM: `startApp` no longer evaluates `miso.js` a second time after
   `withJS`.** `initComponent` (behind `startApp`, `miso`, `renderApp`,

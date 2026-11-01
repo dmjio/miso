@@ -209,6 +209,7 @@ module Miso.Html.Element
 -----------------------------------------------------------------------------
 #ifdef VANILLA
 import           Miso.JSON (Value(String))
+import qualified Miso.String as MS
 #endif
 import           Miso.Types
 -----------------------------------------------------------------------------
@@ -573,6 +574,8 @@ textarea_ :: [Attribute model action] -> View context props model action
 textarea_ attrs = nodeHtml "textarea" newAttrs
   [ text x
   | Property "value" (String x) <- attrs
+  -- An empty 'VText' renders as a space, which would become the value.
+  , not (MS.null x)
   ] where
       newAttrs = flip filter attrs $ \case
         Property "value" _ -> False

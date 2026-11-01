@@ -1423,6 +1423,9 @@ jsonStringify _ = error "jsonStringify: not implemented"
 #endif
 -----------------------------------------------------------------------------
 -- | Call @JSON.parse()@ on a JSON string, returning a raw JavaScript value.
+--
+-- Throws @JSON.parse@'s @SyntaxError@ on invalid input, which stops the
+-- runtime on MicroHs. Use 'eitherDecode' or 'decode' for untrusted text.
 -----------------------------------------------------------------------------
 #ifdef GHCJS_NEW
 foreign import javascript unsafe

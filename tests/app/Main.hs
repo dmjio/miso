@@ -830,6 +830,12 @@ main = withJS $ do
       it "Should render a textarea's value as its escaped content" $ do
         toHtml (textarea_ [ value_ "{ \"a\": 1 } <b>" ] :: View () () () Action)
           `shouldBe` "<textarea>{ &quot;a&quot;: 1 } &lt;b&gt;</textarea>"
+      it "Should render an empty textarea value as no content, not a space" $ do
+        toHtml (textarea_ [ value_ "" ] :: View () () () Action)
+          `shouldBe` "<textarea></textarea>"
+      it "Should keep a textarea value's leading newline" $ do
+        toHtml (textarea_ [ value_ "\nfoo" ] :: View () () () Action)
+          `shouldBe` "<textarea>\n\nfoo</textarea>"
       it "Should escape a quote, ampersand and angle brackets in an attribute value" $ do
         toHtml (div_ [ Miso.Html.Property.title_ "a\"b&c<d>" ] [] :: View () () () Action)
           `shouldBe` "<div title=\"a&quot;b&amp;c&lt;d&gt;\"></div>"
