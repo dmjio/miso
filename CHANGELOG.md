@@ -92,6 +92,32 @@ All notable changes to `miso` are documented here.
 
 ### Fixed
 
+- **`eitherDecode` and `decode` return `Left` / `Nothing` on invalid JSON
+  instead of throwing (WASM, JS backend, MicroHs).** They called
+  `JSON.parse` through an `unsafe` import, and its `SyntaxError` escaped: on
+  WASM the update that decoded the text was lost, and on MicroHs, where an
+  exception in an `unsafe` import is fatal, the runtime stopped. The error
+  is now caught in JavaScript, and `eitherDecode` returns
+  `Left "eitherDecode: <message>"` with `JSON.parse`'s message, where it used
+  to put the input string. Invalid input does not decode as `null`, so it is
+  a `Left` for a `Maybe a` too. `VANILLA` builds already returned `Left`.
+
+- **`toHtml` escapes attribute values.** Property values, class names and
+  style declarations were written between quotes as they were, so a `"` in
+  one ended the attribute, and user-controlled text could inject markup into
+  prerendered HTML. They are now escaped with `htmlEncode`, as text nodes
+  are. The browser decodes them back, so the DOM attributes and hydration are
+  unchanged. If you escaped attribute values yourself to work around this,
+  stop: they will now be escaped twice (`&amp;` renders as `&amp;amp;`).
+
+- **`toHtml` renders a `textarea`'s value as its content.** Browsers ignore
+  a `value` attribute on a `<textarea>`, so prerendering from any backend but
+  `VANILLA` (where `textarea_` already moved the value) produced an empty
+  textarea. The value is now rendered, escaped, after the textarea's
+  children. An empty value leaves the textarea empty (on `VANILLA` it
+  rendered as a single space, which became the textarea's value), and a
+  leading newline survives parsing (the HTML parser drops the first one).
+
 - **WASM: `startApp` no longer evaluates `miso.js` a second time after
   `withJS`.** `initComponent` (behind `startApp`, `miso`, `renderApp`,
   `prerender`, `reload` and `live`) evaluated it unconditionally, replacing

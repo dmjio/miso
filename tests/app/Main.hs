@@ -809,6 +809,39 @@ main = withJS $ do
         decodePure "{\"a\":true,\"b\":1.1}"
           `shouldBe` Right (JSON.object [("a",JSON.Bool True),("b",JSON.Number 1.1)])
 
+    describe "Miso.JSON eitherDecode tests" $ do
+      it "Should decode valid JSON" $ do
+        (JSON.eitherDecode "{ \"a\": 1 }" :: Either MisoString JSON.Value)
+          `shouldSatisfy` isRight
+      it "Should return Left for text after the JSON value, not throw" $ do
+        -- JSON.parse throws a SyntaxError here; eitherDecode must not.
+        (JSON.eitherDecode "{ \"a\": 1 }x" :: Either MisoString JSON.Value)
+          `shouldSatisfy` isLeft
+      it "Should return Left for invalid JSON, not throw" $ do
+        (JSON.eitherDecode "x" :: Either MisoString JSON.Value)
+          `shouldSatisfy` isLeft
+      it "Should not decode invalid JSON as null for a type that accepts null" $ do
+        (JSON.eitherDecode "nul" :: Either MisoString (Maybe Int))
+          `shouldSatisfy` isLeft
+      it "Should still decode null" $ do
+        (JSON.eitherDecode "null" :: Either MisoString (Maybe Int))
+          `shouldBe` Right Nothing
+    describe "toHtml escaping tests" $ do
+      it "Should render a textarea's value as its escaped content" $ do
+        toHtml (textarea_ [ value_ "{ \"a\": 1 } <b>" ] :: View () () () Action)
+          `shouldBe` "<textarea>{ &quot;a&quot;: 1 } &lt;b&gt;</textarea>"
+      it "Should render an empty textarea value as no content, not a space" $ do
+        toHtml (textarea_ [ value_ "" ] :: View () () () Action)
+          `shouldBe` "<textarea></textarea>"
+      it "Should keep a textarea value's leading newline" $ do
+        toHtml (textarea_ [ value_ "\nfoo" ] :: View () () () Action)
+          `shouldBe` "<textarea>\n\nfoo</textarea>"
+      it "Should escape a quote, ampersand and angle brackets in an attribute value" $ do
+        toHtml (div_ [ Miso.Html.Property.title_ "a\"b&c<d>" ] [] :: View () () () Action)
+          `shouldBe` "<div title=\"a&quot;b&amp;c&lt;d&gt;\"></div>"
+      it "Should escape class names" $ do
+        toHtml (div_ [ classList_ [ ("a\"b", True) ] ] [] :: View () () () Action)
+          `shouldBe` "<div class=\"a&quot;b\"></div>"
     describe "Miso.JSON generic encoding tests" $ do
 #ifndef __MHS__
       -- Nullary sum constructors → bare String (allNullaryToStringTag = True)

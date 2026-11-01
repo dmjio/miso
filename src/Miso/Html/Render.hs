@@ -214,6 +214,37 @@ renderBuilder :: context -> props -> model -> View context props model action ->
 renderBuilder _ _ _ (VText _ "")    = fromMisoString " "
 renderBuilder _ _ _ (VText _ s)     = fromMisoString s
 renderBuilder _ _ _ (VNode _ "doctype" [] [] _) = "<!doctype html>"
+renderBuilder ctx_ props_ model_ (VNode _ "textarea" attrs children _) = mconcat
+  [ "<textarea"
+  , mconcat [ " " <> intercalate " " (renderAttrs <$> others)
+            | not (Prelude.null others)
+            ]
+  , ">"
+  -- The HTML parser drops one newline right after @<textarea>@, so content
+  -- that starts with one needs another in front of it to keep it.
+  , if leadingNewline then "\n" else mempty
+  , foldMap (renderBuilder ctx_ props_ model_) kids
+  -- Written directly rather than as a 'VText', which renders empty text as
+  -- a space: @value_ ""@ must leave the textarea empty.
+  , foldMap (fromMisoString . htmlEncode) values
+  , "</textarea>"
+  ] where
+      -- A textarea's value is its content: browsers ignore a value attribute
+      -- on it, so the value property is rendered (escaped) as text, after
+      -- any children, as the server-only 'Miso.Html.Element.textarea_' does
+      -- with VANILLA.
+      values = [ ms v | Property "value" (String v) <- attrs ]
+      others = [ a | a <- attrs, not (isValue a) ]
+      isValue (Property "value" _) = True
+      isValue _ = False
+      kids = collapseSiblingTextNodes ctx_ props_ model_ children
+      leadingNewline =
+        case kids of
+          k : _ | VText _ s <- resolveView ctx_ props_ model_ k -> "\n" `MS.isPrefixOf` s
+          _ : _ -> False
+          [] -> case Prelude.filter (not . MS.null) values of
+                  v : _ -> "\n" `MS.isPrefixOf` v
+                  [] -> False
 renderBuilder ctx_ props_ model_ (VNode ns tag attrs children _) = mconcat
   [ "<"
   , fromMisoString tag
@@ -274,7 +305,7 @@ renderAttrs (ClassList classes) =
   mconcat
   [ "class"
   , stringUtf8 "=\""
-  , fromMisoString (MS.unwords classes)
+  , fromMisoString (htmlEncode (MS.unwords classes))
   , stringUtf8 "\""
   ]
 renderAttrs (Property key (Bool enabled)) -- dmj: account for boolean properties
@@ -291,7 +322,7 @@ renderAttrs (Property key value) =
   mconcat
   [ fromMisoString key
   , stringUtf8 "=\""
-  , toHtmlFromJSON value
+  , attributeValue value
   , stringUtf8 "\""
   ]
 renderAttrs (On _) = mempty
@@ -304,9 +335,9 @@ renderAttrs (Styles styles_) =
   , stringUtf8 "=\""
   , mconcat
     [ mconcat
-      [ fromMisoString k
+      [ fromMisoString (htmlEncode k)
       , charUtf8 ':'
-      , fromMisoString v
+      , fromMisoString (htmlEncode v)
       , charUtf8 ';'
       ]
     | (k,v) <- M.toList styles_
@@ -328,10 +359,7 @@ collapseSiblingTextNodes ctx_ props_ model_ = go
     -- Look through the wrapper constructors, so a 'VProps' \/ 'VModel' \/
     -- 'VContext' that resolves to text is collapsed with its neighbours
     -- exactly as the client does after 'buildVTree' has resolved it.
-    resolve (VProps f) = resolve (f props_)
-    resolve (VContext f) = resolve (f ctx_)
-    resolve (VModel f) = resolve (f model_)
-    resolve v = v
+    resolve = resolveView ctx_ props_ model_
 
     -- Resolve *both* sides of a pair before deciding whether they merge —
     -- not just the head, as the single-pass version once did. Otherwise a
@@ -345,6 +373,26 @@ collapseSiblingTextNodes ctx_ props_ model_ = go
       | otherwise = x : go (y : xs)
     go xs = xs
 ----------------------------------------------------------------------------
+-- | Look through 'VProps', 'VContext' and 'VModel' to the view they produce.
+resolveView
+  :: context
+  -> props
+  -> model
+  -> View context props model action
+  -> View context props model action
+resolveView ctx_ props_ model_ (VProps f) = resolveView ctx_ props_ model_ (f props_)
+resolveView ctx_ props_ model_ (VContext f) = resolveView ctx_ props_ model_ (f ctx_)
+resolveView ctx_ props_ model_ (VModel f) = resolveView ctx_ props_ model_ (f model_)
+resolveView _ _ _ v = v
+----------------------------------------------------------------------------
+-- | A property's value inside a double-quoted attribute: escaped, so that a
+-- @\"@, @&@ or @<@ in it cannot end the attribute or the tag.
+attributeValue :: Value -> Builder
+attributeValue (String t) = fromMisoString (htmlEncode (ms t))
+attributeValue (Object o) = fromMisoString (htmlEncode (ms (show o)))
+attributeValue (Array a)  = fromMisoString (htmlEncode (ms (show a)))
+attributeValue v          = toHtmlFromJSON v
+-----------------------------------------------------------------------------
 -- | Helper for turning JSON into Text
 -- Object, Array and Null are kind of non-sensical here
 toHtmlFromJSON :: Value -> Builder
