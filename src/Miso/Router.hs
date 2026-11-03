@@ -492,7 +492,12 @@ instance {-# OVERLAPS #-} forall param m a . (ToMisoString a, FromMisoString a, 
     gRouteParser = K1 <$> queryParam
 #endif
 -----------------------------------------------------------------------------
--- | Query parameter parser from a route
+-- | Query parameter parser from a route.
+--
+-- A missing key, a bare key (@?page@), or a value that doesn't parse as @a@
+-- gives 'Nothing'. An empty value (@?page=@) is passed to
+-- 'fromMisoStringEither', so it gives @'Just' \"\"@ for a 'MisoString'
+-- param and 'Nothing' for an @Int@.
 queryParam
   :: forall param a . (FromMisoString a, KnownSymbol param)
   => RouteParser (QueryParam param a)

@@ -115,7 +115,8 @@ All notable changes to `miso` are documented here.
 - **Empty query values parse.** After `=` the lexer needed at least one
   character, so `?a=&b` parsed as the flag `a` and dropped `b`, and a
   `QueryParam (Just "")` printed as `?q=` decoded back as `Nothing`. `?a=`
-  now gives `a` the value `""`.
+  now gives `a` the value `""`, so a `QueryParam "q" MisoString` route
+  decodes `?q=` as `Just ""` instead of `Nothing`.
 
 - **`ToMisoString (QueryParam p a)` prints `?key=value`.** It printed the
   value and key swapped, as `?value=key`.
