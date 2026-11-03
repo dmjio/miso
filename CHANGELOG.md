@@ -107,6 +107,10 @@ All notable changes to `miso` are documented here.
 
 ### Fixed
 
+- **`prettyURI` joins query params and flags with `&`.** A query string with
+  both printed as `?a=1?flag`, and one with several flags as `?a?b`, so a
+  browser read `a` as `1?flag`. It now prints `?a=1&flag` and `?a&b`.
+
 - **`eitherDecode` and `decode` return `Left` / `Nothing` on invalid JSON
   instead of throwing (WASM, JS backend, MicroHs).** They called
   `JSON.parse` through an `unsafe` import, and its `SyntaxError` escaped: on

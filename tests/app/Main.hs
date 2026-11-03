@@ -1453,6 +1453,14 @@ main = withJS $ do
         prettyURI (URI "foo" "#top" mempty) `shouldBe` "/foo#top"
         prettyURI (URI "foo" "#" mempty) `shouldBe` "/foo"
 
+      it "should prettyURI query params and flags with one ? and & separators" $ do
+        prettyURI (URI "foo" "" (M.fromList [("a", Just "1"), ("flag", Nothing)]))
+          `shouldBe` "/foo?a=1&flag"
+        prettyURI (URI "foo" "" (M.fromList [("a", Nothing), ("b", Nothing)]))
+          `shouldBe` "/foo?a&b"
+        prettyURI (URI "foo" "" mempty) `shouldBe` "/foo"
+        (prettyURI <$> parseURI "/foo?a=1&flag") `shouldBe` Right "/foo?a=1&flag"
+
       it "should lexTokens on fragments" $ do
         lexTokens "/foo?bar#cool" `shouldBe`
           Right [CaptureOrPathToken "foo", QueryParamToken "bar" Nothing, FragmentToken "cool"]
