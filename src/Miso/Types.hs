@@ -1424,7 +1424,11 @@ instance ToJSON URI where
 ----------------------------------------------------------------------------
 -- | Pretty-prints a t'URI'.
 prettyURI :: URI -> MisoString
-prettyURI uri@URI {..} = "/" <> uriPath <> prettyQueryString uri <> uriFragment
+prettyURI uri@URI {..} = "/" <> uriPath <> prettyQueryString uri <> frag
+  where
+    frag
+      | uriFragment == mempty = mempty
+      | otherwise = "#" <> uriFragment
 -----------------------------------------------------------------------------
 -- | Pretty-prints a t'URI' query string.
 prettyQueryString :: URI -> MisoString

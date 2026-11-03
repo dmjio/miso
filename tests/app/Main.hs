@@ -274,6 +274,7 @@ data Route
   = Index
   | Home
   | Widget (Capture "thing" Int) (Path "foo") (Capture "other" MisoString) (QueryParam "bar" Int) (QueryParam "lol" Int)
+  | Section (Fragment "intro")
   deriving stock (Generic, Show, Eq)
   deriving anyclass Router
 #endif
@@ -1411,6 +1412,10 @@ main = withJS $ do
       it "should call dumpURI on Widget" $ do
         dumpURI (Widget (Capture 10) (Path "foo") (Capture "other") (QueryParam (Just 12)) (QueryParam (Just 11)))
           `shouldBe` "URI {uriPath = \"widget/10/foo/other\", uriFragment = \"\", uriQueryString = fromList [(\"bar\",Just \"12\"),(\"lol\",Just \"11\")]}"
+      it "should call toURI on Section without a leading #" $ do
+        toURI (Section Fragment) `shouldBe` URI "section" "intro" mempty
+      it "should call prettyRoute on Section with a single #" $ do
+        prettyRoute (Section Fragment) `shouldBe` "/section#intro"
       it "should call toRoute Index" $ do
         toRoute "/" `shouldBe` Right Index
       it "should call toRoute Home" $ do
@@ -1426,6 +1431,15 @@ main = withJS $ do
           Right [CaptureOrPathToken "foo", QueryParamToken "bar" (Just "12")]
         lexTokens "/foo?bar" `shouldBe`
           Right [CaptureOrPathToken "foo", QueryParamToken "bar" Nothing]
+
+      it "should parseURI a fragment without the leading #" $ do
+        uriFragment <$> parseURI "/foo?bar#cool" `shouldBe` Right "cool"
+        uriFragment <$> parseURI "/foo" `shouldBe` Right ""
+
+      it "should prettyURI with a # only when there is a fragment" $ do
+        prettyURI (URI "foo" "section-1" mempty) `shouldBe` "/foo#section-1"
+        prettyURI (URI "foo" "" mempty) `shouldBe` "/foo"
+        prettyURI <$> parseURI "/foo?bar=1#cool" `shouldBe` Right "/foo?bar=1#cool"
 
       it "should lexTokens on fragments" $ do
         lexTokens "/foo?bar#cool" `shouldBe`

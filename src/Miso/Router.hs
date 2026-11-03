@@ -272,11 +272,8 @@ tokensToURI tokens = URI
         | queryToken <- filter isQuery tokens
         ]
   , uriFragment =
-      foldMap ms (filter isFragment tokens)
+      MS.intercalate "#" [ frag | FragmentToken frag <- tokens ]
   } where
-      isFragment = \case
-        FragmentToken{} -> True
-        _ -> False
       isQuery = \case
         QueryParamToken{} -> True
         _ -> False
@@ -468,7 +465,9 @@ instance {-# OVERLAPS #-} (FromMisoString a, ToMisoString a) => GRouter (K1 m (C
   gRouteParser = K1 <$> capture
 -----------------------------------------------------------------------------
 instance {-# OVERLAPS #-} KnownSymbol frag => GRouter (K1 m (Fragment frag)) where
-  gFromRoute (K1 x) = pure $ FragmentToken (ms x)
+  gFromRoute _ = pure (FragmentToken frag)
+    where
+      frag = ms (symbolVal (Proxy :: Proxy frag))
   gRouteParser = K1 Fragment <$ fragment frag
     where
       frag = ms (symbolVal (Proxy :: Proxy frag))

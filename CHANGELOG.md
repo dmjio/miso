@@ -92,6 +92,15 @@ All notable changes to `miso` are documented here.
 
 ### Fixed
 
+- **`uriFragment` no longer includes the leading `#` (#1696).** `parseURI`
+  (and so `getURI`, `uriSub` and `toURI`) stored the fragment as `"#cool"`,
+  contrary to the documented contract, and `prettyURI` relied on that by
+  appending it as-is, so a hand-built `URI "foo" "section-1" mempty` printed
+  as `/foosection-1`. The fragment is now stored bare and `prettyURI` adds
+  the `#` when it is non-empty. A route with a `Fragment` field also no longer
+  prints as `##frag`. Code that reads `uriFragment` from a parsed URI and
+  strips the `#` itself should stop doing so.
+
 - **`eitherDecode` and `decode` return `Left` / `Nothing` on invalid JSON
   instead of throwing (WASM, JS backend, MicroHs).** They called
   `JSON.parse` through an `unsafe` import, and its `SyntaxError` escaped: on
