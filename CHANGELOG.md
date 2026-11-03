@@ -32,6 +32,11 @@ All notable changes to `miso` are documented here.
 
 ### Changed
 
+- **Printed query strings list entries in key order, joined with `&`.**
+  Flags used to come after the params as separate `?`-groups. Code that
+  matches on the exact output of `prettyURI`, `prettyRoute` or `href_` may
+  need updating; see the matching entry under Fixed.
+
 - **Breaking: `uriFragment` no longer includes the leading `#` (#1696).**
   `parseURI` (and so `getURI`, `uriSub` and `FromJSON URI`) stored the
   fragment as `"#cool"`, contrary to the documented contract, and `toURI` on a
@@ -106,6 +111,14 @@ All notable changes to `miso` are documented here.
     from ghcjs-base, still compares code units.
 
 ### Fixed
+
+- **Empty query values parse.** After `=` the lexer needed at least one
+  character, so `?a=&b` parsed as the flag `a` and dropped `b`, and a
+  `QueryParam (Just "")` printed as `?q=` decoded back as `Nothing`. `?a=`
+  now gives `a` the value `""`.
+
+- **`ToMisoString (QueryParam p a)` prints `?key=value`.** It printed the
+  value and key swapped, as `?value=key`.
 
 - **`prettyQueryString` / `prettyURI` print one `?` and separate entries with
   `&`.** Flags were printed as extra `?`-groups after the params (`?a=1?flag`,

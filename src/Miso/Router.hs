@@ -203,11 +203,13 @@ data Fragment (path :: Symbol) = Fragment
 instance (KnownSymbol frag) => ToMisoString (Fragment frag) where
   toMisoString Fragment = "#" <> ms (symbolVal (Proxy @frag))
 -----------------------------------------------------------------------------
+-- | Renders this one parameter as @?key=value@, or nothing for 'Nothing'.
+-- Not a URL serializer: use 'prettyRoute' to print a whole route.
 instance (ToMisoString a, KnownSymbol path) => ToMisoString (QueryParam path a) where
   toMisoString (QueryParam maybeVal) =
-    maybe mempty (\param -> "?" <> ms param <> "=" <> val) maybeVal
+    maybe mempty (\param -> "?" <> key <> "=" <> ms param) maybeVal
       where
-        val = ms $ symbolVal (Proxy @path)
+        key = ms $ symbolVal (Proxy @path)
 -----------------------------------------------------------------------------
 instance (FromMisoString a, KnownSymbol path) => FromMisoString (QueryParam path a) where
   fromMisoStringEither x =
@@ -215,6 +217,8 @@ instance (FromMisoString a, KnownSymbol path) => FromMisoString (QueryParam path
       Right r -> Right $ QueryParam (Just r)
       Left v -> Left v
 -----------------------------------------------------------------------------
+-- | Renders this one flag as @?name@, or nothing for @False@.
+-- Not a URL serializer: use 'prettyRoute' to print a whole route.
 instance KnownSymbol name => ToMisoString (QueryFlag name) where
   toMisoString = \case
     QueryFlag True ->
@@ -588,7 +592,7 @@ uriLexer = do
                 maybeValue <-
                   optional $ do
                     void (L.char '=')
-                    query
+                    MS.concat <$> many pchar
                 pure (key, maybeValue)
 -----------------------------------------------------------------------------
 chars :: Lexer MisoString

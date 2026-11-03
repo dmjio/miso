@@ -1441,6 +1441,12 @@ main = withJS $ do
         toRoute "/search?all&q=x" `shouldBe` Right (Search (QueryParam (Just "x")) (QueryFlag True))
         route (toURI (Search (QueryParam (Just "x")) (QueryFlag True)))
           `shouldBe` Right (Search (QueryParam (Just "x")) (QueryFlag True))
+      it "should round-trip an empty QueryParam value" $ do
+        prettyRoute (Search (QueryParam (Just "")) (QueryFlag False)) `shouldBe` "/search?q="
+        toRoute "/search?q=" `shouldBe` Right (Search (QueryParam (Just "")) (QueryFlag False))
+      it "should render a single QueryParam as ?key=value" $ do
+        S.toMisoString (QueryParam (Just (1 :: Int)) :: QueryParam "q" Int) `shouldBe` "?q=1"
+        S.toMisoString (QueryParam Nothing :: QueryParam "q" Int) `shouldBe` ""
 #endif
 
       it "should lexTokens on query params/flags" $ do
@@ -1491,6 +1497,13 @@ main = withJS $ do
       it "should still parseURI the old ?a=1?flag form" $ do
         (uriQueryString <$> parseURI "/foo?a=1?flag")
           `shouldBe` Right (M.fromList [("a", Just "1"), ("flag", Nothing)])
+
+      it "should parseURI an empty query value" $ do
+        (uriQueryString <$> parseURI "/foo?a=&b")
+          `shouldBe` Right (M.fromList [("a", Just ""), ("b", Nothing)])
+        (uriQueryString <$> parseURI "/foo?a=")
+          `shouldBe` Right (M.fromList [("a", Just "")])
+        (prettyURI <$> parseURI "/foo?a=&b") `shouldBe` Right "/foo?a=&b"
 
       it "should lexTokens on fragments" $ do
         lexTokens "/foo?bar#cool" `shouldBe`
