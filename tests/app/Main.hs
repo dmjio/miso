@@ -1433,13 +1433,13 @@ main = withJS $ do
           Right [CaptureOrPathToken "foo", QueryParamToken "bar" Nothing]
 
       it "should parseURI a fragment without the leading #" $ do
-        uriFragment <$> parseURI "/foo?bar#cool" `shouldBe` Right "cool"
-        uriFragment <$> parseURI "/foo" `shouldBe` Right ""
+        (uriFragment <$> parseURI "/foo?bar#cool") `shouldBe` Right "cool"
+        (uriFragment <$> parseURI "/foo") `shouldBe` Right ""
 
       it "should prettyURI with a # only when there is a fragment" $ do
         prettyURI (URI "foo" "section-1" mempty) `shouldBe` "/foo#section-1"
         prettyURI (URI "foo" "" mempty) `shouldBe` "/foo"
-        prettyURI <$> parseURI "/foo?bar=1#cool" `shouldBe` Right "/foo?bar=1#cool"
+        (prettyURI <$> parseURI "/foo?bar=1#cool") `shouldBe` Right "/foo?bar=1#cool"
 
       it "should lexTokens on fragments" $ do
         lexTokens "/foo?bar#cool" `shouldBe`
