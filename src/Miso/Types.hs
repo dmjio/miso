@@ -1438,14 +1438,22 @@ prettyURI uri@URI {..} = "/" <> uriPath <> prettyQueryString uri <> frag
 -- | Pretty-prints a t'URI' query string.
 --
 -- Parameters and flags share a single @?@ and are separated by @&@, in key
--- order: @?a=1&flag@. An empty query string prints as nothing.
+-- order: @?a=1&flag@. Entries with an empty key are skipped, since they
+-- can't be parsed back, and an empty query string prints as nothing.
+-- Keys and values are printed exactly as stored; they are not
+-- percent-encoded.
 prettyQueryString :: URI -> MisoString
 prettyQueryString URI {..}
-  | M.null uriQueryString = mempty
-  | otherwise = "?" <> MS.intercalate "&" (map render (M.toList uriQueryString))
+  | null entries = mempty
+  | otherwise = "?" <> MS.intercalate "&" entries
   where
-    render (k, Just v) = k <> "=" <> v
-    render (k, Nothing) = k
+    entries =
+      [ render k v
+      | (k, v) <- M.toList uriQueryString
+      , not (MS.null k)
+      ]
+    render k (Just v) = k <> "=" <> v
+    render k Nothing = k
 -----------------------------------------------------------------------------
 -- | VTreeType ADT for matching TypeScript enum
 data VTreeType

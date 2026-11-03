@@ -107,9 +107,14 @@ All notable changes to `miso` are documented here.
 
 ### Fixed
 
-- **`prettyURI` joins query params and flags with `&`.** A query string with
-  both printed as `?a=1?flag`, and one with several flags as `?a?b`, so a
-  browser read `a` as `1?flag`. It now prints `?a=1&flag` and `?a&b`.
+- **`prettyQueryString` / `prettyURI` print one `?` and separate entries with
+  `&`.** Flags were printed as extra `?`-groups after the params (`?a=1?flag`,
+  `?a?b`), which a browser read as `a` = `1?flag` and as one key `a?b`. Every
+  entry now follows a single `?`, in key order (`?a=1&flag`, `?a&b`), and
+  entries with an empty key are skipped. This changes the output of
+  `prettyRoute`, `href_`, `pushURI` / `replaceURI` / `pushRoute`, and the
+  `ToMisoString` / `ToJSON` instances of `URI`. `parseURI` still accepts the
+  old form.
 
 - **`eitherDecode` and `decode` return `Left` / `Nothing` on invalid JSON
   instead of throwing (WASM, JS backend, MicroHs).** They called

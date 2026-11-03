@@ -275,6 +275,7 @@ data Route
   | Home
   | Widget (Capture "thing" Int) (Path "foo") (Capture "other" MisoString) (QueryParam "bar" Int) (QueryParam "lol" Int)
   | Section (Fragment "intro")
+  | Search (QueryParam "q" MisoString) (QueryFlag "all")
   deriving stock (Generic, Show, Eq)
   deriving anyclass Router
 #endif
@@ -1432,6 +1433,14 @@ main = withJS $ do
         toRoute "/widget/10/foo/other?bar=12&lol=11"
           `shouldBe`
             Right (Widget (Capture 10) (Path "foo") (Capture "other") (QueryParam (Just 12)) (QueryParam (Just 11)))
+      it "should print a QueryParam and QueryFlag with one ? and &" $ do
+        prettyRoute (Search (QueryParam (Just "x")) (QueryFlag True)) `shouldBe` "/search?all&q=x"
+        Miso.Router.href_ (Search (QueryParam (Just "x")) (QueryFlag True))
+          `shouldBe` Property "href" "/search?all&q=x"
+      it "should round-trip a QueryParam and QueryFlag through toRoute and route" $ do
+        toRoute "/search?all&q=x" `shouldBe` Right (Search (QueryParam (Just "x")) (QueryFlag True))
+        route (toURI (Search (QueryParam (Just "x")) (QueryFlag True)))
+          `shouldBe` Right (Search (QueryParam (Just "x")) (QueryFlag True))
 #endif
 
       it "should lexTokens on query params/flags" $ do
@@ -1460,6 +1469,28 @@ main = withJS $ do
           `shouldBe` "/foo?a&b"
         prettyURI (URI "foo" "" mempty) `shouldBe` "/foo"
         (prettyURI <$> parseURI "/foo?a=1&flag") `shouldBe` Right "/foo?a=1&flag"
+
+      it "should prettyURI query entries in key order, not values first" $ do
+        prettyURI (URI "foo" "" (M.fromList [("z", Just "1"), ("a", Nothing)]))
+          `shouldBe` "/foo?a&z=1"
+
+      it "should prettyURI without entries that have an empty key" $ do
+        prettyURI (URI "foo" "" (M.fromList [("", Nothing), ("a", Just "1")]))
+          `shouldBe` "/foo?a=1"
+        prettyURI (URI "foo" "" (M.fromList [("", Just "x")]))
+          `shouldBe` "/foo"
+
+      it "should lexTokens params and flags separated by &" $ do
+        lexTokens "/foo?a=1&flag" `shouldBe`
+          Right [CaptureOrPathToken "foo", QueryParamToken "a" (Just "1"), QueryParamToken "flag" Nothing]
+
+      it "should round-trip flags and a fragment through parseURI and prettyURI" $ do
+        (prettyURI <$> parseURI "/foo?a&b") `shouldBe` Right "/foo?a&b"
+        (prettyURI <$> parseURI "/foo?a&b#x") `shouldBe` Right "/foo?a&b#x"
+
+      it "should still parseURI the old ?a=1?flag form" $ do
+        (uriQueryString <$> parseURI "/foo?a=1?flag")
+          `shouldBe` Right (M.fromList [("a", Just "1"), ("flag", Nothing)])
 
       it "should lexTokens on fragments" $ do
         lexTokens "/foo?bar#cool" `shouldBe`

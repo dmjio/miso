@@ -285,6 +285,9 @@ tokensToURI tokens = URI
         IndexToken {} -> True
         _ -> False
 -----------------------------------------------------------------------------
+-- | Renders a single t'Token' for debugging. Each query token gets its own
+-- @?@, so this is not a URL serializer: use @'prettyURI' . 'tokensToURI'@
+-- (as 'prettyRoute' does) to print a list of tokens as a URL.
 instance ToMisoString Token where
   toMisoString = \case
     CaptureOrPathToken x -> "/" <> x
