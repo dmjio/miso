@@ -1416,6 +1416,14 @@ main = withJS $ do
         toURI (Section Fragment) `shouldBe` URI "section" "intro" mempty
       it "should call prettyRoute on Section with a single #" $ do
         prettyRoute (Section Fragment) `shouldBe` "/section#intro"
+      it "should call fromRoute on Section with a bare FragmentToken" $ do
+        fromRoute (Section Fragment) `shouldBe` [ CaptureOrPathToken "section", FragmentToken "intro" ]
+      it "should route a URI that has a fragment" $ do
+        route (URI "home" "top" mempty) `shouldBe` Right Home
+      -- TODO: the Fragment route parser never matches yet, so this is
+      -- pinned as a failure. Flip it once Fragment routes can be parsed.
+      it "should not yet toRoute a route with a Fragment field" $ do
+        isLeft (toRoute "/section#intro" :: Either RoutingError Route) `shouldBe` True
       it "should call toRoute Index" $ do
         toRoute "/" `shouldBe` Right Index
       it "should call toRoute Home" $ do
@@ -1435,11 +1443,15 @@ main = withJS $ do
       it "should parseURI a fragment without the leading #" $ do
         (uriFragment <$> parseURI "/foo?bar#cool") `shouldBe` Right "cool"
         (uriFragment <$> parseURI "/foo") `shouldBe` Right ""
+        (uriFragment <$> parseURI "/foo#a#b") `shouldBe` Right "a#b"
 
       it "should prettyURI with a # only when there is a fragment" $ do
         prettyURI (URI "foo" "section-1" mempty) `shouldBe` "/foo#section-1"
         prettyURI (URI "foo" "" mempty) `shouldBe` "/foo"
         (prettyURI <$> parseURI "/foo?bar=1#cool") `shouldBe` Right "/foo?bar=1#cool"
+        (prettyURI <$> parseURI "/foo#a#b") `shouldBe` Right "/foo#a#b"
+        prettyURI (URI "foo" "#top" mempty) `shouldBe` "/foo#top"
+        prettyURI (URI "foo" "#" mempty) `shouldBe` "/foo"
 
       it "should lexTokens on fragments" $ do
         lexTokens "/foo?bar#cool" `shouldBe`

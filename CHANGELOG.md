@@ -32,6 +32,21 @@ All notable changes to `miso` are documented here.
 
 ### Changed
 
+- **Breaking: `uriFragment` no longer includes the leading `#` (#1696).**
+  `parseURI` (and so `getURI`, `uriSub` and `FromJSON URI`) stored the
+  fragment as `"#cool"`, contrary to the documented contract, and `toURI` on a
+  route with a `Fragment` field stored `"##intro"`. `prettyURI` appended the
+  field as-is, so a hand-built `URI "foo" "section-1" mempty` printed as
+  `/foosection-1` and `prettyRoute` printed `##intro`. The fragment is now
+  stored without the `#`, and `prettyURI` adds one when it is non-empty.
+  URIs printed from parsed input (`getURI`, `uriSub`, `routerSub`, `route`)
+  are unchanged.
+
+  Migration: stop stripping `#` from a parsed `uriFragment`, and compare
+  against the bare value (`uriFragment uri == "top"`). Fragments written with
+  a leading `#` (`uri { uriFragment = "#top" }`) still print correctly, since
+  `prettyURI` doesn't repeat an existing `#`.
+
 - **Event handlers run synchronously, during dispatch, on every backend.**
   `on` / `onWithOptions`, event delegation and `addEventListener` (and the
   subscriptions built on it: `windowSub`, `windowSubWithOptions`,
@@ -91,15 +106,6 @@ All notable changes to `miso` are documented here.
     from ghcjs-base, still compares code units.
 
 ### Fixed
-
-- **`uriFragment` no longer includes the leading `#` (#1696).** `parseURI`
-  (and so `getURI`, `uriSub` and `toURI`) stored the fragment as `"#cool"`,
-  contrary to the documented contract, and `prettyURI` relied on that by
-  appending it as-is, so a hand-built `URI "foo" "section-1" mempty` printed
-  as `/foosection-1`. The fragment is now stored bare and `prettyURI` adds
-  the `#` when it is non-empty. A route with a `Fragment` field also no longer
-  prints as `##frag`. Code that reads `uriFragment` from a parsed URI and
-  strips the `#` itself should stop doing so.
 
 - **`eitherDecode` and `decode` return `Left` / `Nothing` on invalid JSON
   instead of throwing (WASM, JS backend, MicroHs).** They called

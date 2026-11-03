@@ -1423,12 +1423,17 @@ instance ToJSON URI where
   toJSON = toJSON . toMisoString
 ----------------------------------------------------------------------------
 -- | Pretty-prints a t'URI'.
+--
+-- A @#@ is added before a non-empty 'uriFragment'. A leading @#@ already
+-- present in 'uriFragment' is not repeated, so @URI "foo" "\#top" mempty@
+-- and @URI "foo" "top" mempty@ both print as @\/foo\#top@.
 prettyURI :: URI -> MisoString
 prettyURI uri@URI {..} = "/" <> uriPath <> prettyQueryString uri <> frag
   where
+    bare = fromMaybe uriFragment (MS.stripPrefix "#" uriFragment)
     frag
-      | uriFragment == mempty = mempty
-      | otherwise = "#" <> uriFragment
+      | MS.null bare = mempty
+      | otherwise = "#" <> bare
 -----------------------------------------------------------------------------
 -- | Pretty-prints a t'URI' query string.
 prettyQueryString :: URI -> MisoString

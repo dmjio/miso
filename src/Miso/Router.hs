@@ -250,6 +250,9 @@ toPath :: MisoString -> Token
 toPath = CaptureOrPathToken
 -----------------------------------------------------------------------------
 -- | Converts a list of @[Token]@ into an actual @URI@.
+--
+-- 'uriFragment' is stored without the leading @#@. If there are several
+-- 'FragmentToken's they are joined with @#@, so @\/foo\#a\#b@ gives @"a\#b"@.
 tokensToURI :: [Token] -> URI
 tokensToURI tokens = URI
   { uriPath =
