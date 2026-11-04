@@ -1431,6 +1431,8 @@ main = withJS $ do
         fromRoute (Section Fragment) `shouldBe` [ CaptureOrPathToken "section", FragmentToken "intro" ]
       it "should route a URI that has a fragment" $ do
         route (URI "home" "top" mempty) `shouldBe` Right Home
+      it "should ignore a fragment containing / when routing" $ do
+        route (URI "home" "a/b" mempty) `shouldBe` Right Home
       -- TODO: the Fragment route parser never matches yet, so this is
       -- pinned as a failure. Flip it once Fragment routes can be parsed.
       it "should not yet toRoute a route with a Fragment field" $ do
@@ -1542,6 +1544,49 @@ main = withJS $ do
       it "should lexTokens on fragments" $ do
         lexTokens "/foo?bar#cool" `shouldBe`
           Right [CaptureOrPathToken "foo", QueryParamToken "bar" Nothing, FragmentToken "cool"]
+
+      it "should lexTokens /, ?, =, & inside a fragment" $ do
+        lexTokens "/foo#a/b?c=1&d=2" `shouldBe`
+          Right [CaptureOrPathToken "foo", FragmentToken "a/b?c=1&d=2"]
+
+      it "should lexTokens later # as part of the fragment" $ do
+        lexTokens "/foo#a#b" `shouldBe`
+          Right [CaptureOrPathToken "foo", FragmentToken "a#b"]
+
+      it "should lexTokens an empty fragment" $ do
+        lexTokens "/foo#" `shouldBe`
+          Right [CaptureOrPathToken "foo", FragmentToken ""]
+
+      it "should keep characters outside the URI grammar in a fragment" $ do
+        (uriFragment <$> parseURI "/foo#a b") `shouldBe` Right "a b"
+        (uriFragment <$> parseURI "/foo#q=[1]") `shouldBe` Right "q=[1]"
+        (uriFragment <$> parseURI "/foo#100%") `shouldBe` Right "100%"
+        (uriFragment <$> parseURI "/foo#a%20b") `shouldBe` Right "a%20b"
+
+      it "should parseURI a query string followed by a fragment" $ do
+        (prettyURI <$> parseURI "/foo?x=1#y") `shouldBe` Right "/foo?x=1#y"
+        (uriQueryString <$> parseURI "/foo?x=1#y") `shouldBe` Right (M.fromList [("x", Just "1")])
+
+      it "should parseURI a bare fragment" $ do
+        parseURI "#frag" `shouldBe` Right (URI "" "frag" mempty)
+
+      -- prettyURI drops one leading # from uriFragment (so a hand-written
+      -- "#top" doesn't print as ##top), so a fragment that itself starts
+      -- with # loses it when printed back.
+      it "should parseURI a fragment that starts with #" $ do
+        (uriFragment <$> parseURI "/foo##x") `shouldBe` Right "#x"
+        (prettyURI <$> parseURI "/foo##x") `shouldBe` Right "/foo#x"
+
+      it "should parseURI a hash route" $ do
+        (uriFragment <$> parseURI "/#/users/1?tab=2") `shouldBe` Right "/users/1?tab=2"
+        (uriQueryString <$> parseURI "/#/users/1?tab=2") `shouldBe` Right mempty
+        (prettyURI <$> parseURI "/#/users/1?tab=2") `shouldBe` Right "/#/users/1?tab=2"
+
+      it "should join several fragment tokens with #" $ do
+        uriFragment (tokensToURI [CaptureOrPathToken "x", FragmentToken "a", FragmentToken "b"])
+          `shouldBe` "a#b"
+        prettyURI (tokensToURI [CaptureOrPathToken "x", FragmentToken "a", FragmentToken "b"])
+          `shouldBe` "/x#a#b"
 
     describe "MisoString tests" $ do
       it "Should pack" $ do

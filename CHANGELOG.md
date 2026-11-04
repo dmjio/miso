@@ -145,6 +145,18 @@ All notable changes to `miso` are documented here.
   existing links still parse. `fromRoute` and `toURI` change too: the key
   no longer appears in the token list or in `uriQueryString`.
 
+- **The fragment lexer takes everything after the `#`.** It only accepted
+  path-segment characters, so it stopped at the first `/`, `?`, `#`, `=`,
+  `&`, space or `[`, and the rest was dropped or misparsed as path or query.
+  `/#/users/1?tab=2` parsed as `URI "" "" mempty`, and `/foo#a/b` parsed as
+  path `foo/b` with fragment `a`. The fragment lexer now takes the rest of
+  the input verbatim, as browsers report it in `location.hash`, so
+  `parseURI "/#/users/1?tab=2"` has fragment `/users/1?tab=2`, and `/foo#a/b`
+  has path `foo`. `route` and `routerSub` ignore the fragment; to route on a
+  `#/…` hash, run `toRoute` on `uriFragment`. (The query lexer still stops at
+  a `/` or `?` inside a query value, so `/login?next=/home#tab` still loses
+  everything from that `/` on.)
+
 - **`eitherDecode` and `decode` return `Left` / `Nothing` on invalid JSON
   instead of throwing (WASM, JS backend, MicroHs).** They called
   `JSON.parse` through an `unsafe` import, and its `SyntaxError` escaped: on
