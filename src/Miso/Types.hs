@@ -245,7 +245,7 @@ module Miso.Types
 import qualified Data.Map.Strict as M
 import           Data.Set (Set)
 import qualified Data.Set as S
-import           Data.Maybe (fromMaybe, isJust)
+import           Data.Maybe (fromMaybe)
 import           Data.String (IsString, fromString)
 import qualified Data.Text as T
 import           GHC.Generics
@@ -1436,22 +1436,24 @@ prettyURI uri@URI {..} = "/" <> uriPath <> prettyQueryString uri <> frag
       | otherwise = "#" <> bare
 -----------------------------------------------------------------------------
 -- | Pretty-prints a t'URI' query string.
+--
+-- Parameters and flags share a single @?@ and are separated by @&@, in key
+-- order: @?a=1&flag@. Entries with an empty key are skipped, since they
+-- can't be parsed back, and an empty query string prints as nothing.
+-- Keys and values are printed exactly as stored; they are not
+-- percent-encoded.
 prettyQueryString :: URI -> MisoString
-prettyQueryString URI {..} = queries <> flags
+prettyQueryString URI {..}
+  | null entries = mempty
+  | otherwise = "?" <> MS.intercalate "&" entries
   where
-    queries =
-      MS.concat
-      [ "?" <>
-        MS.intercalate "&"
-        [ k <> "=" <> v
-        | (k, Just v) <- M.toList uriQueryString
-        ]
-      | any isJust (M.elems uriQueryString)
+    entries =
+      [ render k v
+      | (k, v) <- M.toList uriQueryString
+      , not (MS.null k)
       ]
-    flags = mconcat
-        [ "?" <> k
-        | (k, Nothing) <- M.toList uriQueryString
-        ]
+    render k (Just v) = k <> "=" <> v
+    render k Nothing = k
 -----------------------------------------------------------------------------
 -- | VTreeType ADT for matching TypeScript enum
 data VTreeType

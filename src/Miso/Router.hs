@@ -203,11 +203,13 @@ data Fragment (path :: Symbol) = Fragment
 instance (KnownSymbol frag) => ToMisoString (Fragment frag) where
   toMisoString Fragment = "#" <> ms (symbolVal (Proxy @frag))
 -----------------------------------------------------------------------------
+-- | Renders this one parameter as @?key=value@, or nothing for 'Nothing'.
+-- Not a URL serializer: use 'prettyRoute' to print a whole route.
 instance (ToMisoString a, KnownSymbol path) => ToMisoString (QueryParam path a) where
   toMisoString (QueryParam maybeVal) =
-    maybe mempty (\param -> "?" <> ms param <> "=" <> val) maybeVal
+    maybe mempty (\param -> "?" <> key <> "=" <> ms param) maybeVal
       where
-        val = ms $ symbolVal (Proxy @path)
+        key = ms $ symbolVal (Proxy @path)
 -----------------------------------------------------------------------------
 instance (FromMisoString a, KnownSymbol path) => FromMisoString (QueryParam path a) where
   fromMisoStringEither x =
@@ -215,6 +217,8 @@ instance (FromMisoString a, KnownSymbol path) => FromMisoString (QueryParam path
       Right r -> Right $ QueryParam (Just r)
       Left v -> Left v
 -----------------------------------------------------------------------------
+-- | Renders this one flag as @?name@, or nothing for @False@.
+-- Not a URL serializer: use 'prettyRoute' to print a whole route.
 instance KnownSymbol name => ToMisoString (QueryFlag name) where
   toMisoString = \case
     QueryFlag True ->
@@ -285,6 +289,9 @@ tokensToURI tokens = URI
         IndexToken {} -> True
         _ -> False
 -----------------------------------------------------------------------------
+-- | Renders a single t'Token' for debugging. Each query token gets its own
+-- @?@, so this is not a URL serializer: use @'prettyURI' . 'tokensToURI'@
+-- (as 'prettyRoute' does) to print a list of tokens as a URL.
 instance ToMisoString Token where
   toMisoString = \case
     CaptureOrPathToken x -> "/" <> x
@@ -485,7 +492,12 @@ instance {-# OVERLAPS #-} forall param m a . (ToMisoString a, FromMisoString a, 
     gRouteParser = K1 <$> queryParam
 #endif
 -----------------------------------------------------------------------------
--- | Query parameter parser from a route
+-- | Query parameter parser from a route.
+--
+-- A missing key, a bare key (@?page@), or a value that doesn't parse as @a@
+-- gives 'Nothing'. An empty value (@?page=@) is passed to
+-- 'fromMisoStringEither', so it gives @'Just' \"\"@ for a 'MisoString'
+-- param and 'Nothing' for an @Int@.
 queryParam
   :: forall param a . (FromMisoString a, KnownSymbol param)
   => RouteParser (QueryParam param a)
@@ -585,7 +597,7 @@ uriLexer = do
                 maybeValue <-
                   optional $ do
                     void (L.char '=')
-                    query
+                    MS.concat <$> many pchar
                 pure (key, maybeValue)
 -----------------------------------------------------------------------------
 chars :: Lexer MisoString
