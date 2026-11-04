@@ -130,6 +130,21 @@ All notable changes to `miso` are documented here.
   `ToMisoString` / `ToJSON` instances of `URI`. `parseURI` still accepts the
   old form.
 
+- **A generic `Index` route keeps its query fields when encoded.**
+  `fromRoute` emitted only `IndexToken` for an index constructor, dropping
+  its `QueryParam` and `QueryFlag` fields, so `prettyRoute` and `href_`
+  printed `/` where they should print `/?page=2`. Decoding already read
+  those fields. (A `Fragment` field is now encoded too, but `Fragment`
+  fields still can't be decoded.)
+
+- **`QueryParam Nothing` is left out of the URL.** It was printed as a bare
+  flag, so a route with an unset param linked to `/widget?bar` rather than
+  `/widget`. This applies to every generic route, not just index routes. It
+  now prints nothing; decoding a URL without the key still gives
+  `QueryParam Nothing`, and so does a URL with the bare key (`?bar`), so
+  existing links still parse. `fromRoute` and `toURI` change too: the key
+  no longer appears in the token list or in `uriQueryString`.
+
 - **`eitherDecode` and `decode` return `Left` / `Nothing` on invalid JSON
   instead of throwing (WASM, JS backend, MicroHs).** They called
   `JSON.parse` through an `unsafe` import, and its `SyntaxError` escaped: on

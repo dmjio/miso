@@ -76,7 +76,16 @@
 --
 -- * __Constructor name__ becomes the lowercase path segment:
 --   @About@ → @\/about@, @UserProfile@ → @\/user@ (first camel-case hump only).
--- * The special name __@Index@__ encodes the root path @\/@.
+-- * A constructor whose first camel-case hump is __@Index@__ (@Index@,
+--   @IndexPage@) encodes the root path @\/@. Its t'QueryParam' and
+--   t'QueryFlag' fields are encoded into the query string and decoded back:
+--   with a @QueryParam \"page\" Int@ field, @Index (QueryParam (Just 2))@
+--   is @\/?page=2@. t'Capture', t'Path' and nested route fields are not
+--   supported on an index route: their path segments are dropped when
+--   encoding, so the route can't be decoded from the URL it prints. A
+--   t'Fragment' field is encoded but can't be decoded yet.
+--   Don't give one type two index constructors (say @Index@ and
+--   @IndexPage@): both match @\/@, so decoding it is ambiguous.
 -- * The position of t'Capture' and t'Path' fields in the constructor
 --   determines their order in the URL path. The position of
 --   t'QueryParam' and t'QueryFlag' does not matter.
@@ -85,8 +94,8 @@
 --
 -- [@'Capture' sym a@] dynamic path segment — @Capture 42@ → @\/42@
 -- [@'Path' sym@] fixed path segment — @Path \"foo\"@ → @\/foo@
--- [@'QueryParam' sym a@] optional query key — @QueryParam (Just 1)@ → @?sym=1@
--- [@'QueryFlag' sym@] boolean query flag — @QueryFlag True@ → @?sym@
+-- [@'QueryParam' sym a@] optional query key — @QueryParam (Just 1)@ → @?sym=1@, @QueryParam Nothing@ → omitted
+-- [@'QueryFlag' sym@] boolean query flag — @QueryFlag True@ → @?sym@, @QueryFlag False@ → omitted
 -- [@'Fragment' sym@] hash fragment — @Fragment@ → @#sym@
 --
 -- = Integration with history subscription
@@ -445,7 +454,7 @@ instance GRouter next => GRouter (D1 m next) where
 instance (KnownSymbol name, GRouter next) => GRouter (C1 ('MetaCons name x y) next) where
   gFromRoute (M1 x) =
     case name of
-      "index" -> [IndexToken]
+      "index" -> IndexToken : gFromRoute x
       _ -> CaptureOrPathToken name : gFromRoute x
       where
         name = lowercaseStrip $ symbolVal (Proxy @name)
@@ -487,7 +496,7 @@ instance {-# OVERLAPS #-} forall param m a . (ToMisoString a, FromMisoString a, 
     gFromRoute (K1 (QueryParam maybeParam)) = do
       let key = ms (symbolVal (Proxy @param))
       case maybeParam of
-        Nothing -> [QueryParamToken key Nothing]
+        Nothing -> []
         Just v -> [QueryParamToken key (Just (ms v))]
     gRouteParser = K1 <$> queryParam
 #endif
