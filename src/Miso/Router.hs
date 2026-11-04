@@ -264,8 +264,9 @@ toPath = CaptureOrPathToken
 -----------------------------------------------------------------------------
 -- | Converts a list of @[Token]@ into an actual @URI@.
 --
--- 'uriFragment' is stored without the leading @#@. If there are several
--- 'FragmentToken's they are joined with @#@, so @\/foo\#a\#b@ gives @"a\#b"@.
+-- 'uriFragment' is stored without the leading @#@. The lexer produces at
+-- most one 'FragmentToken', but 'fromRoute' can produce several; those are
+-- joined with @#@, so they print back as @\/foo\#a\#b@.
 tokensToURI :: [Token] -> URI
 tokensToURI tokens = URI
   { uriPath =
@@ -596,9 +597,13 @@ uriLexer = do
             captureOrPathLexer = do
               void (L.char '/')
               CaptureOrPathToken <$> chars
+            -- The fragment runs to the end of the URI and may contain "/"
+            -- and "?" (RFC 3986 section 3.5). Browsers also keep any later
+            -- "#" in it, so "/a#x#y" has the single fragment "x#y".
             fragmentLexer = do
               void (L.char '#')
-              FragmentToken <$> query
+              L.Lexer $ \(L.Stream rest loc) ->
+                Right (FragmentToken rest, L.Stream mempty loc)
             queryParamLexer = QueryParamTokens <$> do
               void (L.char '?')
               sepBy (L.char '&') $ do
