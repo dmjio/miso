@@ -278,6 +278,16 @@ data Route
   | Search (QueryParam "q" MisoString) (QueryFlag "all")
   deriving stock (Generic, Show, Eq)
   deriving anyclass Router
+
+-- | Index routes with fields. Only the first camel-case hump of a
+-- constructor name is used, so "IndexPage" and "IndexFlag" are both "index".
+data IndexRoute = IndexPage (QueryParam "page" Int)
+  deriving stock (Generic, Show, Eq)
+  deriving anyclass Router
+
+data IndexFlagRoute = IndexFlag (QueryFlag "x")
+  deriving stock (Generic, Show, Eq)
+  deriving anyclass Router
 #endif
 -----------------------------------------------------------------------------
 data Person = Person { name :: MisoString, age :: Int }
@@ -1425,6 +1435,30 @@ main = withJS $ do
       -- pinned as a failure. Flip it once Fragment routes can be parsed.
       it "should not yet toRoute a route with a Fragment field" $ do
         isLeft (toRoute "/section#intro" :: Either RoutingError Route) `shouldBe` True
+      it "should keep query params on an Index route" $ do
+        fromRoute (IndexPage (QueryParam (Just 2)))
+          `shouldBe` [ IndexToken, QueryParamToken "page" (Just "2") ]
+        toURI (IndexPage (QueryParam (Just 2)))
+          `shouldBe` URI "" "" (M.fromList [("page", Just "2")])
+        prettyRoute (IndexPage (QueryParam (Just 2))) `shouldBe` "/?page=2"
+        Miso.Router.href_ (IndexPage (QueryParam (Just 2))) `shouldBe` Property "href" "/?page=2"
+        toRoute "/?page=2" `shouldBe` Right (IndexPage (QueryParam (Just 2)))
+      it "should leave an unset QueryParam out of an Index route" $ do
+        fromRoute (IndexPage (QueryParam Nothing)) `shouldBe` [ IndexToken ]
+        prettyRoute (IndexPage (QueryParam Nothing)) `shouldBe` "/"
+        toRoute "/" `shouldBe` Right (IndexPage (QueryParam Nothing))
+      it "should still decode an old link with a bare QueryParam key" $ do
+        toRoute "/?page" `shouldBe` Right (IndexPage (QueryParam Nothing))
+      it "should keep a QueryFlag on an Index route" $ do
+        prettyRoute (IndexFlag (QueryFlag True)) `shouldBe` "/?x"
+        prettyRoute (IndexFlag (QueryFlag False)) `shouldBe` "/"
+        toRoute "/?x" `shouldBe` Right (IndexFlag (QueryFlag True))
+        toRoute "/" `shouldBe` Right (IndexFlag (QueryFlag False))
+      it "should leave an unset QueryParam out of a non-index route" $ do
+        prettyRoute (Widget (Capture 10) (Path "foo") (Capture "other") (QueryParam Nothing) (QueryParam (Just 11)))
+          `shouldBe` "/widget/10/foo/other?lol=11"
+        toRoute "/widget/10/foo/other?lol=11"
+          `shouldBe` Right (Widget (Capture 10) (Path "foo") (Capture "other") (QueryParam Nothing) (QueryParam (Just 11)))
       it "should call toRoute Index" $ do
         toRoute "/" `shouldBe` Right Index
       it "should call toRoute Home" $ do
