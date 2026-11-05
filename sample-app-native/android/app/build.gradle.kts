@@ -1,9 +1,10 @@
 import java.security.MessageDigest
 
-// Android host for the miso-native Lynx bundle. Versions/artifacts mirror the
-// official lynx-family integrating-lynx-demo-projects KotlinEmptyProject
-// (Lynx SDK 3.8.0). Native modules are intentionally omitted — this host only
-// loads and renders main.lynx.bundle.
+// Android host for the miso-native Lynx bundle. Artifacts mirror the official
+// lynx-family integrating-lynx-demo-projects KotlinEmptyProject; the Lynx SDK is
+// pinned to 4.0.3 to match sample-app-native/ios/Podfile, since that is the newest
+// stable release published on both Maven and CocoaPods. Native modules are
+// intentionally omitted — this host only loads and renders main.lynx.bundle.
 plugins {
   id("com.android.application")
   id("org.jetbrains.kotlin.android")
@@ -36,13 +37,13 @@ android {
 
 dependencies {
   // Core Lynx runtime + JS engine
-  implementation("org.lynxsdk.lynx:lynx:3.8.0")
-  implementation("org.lynxsdk.lynx:lynx-jssdk:3.8.0")
-  implementation("org.lynxsdk.lynx:lynx-trace:3.8.0")
-  implementation("org.lynxsdk.lynx:primjs:3.8.0")
+  implementation("org.lynxsdk.lynx:lynx:4.0.3")
+  implementation("org.lynxsdk.lynx:lynx-jssdk:4.0.3")
+  implementation("org.lynxsdk.lynx:lynx-trace:4.0.3")
+  implementation("org.lynxsdk.lynx:primjs:4.0.0")
 
   // Image service (<image>) + its required Fresco deps (not transitive).
-  implementation("org.lynxsdk.lynx:lynx-service-image:3.8.0")
+  implementation("org.lynxsdk.lynx:lynx-service-image:4.0.3")
   implementation("com.facebook.fresco:fresco:2.3.0")
   implementation("com.facebook.fresco:animated-gif:2.3.0")
   implementation("com.facebook.fresco:animated-webp:2.3.0")
@@ -50,19 +51,19 @@ dependencies {
   implementation("com.facebook.fresco:animated-base:2.3.0")
 
   // Log service
-  implementation("org.lynxsdk.lynx:lynx-service-log:3.8.0")
+  implementation("org.lynxsdk.lynx:lynx-service-log:4.0.3")
 
   // Http service (fetch) + its OkHttp dep
-  implementation("org.lynxsdk.lynx:lynx-service-http:3.8.0")
+  implementation("org.lynxsdk.lynx:lynx-service-http:4.0.3")
   implementation("com.squareup.okhttp3:okhttp:4.9.0")
 
   // Extended (X) elements exercised by the gallery
-  implementation("org.lynxsdk.lynx:xelement:3.8.0")
-  implementation("org.lynxsdk.lynx:xelement-input:3.8.0")
-  implementation("org.lynxsdk.lynx:xelement-overlay:3.8.0")
-  implementation("org.lynxsdk.lynx:xelement-svg:3.8.0")
-  implementation("org.lynxsdk.lynx:servalsvg:0.0.1-alpha.3")
-  implementation("org.lynxsdk.lynx:xelement-refresh:3.8.0")
+  implementation("org.lynxsdk.lynx:xelement:4.0.3")
+  implementation("org.lynxsdk.lynx:xelement-input:4.0.3")
+  implementation("org.lynxsdk.lynx:xelement-overlay:4.0.3")
+  implementation("org.lynxsdk.lynx:xelement-svg:4.0.3")
+  implementation("org.lynxsdk.lynx:servalsvg:0.0.2")
+  implementation("org.lynxsdk.lynx:xelement-refresh:4.0.3")
 }
 
 val lynxBundle = layout.projectDirectory.file("src/main/assets/main.lynx.bundle").asFile

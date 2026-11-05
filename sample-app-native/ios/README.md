@@ -68,7 +68,7 @@ as you interact with each section.
 ## Notes / caveats
 
 - Untested on-device by the author (developed on Linux); the Lynx API calls are
-  copied from the reference explorer, but pod versions (`4.0.0`) and signing are
+  copied from the reference explorer, but pod versions (`4.0.3`) and signing are
   yours to confirm on your Mac.
 - Uses `LynxThreadStrategyForRenderAllOnUI` (the explorer default the bundle was
   verified under). If rendering misbehaves, that's the first knob to try.

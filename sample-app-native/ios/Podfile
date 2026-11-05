@@ -2,16 +2,16 @@ platform :ios, '13.0'
 
 target 'MisoLynx' do
   # Lynx core + JS engine.
-  pod 'Lynx', '4.0.0', :subspecs => ['Framework']
+  pod 'Lynx', '4.0.3', :subspecs => ['Framework']
   pod 'PrimJS', '4.0.0', :subspecs => ['quickjs', 'napi']
   # Extended (X) elements: <input>, <textarea>, <overlay>, <svg>, <refresh>,
   # <viewpager>, <webview>, <scroll-coordinator>, <blur-view>, … These live in a
   # separate pod from Lynx core; without it the elements aren't linked and don't
   # render (the `-ObjC` flag below only keeps *linked* registrations alive).
   # Pulls the default subspecs, which include Input.
-  pod 'XElement', '4.0.0'
+  pod 'XElement', '4.0.3'
   # Image / Log / Http services.
-  pod 'LynxService', '4.0.0', :subspecs => ['Image', 'Log', 'Http']
+  pod 'LynxService', '4.0.3', :subspecs => ['Image', 'Log', 'Http']
   pod 'SDWebImage', '5.15.5'
   pod 'SDWebImageWebPCoder', '0.11.0'
 end

@@ -32,6 +32,12 @@
   "androidx/asynclayoutinflater/asynclayoutinflater/1.0.0/asynclayoutinflater-1.0.0": {
    "aar": "sha256-9+q2DFet3ZS7BidYMv52AGEb6qrhoexZfCMZVvr5bIs="
   },
+  "androidx/cardview#cardview/1.0.0": {
+   "pom": "sha256-5k704ItYNY/ie1meb+gKGxU9sBTGRL7uYwqycQYcPmw="
+  },
+  "androidx/cardview/cardview/1.0.0/cardview-1.0.0": {
+   "aar": "sha256-EZPATCKj1rWUba6fToxZ1q3eanG2vV2H+5nYLdoa/sc="
+  },
   "androidx/collection#collection/1.0.0": {
    "jar": "sha256-nI0Re1wrwSChzf64V+BbSVsWw2ATVwNypwj3gn46yfk=",
    "pom": "sha256-p5E6UnWtaOVV0mEuvowUw2exU+FMpIoYcqZImQIOVO8="
@@ -151,6 +157,12 @@
   "androidx/print/print/1.0.0/print-1.0.0": {
    "aar": "sha256-HVx/MTWhu6Zh/Dc/1y4R6wpK27M5Z4eCbdjkGQ1dnt0="
   },
+  "androidx/recyclerview#recyclerview/1.0.0": {
+   "pom": "sha256-iDHAZBf6tqlpDCX25LNHsujAPPbUcze+nFfnW3+yPmo="
+  },
+  "androidx/recyclerview/recyclerview/1.0.0/recyclerview-1.0.0": {
+   "aar": "sha256-BpVvsawBQCfKnStARppLQqphtJV7sRhI4f81JwGrRUg="
+  },
   "androidx/slidingpanelayout#slidingpanelayout/1.0.0": {
    "pom": "sha256-QOkPloOMKoFWq1GxgUAHZwSfOHzsjGleQS09kgWwdFs="
   },
@@ -162,6 +174,12 @@
   },
   "androidx/swiperefreshlayout/swiperefreshlayout/1.0.0/swiperefreshlayout-1.0.0": {
    "aar": "sha256-l2GzqAnJsJP9BqPEu8ZFdW3sDpW1ydpBm8nyo/MCbo0="
+  },
+  "androidx/transition#transition/1.0.0": {
+   "pom": "sha256-50uKnjrJTi8wO6Sf/4Cx6oHSRaKx9OE+HDW/PaERaIs="
+  },
+  "androidx/transition/transition/1.0.0/transition-1.0.0": {
+   "aar": "sha256-oAoPdj9AGrzs2psOr8tziSnFgBsRGppBS4Ghk9D0AI0="
   },
   "androidx/vectordrawable#vectordrawable-animated/1.0.0": {
    "pom": "sha256-1kau6t61FjpflmzAjx3+pLeiwbkY75o5q3kNMvM31H4="
@@ -364,6 +382,12 @@
   "com/android/tools/utp#android-test-plugin-result-listener-gradle-proto/31.5.0": {
    "jar": "sha256-y99xvKYOFMMOeyz0uQ8PCj6ME498rdh0sNnArgguAnQ=",
    "pom": "sha256-oioBBhBge+alczS4pE1KGFQJWDGYyTTmujaRGz7TpVk="
+  },
+  "com/google/android/material#material/1.0.0": {
+   "pom": "sha256-yf/1QdUcERld4wXFC7/k0d/JeEGYPZX21xAREmA1Fas="
+  },
+  "com/google/android/material/material/1.0.0/material-1.0.0": {
+   "aar": "sha256-doDjgaPAN5jZmbLkQcqt2KVqCoCOEIAkpnr5/ibBGtw="
   },
   "com/google/testing/platform#core-proto/0.0.9-alpha02": {
    "jar": "sha256-bYqJBndBUPQ6j60IymTiXGBww5vYpvwTslk/KJJC/pU=",
@@ -1102,101 +1126,131 @@
    "jar": "sha256-IFIlSQVunlCqNe8LRFouR6U9Br4LCpRn1wTiSD/7BJo=",
    "pom": "sha256-j8hPNs5tps6MiTtlOBmaf2mmmgcG2bF6PuajoJRS7tY="
   },
-  "org/lynxsdk/lynx#lynx-base/3.8.0": {
-   "pom": "sha256-SDrJas86Aq1bV5V8n6XLrHtoeM5m28XcTAETvwJ+xzA="
+  "org/lynxsdk/lynx#lynx-base/4.0.3": {
+   "pom": "sha256-M1e08R3v50HCvkFx2FFIRjcTcWQv4ioE1a8fidKucQI="
   },
-  "org/lynxsdk/lynx#lynx-jssdk/3.8.0": {
-   "pom": "sha256-4DgqqDSEytYaruTrHpsYo2f/iO9azy/mtMcEclqLynY="
+  "org/lynxsdk/lynx#lynx-jssdk/4.0.3": {
+   "pom": "sha256-pFnnTmAvQdpbrH2mMgDqLS46IcXdehEei+zrZAjcGto="
   },
-  "org/lynxsdk/lynx#lynx-service-http/3.8.0": {
-   "pom": "sha256-Q7Y/jP/rqmBRgWaRQ6qwkHR4I5Okt/CblUwgS/svWT4="
+  "org/lynxsdk/lynx#lynx-service-http/4.0.3": {
+   "pom": "sha256-3EZZywWgcLzAdjo/mpIDtHzHmT+KmLQkgOngL0asvxI="
   },
-  "org/lynxsdk/lynx#lynx-service-image/3.8.0": {
-   "pom": "sha256-tbloJSto6VMLQrmaKi4PZ1rwTQujgEQQ6xNHqU7mTPU="
+  "org/lynxsdk/lynx#lynx-service-image/4.0.3": {
+   "pom": "sha256-TFYGKjLW+2Lwsm2cHrI5IuEnFPWgtxXPWK1eIKBSArs="
   },
-  "org/lynxsdk/lynx#lynx-service-log/3.8.0": {
-   "pom": "sha256-/6UVvwFZw3mu78V6F1t1emRxJJnxbPt+uU0s/7mPInM="
+  "org/lynxsdk/lynx#lynx-service-log/4.0.3": {
+   "pom": "sha256-J1/rveMXJFaFwA5eQb+8DycgTP10TulrM3KPavX0Gns="
   },
-  "org/lynxsdk/lynx#lynx-trace/3.8.0": {
-   "pom": "sha256-S6eW5aa96E81knuIvVzeF3E6igksquocNTzBgWwDYH0="
+  "org/lynxsdk/lynx#lynx-trace/4.0.3": {
+   "pom": "sha256-2zOqp73sXETLR3M5/djx3aS2CuF4284hq4ma0y3yooI="
   },
-  "org/lynxsdk/lynx#lynx/3.8.0": {
-   "pom": "sha256-U40eGAU/M07G31bCWVH90HtKiXoqN9wH5nHhXNHtaQg="
+  "org/lynxsdk/lynx#lynx/4.0.3": {
+   "pom": "sha256-j4C+hXS3ORyRzkfJhzDQAgfKRbHdQWpYjr8TbHQIU5A="
   },
-  "org/lynxsdk/lynx#primjs/3.8.0": {
-   "pom": "sha256-iNmkS//Rcy3XL0l6Wie7jH7r6lC68fZroO8FQe/fjnA="
+  "org/lynxsdk/lynx#primjs/4.0.0": {
+   "pom": "sha256-yKO2FSBYh/S5pJVCgKpIqLdf1/r6vLcCphr0MMT5DrQ="
   },
-  "org/lynxsdk/lynx#primjsWasm/3.8.0": {
-   "pom": "sha256-CiLkP5Hqg/xdfNGbvTXb2r0IBtHiz2hApx6ZcmKlzd0="
+  "org/lynxsdk/lynx#primjsWasm/4.0.0": {
+   "pom": "sha256-L+CQLjYXfBKAuLJ/5Q/0SQKFXi8pPj/7GKVsrD89ziI="
   },
-  "org/lynxsdk/lynx#servalsvg/0.0.1-alpha.3": {
-   "pom": "sha256-7tw5F4ZL27Ew/Bni7WfWdSvl5bHojT47mNnb2mUP/zc="
+  "org/lynxsdk/lynx#servalsvg/0.0.2": {
+   "pom": "sha256-1nr9Nlaogni6koX0ZLxW3NIdQFrs3qyihpBvusm8JjU="
   },
-  "org/lynxsdk/lynx#service-api/3.8.0": {
-   "pom": "sha256-OslGKlNkc/UpUglQ0x8/kkiNf3Dn9I0rZ6auP/NlZ8I="
+  "org/lynxsdk/lynx#service-api/4.0.3": {
+   "pom": "sha256-dCvMoqGF7bn8MJOMj9CcK5zOIexOSl3E60aHBf+TOMs="
   },
-  "org/lynxsdk/lynx#xelement-input/3.8.0": {
-   "pom": "sha256-MoIQx50b59nB0McoKoMR7zKwjPTanmPRHFR5XiZLX58="
+  "org/lynxsdk/lynx#xelement-blur-view/4.0.3": {
+   "pom": "sha256-k77cBk6IMuIMHuXvEbzceR6/0yuTry0dGIjBF7WEIHU="
   },
-  "org/lynxsdk/lynx#xelement-overlay/3.8.0": {
-   "pom": "sha256-oICFGBjqvC0qw9OfjzSUX3wjjqOZ9D7/gQpzZNi8oeo="
+  "org/lynxsdk/lynx#xelement-input/4.0.3": {
+   "pom": "sha256-rhq7nV3v8nG/DV6cDRQ54vG8M7vXWci314DKRLAokp0="
   },
-  "org/lynxsdk/lynx#xelement-refresh/3.8.0": {
-   "pom": "sha256-gPRY3kP8aSSsb7kLFraImvCghymNlZ7F/d+fgR6+Gco="
+  "org/lynxsdk/lynx#xelement-markdown/4.0.3": {
+   "pom": "sha256-4iTUtB46rbSReXiFZMC1gLXGqh7UzNHJyg6AV0X9rGw="
   },
-  "org/lynxsdk/lynx#xelement-svg/3.8.0": {
-   "pom": "sha256-/0BCoQzkjR8BNaXMtnCfWBHZ3VdR6uINR0cRFM+f6h8="
+  "org/lynxsdk/lynx#xelement-overlay/4.0.3": {
+   "pom": "sha256-1c6CORQegTaLw5dH5RuUWTwB8C4DcG0t8DE1AUQu1qA="
   },
-  "org/lynxsdk/lynx#xelement/3.8.0": {
-   "pom": "sha256-oZ+vAFD3WQ9h7MqZTJWLXJ7pS8LD/TbieNou6NlDLdI="
+  "org/lynxsdk/lynx#xelement-refresh/4.0.3": {
+   "pom": "sha256-IEyIWGn1N1bIXUxReVtiy6226CZP9TZZ2hoBXX/mGYY="
   },
-  "org/lynxsdk/lynx/lynx-base/3.8.0/lynx-base-3.8.0": {
-   "aar": "sha256-wEmOfUdPWHfSeJg0fK0DRejwydR2zUO3aqtsiEXlUKQ="
+  "org/lynxsdk/lynx#xelement-scroll-coordinator/4.0.3": {
+   "pom": "sha256-CIjVquvoD0vYxb6sq7vTXERN4rQaaJUl5TZgrjMFckw="
   },
-  "org/lynxsdk/lynx/lynx-jssdk/3.8.0/lynx-jssdk-3.8.0": {
-   "aar": "sha256-AxhTswFcGrlAhxflswmGUDbpxo12Y/rSxft/dIbFkKQ="
+  "org/lynxsdk/lynx#xelement-svg/4.0.3": {
+   "pom": "sha256-vqpCdbaEDIpTzdp7uWea7rXfoJ61wTrOiUzWkJ2t3JU="
   },
-  "org/lynxsdk/lynx/lynx-service-http/3.8.0/lynx-service-http-3.8.0": {
+  "org/lynxsdk/lynx#xelement-viewpager/4.0.3": {
+   "pom": "sha256-cgOG9ZjYyslG0wCv6I9umbyXerA9idnZ7MOkT+F2VT8="
+  },
+  "org/lynxsdk/lynx#xelement-webview/4.0.3": {
+   "pom": "sha256-b54zCzrBVmIu6sRR1OnL1PPFdRSDmAz2VtACj+aTaWA="
+  },
+  "org/lynxsdk/lynx#xelement/4.0.3": {
+   "pom": "sha256-OtT4x5yLaDYVYU6qN6tB/LqRTAN/Kg4rG8Iua5JeUwA="
+  },
+  "org/lynxsdk/lynx/lynx-base/4.0.3/lynx-base-4.0.3": {
+   "aar": "sha256-8KJUadpPfT8gRjClcdJlWGtSG4ifmjT0UwH4vgVGTIY="
+  },
+  "org/lynxsdk/lynx/lynx-jssdk/4.0.3/lynx-jssdk-4.0.3": {
+   "aar": "sha256-v5vQeAvnS6PUKIDzYuHGzJHCcy1FxM73QzUk9LyaPIU="
+  },
+  "org/lynxsdk/lynx/lynx-service-http/4.0.3/lynx-service-http-4.0.3": {
    "aar": "sha256-s9FYKKX5QWd3A3Qv99yc1ysVRHfxDyUrBOQOZxzMao8="
   },
-  "org/lynxsdk/lynx/lynx-service-image/3.8.0/lynx-service-image-3.8.0": {
-   "aar": "sha256-nLgtlavn6hm484VSr++4Z6kOnNTKwJ2AqVHlyqxytHI="
+  "org/lynxsdk/lynx/lynx-service-image/4.0.3/lynx-service-image-4.0.3": {
+   "aar": "sha256-nfapD5Agkggp2Bjsqgt6pDrxD5AHmjlPIatCJ2UEDLA="
   },
-  "org/lynxsdk/lynx/lynx-service-log/3.8.0/lynx-service-log-3.8.0": {
+  "org/lynxsdk/lynx/lynx-service-log/4.0.3/lynx-service-log-4.0.3": {
    "aar": "sha256-C7HlC01JBv+ZimUx4pBRx8Si2gm/8oXBnjWK6yOBUNs="
   },
-  "org/lynxsdk/lynx/lynx-trace/3.8.0/lynx-trace-3.8.0": {
-   "aar": "sha256-SILw2PT09LEJ2ABbQsT3DJUJSAj+7c8YJtn2sQWAF3k="
+  "org/lynxsdk/lynx/lynx-trace/4.0.3/lynx-trace-4.0.3": {
+   "aar": "sha256-IGugRlp5IGOJ5KlYCdZFQMTv2x/Vl9aHMQH+4YsFtFw="
   },
-  "org/lynxsdk/lynx/lynx/3.8.0/lynx-3.8.0": {
-   "aar": "sha256-gzbWwxWGDTDtmQeV20LPGNx++RGKd5iPw8T0fSP32sA="
+  "org/lynxsdk/lynx/lynx/4.0.3/lynx-4.0.3": {
+   "aar": "sha256-IR+Om5q5uwts6KYcuOgP6qVFNo+kutrNRHQPytxwQzY="
   },
-  "org/lynxsdk/lynx/primjs/3.8.0/primjs-3.8.0": {
-   "aar": "sha256-u9rDuwAXdunzWlaEdjKUqcYFmsmWiwDAcM36GoOk14k="
+  "org/lynxsdk/lynx/primjs/4.0.0/primjs-4.0.0": {
+   "aar": "sha256-CXree22VCVQQ0Ov3ZQa79Dr9xePG0liy6tNH2ostc08="
   },
-  "org/lynxsdk/lynx/primjsWasm/3.8.0/primjsWasm-3.8.0": {
-   "aar": "sha256-dK2+mcH1vTchuSPsley7Emy55MBmpqxRPJDIw9HZuCw="
+  "org/lynxsdk/lynx/primjsWasm/4.0.0/primjsWasm-4.0.0": {
+   "aar": "sha256-YVBPF7wgS2BXzSL2NnB1CQsbkmNLTxJZtWqj4keluKE="
   },
-  "org/lynxsdk/lynx/servalsvg/0.0.1-alpha.3/servalsvg-0.0.1-alpha.3": {
-   "aar": "sha256-m03EAcshCL/P3imdZH6rUeMAs9BMo0L1HTWK7GIskvM="
+  "org/lynxsdk/lynx/servalsvg/0.0.2/servalsvg-0.0.2": {
+   "aar": "sha256-N1BJ/d8FPKzPmMA8wT9KuyIMTCb27VNnWCSLmYgZID0="
   },
-  "org/lynxsdk/lynx/service-api/3.8.0/service-api-3.8.0": {
-   "aar": "sha256-bYRx+DF3e4rfDLTari8xCoD4DSSu7kab1mXE8l0vN5Y="
+  "org/lynxsdk/lynx/service-api/4.0.3/service-api-4.0.3": {
+   "aar": "sha256-LLx7+pGTM+kjgy8qDKMbLi6KdNMimNIVZc/tDcu7cH4="
   },
-  "org/lynxsdk/lynx/xelement-input/3.8.0/xelement-input-3.8.0": {
-   "aar": "sha256-tuJS4RFA4qX2LACmc+8kMO2p7uRXVgmB6MwwxbJElik="
+  "org/lynxsdk/lynx/xelement-blur-view/4.0.3/xelement-blur-view-4.0.3": {
+   "aar": "sha256-mazI+7iMGzV3eGyndNE2cZvRl3b9SEP6hF3zGLdzLAY="
   },
-  "org/lynxsdk/lynx/xelement-overlay/3.8.0/xelement-overlay-3.8.0": {
-   "aar": "sha256-goivDb01YQbsXqLLorzdUqi5LTdNmVs+K936yn4wtAk="
+  "org/lynxsdk/lynx/xelement-input/4.0.3/xelement-input-4.0.3": {
+   "aar": "sha256-2SQ3sWXJ06yodnAsGMkOpmraV59aQXhW2Yb/zpaChIg="
   },
-  "org/lynxsdk/lynx/xelement-refresh/3.8.0/xelement-refresh-3.8.0": {
-   "aar": "sha256-O6WkGJ+6oR+nfBAS4mvs0AjEeDYEB6VjlJ9ZZ3SLkh8="
+  "org/lynxsdk/lynx/xelement-markdown/4.0.3/xelement-markdown-4.0.3": {
+   "aar": "sha256-3S864lP6cWXfzuv9WhpcpQT2ID6M23oA5IyX6/I3ZEU="
   },
-  "org/lynxsdk/lynx/xelement-svg/3.8.0/xelement-svg-3.8.0": {
-   "aar": "sha256-Y/S+4moLIHqKXo/gqbLdiEGmD35CoMR5bVIBE+I5YNg="
+  "org/lynxsdk/lynx/xelement-overlay/4.0.3/xelement-overlay-4.0.3": {
+   "aar": "sha256-T+pE+7EJomyMUAKibHJE1pAWX9L5qrKbFO/cRLVajCs="
   },
-  "org/lynxsdk/lynx/xelement/3.8.0/xelement-3.8.0": {
-   "aar": "sha256-P6m/lGQLBC1Xh3oY1dZdtsZ0rIGZ63d9+3lhwACEQUY="
+  "org/lynxsdk/lynx/xelement-refresh/4.0.3/xelement-refresh-4.0.3": {
+   "aar": "sha256-fq1yl5jcitr0yCOGbiH1zhy2TGHB+nMlOCp2JiOqYCo="
+  },
+  "org/lynxsdk/lynx/xelement-scroll-coordinator/4.0.3/xelement-scroll-coordinator-4.0.3": {
+   "aar": "sha256-8OcQm/R8PScI0Lofi0Ewc1qeZtggXp2R5mPxBzoBuSA="
+  },
+  "org/lynxsdk/lynx/xelement-svg/4.0.3/xelement-svg-4.0.3": {
+   "aar": "sha256-/jIV+3edc0xvAo94Tqz0bvq5ROgoXJMC6LFFBIm0YzU="
+  },
+  "org/lynxsdk/lynx/xelement-viewpager/4.0.3/xelement-viewpager-4.0.3": {
+   "aar": "sha256-G2hhGv8etgqK/9T7GU2Vz8CSKaBHsnaAgtjz3JO8iFQ="
+  },
+  "org/lynxsdk/lynx/xelement-webview/4.0.3/xelement-webview-4.0.3": {
+   "aar": "sha256-MMjqKzEJwLqO440eQ8JHMFVa8J9KC6f+oE3uBiepIH4="
+  },
+  "org/lynxsdk/lynx/xelement/4.0.3/xelement-4.0.3": {
+   "aar": "sha256-ccQfsEuRAHF5udOgyeG5LQ66leOE6PsoC9oXSykozks="
   },
   "org/ow2#ow2/1.5.1": {
    "pom": "sha256-Mh3bt+5v5PU96mtM1tt0FU1r+kI5HB92OzYbn0hazwU="

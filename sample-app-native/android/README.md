@@ -16,7 +16,7 @@ settings.gradle.kts                        # repos (Lynx = Maven Central) + incl
 build.gradle.kts                           # root: AGP 8.5.0 / Kotlin 1.9.0
 gradle.properties                          # androidx etc.
 gradle/wrapper/gradle-wrapper.properties   # Gradle 8.7
-app/build.gradle.kts                       # Lynx SDK 3.8.0 deps
+app/build.gradle.kts                       # Lynx SDK 4.0.3 deps
 app/src/main/AndroidManifest.xml
 app/src/main/java/io/dmj/miso/
   MisoApplication.kt                        # LynxEnv.init + service registration
