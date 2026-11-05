@@ -27,12 +27,12 @@ in
 {
   rspeedy = pkgs.buildNpmPackage {
     pname = "rspeedy";
-    version = "0.15.1";
+    version = "0.18.4";
     inherit src;
 
     # Run: prefetch-npm-deps package-lock.json to get this hash.
     # Use lib.fakeHash initially to let nix tell you the real value.
-    npmDepsHash = "sha256-IdgLD4PnV65g1zCSez7ba3wS+YFLJCJOt3PX5a4zn14=";
+    npmDepsHash = "sha256-yChZlLJkmf8eSmAPXou3uHCZPlkCdgomXSrWm02cOC8=";
 
     npmFlags = [ "--legacy-peer-deps" "--include=dev" ];
     makeCacheWritable = true;

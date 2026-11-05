@@ -110,6 +110,12 @@ All notable changes to `miso` are documented here.
     U+E000 to U+FFFF). The GHC JavaScript backend, whose `JSString` comes
     from ghcjs-base, still compares code units.
 
+- **Lynx toolchain and SDK bumped.** `@lynx-js/rspeedy` 0.18.4,
+  `@lynx-js/react-rsbuild-plugin` 0.22.1, `@lynx-js/react` 0.129.1,
+  `@lynx-js/types` 4.4.2 and `@lynx-js/type-element-api` 0.0.12. The sample
+  native hosts now share one SDK version, 4.0.3 (Android was on 3.8.0, iOS on
+  4.0.0), the newest stable release published on both Maven and CocoaPods.
+
 ### Fixed
 
 - **Empty query values parse.** After `=` the lexer needed at least one
