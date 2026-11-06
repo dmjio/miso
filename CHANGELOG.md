@@ -118,6 +118,14 @@ All notable changes to `miso` are documented here.
 
 ### Fixed
 
+- **`stopSub` from an `rAFSub` action no longer crashes.** The frame callback
+  re-scheduled itself after dispatching its action, so a `stopSub` processed
+  in that window freed the callback and then queued a frame on it; the next
+  frame invoked a freed function (`getJSVal` on WASM). Teardown is now decided
+  atomically: a callback in flight cleans itself up instead of re-scheduling.
+  `rAFSubElapsed` gets the same fix, and no longer allocates (and leaks) a new
+  callback every frame. See `Note [rAFLoop teardown]` in
+  `Miso.Subscription.RAF`.
 - **Empty query values parse.** After `=` the lexer needed at least one
   character, so `?a=&b` parsed as the flag `a` and dropped `b`, and a
   `QueryParam (Just "")` printed as `?q=` decoded back as `Nothing`. `?a=`
