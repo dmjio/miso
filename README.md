@@ -9,8 +9,8 @@
 </p>
 
 <p align="center"> 
-  <a href="https://matrix.to/#/#haskell-miso:matrix.org">
-    <img src="https://img.shields.io/badge/matrix.org-miso-FF4B33.svg?style=for-the-badge" alt="Matrix #haskell-miso:matrix.org">
+  <a href="https://discord.gg/QVDtfYNSxq">
+    <img src="https://img.shields.io/badge/discord-miso-5865F2.svg?style=for-the-badge&logo=discord&logoColor=white" alt="Discord">
   </a>
   <a href="https://www.npmjs.com/package/haskell-miso">  
     <img src="https://img.shields.io/npm/v/haskell-miso?style=for-the-badge" />
@@ -367,7 +367,6 @@ For CI pipelines using GitHub Actions:
 ## Community :octocat:
 
 - [Github](https://github.com/haskell-miso)
-- [Matrix](https://matrix.to/#/#haskell-miso:matrix.org)
 - [Discord](https://discord.gg/QVDtfYNSxq)
 
 ## Maintainers
