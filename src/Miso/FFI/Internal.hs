@@ -435,13 +435,14 @@ consoleLog' args' = do
 -- | Convert a JavaScript object to JSON
 -- JSONified representation of events
 eventJSON
-    :: JSVal -- ^ decodeAt :: [JSString]
+    :: JSVal -- ^ decodeAt :: [Segment]
     -> JSVal -- ^ object with impure references to the DOM
+    -> JSVal -- ^ element the handler is attached to (root of @currentTarget@ paths)
     -> IO JSVal
 {-# INLINABLE eventJSON #-}
-eventJSON x y = do
+eventJSON x y z = do
   moduleMiso <- jsg "miso"
-  moduleMiso # "eventJSON" $ [x,y]
+  moduleMiso # "eventJSON" $ [x,y,z]
 -----------------------------------------------------------------------------
 -- | Used to update the JavaScript reference post-diff.
 updateRef

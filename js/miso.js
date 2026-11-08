@@ -1022,18 +1022,35 @@ function propagateWhileAble(vtree, event) {
     }
   }
 }
-function eventJSON(at, obj) {
-  if (typeof at[0] === "object") {
+function eventJSON(at, obj, element) {
+  if (Array.isArray(at[0])) {
     var ret = [];
     for (var i = 0;i < at.length; i++) {
-      ret.push(eventJSON(at[i], obj));
+      ret.push(eventJSON(at[i], obj, element));
     }
     return ret;
   }
-  for (const a of at)
-    obj = obj == null ? undefined : obj[a];
-  if (obj === null || obj === undefined)
+  var path = at;
+  if (path[0] === "currentTarget" && element != null) {
+    obj = element;
+    path = path.slice(1);
+  }
+  for (const a of path) {
+    if (obj == null) {
+      obj = undefined;
+      break;
+    }
+    if (typeof a === "string") {
+      obj = obj[a];
+    } else {
+      const f = obj[a.call];
+      obj = typeof f === "function" ? f.apply(obj, a.args) : undefined;
+    }
+  }
+  if (obj === null || obj === undefined || typeof obj === "function")
     return null;
+  if (typeof obj !== "object")
+    return obj;
   var newObj;
   if (obj instanceof Array || "length" in obj && obj["localName"] !== "select") {
     newObj = [];

@@ -6,6 +6,21 @@ All notable changes to `miso` are documented here.
 
 ### Added
 
+- **Decoders can call methods on the event (#1678).** A `DecodeTarget` path
+  is now a list of `Segment`s: a property read (`Prop`, which string literals
+  still produce) or a method call with arguments (`Call "getData"
+  ["text/plain"]`). The call happens while the browser is dispatching the
+  event, so it sees state that is gone afterwards: `clipboardData.getData`,
+  `dataTransfer.getData`, `getBoundingClientRect`, `composedPath`,
+  `getCoalescedEvents`, `getModifierState`, `getSelection`, `closest`, ...
+  A path starting with `"currentTarget"` is rooted at the element the handler
+  is attached to (miso delegates, so the event's own `currentTarget` is the
+  mount point). `Decoder` gained `Functor` and `Applicative` instances, so
+  decoders at different paths combine: `(,) <$> pointerDecoder <*>
+  boundingClientRectDecoder`. New: `Segment`, `DOMRect`,
+  `boundingClientRectDecoder`, `clipboardTextDecoder`, `dataTransferDecoder`,
+  `modifierStateDecoder` and `onPaste`.
+
 - **`Functor` instances for `View` and `Attribute` (non-`native` builds).**
   `fmap` / `<$>` / `<$` map the `action` a view or attribute produces, so a
   sub-view written against one `action` type can be embedded in another
@@ -31,6 +46,11 @@ All notable changes to `miso` are documented here.
   `FromJSVal`, and `Router` (as a route capture).
 
 ### Changed
+
+- **`DecodeTarget` holds `[Segment]` instead of `[MisoString]`.** String
+  literals still work (`IsString Segment`). Code that passes a `[MisoString]`
+  variable to `at` or `DecodeTarget` needs `map Prop`; the JS `eventJSON`
+  takes the handler's element as a third argument.
 
 - **Printed query strings list entries in key order, joined with `&`.**
   Flags used to come after the params as separate `?`-groups. Code that

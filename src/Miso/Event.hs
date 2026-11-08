@@ -214,7 +214,7 @@ onWithOptions phase options eventName Decoder{..} toAction =
     decodeAtVal <- toJSVal decodeAt
     -- Synchronous: see Note [Synchronous event callbacks].
     cb <- FFI.syncCallback2 $ \e domRef -> do
-        Just v <- fromJSVal =<< FFI.eventJSON decodeAtVal e
+        Just v <- fromJSVal =<< FFI.eventJSON decodeAtVal e domRef
         case parseEither decoder v of
           Left msg -> FFI.consoleError ("[EVENT DECODE ERROR]: " <> ms msg)
           Right event -> do

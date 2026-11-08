@@ -128,6 +128,8 @@ module Miso.Html.Event
   -- *** Drop
   , onDrop
   , onDropWithOptions
+  -- *** Clipboard
+  , onPaste
   -- *** Select
   , onSelect
   -- *** Pointer
@@ -474,6 +476,22 @@ onDragWithOptions
   -> Attribute model action
 onDragWithOptions options action =
   onWithOptions BUBBLE options "drag" emptyDecoder $ \() _ _ -> action
+-----------------------------------------------------------------------------
+-- | Fires on @paste@ with the pasted plain text
+-- (@event.clipboardData.getData(\"text\/plain\")@), read while the event
+-- is dispatching -- the clipboard is unreadable afterwards.
+--
+-- @paste@ is not in 'defaultEvents'; add 'clipboardEvents' to the component's
+-- @events@.
+--
+-- @
+-- textarea_ [ onPaste Pasted ] []
+-- @
+onPaste
+  :: (MisoString -> action)
+  -- ^ Callback receiving the pasted text
+  -> Attribute model action
+onPaste f = on "paste" clipboardTextDecoder (\txt _ _ -> f txt)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/drop
 onDrop

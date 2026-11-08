@@ -220,25 +220,50 @@ function propagateWhileAble<T>(vtree: VTree<T>, event: Event): void {
     }
   }
 }
+/* One step of a decoder path: a property name, or a method call with its
+   arguments ({call: "getData", args: ["text/plain"]}). Mirrors `Segment` in
+   Miso.Event.Decoder. */
+export type Segment = string | { call: string; args: any[] };
 /* Walks down obj following the path described by `at`, then filters primitive
        values (string, numbers and booleans). Sort of like JSON.stringify(), but
        on an Event that is stripped of impure references.
+
+       `element` is the DOM node the handler is attached to. miso delegates, so
+       the event's own `currentTarget` is the mount point; a path starting with
+       "currentTarget" is rooted at `element` instead, giving it the meaning it
+       has for a directly-attached listener.
     */
-export function eventJSON(at: string | Array<string>, obj: any): Object[] {
-  /* If at is of type [[MisoString]] */
-  if (typeof at[0] === 'object') {
+export function eventJSON(at: Segment[] | Segment[][], obj: any, element?: any): any {
+  /* If at is of type [[Segment]] */
+  if (Array.isArray(at[0])) {
     var ret = [];
     for (var i: number = 0; i < at.length; i++) {
-      ret.push(eventJSON(at[i], obj));
+      ret.push(eventJSON(at[i] as Segment[], obj, element));
     }
     return ret;
+  }
+  var path = at as Segment[];
+  if (path[0] === 'currentTarget' && element != null) {
+    obj = element;
+    path = path.slice(1);
   }
   // A step landing on null/undefined (e.g. relatedTarget, currentTarget,
   // form, list -- all legitimately null on many real events) must not throw
   // on the next property read; once obj goes nullish, stay nullish through
   // the rest of the walk instead of crashing dispatch.
-  for (const a of at) obj = obj == null ? undefined : obj[a];
-  if (obj === null || obj === undefined) return null;
+  for (const a of path) {
+    if (obj == null) { obj = undefined; break; }
+    if (typeof a === 'string') {
+      obj = obj[a];
+    } else {
+      /* method call: a missing method decodes as null rather than throwing */
+      const f = obj[a.call];
+      obj = typeof f === 'function' ? f.apply(obj, a.args) : undefined;
+    }
+  }
+  if (obj === null || obj === undefined || typeof obj === 'function') return null;
+  /* Primitive results (getData(), getModifierState(), toString(), ...) */
+  if (typeof obj !== 'object') return obj;
   /* If obj is a list-like object */
   var newObj;
   if (obj instanceof Array || ('length' in obj && obj['localName'] !== 'select')) {

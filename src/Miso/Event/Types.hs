@@ -74,6 +74,8 @@ module Miso.Event.Types
     -- *** PointerEvent
   , PointerEvent (..)
   , PointerType (..)
+    -- *** DOMRect
+  , DOMRect (..)
     -- *** Options
   , Options (..)
   , defaultOptions
@@ -95,7 +97,7 @@ import Data.Foldable (mapM_, sequence_)
 import Data.Traversable (mapM, sequence)
 #endif
 -----------------------------------------------------------------------------
-import           Miso.JSON (FromJSON(..), withText)
+import           Miso.JSON (FromJSON(..), withText, withObject, (.:))
 import qualified Data.Map.Strict as M
 -----------------------------------------------------------------------------
 import           Miso.DSL
@@ -125,6 +127,33 @@ newtype KeyCode = KeyCode Int
 -- | Type used for Checkbox events.
 newtype Checked = Checked Bool
   deriving (Show, Eq, Ord, FromJSON)
+-----------------------------------------------------------------------------
+-- | A <https://developer.mozilla.org/en-US/docs/Web/API/DOMRect DOMRect>, as
+-- returned by @getBoundingClientRect()@. Decoded with
+-- 'Miso.Event.Decoder.boundingClientRectDecoder'.
+data DOMRect
+  = DOMRect
+  { rectX :: Double
+  , rectY :: Double
+  , rectWidth :: Double
+  , rectHeight :: Double
+  , rectTop :: Double
+  , rectRight :: Double
+  , rectBottom :: Double
+  , rectLeft :: Double
+  } deriving (Show, Eq)
+-----------------------------------------------------------------------------
+instance FromJSON DOMRect where
+  parseJSON = withObject "DOMRect" $ \o ->
+    DOMRect
+      <$> o .: "x"
+      <*> o .: "y"
+      <*> o .: "width"
+      <*> o .: "height"
+      <*> o .: "top"
+      <*> o .: "right"
+      <*> o .: "bottom"
+      <*> o .: "left"
 -----------------------------------------------------------------------------
 -- | Type used for Pointer events.
 -- <https://w3c.github.io/pointerevents>

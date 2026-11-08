@@ -65,6 +65,71 @@ describe('eventJSON', () => {
     expect(res[1]).toEqual({ p: true });
   });
 
+  test('calls a method segment with its arguments', () => {
+    const obj = {
+      clipboardData: { getData: (fmt: string) => (fmt === 'text/plain' ? 'hello' : '') },
+    };
+    expect(eventJSON(['clipboardData', { call: 'getData', args: ['text/plain'] }], obj)).toBe('hello');
+    expect(eventJSON(['clipboardData', { call: 'getData', args: ['text/html'] }], obj)).toBe('');
+  });
+
+  test('calls a zero-argument method and serializes the returned object (getters included)', () => {
+    class Rect {
+      constructor(public x: number, public y: number, public width: number, public height: number) {}
+      get left() { return this.x; }
+      get top() { return this.y; }
+    }
+    const el = { getBoundingClientRect: () => new Rect(1, 2, 3, 4) };
+    const res: any = eventJSON(['target', { call: 'getBoundingClientRect', args: [] }], { target: el });
+    expect(res).toEqual({ x: 1, y: 2, width: 3, height: 4, left: 1, top: 2 });
+  });
+
+  test('method is invoked with the object as `this`', () => {
+    const obj = { n: 7, getN() { return this.n; } };
+    expect(eventJSON([{ call: 'getN', args: [] }], obj)).toBe(7);
+  });
+
+  test('a missing method decodes as null instead of throwing', () => {
+    expect(eventJSON(['target', { call: 'nope', args: [] }], { target: {} })).toBeNull();
+  });
+
+  test('a method returning null/undefined decodes as null', () => {
+    const obj = { target: { closest: (_: string) => null } };
+    expect(eventJSON(['target', { call: 'closest', args: ['.card'] }], obj)).toBeNull();
+  });
+
+  test('"currentTarget" is rooted at the element argument, not the event', () => {
+    const event = { currentTarget: { id: 'mount-point' } };
+    const element = { id: 'handler-element', getBoundingClientRect: () => ({ x: 5 }) };
+    expect(eventJSON(['currentTarget'], event, element)).toEqual({ id: 'handler-element' });
+    expect(eventJSON(['currentTarget', { call: 'getBoundingClientRect', args: [] }], event, element)).toEqual({ x: 5 });
+    /* without an element it is the plain event property */
+    expect(eventJSON(['currentTarget'], event)).toEqual({ id: 'mount-point' });
+  });
+
+  test('returns primitive results directly', () => {
+    const obj = { s: 'str', n: 3, b: true, list: ['a', 'b'] };
+    expect(eventJSON(['s'], obj)).toBe('str');
+    expect(eventJSON(['n'], obj)).toBe(3);
+    expect(eventJSON(['b'], obj)).toBe(true);
+    expect(eventJSON(['list'], obj)).toEqual(['a', 'b']);
+  });
+
+  test('a path landing on a function (not called) decodes as null', () => {
+    expect(eventJSON(['target', 'focus'], { target: { focus: () => 1 } })).toBeNull();
+  });
+
+  test('DecodeTargets with method segments decodes each path', () => {
+    const event = { clientX: 10, getModifierState: (k: string) => k === 'CapsLock' };
+    const element = { getBoundingClientRect: () => ({ left: 4 }) };
+    const res: any = eventJSON(
+      [[], ['currentTarget', { call: 'getBoundingClientRect', args: [] }], [{ call: 'getModifierState', args: ['CapsLock'] }]],
+      event,
+      element,
+    );
+    expect(res).toEqual([{ clientX: 10 }, { left: 4 }, true]);
+  });
+
   // Regression: a path landing on null/undefined (relatedTarget, currentTarget,
   // form, list, etc. are all legitimately null/undefined on real DOM events)
   // used to throw `'length' in obj` on the final null/undefined value instead

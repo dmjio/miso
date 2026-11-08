@@ -131,7 +131,7 @@ windowSubWithOptions Options{..} eventName Decoder {..} toAction sink =
       acquire =
         FFI.windowAddEventListener eventName $ \e -> do
           decodeAtVal <- toJSVal decodeAt
-          v <- fromJSValUnchecked =<< FFI.eventJSON decodeAtVal e
+          v <- fromJSValUnchecked =<< FFI.eventJSON decodeAtVal e jsNull
           case parseEither decoder v of
             Left s ->
               FFI.consoleError ("windowSubWithOptions: Parse error on " <> eventName <> ": " <> ms s)

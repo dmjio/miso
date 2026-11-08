@@ -2666,7 +2666,7 @@ dispatchMainThreadEvent arg =
               -- no throwaway 'asyncCallback2') needed on this, the hot path
               -- for every main-thread event.
               decodeAtVal <- toJSVal (decodeAt eventHandlerDecoder)
-              mv <- fromJSVal =<< FFI.eventJSON decodeAtVal eventVal
+              mv <- fromJSVal =<< FFI.eventJSON decodeAtVal eventVal targetVal
               case mv of
                 Nothing ->
                   FFI.consoleError "[MTS dispatch] eventJSON returned no value"
