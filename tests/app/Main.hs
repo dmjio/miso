@@ -226,6 +226,26 @@ bumpComponent = component 0 (\Bump -> this += 1) $ \n ->
     , span_ [ id_ "bump-out" ] [ text (ms n) ]
     ]
 -----------------------------------------------------------------------------
+data RAFAction = RAFStart | RAFTick Double
+  deriving stock (Show, Eq, Generic)
+#ifndef __MHS__
+  deriving anyclass (JSON.FromJSON, JSON.ToJSON)
+#endif
+-----------------------------------------------------------------------------
+-- | Starts an 'rAFSub' on mount and stops it from the first 'RAFTick' it
+-- dispatches, i.e. from an action sunk by the very frame callback that
+-- 'stopSub' releases. Shows the number of ticks seen.
+rAFStopComponent :: Component () () Int RAFAction
+rAFStopComponent =
+  (component 0 update_ $ \n -> span_ [ id_ "raf-ticks" ] [ text (ms n) ])
+  { mount = Just RAFStart }
+  where
+    update_ = \case
+      RAFStart -> startSub ("raf" :: MisoString) (rAFSub RAFTick)
+      RAFTick _ -> do
+        this += 1
+        stopSub ("raf" :: MisoString)
+-----------------------------------------------------------------------------
 testComponent :: Component () () Int Action
 testComponent = component (0 :: Int) update_ $ \_ -> button_ [ id_ "foo", onClick AddOne ] [ "click me " ]
   where
@@ -2704,6 +2724,40 @@ main = withJS $ do
             , " }, 0))"
             ] :: MisoString )
         shown `shouldBe` ("1" :: MisoString)
+
+    describe "Miso.Subscription.RAF tests" $ do
+      it "stopSub from an rAFSub action stops the loop without a crash" $ do
+        -- Releasing the 'Sub' while its frame callback was in flight used to
+        -- free the callback, which then re-scheduled itself on its freed
+        -- handle (getJSVal on WASM), an uncaught error. See
+        -- Note [rAFLoop teardown] in Miso.Subscription.Util.
+        _ <- liftIO $ eval $ mconcat
+          [ "window.__rafErrors = [];"
+          , " if (!window.__rafErrorHook) {"
+          , "   window.__rafErrorHook = true;"
+          , "   window.addEventListener('error', e => window.__rafErrors.push(String(e.message)));"
+          , " }"
+          :: MisoString
+          ]
+        _ <- liftIO (startApp defaultEvents rAFStopComponent)
+        ticked <- liftIO $ pollFor propagationAttempts $
+          (/= "0") <$> readText "raf-ticks"
+        ticked `shouldBe` True
+        -- A frame can fire between the first tick and the stopSub, so the
+        -- count may be past 1; it must not move once the loop is stopped.
+        let frames n = liftIO $ void $ await =<< eval
+              ( mconcat
+                [ "new Promise(res => { let n = 0;"
+                , " const f = () => (++n >= " <> ms (n :: Int) <> " ? res(null) : requestAnimationFrame(f));"
+                , " requestAnimationFrame(f); })"
+                ] :: MisoString )
+        frames 5
+        settled <- liftIO (readText "raf-ticks")
+        frames 10
+        after <- liftIO (readText "raf-ticks")
+        after `shouldBe` settled
+        errors <- liftIO $ fromJSValUnchecked =<< eval ("window.__rafErrors.length" :: MisoString)
+        errors `shouldBe` (0 :: Int)
 #endif
 
     describe "Miso.DSL `await` tests" $ do

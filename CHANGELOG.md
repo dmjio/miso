@@ -6,6 +6,13 @@ All notable changes to `miso` are documented here.
 
 ### Added
 
+- **`rAFLoop`** (`Miso.Subscription.Util`). A self re-scheduling
+  `requestAnimationFrame` loop as a `Sub`, with one callback for the whole
+  loop: `rAFLoop :: IO (Double -> IO ()) -> Sub model action`. The `IO`
+  action runs once at start and builds the per-frame handler, so it is the
+  place to acquire what the handler needs. `rAFSub`, `rAFSubElapsed` and
+  `canvasSub` are now built on it.
+
 - **`Functor` instances for `View` and `Attribute` (non-`native` builds).**
   `fmap` / `<$>` / `<$` map the `action` a view or attribute produces, so a
   sub-view written against one `action` type can be embedded in another
@@ -118,6 +125,19 @@ All notable changes to `miso` are documented here.
 
 ### Fixed
 
+- **`stopSub` from an `rAFSub` / `rAFSubElapsed` / `canvasSub` action no
+  longer crashes.** Each frame callback re-scheduled itself after
+  dispatching, and `release` freed it. The wasm RTS has no timer, so it
+  context-switches at every heap-block boundary when another thread is
+  runnable; sinking the action woke the scheduler, which could run the
+  `stopSub` and free the callback before the callback resumed and called
+  `requestAnimationFrame` on its own freed handle (`getJSVal` throws, and
+  the runtime is gone). The callback now owns its own lifetime: stopping the
+  `Sub` sets a flag, and on its next frame the callback frees itself instead
+  of re-scheduling, so it is freed one frame later than before and nothing
+  else ever touches it. `rAFSubElapsed` also no longer allocates (and leaks)
+  a new callback every frame. See `Note [rAFLoop teardown]` in
+  `Miso.Subscription.Util`.
 - **Empty query values parse.** After `=` the lexer needed at least one
   character, so `?a=&b` parsed as the flag `a` and dropped `b`, and a
   `QueryParam (Just "")` printed as `?q=` decoded back as `Nothing`. `?a=`
