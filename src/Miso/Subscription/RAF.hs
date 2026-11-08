@@ -44,12 +44,15 @@
 --
 -- = Lifecycle
 --
--- Internally 'rAFSub' uses 'Miso.Subscription.Util.createSub':
+-- Internally 'rAFSub' uses 'Miso.Subscription.Util.rAFLoop' (built on
+-- 'Miso.Subscription.Util.createSub'):
 --
 -- * __Acquire__ — schedules the first @requestAnimationFrame@ callback,
 --   which re-schedules itself on every invocation.
--- * __Release__ — calls 'Miso.DSL.freeFunction' to cancel the callback
---   and release the JS reference when the component unmounts.
+-- * __Release__ — when the 'Sub' is stopped ('Miso.Runtime.stopSub', or
+--   the component unmounting), the callback is told to stop; on its next
+--   frame it frees its JS reference instead of re-scheduling. See
+--   @Note [rAFLoop teardown]@ in "Miso.Subscription.Util".
 --
 -- = See also
 --
@@ -64,9 +67,8 @@ module Miso.Subscription.RAF
 ----------------------------------------------------------------------------
 import           Data.IORef
 ----------------------------------------------------------------------------
-import           Miso.DSL
 import           Miso.Effect (Sub)
-import           Miso.Subscription.Util (createSub)
+import           Miso.Subscription.Util (rAFLoop)
 ----------------------------------------------------------------------------
 -- | A 'Sub' for 60FPS animations when using 'requestAnimationFrame'.
 --
@@ -76,26 +78,7 @@ rAFSub
   :: (Double -> action)
   -- ^ Callback fired each frame with a @DOMHighResTimeStamp@ in milliseconds
   -> Sub model action
-rAFSub toAction sink = createSub acquire release sink
-  where
-    acquire = do
-      cbRef <- newIORef (error "rAFSub: uninitialized, impossible")
-      idRef <- newIORef (0 :: Int)
-      callback <-
-        syncCallback1 $ \jsval -> do
-          sink . toAction =<< fromJSValUnchecked jsval
-          writeIORef idRef =<< requestAnimationFrame =<< readIORef cbRef
-
-      writeIORef cbRef callback
-      writeIORef idRef =<< requestAnimationFrame callback
-      pure (callback, idRef)
-
-    -- N.B. the queued frame must be cancelled before the callback is
-    -- freed: the browser holds a reference to it, and invoking a freed
-    -- callback on the next frame crashes the runtime.
-    release (callback, idRef) = do
-      cancelAnimationFrame =<< readIORef idRef
-      freeFunction (Function callback)
+rAFSub toAction sink = rAFLoop (pure (sink . toAction)) sink
 ----------------------------------------------------------------------------
 -- | Like 'rAFSub' but fires @action@ at most once per @interval@ milliseconds.
 --
@@ -114,25 +97,16 @@ rAFSubElapsed
   -> action
   -- ^ Action to dispatch each time the interval elapses
   -> Sub model action
-rAFSubElapsed interval action sink = createSub acquire release sink
-  where
-    acquire = do
-      cbRef <- newIORef (error "rAFSubElapsed: uninitialized, impossible")
-      idRef <- newIORef (0 :: Int)
-      let go lastT elap = do
-            cb <- syncCallback1 $ \jsval -> do
-              t <- fromJSValUnchecked jsval
-              let dt      = if lastT == 0 then 0 else min interval (t - lastT)
-                  newElap = elap + dt
-              if newElap >= interval
-                then sink action *> go t (newElap - interval)
-                else go t newElap
-            writeIORef cbRef cb
-            writeIORef idRef =<< requestAnimationFrame cb
-      go 0 0
-      pure (cbRef, idRef)
-    -- N.B. cancel the queued frame before freeing the callback (see 'rAFSub')
-    release (cbRef, idRef) = do
-      cancelAnimationFrame =<< readIORef idRef
-      freeFunction . Function =<< readIORef cbRef
+rAFSubElapsed interval action sink = flip rAFLoop sink $ do
+  lastRef <- newIORef (0 :: Double)
+  elapRef <- newIORef (0 :: Double)
+  pure $ \t -> do
+    lastT <- readIORef lastRef
+    elap <- readIORef elapRef
+    let dt      = if lastT == 0 then 0 else min interval (t - lastT)
+        newElap = elap + dt
+    writeIORef lastRef t
+    if newElap >= interval
+      then writeIORef elapRef (newElap - interval) *> sink action
+      else writeIORef elapRef newElap
 ----------------------------------------------------------------------------

@@ -17,7 +17,6 @@ module Miso.Subscription.Canvas
 -----------------------------------------------------------------------------
 import Control.Monad.Reader (runReaderT)
 import Control.Monad (void)
-import Data.IORef
 -----------------------------------------------------------------------------
 import Miso.Canvas
 import Miso.DSL
@@ -74,26 +73,11 @@ canvasSub
   -- ^ Canvas callback in 60fps, high precision timestamp, model snapshot
   -- as args to Canvas DSL templating
   -> Sub model action
-canvasSub canvasRef dim builder snk getModel = do
-  createSub acquire release snk getModel
+canvasSub canvasRef dim builder snk getModel =
+  rAFLoop acquire snk getModel
     where
       acquire = do
         ctx <- canvasRef # "getContext" $ dim
-        cbRef <- newIORef (error "canvasSub: uninitialized, impossible")
-        idRef <- newIORef (0 :: Int)
-        callback <-
-          syncCallback1 $ \jsval -> do
-            void . flip runReaderT ctx =<<
-              builder <$> fromJSValUnchecked jsval <*> getModel
-            writeIORef idRef =<< requestAnimationFrame =<< readIORef cbRef
-        writeIORef cbRef callback
-        writeIORef idRef =<< requestAnimationFrame callback
-        pure (callback, idRef)
-  
-      -- N.B. the queued frame must be cancelled before the callback is
-      -- freed: the browser holds a reference to it, and invoking a freed
-      -- callback on the next frame crashes the runtime.
-      release (callback, idRef) = do
-        cancelAnimationFrame =<< readIORef idRef
-        freeFunction (Function callback)
+        pure $ \t ->
+          void . flip runReaderT ctx . builder t =<< getModel
 -----------------------------------------------------------------------------
