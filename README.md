@@ -50,6 +50,7 @@ It makes heavy use of the [GHC JavaScript FFI](https://ghc.gitlab.haskell.org/gh
 
 ## Table of Contents
 - [Playground](#playground-)
+- [Quick Start (MicroHs)](#quick-start-microhs-)
 - [Quick Start (Nix)](#quick-start-nix-)
 - [Manual Setup (GHCup / Cabal)](#manual-setup-ghcup--cabal)
   - [cabal.project](#cabalproject)
@@ -82,6 +83,33 @@ It makes heavy use of the [GHC JavaScript FFI](https://ghc.gitlab.haskell.org/gh
 ## Playground 🛝
 
 An interactive playground is available at [try.haskell-miso.org](https://try.haskell-miso.org). It allows editing and running applications directly in the browser without any local toolchain setup, and is useful for experimentation and sharing minimal reproducible examples.
+
+## Quick Start (MicroHs) 🚀
+
+The `miso` CLI is a single binary with [MicroHs](https://github.com/augustss/MicroHs) built in, so it builds miso applications without GHC or Nix. It runs on Linux, macOS (Intel and Apple Silicon), and Windows (via an [MSYS2](https://www.msys2.org/) shell).
+
+```bash
+# Install the miso CLI
+curl -fsSL https://haskell-miso.org/download | sh
+
+# Create, build and serve a new project (rebuilds and reloads on changes)
+miso new my-app && cd my-app
+miso dev
+```
+
+The installer downloads the release for your OS and architecture, verifies its sha256 checksum, and unpacks it into `~/.miso` (or `$MISO_HOME`). It asks before changing your `PATH`.
+
+Prerequisites:
+
+  - A C compiler (`cc`), since MicroHs compiles programs to C
+  - [emscripten](https://emscripten.org) (`emcc`) for browser targets. New projects target the browser (WebAssembly) by default. Without emscripten, set `target: native` in `miso.yml` and use `miso run`.
+  - `curl`, `tar`, `sha256sum` or `shasum`, and `git`
+  - [hlint](https://github.com/ndmitchell/hlint), only for `miso lint`
+
+On Windows, install the tools in MSYS2 first with `pacman -S gcc make tar curl git`.
+
+> [!TIP]
+> Run `miso doctor` to check the installation and required tools, and `miso help` to list all commands. See [the miso CLI docs](https://haskell-miso.org/docs/cli/) for the full reference.
 
 ## Quick Start (Nix) ⚡
 
