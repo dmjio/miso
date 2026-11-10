@@ -37,6 +37,24 @@ All notable changes to `miso` are documented here.
   `ToMisoString` / `FromMisoString`, `ToJSON` / `FromJSON`, `ToJSVal` /
   `FromJSVal`, and `Router` (as a route capture).
 
+- **MicroHs backend (alpha).** miso compiles with
+  [MicroHs](https://github.com/augustss/MicroHs), to WebAssembly or
+  JavaScript through emscripten, and passes the integration test suite on
+  both. The flake provides MicroHs with miso installed (`nix develop .#mhs`),
+  and the [`miso` CLI](https://github.com/haskell-miso/cli) builds miso
+  applications with it without GHC or Nix.
+
+- **`CSS.content`** (`Miso.CSS`). The
+  [`content`](https://developer.mozilla.org/en-US/docs/Web/CSS/content)
+  property: `content :: MisoString -> Style`.
+
+### Removed
+
+- **Breaking: `mountStaticWithProps`.** It was a deprecated synonym for
+  `mountStatic` since 1.14.0.0, when `mountStatic` began accepting components
+  with `props`. Replace it with `mountStatic`; call sites are otherwise
+  unchanged.
+
 ### Changed
 
 - **Printed query strings list entries in key order, joined with `&`.**
@@ -117,6 +135,15 @@ All notable changes to `miso` are documented here.
     U+E000 to U+FFFF). The GHC JavaScript backend, whose `JSString` comes
     from ghcjs-base, still compares code units.
 
+- **`Miso.Canvas` operations call direct foreign imports.** Every
+  straight-line `CanvasRenderingContext2D` operation (`fillRect`, `arc`,
+  `moveTo`, `globalAlpha`, `fillText`, ...) has its own import in
+  `Miso.Canvas.FFI`; the generic path marshalled the method name and
+  allocated a `JSVal` per argument on every call. `fillStyle`, `strokeStyle`
+  and `shadowColor` with an `RGB` or `RGBA` colour pass the channels as
+  numbers and build the `rgb(...)` string in JavaScript. The public API is
+  unchanged, and native GHC keeps the generic calls.
+
 - **Lynx toolchain and SDK bumped.** `@lynx-js/rspeedy` 0.18.4,
   `@lynx-js/react-rsbuild-plugin` 0.22.1, `@lynx-js/react` 0.129.1,
   `@lynx-js/types` 4.4.2 and `@lynx-js/type-element-api` 0.0.12. The sample
@@ -124,6 +151,18 @@ All notable changes to `miso` are documented here.
   4.0.0), the newest stable release published on both Maven and CocoaPods.
 
 ### Fixed
+
+- **JS backend: `freeFunction` releases the callback.** It was a no-op, and
+  the JS RTS keeps every callback as a permanent GC root until it is
+  released, so each event handler freed on re-render, each mount / unmount
+  callback and each rAF / canvas callback leaked, along with everything it
+  closed over, for the lifetime of the page.
+
+- **`createSub` keeps its thread's delay within a 32-bit `Int`.** The `Sub`
+  thread parked itself with a `threadDelay` of 10^10 microseconds, which does
+  not fit an `Int` on wasm32. GHC wrapped it silently; MicroHs checks `Int`
+  arithmetic and threw `Overflow`, so the `Sub` was released right after it
+  was acquired (a `windowSub` never received an event).
 
 - **`stopSub` from an `rAFSub` / `rAFSubElapsed` / `canvasSub` action no
   longer crashes.** Each frame callback re-scheduled itself after
