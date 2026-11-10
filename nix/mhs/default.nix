@@ -92,7 +92,7 @@ rec {
   # miso built with mhs, installed as a package.
   miso-mhs = super.stdenv.mkDerivation {
     pname = "miso-mhs";
-    version = "1.14.0.0";
+    version = "1.15.0.0";
     src = src.miso;
     nativeBuildInputs = [ microhs ];
     installPhase = ''
@@ -109,7 +109,7 @@ rec {
   # app.js (WebAssembly and miso.js embedded).
   sample-app-mhs-bundle = super.stdenv.mkDerivation {
     pname = "sample-app-mhs-bundle";
-    version = "1.14.0.0";
+    version = "1.15.0.0";
     src = src.sample-app;
     nativeBuildInputs = [ microhs super.emscripten ];
     buildPhase = ''
@@ -142,7 +142,7 @@ rec {
   miso-tests-mhs-js-bundle = mkTestsBundle "browser_js";
   mkTestsBundle = target: super.stdenv.mkDerivation {
     pname = "miso-tests-mhs-bundle-${target}";
-    version = "1.14.0.0";
+    version = "1.15.0.0";
     src = src.miso-tests;
     nativeBuildInputs = [ microhs super.emscripten ];
     buildPhase = ''
