@@ -396,7 +396,6 @@ module Miso.Native
    , nativeWithContext
      -- * t'Miso.Types.Component' mounting
    , mountStatic
-   , mountStaticWithProps
      -- * Element
    , module Miso.Native.Element
      -- * FFI
@@ -407,7 +406,7 @@ module Miso.Native
 -----------------------------------------------------------------------------
 import Miso.Runtime (initComponent)
 import Miso.Types (Events, SomeStaticComponent(..), Hydrate(..))
-import Miso.Types (mountStatic, mountStaticWithProps)
+import Miso.Types (mountStatic)
 -----------------------------------------------------------------------------
 import Miso.Native.Element
 import Miso.Native.FFI

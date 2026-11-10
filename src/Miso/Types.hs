@@ -124,7 +124,7 @@
 -- * 'mount_' — mount without a key (unsafe in dynamic lists)
 -- * 'mountWithProps' / 'mountWithProps_' — mount with explicit @props@
 -- * 'mountUseContext' — mount without a key, subscribed to @context@ updates
--- * 'vcomp' / 'vcomp_' (with 'mountStatic' \/ 'mountStaticWithProps') —
+-- * 'vcomp' / 'vcomp_' (with 'mountStatic') —
 --   static-key mounting; the compile-time
 --   'GHC.StaticPtr.StaticKey' already provides identity, so unlike the
 --   non-static combinators there is no keyed variant
@@ -202,7 +202,6 @@ module Miso.Types
   , mountWithProps_
   , mountWithProps
   , mountStatic
-  , mountStaticWithProps
   -- ** Fragment combinators
   , fragment
   , fragment_
@@ -630,19 +629,6 @@ infixr 0 +>
 {-# WARNING (+>) "[NATIVE] '+>' has no StaticKey; a component mounted with it after the initial frame silently drops OnStatic handlers inside it. Use 'vcomp' with 'mountStatic' instead." #-}
 #endif
 key +> child = VComp (SomeComponent (Just (toKey key)) () child)
------------------------------------------------------------------------------
--- | __Deprecated.__ Synonym for 'mountStatic', which now handles components
--- with and without @props@ alike (the @props@ value is supplied at the
--- 'vcomp' site either way). Will be removed in 1.15.
---
--- @since 1.13.0.0
-mountStaticWithProps
-  :: MountConstraints context props model action
-  => Component context props model action
-  -- ^ t'Component' to mount
-  -> SomeStaticComponent props context
-mountStaticWithProps = SomeStaticComponent
-{-# DEPRECATED mountStaticWithProps "Use mountStatic; it now accepts components with props. This alias will be removed in 1.15." #-}
 -----------------------------------------------------------------------------
 -- | t'Miso.Types.Component' mounting combinator, with @props@ supplied directly.
 --
