@@ -2,7 +2,7 @@
 
 All notable changes to `miso` are documented here.
 
-## Unreleased
+## 1.15.0.0
 
 ### Added
 
