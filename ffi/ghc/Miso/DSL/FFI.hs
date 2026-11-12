@@ -235,3 +235,6 @@ toString_Float = TL.toStrict . TB.toLazyText . TBR.realFloat
 toString_Double :: Double -> Text
 toString_Double = TL.toStrict . TB.toLazyText . TBR.realFloat
 -----------------------------------------------------------------------------
+textToJSString :: Text -> Text
+textToJSString = id
+-----------------------------------------------------------------------------
