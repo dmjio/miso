@@ -95,11 +95,10 @@ jobs:
        run: nix-build -A playwright-wasm-aeson-text && ./result/bin/playwright
 
 
-  # The hls dev shell (nix develop .#hls): builds haskell-language-server for
-  # GHC 9.14.1 (see nix/hls.nix) and checks that it type-checks miso. The
-  # cachix action pushes what it builds, so the shell is prebuilt for others.
-  build-hls:
-    runs-on: ubuntu-latest
+  # aarch64-linux: native GHC, WASM and MicroHs integration tests. The GHCJS
+  # builds stay x86_64-linux only.
+  build-linux-aarch64:
+    runs-on: ubuntu-24.04-arm
     steps:
      - uses: ners/simply-nix@2e89c5f0aaa5e4a7265dae7880e69d2c06efd6b5 # main, no tagged releases; pinned 2026-09
        with:
@@ -110,8 +109,86 @@ jobs:
          name: haskell-miso-cachix
          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
-     - name: (x86) hls dev shell (GHC 9.14.1)
-       run: nix --extra-experimental-features 'nix-command flakes' build .#devShells.x86_64-linux.hls -L --no-link
+     - name: Nix channel update
+       run: nix-channel --update
+
+     - name: Cabal install
+       run: nix-env -iA pkgs.cabal-install -f .
+
+     - name: Bun install
+       run: nix-env -iA bun -f . && bun install
+
+     - name: Miso.ts tests
+       run: bun run test
+
+     - name: Bun build prod
+       run: bun run build && bun run prod
+
+     - name: (aarch64) Miso GHC (GHC 9.14.1)
+       run: nix-build -A miso-ghc-9141
+
+     - name: Nix garbage collection
+       run: cabal clean && nix-collect-garbage -d
+
+     - name: (WASM) Miso integration tests
+       run: nix-build -A playwright-wasm && ./result/bin/playwright
+
+     - name: Nix garbage collection
+       run: cabal clean && nix-collect-garbage -d
+
+     - name: (WASM) Miso integration tests (aeson)
+       run: nix-build -A playwright-wasm-aeson && ./result/bin/playwright
+
+     - name: Nix garbage collection
+       run: cabal clean && nix-collect-garbage -d
+
+     - name: (WASM) Miso integration tests (aeson + text)
+       run: nix-build -A playwright-wasm-aeson-text && ./result/bin/playwright
+
+     - name: Nix garbage collection
+       run: cabal clean && nix-collect-garbage -d
+
+     - name: (MHS WASM) Miso integration tests built with MicroHs (browser)
+       run: nix-build -A playwright-mhs && ./result/bin/playwright
+
+     - name: Nix garbage collection
+       run: cabal clean && nix-collect-garbage -d
+
+     - name: (MHS JS) Miso integration tests built with MicroHs (browser_js)
+       run: nix-build -A playwright-mhs-js && ./result/bin/playwright
+
+     - name: Nix garbage collection
+       run: cabal clean && nix-collect-garbage -d
+
+     - name: (aarch64) Miso GHC (GHC 9.14.1) test suite
+       run: nix --extra-experimental-features 'nix-command flakes' develop --command bash -c 'cabal build exe:component-tests'
+
+
+  # The hls dev shell (nix develop .#hls): builds haskell-language-server for
+  # GHC 9.14.1 (see nix/hls.nix) and checks that it type-checks miso. The
+  # cachix action pushes what it builds, so the shell is prebuilt for others.
+  build-hls:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            system: x86_64-linux
+          - runner: ubuntu-24.04-arm
+            system: aarch64-linux
+    runs-on: ${{ matrix.runner }}
+    steps:
+     - uses: ners/simply-nix@2e89c5f0aaa5e4a7265dae7880e69d2c06efd6b5 # main, no tagged releases; pinned 2026-09
+       with:
+         reclaim_space: true
+     - uses: actions/checkout@v7.0.1
+     - uses: cachix/cachix-action@v17
+       with:
+         name: haskell-miso-cachix
+         authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+
+     - name: (${{ matrix.system }}) hls dev shell (GHC 9.14.1)
+       run: nix --extra-experimental-features 'nix-command flakes' build .#devShells.${{ matrix.system }}.hls -L --no-link
 
      - name: haskell-language-server type-checks miso
        run: |
@@ -187,7 +264,7 @@ jobs:
      - name: Bun build prod
        run: bun run build && bun run prod
 
-     - name: (x86) Miso GHC (GHC 9.14.1)
+     - name: (aarch64) Miso GHC (GHC 9.14.1)
        run: nix-build -A miso-ghc-9141
 
      - name: Nix garbage collection
@@ -202,7 +279,7 @@ jobs:
      - name: (WASM) Miso integration tests (aeson + text)
        run: nix-build -A playwright-wasm-aeson-text && ./result/bin/playwright
 
-     - name: (x86) Miso GHC (GHC 9.14.1) test suite
+     - name: (aarch64) Miso GHC (GHC 9.14.1) test suite
        run: nix develop --command bash -c 'cabal build exe:component-tests'
 
   build-ios:
