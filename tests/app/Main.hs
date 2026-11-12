@@ -453,6 +453,40 @@ square n = [js|
 main :: IO ()
 main = withJS $ do
   runTests $ beforeEach clearBody $ afterEach clearComponentState $ do
+    lensGenericTests
+    storageTests
+    cookieFFITests
+    fetchFFITests
+    dataArrayTests
+    dateTests
+    jsonDecodePureTests
+    jsonEitherDecodeTests
+    toHtmlEscapingTests
+    jsonGenericEncodingTests
+    jsonStringVsListEncodingTests
+    dataMapTests
+    dataSetTests
+    inlineJSQQTests
+    randomTests
+    uuidTests
+    lensTests
+    inlineJSTests
+    routerTests
+    misoStringTests
+    jsDSLTests
+    marshalTests
+    staticKeyFingerprintTests
+    domTests
+    componentTests
+    staticMountIdentityTests
+    vContextTests
+    vPropsTests
+    vModelTests
+    nonNativeTests
+    dslAwaitTests
+-----------------------------------------------------------------------------
+lensGenericTests :: Test ()
+lensGenericTests = do
 #ifndef __MHS__
     describe "Miso.Lens.Generic tests" $ do
       it "Should update field generically" $ do
@@ -461,6 +495,10 @@ main = withJS $ do
         let bob = john & field @"name" .~ "bob"
         (bob ^. field @"name") `shouldBe` "bob"
 #endif
+    pure ()
+-----------------------------------------------------------------------------
+storageTests :: Test ()
+storageTests = do
     describe "Miso.Storage tests" $ do
       it "Should get and set in localStorage" $ do
         (`shouldBe` 0) =<< liftIO localStorageLength
@@ -487,7 +525,9 @@ main = withJS $ do
         (`shouldBe` Nothing) =<< liftIO (getSessionStorage "key2")
         liftIO clearSessionStorage
         (`shouldBe` 0) =<< liftIO sessionStorageLength
-
+-----------------------------------------------------------------------------
+cookieFFITests :: Test ()
+cookieFFITests = do
     describe "Miso.Cookie FFI tests" $ do
       it "Should set a cookie" $ do
         result <- liftIO (cookieSet_ (defaultCookie "miso-test-set" "hello"))
@@ -528,7 +568,9 @@ main = withJS $ do
         Right _ <- liftIO (cookieDelete_ "miso-test-delete-nopath")
         result <- liftIO (cookieGet_ "miso-test-delete-nopath")
         result `shouldBe` (Right Nothing :: Either MisoString (Maybe MisoString))
-
+-----------------------------------------------------------------------------
+fetchFFITests :: Test ()
+fetchFFITests = do
     -- dmj: these hit a local echo server (echo-server.ts, port 8081) started
     -- by the playwright-wasm/playwright-js Nix scripts.
     -- The echo server mimics the httpbin.org endpoints used below and sets
@@ -691,7 +733,9 @@ main = withJS $ do
         case result of
           Right Response{..} -> status `shouldBe` Just 200
           Left _ -> False `shouldBe` True
-
+-----------------------------------------------------------------------------
+dataArrayTests :: Test ()
+dataArrayTests = do
     describe "Miso.Data.Array tests" $ do
       it "Should create a new array" $ do
         (`shouldBe` 0) =<< liftIO (Array.size =<< (Array.new :: IO (Array.Array Int)))
@@ -771,7 +815,9 @@ main = withJS $ do
         (`shouldBe` ["parrot", "anemone", "blue", "trumpet", "sturgeon" :: MisoString])
           =<< liftIO (Array.toList xs)
         (`shouldBe` ["angel", "clown" :: MisoString]) =<< liftIO (Array.toList ys)
-
+-----------------------------------------------------------------------------
+dateTests :: Test ()
+dateTests = do
     describe "Miso.Date tests" $ do
       it "Should set and get UTC components" $ do
         date <- liftIO D.new
@@ -799,7 +845,9 @@ main = withJS $ do
         (`shouldSatisfy` (/= "")) dateString
         (`shouldSatisfy` (/= "")) isoString
         (`shouldSatisfy` (/= "")) utcString
-
+-----------------------------------------------------------------------------
+jsonDecodePureTests :: Test ()
+jsonDecodePureTests = do
     describe "Miso.JSON decodePure tests" $ do
       it "Should not decode \"foo\"" $ do
         decodePure "foo" `shouldSatisfy` isLeft
@@ -840,7 +888,9 @@ main = withJS $ do
           Right (jsonArray [JSON.Number 1, JSON.Bool True, JSON.Null])
         decodePure "{\"a\":true,\"b\":1.1}"
           `shouldBe` Right (JSON.object [("a",JSON.Bool True),("b",JSON.Number 1.1)])
-
+-----------------------------------------------------------------------------
+jsonEitherDecodeTests :: Test ()
+jsonEitherDecodeTests = do
     describe "Miso.JSON eitherDecode tests" $ do
       it "Should decode valid JSON" $ do
         (JSON.eitherDecode "{ \"a\": 1 }" :: Either MisoString JSON.Value)
@@ -858,6 +908,9 @@ main = withJS $ do
       it "Should still decode null" $ do
         (JSON.eitherDecode "null" :: Either MisoString (Maybe Int))
           `shouldBe` Right Nothing
+-----------------------------------------------------------------------------
+toHtmlEscapingTests :: Test ()
+toHtmlEscapingTests = do
     describe "toHtml escaping tests" $ do
       it "Should render a textarea's value as its escaped content" $ do
         toHtml (textarea_ [ value_ "{ \"a\": 1 } <b>" ] :: View () () () Action)
@@ -874,6 +927,9 @@ main = withJS $ do
       it "Should escape class names" $ do
         toHtml (div_ [ classList_ [ ("a\"b", True) ] ] [] :: View () () () Action)
           `shouldBe` "<div class=\"a&quot;b\"></div>"
+-----------------------------------------------------------------------------
+jsonGenericEncodingTests :: Test ()
+jsonGenericEncodingTests = do
     describe "Miso.JSON generic encoding tests" $ do
 #ifndef __MHS__
       -- Nullary sum constructors → bare String (allNullaryToStringTag = True)
@@ -1086,7 +1142,9 @@ main = withJS $ do
       it "encodePure escapes special chars in object keys" $ do
         JSON.encodePure (JSON.object [("ke\"y", JSON.Bool True)])
           `shouldBe` "{\"ke\\\"y\":true}"
-
+-----------------------------------------------------------------------------
+jsonStringVsListEncodingTests :: Test ()
+jsonStringVsListEncodingTests = do
     -- toJSONList: String (i.e. [Char]) serializes as a JSON string while
     -- other lists serialize as JSON arrays. This replaces the old
     -- OVERLAPPING/OVERLAPPABLE ToJSON String / ToJSON [a] instances.
@@ -1150,7 +1208,9 @@ main = withJS $ do
                 JSON.Success x -> Right (x :: [Int])
                 JSON.Error e   -> Left (S.unpack e)
         result `shouldBe` Right [1,2,3]
-
+-----------------------------------------------------------------------------
+dataMapTests :: Test ()
+dataMapTests = do
     describe "Miso.Data.Map tests" $ do
       it "should construct a Map from a list and perform operations" $ do
         m <- liftIO (MDM.fromList [(1 :: Int, "foo" :: MisoString), (2 :: Int, "bar" :: MisoString)])
@@ -1165,7 +1225,9 @@ main = withJS $ do
         (`shouldBe` False)        =<< liftIO (MDM.has 1 m)
         (`shouldBe` ())           =<< liftIO (MDM.clear m)
         (`shouldBe` 0)            =<< liftIO (MDM.size m)
-
+-----------------------------------------------------------------------------
+dataSetTests :: Test ()
+dataSetTests = do
     describe "Miso.Data.Set tests" $ do
       it "should construct a Set from a list and perform operations" $ do
         m <- liftIO (MDS.fromList [1 :: Int .. 10])
@@ -1191,7 +1253,9 @@ main = withJS $ do
         (`shouldBe` False) =<< liftIO (MDS.isSuperset x y)
         (`shouldBe` False) =<< liftIO (MDS.isDisjoint k k)
         (`shouldBe` True) =<< liftIO (MDS.isDisjoint x y)
-
+-----------------------------------------------------------------------------
+inlineJSQQTests :: Test ()
+inlineJSQQTests = do
 #if !defined(__MHS__)
     describe "inline JS QQ tests" $ do
       it "should use inline JS to calc factorial" $
@@ -1199,6 +1263,10 @@ main = withJS $ do
       it "should use inline JS to square a number" $
         (`shouldBe` 25) =<< liftIO (square 5)
 #endif
+    pure ()
+-----------------------------------------------------------------------------
+randomTests :: Test ()
+randomTests = do
     describe "Miso.Random tests" $ do
       it "Should generate some random numbers" $ do
         let xs = flip evalState (mkStdGen 0) $ replicateM 10 (state next)
@@ -1220,7 +1288,9 @@ main = withJS $ do
         let xs = flip evalState (mkStdGen 1) $ replicateM 10 (state next)
         let ys = flip evalState (mkStdGen 2) $ replicateM 10 (state next)
         xs `shouldNotBe` ys
-
+-----------------------------------------------------------------------------
+uuidTests :: Test ()
+uuidTests = do
     describe "Miso.UUID tests" $ do
       let u = UUID.fromWords64 0x550e8400e29b41d4 0xa716446655440000
           sample = "550e8400-e29b-41d4-a716-446655440000"
@@ -1281,7 +1351,9 @@ main = withJS $ do
         UUID.fromString (UUID.toString x) `shouldBe` Just x
         take 1 (drop 14 (UUID.toString x)) `shouldBe` "4"
         take 1 (drop 19 (UUID.toString x)) `shouldSatisfy` (`elem` ["8", "9", "a", "b"])
-
+-----------------------------------------------------------------------------
+lensTests :: Test ()
+lensTests = do
     describe "Miso.Lens tests" $ do
       it "Should convert between VL and Miso.Lens.Lens" $ do
         (fromVL (toVL this) %~ (+1)) 0 `shouldBe` 1
@@ -1389,9 +1461,15 @@ main = withJS $ do
         (evalState (preuse _Left) (Left 5 :: Either Int String)) `shouldBe` Just 5
         (evalState (preuse _Left) (Right "x" :: Either Int String)) `shouldBe` Nothing
         (evalState (preuse _Right) (Right "x" :: Either Int String)) `shouldBe` Just "x"
+-----------------------------------------------------------------------------
+inlineJSTests :: Test ()
+inlineJSTests = do
     describe "Inline JS tests" $ do
      it "Should use inline js" $ do
        (`shouldBe` 42) =<< liftIO (getAge (Person "larry" 42))
+-----------------------------------------------------------------------------
+routerTests :: Test ()
+routerTests = do
     describe "Router tests" $ do
 #ifndef __MHS__
       it "should call fromRoute on Index" $ do
@@ -1607,7 +1685,9 @@ main = withJS $ do
           `shouldBe` "a#b"
         prettyURI (tokensToURI [CaptureOrPathToken "x", FragmentToken "a", FragmentToken "b"])
           `shouldBe` "/x#a#b"
-
+-----------------------------------------------------------------------------
+misoStringTests :: Test ()
+misoStringTests = do
     describe "MisoString tests" $ do
       it "Should pack" $ do
         S.unpack (S.pack "foo") `shouldBe`
@@ -2120,7 +2200,9 @@ main = withJS $ do
         S.fromMisoStringEither "+0x1A" `shouldBe` Right (26 :: Int)
         S.fromMisoStringEither "0x1A"  `shouldBe` Right (26 :: Int)
         S.fromMisoStringEither "-0X1A" `shouldBe` Right (-26 :: Int)
-
+-----------------------------------------------------------------------------
+jsDSLTests :: Test ()
+jsDSLTests = do
     describe "JS DSL tests" $ do
       it "Should get an set a property on an Object" $ do
         c <- liftIO create
@@ -2128,6 +2210,9 @@ main = withJS $ do
         (`shouldBe` True) =<< liftIO (fromJSValUnchecked =<< getProp "foo" c)
       it "Should call eval" $ do
         (`shouldBe` (4 :: Int)) =<< liftIO (fromJSValUnchecked =<< eval "2+2")
+-----------------------------------------------------------------------------
+marshalTests :: Test ()
+marshalTests = do
     describe "Marshal tests" $ do
       it "Should marshal a Double to JSString" $ do
         toMisoString (3.14 :: Double) `shouldBe` "3.14"
@@ -2204,7 +2289,9 @@ main = withJS $ do
               (`shouldBe` ("1" :: MisoString)) =<< field qs "q"
         check =<< liftIO (toJSVal uri)
         check =<< liftIO (unObject <$> toObject uri)
-
+-----------------------------------------------------------------------------
+staticKeyFingerprintTests :: Test ()
+staticKeyFingerprintTests = do
     describe "StaticKey / Fingerprint tests" $ do
       it "serializes Fingerprint 0 0 as 32 zero hex chars" $ do
         toMisoString (Fingerprint 0 0) `shouldBe` "00000000000000000000000000000000"
@@ -2230,13 +2317,18 @@ main = withJS $ do
       it "returns Left on empty input" $ do
         (S.fromMisoStringEither "" :: Either String Fingerprint)
           `shouldSatisfy` isLeft
+-----------------------------------------------------------------------------
+domTests :: Test ()
+domTests = do
     describe "DOM tests" $ do
       it "Should have access to document.body" $ do
         nodeLength >>= (`shouldBe` (0 :: Int))
       it "Should append a single node to document.body" $ do
           _ <- liftIO $ eval ("document.body.appendChild (document.createElement('div'));" :: MisoString)
           nodeLength >>= (`shouldBe` (1 :: Int))
-
+-----------------------------------------------------------------------------
+componentTests :: Test ()
+componentTests = do
     describe "Component tests" $ do
       it "Should mount one component" $ do
         liftIO (startApp mempty testComponent)
@@ -2343,7 +2435,9 @@ main = withJS $ do
         clickStaticKeyUndefined `shouldBe` True
 #endif
 #endif
-
+-----------------------------------------------------------------------------
+staticMountIdentityTests :: Test ()
+staticMountIdentityTests = do
 #ifndef __MHS__
     describe "Static mount identity tests" $ do
       it "swapping two static mounts at one position replaces the child" $ do
@@ -2366,6 +2460,10 @@ main = withJS $ do
         hasA `shouldBe` False
 
 #endif
+    pure ()
+-----------------------------------------------------------------------------
+vContextTests :: Test ()
+vContextTests = do
     describe "VContext tests" $ do
       let contextProbe :: Component Int () () Action
           contextProbe = component () noop $ \_ ->
@@ -2430,7 +2528,9 @@ main = withJS $ do
         _ <- liftIO $ pollFor propagationAttempts (pure False)
         txt <- liftIO readProbe
         txt `shouldBe` ("1" :: MisoString)
-
+-----------------------------------------------------------------------------
+vPropsTests :: Test ()
+vPropsTests = do
     describe "VProps tests" $ do
       let -- A child whose @props@ is an 'Int', displayed via 'vprops'.
           propsProbe :: Component () Int () Action
@@ -2502,7 +2602,9 @@ main = withJS $ do
       it "toHtmlWith resolves vprops against the supplied props" $ do
         toHtmlWith () (7 :: Int) () (div_ [] [ vprops (text . ms) ])
           `shouldBe` "<div>7</div>"
-
+-----------------------------------------------------------------------------
+vModelTests :: Test ()
+vModelTests = do
     describe "VModel tests" $ do
       let -- A root whose 'Int' model is displayed via 'vmodel' rather than
           -- through the 'view' argument.
@@ -2587,7 +2689,9 @@ main = withJS $ do
         -- middle, rendering as an internal stray space ("x y" instead of "xy").
         toHtmlWith () () ("" :: MisoString) (div_ [] [ "x", withModel text, withModel text, "y" ])
           `shouldBe` "<div>xy</div>"
-
+-----------------------------------------------------------------------------
+nonNativeTests :: Test ()
+nonNativeTests = do
 #ifndef NATIVE
     describe "Functor View tests" $ do
       let -- Simulate a user click on the element with the given @id@.
@@ -2759,7 +2863,10 @@ main = withJS $ do
         errors <- liftIO $ fromJSValUnchecked =<< eval ("window.__rafErrors.length" :: MisoString)
         errors `shouldBe` (0 :: Int)
 #endif
-
+    pure ()
+-----------------------------------------------------------------------------
+dslAwaitTests :: Test ()
+dslAwaitTests = do
     describe "Miso.DSL `await` tests" $ do
       it "Successful Promise resolution should result in a value" $ do
         -- Create a Promise and immediately resolve it with `42`
