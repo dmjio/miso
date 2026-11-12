@@ -100,8 +100,9 @@ rec {
     exeName = "component-tests";
   };
 
-  # miso x86
+  # miso x86 / ARM
   miso-ghc-9141 = pkgs.haskell.packages.ghc9141.miso;
+  miso-ghc-9141-aeson-text = pkgs.haskell.packages.ghc9141.miso-aeson-text;
   miso-native-ghc-9141 = pkgs.haskell.packages.ghc9141.miso-native;
   miso-tests-ghc = pkgs.haskell.packages.ghc9141.miso;
 

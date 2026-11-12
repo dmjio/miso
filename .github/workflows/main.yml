@@ -46,8 +46,11 @@ jobs:
      - name: Nix garbage collection
        run: cabal clean && nix-collect-garbage -d
 
-     - name: (x86) Miso GHC (GHC 9.14.1)
+     - name: (x86 / ARM) Miso GHC (GHC 9.14.1)
        run: nix-build -A miso-ghc-9141
+
+     - name: (x86 / ARM) Miso (-ftext / -faeson) GHC (GHC 9.14.1)
+       run: nix-build -A miso-ghc-9141-aeson-text
 
      - name: Nix garbage collection
        run: cabal clean && nix-collect-garbage -d
