@@ -80,6 +80,9 @@ new_ffi = undefined
 eval_ffi :: Text -> IO JSVal
 eval_ffi = undefined
 -----------------------------------------------------------------------------
+textToJSString :: Text -> Text
+textToJSString = id
+-----------------------------------------------------------------------------
 create_ffi :: IO JSVal
 create_ffi = undefined
 -----------------------------------------------------------------------------
