@@ -2129,7 +2129,7 @@ socketState socketId callback = do
   withSink $ \sink -> do
      getWebSocket _componentInfoId socketId <$> readIORef websocketConnections >>= \case
       Just socket -> do
-        x <- socket ! ("socketState" :: MisoString)
+        x <- socket ! ("readyState" :: MisoString)
         socketstate <- toEnum <$> fromJSValUnchecked x
         sink (callback socketstate)
       Nothing ->

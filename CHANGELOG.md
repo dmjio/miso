@@ -32,6 +32,8 @@ All notable changes to `miso` are documented here.
   browser's error event carries no more detail, so use `onClose` for the code.
 - A connection the server closes is forgotten at once, not only on `close` or
   unmount.
+- `socketState` read a property that does not exist (`socketState`) instead of
+  `readyState`.
 
 ## 1.15.0.0
 
