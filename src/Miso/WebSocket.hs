@@ -83,6 +83,8 @@
 -- * Always call 'close' when the connection is no longer needed to avoid
 --   resource leaks. It is safe to call 'close' multiple times — subsequent
 --   calls are no-ops.
+-- * A send on a socket that is not open is a no-op. The @onClosed@ callback is how you
+--   learn that a connection has gone, so re-send after you reconnect.
 -- * 'socketState' lets you query the current 'SocketState'
 --   (@CONNECTING@, @OPEN@, @CLOSING@, @CLOSED@) asynchronously.
 -- * 'protocol' returns the subprotocol the server selected from the

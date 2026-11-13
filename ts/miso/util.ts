@@ -166,7 +166,7 @@ export function websocketClose (
 export function websocketSend (
   socket, message
 ): void {
-  if (message && socket && socket.readyState === WebSocket.OPEN) {
+  if (message != null && socket && socket.readyState === WebSocket.OPEN) {
       socket.send(message);
   }
 }
