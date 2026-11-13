@@ -674,6 +674,38 @@ describe('WebSocket tests', () => {
     websocketClose(socket);
   });
 
+  test('Should call onError then onClose with 1006, after returning, when the WebSocket constructor throws', async () => {
+    const original = globalThis.WebSocket;
+    globalThis.WebSocket = function () {
+      throw new SyntaxError('bad url');
+    } as unknown as typeof WebSocket;
+    const events: unknown[] = [];
+    try {
+      const noop = () => {};
+      const socket = websocketConnect('nope', noop, (e) => events.push(['close', e]), noop, noop, noop, noop, (m) => events.push(['error', m]), false);
+      expect(socket).toBeUndefined();
+      expect(events).toEqual([]);
+    } finally {
+      globalThis.WebSocket = original;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(events).toEqual([
+      ['error', 'bad url'],
+      ['close', { code: 1006, wasClean: false, reason: 'bad url' }],
+    ]);
+  });
+
+  test('Should tell a failed connection from an error on an open one', () => {
+    const noop = () => {};
+    const errors: string[] = [];
+    const socket = websocketConnect('ws://localhost:8080', noop, noop, noop, noop, noop, noop, (m) => errors.push(m), false);
+    socket.onerror(new Event('error'));
+    socket.onopen(new Event('open'));
+    socket.onerror(new Event('error'));
+    expect(errors).toEqual(['WebSocket connection failed', 'WebSocket error received']);
+    websocketClose(socket);
+  });
+
   test('Should pass protocols to the WebSocket constructor', () => {
     const original = globalThis.WebSocket;
     const calls: unknown[][] = [];

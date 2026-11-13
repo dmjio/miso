@@ -1893,10 +1893,10 @@ websocketConnectText
   -- ^ onError
   -> Effect context props model action
 websocketConnectText options url onOpen onClosed onMessage onError =
-  websocketCore $ \webSocketId sink ->
+  websocketCore $ \webSocketId sink closed ->
     FFI.websocketConnect url
       (sink $ onOpen webSocketId)
-      (sink . onClosed <=< fromJSValUnchecked)
+      (closed onClosed)
       (pure (sink . onMessage <=< fromJSValUnchecked))
       Nothing
       Nothing
@@ -1920,10 +1920,10 @@ websocketConnectBLOB
   -- ^ onError
   -> Effect context props model action
 websocketConnectBLOB options url onOpen onClosed onMessage onError =
-  websocketCore $ \webSocketId sink ->
+  websocketCore $ \webSocketId sink closed ->
     FFI.websocketConnect url
       (sink $ onOpen webSocketId)
-      (sink . onClosed <=< fromJSValUnchecked)
+      (closed onClosed)
       Nothing
       Nothing
       (pure (sink . onMessage . Blob))
@@ -1947,10 +1947,10 @@ websocketConnectArrayBuffer
   -- ^ onError
   -> Effect context props model action
 websocketConnectArrayBuffer options url onOpen onClosed onMessage onError =
-  websocketCore $ \webSocketId sink ->
+  websocketCore $ \webSocketId sink closed ->
     FFI.websocketConnect url
       (sink $ onOpen webSocketId)
-      (sink . onClosed <=< fromJSValUnchecked)
+      (closed onClosed)
       Nothing
       Nothing
       Nothing
@@ -1975,10 +1975,10 @@ websocketConnectJSON
   -- ^ onError
   -> Effect context props model action
 websocketConnectJSON options url onOpen onClosed onMessage onError =
-  websocketCore $ \webSocketId sink ->
+  websocketCore $ \webSocketId sink closed ->
     FFI.websocketConnect url
       (sink $ onOpen webSocketId)
-      (sink . onClosed <=< fromJSValUnchecked)
+      (closed onClosed)
       Nothing
       (pure (\bytes -> do
           value :: Value <- fromJSValUnchecked bytes
@@ -2007,10 +2007,10 @@ websocketConnect
   -- ^ onError
   -> Effect context props model action
 websocketConnect options url onOpen onClosed onMessage onError =
-  websocketCore $ \webSocketId sink ->
+  websocketCore $ \webSocketId sink closed ->
     FFI.websocketConnect url
       (sink $ onOpen webSocketId)
-      (sink . onClosed <=< fromJSValUnchecked)
+      (closed onClosed)
       (pure (sink . onMessage . TEXT <=< fromJSValUnchecked))
       (pure (\bytes -> do
           value :: Value <- fromJSValUnchecked bytes
@@ -2025,14 +2025,20 @@ websocketConnect options url onOpen onClosed onMessage onError =
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/WebSocket>
 websocketCore
-  :: (WebSocket -> Sink action -> IO Socket)
+  :: (WebSocket -> Sink action -> ((Closed -> action) -> JSVal -> IO ()) -> IO Socket)
   -> Effect context props model action
 websocketCore core = do
   ComponentInfo {..} <- ask
   withSink $ \sink -> do
     webSocketId <- freshWebSocket
-    socket <- core webSocketId sink
-    insertWebSocket _componentInfoId webSocketId socket
+    -- the connection is forgotten once the server closes it, not only on 'close'
+    let closed onClosed = \closeEvent -> do
+          forgetWebSocket _componentInfoId webSocketId
+          sink . onClosed =<< fromJSValUnchecked closeEvent
+    socket <- core webSocketId sink closed
+    -- a constructor that threw returns undefined: no handle to keep
+    failed <- isUndefined socket
+    unless failed $ insertWebSocket _componentInfoId webSocketId socket
   where
     insertWebSocket :: ComponentId -> WebSocket -> Socket -> IO ()
     insertWebSocket componentId_ (WebSocket socketId) socket =
@@ -2047,6 +2053,11 @@ websocketCore core = do
     freshWebSocket :: IO WebSocket
     freshWebSocket = WebSocket <$>
       atomicModifyIORef' websocketConnectionIds (\x -> (x + 1, x))
+-----------------------------------------------------------------------------
+forgetWebSocket :: ComponentId -> WebSocket -> IO ()
+forgetWebSocket vcompId (WebSocket socketId) =
+  atomicModifyIORef' websocketConnections $ \websockets ->
+    (IM.adjust (IM.delete socketId) vcompId websockets, ())
 -----------------------------------------------------------------------------
 getWebSocket :: ComponentId -> WebSocket -> WebSockets -> Maybe Socket
 getWebSocket vcompId (WebSocket websocketId) =
