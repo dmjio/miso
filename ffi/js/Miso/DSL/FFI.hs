@@ -79,12 +79,13 @@ module Miso.DSL.FFI
   , toString_Float
   , toString_Word
   , toString_Int
+  , textFromJSString
   , textToJSString
   , JSException
   ) where
 -----------------------------------------------------------------------------
 import           Data.JSString
-import           Data.JSString.Text (textToJSString)
+import           Data.JSString.Text (textFromJSString, textToJSString)
 import           Data.Text
 import           Control.Exception (throwIO)
 -----------------------------------------------------------------------------
