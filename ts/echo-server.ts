@@ -47,10 +47,18 @@ function jsonResponse(data: unknown, status = 200): Response {
 
 const server = Bun.serve({
   port: PORT,
-  async fetch(req: Request): Promise<Response> {
+  async fetch(req: Request, server): Promise<Response | undefined> {
     const url = new URL(req.url);
     const path = url.pathname;
     const method = req.method;
+
+    // GET /ws → WebSocket that selects the first offered subprotocol, if any
+    if (path === '/ws') {
+      const offered = req.headers.get('sec-websocket-protocol')?.split(',')[0]?.trim();
+      const headers = offered ? { 'Sec-WebSocket-Protocol': offered } : undefined;
+      if (server.upgrade(req, { headers })) return;
+      return new Response('Upgrade failed', { status: 400, headers: CORS_HEADERS });
+    }
 
     // CORS preflight
     if (method === 'OPTIONS') {
@@ -108,6 +116,9 @@ const server = Bun.serve({
     }
 
     return new Response('Not Found', { status: 404, headers: CORS_HEADERS });
+  },
+  websocket: {
+    message(ws, msg) { ws.send(msg); },
   },
 });
 

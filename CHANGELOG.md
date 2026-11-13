@@ -13,6 +13,13 @@ All notable changes to `miso` are documented here.
   previously needed `freeFunction (Function cb)`. `freeCallback` is
   `freeFunction . Function`. `freeFunction` is unchanged.
 
+- **WebSocket subprotocols** (`Miso.WebSocket`). `connectWith`,
+  `connectJSONWith`, `connectTextWith`, `connectBLOBWith` and
+  `connectArrayBufferWith` take a `ConnectOptions` whose `protocols` are sent
+  as `Sec-WebSocket-Protocol` (e.g. `graphql-transport-ws`, `mqtt`).
+  `protocol` returns the subprotocol the server selected. The existing
+  `connect*` functions are unchanged (`connect*With defaultConnectOptions`).
+
 ## 1.15.0.0
 
 ### Added

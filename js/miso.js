@@ -74,9 +74,9 @@ function fetchCore(url, method, body, requestHeaders, successful, errorful, resp
     errorful({ body: null, error: err.message, headers, status });
   }
 }
-function websocketConnect(url, onOpen, onClose, onMessageText, onMessageJSON, onMessageBLOB, onMessageArrayBuffer, onError, textOnly) {
+function websocketConnect(url, onOpen, onClose, onMessageText, onMessageJSON, onMessageBLOB, onMessageArrayBuffer, onError, textOnly, protocols) {
   try {
-    let socket = new WebSocket(url);
+    let socket = new WebSocket(url, protocols?.length ? protocols : undefined);
     socket.onopen = function() {
       onOpen();
     };
