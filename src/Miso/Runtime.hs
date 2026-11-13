@@ -69,6 +69,9 @@ module Miso.Runtime
   , websocketSend
   , websocketClose
   , socketState
+  , websocketProtocol
+  , ConnectOptions (..)
+  , defaultConnectOptions
   , emptyWebSocket
   , WebSocket (..)
   , URL
@@ -1876,7 +1879,9 @@ websocketConnectionIds :: IORef Int
 websocketConnectionIds = unsafePerformIO (newIORef (0 :: Int))
 -----------------------------------------------------------------------------
 websocketConnectText
-  :: URL
+  :: ConnectOptions
+  -- ^ t'ConnectOptions', e.g. requested subprotocols
+  -> URL
   -- ^ t'WebSocket' 'URL'
   -> (WebSocket -> action)
   -- ^ onOpen
@@ -1887,7 +1892,7 @@ websocketConnectText
   -> (MisoString -> action)
   -- ^ onError
   -> Effect context props model action
-websocketConnectText url onOpen onClosed onMessage onError =
+websocketConnectText options url onOpen onClosed onMessage onError =
   websocketCore $ \webSocketId sink ->
     FFI.websocketConnect url
       (sink $ onOpen webSocketId)
@@ -1898,9 +1903,12 @@ websocketConnectText url onOpen onClosed onMessage onError =
       Nothing
       (sink . onError <=< fromJSValUnchecked)
       True
+      (protocols options)
 -----------------------------------------------------------------------------
 websocketConnectBLOB
-  :: URL
+  :: ConnectOptions
+  -- ^ t'ConnectOptions', e.g. requested subprotocols
+  -> URL
   -- ^ t'WebSocket' 'URL'
   -> (WebSocket -> action)
   -- ^ onOpen
@@ -1911,7 +1919,7 @@ websocketConnectBLOB
   -> (MisoString -> action)
   -- ^ onError
   -> Effect context props model action
-websocketConnectBLOB url onOpen onClosed onMessage onError =
+websocketConnectBLOB options url onOpen onClosed onMessage onError =
   websocketCore $ \webSocketId sink ->
     FFI.websocketConnect url
       (sink $ onOpen webSocketId)
@@ -1922,9 +1930,12 @@ websocketConnectBLOB url onOpen onClosed onMessage onError =
       Nothing
       (sink . onError <=< fromJSValUnchecked)
       False
+      (protocols options)
 -----------------------------------------------------------------------------
 websocketConnectArrayBuffer
-  :: URL
+  :: ConnectOptions
+  -- ^ t'ConnectOptions', e.g. requested subprotocols
+  -> URL
   -- ^ t'WebSocket' 'URL'
   -> (WebSocket -> action)
   -- ^ onOpen
@@ -1935,7 +1946,7 @@ websocketConnectArrayBuffer
   -> (MisoString -> action)
   -- ^ onError
   -> Effect context props model action
-websocketConnectArrayBuffer url onOpen onClosed onMessage onError =
+websocketConnectArrayBuffer options url onOpen onClosed onMessage onError =
   websocketCore $ \webSocketId sink ->
     FFI.websocketConnect url
       (sink $ onOpen webSocketId)
@@ -1946,10 +1957,13 @@ websocketConnectArrayBuffer url onOpen onClosed onMessage onError =
       (pure (sink . onMessage . ArrayBuffer))
       (sink . onError <=< fromJSValUnchecked)
       False
+      (protocols options)
 -----------------------------------------------------------------------------
 websocketConnectJSON
   :: FromJSON json
-  => URL
+  => ConnectOptions
+  -- ^ t'ConnectOptions', e.g. requested subprotocols
+  -> URL
   -- ^ WebSocket URL
   -> (WebSocket -> action)
   -- ^ onOpen
@@ -1960,7 +1974,7 @@ websocketConnectJSON
   -> (MisoString -> action)
   -- ^ onError
   -> Effect context props model action
-websocketConnectJSON url onOpen onClosed onMessage onError =
+websocketConnectJSON options url onOpen onClosed onMessage onError =
   websocketCore $ \webSocketId sink ->
     FFI.websocketConnect url
       (sink $ onOpen webSocketId)
@@ -1975,10 +1989,13 @@ websocketConnectJSON url onOpen onClosed onMessage onError =
       Nothing
       (sink . onError <=< fromJSValUnchecked)
       False
+      (protocols options)
 -----------------------------------------------------------------------------
 websocketConnect
   :: FromJSON json
-  => URL
+  => ConnectOptions
+  -- ^ t'ConnectOptions', e.g. requested subprotocols
+  -> URL
   -- ^ WebSocket URL
   -> (WebSocket -> action)
   -- ^ onOpen
@@ -1989,7 +2006,7 @@ websocketConnect
   -> (MisoString -> action)
   -- ^ onError
   -> Effect context props model action
-websocketConnect url onOpen onClosed onMessage onError =
+websocketConnect options url onOpen onClosed onMessage onError =
   websocketCore $ \webSocketId sink ->
     FFI.websocketConnect url
       (sink $ onOpen webSocketId)
@@ -2004,6 +2021,7 @@ websocketConnect url onOpen onClosed onMessage onError =
       (pure (sink . onMessage . BUFFER . ArrayBuffer))
       (sink . onError <=< fromJSValUnchecked)
       False
+      (protocols options)
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/WebSocket>
 websocketCore
@@ -2106,6 +2124,24 @@ socketState socketId callback = do
       Nothing ->
         sink (callback CLOSED)
 -----------------------------------------------------------------------------
+-- | Retrieves the subprotocol the server selected for a t'WebSocket'
+-- (<https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/protocol>).
+--
+-- 'Nothing' if none was selected, the connection is not open yet, or the
+-- t'WebSocket' identifier does not exist.
+--
+-- @since 1.16.0.0
+websocketProtocol :: WebSocket -> (Maybe MisoString -> action) -> Effect context props model action
+websocketProtocol socketId callback = do
+  ComponentInfo {..} <- ask
+  withSink $ \sink -> do
+     getWebSocket _componentInfoId socketId <$> readIORef websocketConnections >>= \case
+      Just socket -> do
+        selected <- fromJSValUnchecked =<< socket ! ("protocol" :: MisoString)
+        sink (callback (if selected == ("" :: MisoString) then Nothing else Just selected))
+      Nothing ->
+        sink (callback Nothing)
+-----------------------------------------------------------------------------
 codeToCloseCode :: Int -> CloseCode
 codeToCloseCode = \case
   1000 -> CLOSE_NORMAL
@@ -2141,6 +2177,26 @@ instance FromJSVal Closed where
     wasClean_ <- fromJSVal =<< o ! ("wasClean" :: MisoString)
     reason_ <- fromJSVal =<< o ! ("reason" :: MisoString)
     pure (Closed <$> closed_ <*> wasClean_ <*> reason_)
+-----------------------------------------------------------------------------
+-- | Options for opening a t'WebSocket' connection.
+--
+-- Construct with 'defaultConnectOptions' and record update, so that new
+-- options can be added without breaking callers.
+--
+-- @since 1.16.0.0
+data ConnectOptions
+  = ConnectOptions
+  { protocols :: [MisoString]
+    -- ^ Subprotocols to request (@Sec-WebSocket-Protocol@), in order of
+    -- preference, e.g. @["graphql-transport-ws"]@. See 'websocketProtocol'
+    -- for the one the server selected.
+  } deriving (Show, Eq)
+-----------------------------------------------------------------------------
+-- | No subprotocols requested.
+--
+-- @since 1.16.0.0
+defaultConnectOptions :: ConnectOptions
+defaultConnectOptions = ConnectOptions { protocols = [] }
 -----------------------------------------------------------------------------
 -- | URL that the t'WebSocket' will @connect@ to
 type URL = MisoString

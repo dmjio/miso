@@ -109,9 +109,10 @@ export function websocketConnect (
     onMessageArrayBuffer,
     onError,
     textOnly : boolean,
+    protocols? : string[],
 ): WebSocket {
   try {
-    let socket = new WebSocket(url);
+    let socket = new WebSocket(url, protocols?.length ? protocols : undefined);
     socket.onopen = function () {
       onOpen();
     };

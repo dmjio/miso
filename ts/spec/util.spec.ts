@@ -660,6 +660,28 @@ describe('WebSocket tests', () => {
 
     websocketClose(socket);
   });
+
+  test('Should pass protocols to the WebSocket constructor', () => {
+    const original = globalThis.WebSocket;
+    const calls: unknown[][] = [];
+    globalThis.WebSocket = function (...args: unknown[]) {
+      calls.push(args);
+      return {};
+    } as unknown as typeof WebSocket;
+    try {
+      const noop = () => {};
+      websocketConnect('ws://localhost:8080', noop, noop, noop, noop, noop, noop, noop, false, ['graphql-transport-ws']);
+      websocketConnect('ws://localhost:8080', noop, noop, noop, noop, noop, noop, noop, false, []);
+      websocketConnect('ws://localhost:8080', noop, noop, noop, noop, noop, noop, noop, false);
+    } finally {
+      globalThis.WebSocket = original;
+    }
+    expect(calls).toEqual([
+      ['ws://localhost:8080', ['graphql-transport-ws']],
+      ['ws://localhost:8080', undefined],
+      ['ws://localhost:8080', undefined],
+    ]);
+  });
 });
 
 describe('EventSource tests', () => {
