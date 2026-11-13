@@ -116,7 +116,7 @@
 -- * 'textRaw' — create a text node without HTML escaping
 -- * 'text_' — concatenate a list of strings with a space separator
 -- * 'textKey' / 'textKey_' — keyed variants for efficient list diffing
--- * 'htmlEncode' — manually escape @< > & \" \'@
+-- * 'htmlEncode' — manually escape @\< \> & \" \'@
 --
 -- = Component mounting
 --
@@ -1278,7 +1278,7 @@ htmlEncode = MS.concatMap $ \case
 --     ]
 -- @
 --
--- Renders as @<div class="container">foo bar</div>@
+-- Renders as @\<div class="container"\>foo bar\</div\>@
 --
 -- A single additional space is added between elements.
 --

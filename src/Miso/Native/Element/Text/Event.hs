@@ -41,7 +41,7 @@ import           Miso.JSON
 ----------------------------------------------------------------------------
 import           Miso.Types (Attribute, EventHandler, DOMRef)
 ----------------------------------------------------------------------------
--- | The 'Events' map for the Lynx @<text>@ element.
+-- | The 'Events' map for the Lynx @\<text\>@ element.
 --
 -- Combine with other element maps using @<>@ and pass the result to
 -- 'Miso.Native.native', so the delegator listens for these events.
@@ -163,7 +163,7 @@ selectionChangeDecoder = ["detail"] `at` parser
         <*> o .: "end"
         <*> o .: "direction"
 -----------------------------------------------------------------------------
--- | Payload of a @<text>@ selection-change event: the @start@ and @end@
+-- | Payload of a @\<text\>@ selection-change event: the @start@ and @end@
 -- offsets of the new selection and the direction it was extended in.
 -- 
 -- @since 1.13.0.0
@@ -185,7 +185,7 @@ instance FromJSON Direction where
     "backward" -> pure Backward
     x -> typeMismatch "Direction" (toJSON x)
 -----------------------------------------------------------------------------
--- | Payload of a @<text>@ layout event: how many lines were laid out,
+-- | Payload of a @\<text\>@ layout event: how many lines were laid out,
 -- per-line detail, and the resulting size.
 -- 
 -- @since 1.13.0.0
@@ -219,7 +219,7 @@ instance FromJSON LineInfo where
       <*> o .: "end"
       <*> o .: "ellipsisCount"
 -----------------------------------------------------------------------------
--- | Per-line detail from a @<text>@ layout event: the character range the
+-- | Per-line detail from a @\<text\>@ layout event: the character range the
 -- line covers and how many characters were ellipsized.
 -- 
 -- @since 1.13.0.0
@@ -228,7 +228,7 @@ data LineInfo
   { lineInfoStart, lineInfoEnd, lineInfoEllipsisCount :: Double
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
--- | The measured width and height of laid-out @<text>@ content, in px.
+-- | The measured width and height of laid-out @\<text\>@ content, in px.
 -- 
 -- @since 1.13.0.0
 data Size

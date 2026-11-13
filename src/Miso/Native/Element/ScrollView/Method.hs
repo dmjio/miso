@@ -62,7 +62,7 @@ instance ToJSVal ScrollTo where
 defaultScrollTo :: ScrollTo
 defaultScrollTo = ScrollTo 0 1 True
 -----------------------------------------------------------------------------
--- | Invokes the Lynx @scrollTo@ method on a @<scroll-view>@ element.
+-- | Invokes the Lynx @scrollTo@ method on a @\<scroll-view\>@ element.
 --
 -- Takes a selector, a t'ScrollTo' of parameters, a success continuation and
 -- an error continuation.
@@ -101,7 +101,7 @@ instance ToJSVal AutoScroll where
 defaultAutoScroll :: AutoScroll
 defaultAutoScroll = AutoScroll 120 False
 -----------------------------------------------------------------------------
--- | Invokes the Lynx @autoScroll@ method on a @<scroll-view>@ element.
+-- | Invokes the Lynx @autoScroll@ method on a @\<scroll-view\>@ element.
 --
 -- Takes a selector, a t'AutoScroll' of parameters, a success continuation and
 -- an error continuation.
@@ -152,7 +152,7 @@ defaultScrollIntoView
   , behavior = "smooth"
   }
 -----------------------------------------------------------------------------
--- | Invokes the Lynx @scrollIntoView@ method on a @<scroll-view>@ element.
+-- | Invokes the Lynx @scrollIntoView@ method on a @\<scroll-view\>@ element.
 --
 -- Takes a selector, a t'ScrollIntoView' of parameters, a success continuation and
 -- an error continuation.
@@ -190,7 +190,7 @@ defaultScrollBy = ScrollBy
   { scrollByOffset = 0
   }
 -----------------------------------------------------------------------------
--- | Invokes the Lynx @scrollBy@ method on a @<scroll-view>@ element.
+-- | Invokes the Lynx @scrollBy@ method on a @\<scroll-view\>@ element.
 --
 -- Takes a selector, a t'ScrollBy' of parameters, a success continuation and
 -- an error continuation.

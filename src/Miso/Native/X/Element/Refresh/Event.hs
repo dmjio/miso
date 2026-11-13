@@ -45,7 +45,7 @@ import           Miso.Event
 import           Miso.JSON
 import           Miso.Types (Attribute, EventHandler, DOMRef)
 -----------------------------------------------------------------------------
--- | The 'Events' map for the Lynx @<refresh>@ element.
+-- | The 'Events' map for the Lynx @\<refresh\>@ element.
 --
 -- Combine with other element maps using @<>@ and pass the result to
 -- 'Miso.Native.native', so the delegator listens for these events.

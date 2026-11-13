@@ -2093,7 +2093,7 @@ prerenderWithContext events initialContext comp_ =
 -----------------------------------------------------------------------------
 -- | Like 'miso', except it does not perform page hydration.
 --
--- This function draws your application on an empty <body>
+-- This function draws your application on an empty \<body\>
 --
 -- You will most likely want to use this function for your application
 -- unless you are using prerendering.

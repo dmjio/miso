@@ -9,7 +9,7 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- [/<image/>](https://lynxjs.org/api/elements/built-in/image.html)
+-- [/\<image\>/](https://lynxjs.org/api/elements/built-in/image.html)
 --
 -- Used to display different types of images, including web images,
 -- static resources, and locally stored images.

@@ -9,7 +9,7 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- [/<refresh/>](https://lynxjs.org/api/elements/built-in/refresh.html)
+-- [/\<refresh\>/](https://lynxjs.org/api/elements/built-in/refresh.html)
 --
 -- Pull-to-refresh container.
 --

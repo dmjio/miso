@@ -109,7 +109,7 @@ import           Miso.JSON
 import           Miso.String (MisoString, isPrefixOf)
 import           Miso.Types (Attribute, EventHandler, DOMRef)
 ----------------------------------------------------------------------------
--- | The 'Events' map for the Lynx @<view>@ element.
+-- | The 'Events' map for the Lynx @\<view\>@ element.
 --
 -- Combine with other element maps using @<>@ and pass the result to
 -- 'Miso.Native.native', so the delegator listens for these events.
@@ -225,7 +225,7 @@ animationDecoder = Decoder {..}
       newAnim <- d .:? "new_animator" .!= False
       pure (AnimationEvent aType name newAnim)
 -----------------------------------------------------------------------------
--- | Payload of a @<view>@ layout-change event: the target's id, its new
+-- | Payload of a @\<view\>@ layout-change event: the target's id, its new
 -- box, and its @dataset@.
 -- 
 -- @since 1.13.0.0
@@ -285,7 +285,7 @@ instance FromJSON UIAppearanceDetailEventType where
     "uidisappear" -> pure UIDisappear
     x -> typeMismatch "UIAppearanceDetailEventType" (toJSON x)
 -----------------------------------------------------------------------------
--- | Payload of a @<view>@ appearance event: whether the element appeared
+-- | Payload of a @\<view\>@ appearance event: whether the element appeared
 -- or disappeared, plus the exposure identifiers Lynx assigns it.
 -- 
 -- @since 1.13.0.0

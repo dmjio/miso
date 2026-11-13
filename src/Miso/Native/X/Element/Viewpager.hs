@@ -9,7 +9,7 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- [/<viewpager/>](https://lynxjs.org/api/elements/built-in/viewpager.html)
+-- [/\<viewpager\>/](https://lynxjs.org/api/elements/built-in/viewpager.html)
 --
 -- Horizontally paged container.
 --

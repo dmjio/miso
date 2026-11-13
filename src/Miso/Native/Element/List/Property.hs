@@ -131,7 +131,7 @@ listMainAxisGap_ = textProp "list-main-axis-gap"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/list.html#list-cross-axis-gap
 --
--- Specifies the spacing of <list> child nodes in the cross axis direction,
+-- Specifies the spacing of \<list\> child nodes in the cross axis direction,
 -- which needs to be written in the style.
 --
 listCrossAxisGap_ :: MisoString -> Attribute model action
@@ -231,7 +231,7 @@ lowerThresholdItemCount_ = intProp "lower-threshold-item-count"
 scrollEventThrottle_ :: Int -> Attribute model action
 scrollEventThrottle_ = intProp "scroll-event-throttle"
 -----------------------------------------------------------------------------
--- | Where a @<list>@ item comes to rest when pagination snaps to it.
+-- | Where a @\<list\>@ item comes to rest when pagination snaps to it.
 -- 
 -- @since 1.13.0.0
 data ListItemSnapAlignment

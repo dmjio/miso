@@ -129,7 +129,7 @@ defaultAutoScroll = AutoScroll
   , autoStop = True
   }
 --------------------------------------------------------------------
--- | Invokes the Lynx @autoScroll@ method on a @<list>@ element.
+-- | Invokes the Lynx @autoScroll@ method on a @\<list\>@ element.
 --
 -- Takes a selector, a t'AutoScroll' of parameters, a success continuation and
 -- an error continuation.
@@ -143,7 +143,7 @@ autoScroll
   -> Effect context props model action
 autoScroll = invokeExec "autoScroll"
 --------------------------------------------------------------------
--- | Invokes the Lynx @getVisibleCells@ method on a @<list>@ element,
+-- | Invokes the Lynx @getVisibleCells@ method on a @\<list\>@ element,
 -- reporting the cells currently on screen.
 --
 -- @since 1.13.0.0
@@ -177,7 +177,7 @@ instance ToJSVal ScrollBy where
 defaultScrollBy :: ScrollBy
 defaultScrollBy = ScrollBy 0
 --------------------------------------------------------------------
--- | Invokes the Lynx @scrollBy@ method on a @<list>@ element.
+-- | Invokes the Lynx @scrollBy@ method on a @\<list\>@ element.
 --
 -- Takes a selector, a t'ScrollBy' of parameters, a success continuation and
 -- an error continuation.
@@ -191,7 +191,7 @@ scrollBy
   -> Effect context props model action
 scrollBy = invokeExec "scrollBy"
 --------------------------------------------------------------------
--- | How much of a requested 'scrollBy' the @<list>@ actually consumed.
+-- | How much of a requested 'scrollBy' the @\<list\>@ actually consumed.
 --
 -- A list already at its end consumes less than was asked for; the remainder
 -- is what an enclosing scroller may take.

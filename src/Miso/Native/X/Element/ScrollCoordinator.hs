@@ -9,7 +9,7 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- [/<scroll-coordinator/>](https://lynxjs.org/api/elements/built-in/scroll-coordinator.html)
+-- [/\<scroll-coordinator\>/](https://lynxjs.org/api/elements/built-in/scroll-coordinator.html)
 --
 -- Coordinates nested scrolling, typically used with sticky headers and tabbed
 -- layouts.

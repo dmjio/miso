@@ -281,7 +281,7 @@ pointerEvents = M.fromList
   ]
 -----------------------------------------------------------------------------
 -- | Audio video events
--- For use with the @<audio>@ and @<video>@ tags.
+-- For use with the @\<audio\>@ and @\<video\>@ tags.
 --
 -- @
 -- myApp :: 'Miso.Types.App' Model Action
