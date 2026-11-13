@@ -278,6 +278,30 @@ protocolComponent result closed offered =
       ProtocolClosed -> io_ (putMVar closed ())
       ProtocolIgnore -> pure ()
 -----------------------------------------------------------------------------
+data ConnectAction
+  = ConnectStart
+  | ConnectClosed Bool Bool
+  | ConnectIgnore
+  deriving stock (Show, Eq, Generic)
+#ifndef __MHS__
+  deriving anyclass (JSON.FromJSON, JSON.ToJSON)
+#endif
+-----------------------------------------------------------------------------
+-- | Connects to @url@ and puts the first close it sees into @result@: whether the code
+-- was abnormal (1006), and whether the close was clean.
+connectComponent :: MVar ConnectAction -> MisoString -> Component () () () ConnectAction
+connectComponent result url =
+  (component () update_ $ \_ -> div_ [] [])
+  { mount = Just ConnectStart }
+  where
+    update_ = \case
+      ConnectStart ->
+        WS.connectText url (const ConnectIgnore)
+          (\c -> ConnectClosed (WS.closedCode c == WS.CLOSE_ABNORMAL) (WS.wasClean c))
+          (const ConnectIgnore) (const ConnectIgnore)
+      ConnectClosed abnormal clean -> io_ (putMVar result (ConnectClosed abnormal clean))
+      ConnectIgnore -> pure ()
+-----------------------------------------------------------------------------
 testComponent :: Component () () Int Action
 testComponent = component (0 :: Int) update_ $ \_ -> button_ [ id_ "foo", onClick AddOne ] [ "click me " ]
   where
@@ -604,7 +628,7 @@ cookieFFITests = do
 -----------------------------------------------------------------------------
 webSocketTests :: Test ()
 webSocketTests = do
-    describe "Miso.WebSocket subprotocol tests" $ do
+    describe "Miso.WebSocket tests" $ do
       it "Should negotiate a requested subprotocol" $ do
         result <- liftIO newEmptyMVar
         closed <- liftIO newEmptyMVar
@@ -617,6 +641,10 @@ webSocketTests = do
         liftIO (startApp mempty (protocolComponent result closed []))
         (`shouldBe` Nothing) =<< liftIO (takeMVar result)
         liftIO (takeMVar closed)
+      it "Should call onClosed (1006, not clean) when the connection cannot be created" $ do
+        result <- liftIO newEmptyMVar
+        liftIO (startApp mempty (connectComponent result "not a url"))
+        (`shouldBe` ConnectClosed True False) =<< liftIO (takeMVar result)
 -----------------------------------------------------------------------------
 fetchFFITests :: Test ()
 fetchFFITests = do

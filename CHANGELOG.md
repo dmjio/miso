@@ -23,6 +23,15 @@ All notable changes to `miso` are documented here.
 ### Fixed
 
 - `websocketSend` (JS) dropped the empty string; it now sends it.
+- A `WebSocket` constructor that throws (bad URL, invalid subprotocol) now
+  calls `onClose` (code 1006, `wasClean = False`, the error as `reason`) after
+  `onError` (both deferred, so they never run inside the connect call), so a
+  connect attempt always ends in exactly one `onClose`, and no handle is stored
+  for it.
+- `onError` reads "WebSocket connection failed" until the socket has opened; the
+  browser's error event carries no more detail, so use `onClose` for the code.
+- A connection the server closes is forgotten at once, not only on `close` or
+  unmount.
 
 ## 1.15.0.0
 

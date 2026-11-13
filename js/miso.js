@@ -77,7 +77,9 @@ function fetchCore(url, method, body, requestHeaders, successful, errorful, resp
 function websocketConnect(url, onOpen, onClose, onMessageText, onMessageJSON, onMessageBLOB, onMessageArrayBuffer, onError, textOnly, protocols) {
   try {
     let socket = new WebSocket(url, protocols?.length ? protocols : undefined);
+    let opened = false;
     socket.onopen = function() {
+      opened = true;
       onOpen();
     };
     socket.onclose = function(e) {
@@ -85,7 +87,7 @@ function websocketConnect(url, onOpen, onClose, onMessageText, onMessageJSON, on
     };
     socket.onerror = function(error) {
       console.error(error);
-      onError("WebSocket error received");
+      onError(opened ? "WebSocket error received" : "WebSocket connection failed");
     };
     socket.onmessage = function(msg) {
       if (typeof msg.data === "string") {
@@ -118,7 +120,10 @@ function websocketConnect(url, onOpen, onClose, onMessageText, onMessageJSON, on
     };
     return socket;
   } catch (err) {
-    onError(err.message);
+    setTimeout(() => {
+      onError(err.message);
+      onClose({ code: 1006, wasClean: false, reason: err.message });
+    }, 0);
   }
 }
 function websocketClose(socket) {
