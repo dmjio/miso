@@ -128,7 +128,7 @@ function websocketClose(socket) {
   }
 }
 function websocketSend(socket, message) {
-  if (message && socket && socket.readyState === WebSocket.OPEN) {
+  if (message != null && socket && socket.readyState === WebSocket.OPEN) {
     socket.send(message);
   }
 }

@@ -20,6 +20,10 @@ All notable changes to `miso` are documented here.
   `protocol` returns the subprotocol the server selected. The existing
   `connect*` functions are unchanged (`connect*With defaultConnectOptions`).
 
+### Fixed
+
+- `websocketSend` (JS) dropped the empty string; it now sends it.
+
 ## 1.15.0.0
 
 ### Added

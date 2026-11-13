@@ -661,6 +661,19 @@ describe('WebSocket tests', () => {
     websocketClose(socket);
   });
 
+  test('Should send the empty string', () => {
+    const noop = () => {};
+    const socket = websocketConnect('ws://localhost:8080', noop, noop, noop, noop, noop, noop, noop, false);
+    const sent: unknown[] = [];
+    socket.send = (msg) => { sent.push(msg); };
+    Object.defineProperty(socket, 'readyState', { value: WebSocket.OPEN });
+
+    websocketSend(socket, '');
+    expect(sent).toEqual(['']);
+
+    websocketClose(socket);
+  });
+
   test('Should pass protocols to the WebSocket constructor', () => {
     const original = globalThis.WebSocket;
     const calls: unknown[][] = [];
