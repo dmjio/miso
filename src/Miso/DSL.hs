@@ -59,7 +59,7 @@
 --
 -- @
 -- -- Read a global variable
--- x <- 'jsg' \"innerWidth\"          -- globalThis.innerWidth
+-- x \<- 'jsg' \"innerWidth\"          -- globalThis.innerWidth
 --
 -- -- Call a global function
 -- 'jsg0' \"requestAnimationFrame\"   -- no args
@@ -81,9 +81,9 @@
 -- = Object creation
 --
 -- @
--- o <- 'create'                            -- new empty object  {}
--- o <- 'createWith' [(\"x\", 1), (\"y\", 2)]  -- { x: 1, y: 2 }
--- v <- 'new' constructor args              -- new Constructor(...args)
+-- o \<- 'create'                            -- new empty object  {}
+-- o \<- 'createWith' [(\"x\", 1), (\"y\", 2)]  -- { x: 1, y: 2 }
+-- v \<- 'new' constructor args              -- new Constructor(...args)
 -- @
 --
 -- = Callbacks
@@ -91,16 +91,22 @@
 -- Wrap a Haskell @IO@ action as a JS function. Variants ending in @\'@
 -- return the t'JSVal' of the callback's return value.
 --
--- @
--- cb  <- 'syncCallback'  action         -- () -> ()
--- cb1 <- 'syncCallback1' (\\x -> …)     -- (x) -> ()
--- cb2 <- 'syncCallback2' (\\x y -> …)   -- (x, y) -> ()
--- @
---
--- Always free callbacks when they are no longer needed to avoid leaks:
+-- The callback constructors return a bare t'JSVal', not a t'Function'.
+-- The t'JSVal' can be passed straight to JavaScript (e.g. with
+-- 'setField'). Wrap it with the v'Function' constructor wherever a
+-- t'Function' is expected.
 --
 -- @
--- 'freeFunction' cb
+-- cb  \<- 'syncCallback'  action         -- () -\> ()
+-- cb1 \<- 'syncCallback1' (\\x -\> …)     -- (x) -\> ()
+-- cb2 \<- 'syncCallback2' (\\x y -\> …)   -- (x, y) -\> ()
+-- @
+--
+-- Always free callbacks when they are no longer needed to avoid leaks.
+-- 'freeFunction' takes a t'Function', so wrap the t'JSVal' first:
+--
+-- @
+-- 'freeFunction' $ v'Function' cb
 -- @
 --
 -- = See also
@@ -156,6 +162,7 @@ module Miso.DSL
   , isUndefined
   , isNull
   , jsNull
+    -- * Callbacks
   , syncCallback
   , syncCallback1
   , syncCallback2
@@ -164,11 +171,13 @@ module Miso.DSL
   , syncCallback1'
   , syncCallback2'
   , syncCallback3'
-  , await
   , asyncCallback
   , asyncCallback1
   , asyncCallback2
   , asyncCallback3
+    -- * Promises
+  , await
+    -- * Function application and exceptions
   , apply
   , JSException
   ) where
