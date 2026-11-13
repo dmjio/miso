@@ -157,6 +157,7 @@ module Miso.DSL
   , requestAnimationFrame
   , cancelAnimationFrame
   , freeFunction
+  , freeCallback
   , freeJSVal
   , (!!)
   , isUndefined
@@ -921,6 +922,24 @@ instance (ToJSVal arg1, ToJSVal arg2, ToJSVal arg3, ToJSVal arg4, ToJSVal arg5, 
 freeFunction :: Function -> IO ()
 freeFunction (Function x) = freeFunction_ffi x
 {-# INLINABLE freeFunction #-}
+-----------------------------------------------------------------------------
+-- | Frees a callback created by 'syncCallback', 'asyncCallback' or one of
+-- their variants.
+--
+-- The callback constructors return a bare t'JSVal', while 'freeFunction'
+-- takes a t'Function'. This is 'freeFunction' with the v'Function' wrapping
+-- done for you:
+--
+-- @
+-- cb \<- 'syncCallback' action
+-- …
+-- 'freeCallback' cb
+-- @
+--
+-- @since 1.16.0.0
+freeCallback :: JSVal -> IO ()
+freeCallback = freeFunction . Function
+{-# INLINABLE freeCallback #-}
 -----------------------------------------------------------------------------
 -- | Eagerly release a 'JSVal' handle.
 --

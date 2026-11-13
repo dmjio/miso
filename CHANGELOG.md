@@ -2,6 +2,17 @@
 
 All notable changes to `miso` are documented here.
 
+## 1.16.0.0 (unreleased)
+
+### Added
+
+- **`freeCallback`** (`Miso.DSL`). Frees a callback created by
+  `syncCallback`, `asyncCallback` or one of their variants:
+  `freeCallback :: JSVal -> IO ()`. The callback constructors return a bare
+  `JSVal`, while `freeFunction` takes a `Function`, so freeing a callback
+  previously needed `freeFunction (Function cb)`. `freeCallback` is
+  `freeFunction . Function`. `freeFunction` is unchanged.
+
 ## 1.15.0.0
 
 ### Added
