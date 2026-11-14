@@ -20,13 +20,13 @@
 -- __Leaf elements__ (shapes, images, stops, …) omit the children argument:
 --
 -- @
--- circle_ :: ['Miso.Types.Attribute' action] -> 'Miso.Types.View' model action
+-- circle_ :: [t'Miso.Types.Attribute' action] -> t'Miso.Types.View' model action
 -- @
 --
 -- __Container elements__ accept both attributes and children:
 --
 -- @
--- g_ :: ['Miso.Types.Attribute' action] -> ['Miso.Types.View' model action] -> 'Miso.Types.View' model action
+-- g_ :: [t'Miso.Types.Attribute' action] -> [t'Miso.Types.View' model action] -> t'Miso.Types.View' model action
 -- @
 --
 -- = Quick start
@@ -36,9 +36,9 @@
 -- import "Miso.Svg"
 -- import qualified "Miso.Svg.Property" as SP
 --
--- logo :: 'Miso.Types.View' model action
+-- logo :: t'Miso.Types.View' model action
 -- logo =
---   'svg_' [ SP.'Miso.Svg.Property.viewBox_' \"0 0 200 200\", SP.'Miso.Svg.Property.width_' \"200\" ]
+--   'svg_' [ SP.'Miso.Svg.Property.viewBox_' \"0 0 200 200\", SP.'Miso.Html.Property.width_' \"200\" ]
 --     [ 'g_' [ SP.'Miso.Svg.Property.fill_' \"none\", SP.'Miso.Svg.Property.stroke_' \"black\" ]
 --         [ 'circle_' [ SP.'Miso.Svg.Property.cx_' \"100\", SP.'Miso.Svg.Property.cy_' \"100\", SP.'Miso.Svg.Property.r_' \"80\" ]
 --         , 'line_'   [ SP.'Miso.Svg.Property.x1_' \"20\", SP.'Miso.Svg.Property.y1_' \"100\"

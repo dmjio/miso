@@ -25,12 +25,12 @@
 -- buttons or any of the imperative helpers below:
 --
 -- @
--- subs :: ['Miso.Effect.Sub' Action]
+-- subs :: [t'Miso.Effect.Sub' Action]
 -- subs = [ 'uriSub' UrlChanged ]
 -- @
 --
 -- 'routerSub' is a convenience wrapper that decodes the t'URI' via a
--- 'Miso.Router.Router' instance before delivering it as an action:
+-- t'Miso.Router.Router' instance before delivering it as an action:
 --
 -- @
 -- subs = [ 'routerSub' (RouteChanged . 'Data.Either.fromRight' NotFound) ]
@@ -59,7 +59,7 @@
 --
 -- = See also
 --
--- * "Miso.Router" — 'Miso.Router.Router', 'Miso.Router.URI', 'Miso.Router.toURI', 'Miso.Router.prettyURI'
+-- * "Miso.Router" — t'Miso.Router.Router', 'Miso.Router.URI', 'Miso.Router.toURI', 'Miso.Router.prettyURI'
 -- * "Miso.Subscription" — re-export hub
 -- * "Miso.Subscription.Util" — 'Miso.Subscription.Util.createSub' used internally
 ----------------------------------------------------------------------------

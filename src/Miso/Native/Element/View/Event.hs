@@ -174,12 +174,12 @@ data AnimationEvent
   = AnimationEvent
   { animationType :: AnimationType
     -- ^ The type of the animation. If it is a keyframe animation,
-    -- this value is `keyframe-animation`; if it is a transition animation,
-    -- this value is `transition-animation`.
+    -- this value is @keyframe-animation@; if it is a transition animation,
+    -- this value is @transition-animation@.
   , animationName :: Maybe MisoString
     -- ^ The name of the animation. If it is a keyframe animation, it
-    -- is the name of `@keyframes` in CSS; if it is a transition animation,
-    -- it is the name of `transition-property` in CSS. 'Nothing' for
+    -- is the name of @\@keyframes@ in CSS; if it is a transition animation,
+    -- it is the name of @transition-property@ in CSS. 'Nothing' for
     -- 'LegacyTransitionAnimation', whose property name is folded into
     -- 'animationType' instead.
   , newAnimator :: Bool
@@ -330,7 +330,7 @@ uiAppearanceDetailDecoder = Decoder {..}
 -- update :: Action -> Effect props Model Action
 -- update (HandleTouch TouchEvent {..}) = do
 --   io_ (consoleLog "touch event received")
---
+-- @
 onTouchStart :: (TouchEvent -> action) -> Attribute model action
 onTouchStart action = on "touchstart" touchDecoder (\x _ _ -> action x)
 ----------------------------------------------------------------------------
@@ -480,7 +480,7 @@ onTapMainModel action = onMain "tap" emptyDecoder (\() m _ -> action m)
 -- | https://lynxjs.org/api/elements/built-in/view.html#longpress
 --
 -- It belongs to the touch event, which is triggered when the finger is long
--- pressed on the touch surface, and the interval between long press triggers is `500 ms`.
+-- pressed on the touch surface, and the interval between long press triggers is @500 ms@.
 --
 -- @
 -- data Action = HandleTouch TouchEvent

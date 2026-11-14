@@ -15,7 +15,7 @@
 -- <https://developer.mozilla.org/en-US/docs/Web/API/Element#properties DOM properties>
 -- and
 -- <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes HTML attributes>.
--- Each produces an 'Miso.Types.Attribute' that the virtual DOM applies to
+-- Each produces an t'Miso.Types.Attribute' that the virtual DOM applies to
 -- the corresponding DOM node on every render, diffing only changed values.
 --
 -- All names are suffixed with @_@ to avoid clashing with Haskell
@@ -27,7 +27,7 @@
 -- @
 -- import "Miso"
 --
--- view :: Model -> 'Miso.Types.View' context props Model Action
+-- view :: Model -> t'Miso.Types.View' context props Model Action
 -- view m =
 --   'Miso.Html.Element.div_' [ 'id_' \"app\", 'class_' \"container\" ]
 --     [ 'Miso.Html.Element.input_'

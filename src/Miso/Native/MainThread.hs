@@ -15,10 +15,9 @@
 --
 -- = Main-thread (MTS) imperative element manipulation
 --
--- Helpers for /main-thread events/ on the Lynx dual-thread runtime. A handler
--- registered for a t'Miso.Event.Types.MTS' event (see
--- 'Miso.Event.Types.mainThreadEvents') runs synchronously on the main thread and
--- receives the target 'DOMRef' via a @*With@ combinator
+-- Helpers for /main-thread events/ on the Lynx dual-thread runtime. A
+-- main-thread ('Miso.Effect.MTS') event handler runs synchronously on the main
+-- thread and receives the target 'DOMRef' via a @*With@ combinator
 -- (e.g. 'Miso.Native.Element.View.Event.onTapWith'). Such a handler must be
 -- __imperative__: it mutates the element directly with the functions below.
 --
@@ -122,7 +121,7 @@ setStyleProperties node styles = do
     void (jsg3 "__AddInlineStyle" node name value)
   flushElementTree
 -----------------------------------------------------------------------------
--- | Set the element's @transform@ from a list of typed t'Miso.CSS.TransformFn's
+-- | Set the element's @transform@ from a list of typed t'Miso.CSS.Types.TransformFn's
 -- (from "Miso.CSS"), then flush — a typed alternative to writing the
 -- @transform@ string by hand.
 --
@@ -229,7 +228,7 @@ getSystemInfo = do
 -----------------------------------------------------------------------------
 -- | A thin wrapper over 'IORef' for state that lives __only__ on the main
 -- thread and must never reach the background thread's shared @model@ (which the
--- BTS solely owns — see "Miso.Runtime"). Use it for transient, main-thread-local
+-- BTS solely owns — see @Miso.Runtime@). Use it for transient, main-thread-local
 -- gesture\/animation state: the current drag offset, a fling velocity, whether a
 -- follow loop is active, etc.
 --
@@ -240,8 +239,8 @@ newtype MainThreadRef a = MainThreadRef (IORef a)
 -- | Create a top-level t'MainThreadRef' with an initial value.
 --
 -- This uses 'unsafePerformIO' to allocate the underlying 'IORef' as a CAF, so
--- the ref is shared across all uses of the binding. __You must give every
--- top-level t'MainThreadRef' binding a @{-\# NOINLINE \#-}@ pragma__ — otherwise
+-- the ref is shared across all uses of the binding. __You must give every__
+-- __top-level t'MainThreadRef' binding a @{-\# NOINLINE \#-}@ pragma__ — otherwise
 -- GHC may inline the CAF and allocate a fresh, independent 'IORef' at each use
 -- site, silently splitting your state into multiple copies.
 --

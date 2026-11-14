@@ -17,8 +17,8 @@
 --
 -- "Miso.Navigator" wraps the browser's
 -- <https://developer.mozilla.org/en-US/docs/Web/API/Navigator Navigator>
--- API as 'Miso.Effect.Effect' combinators that integrate directly into the
--- Model-View-Update loop. Each function returns an 'Miso.Effect.Effect' and
+-- API as t'Miso.Effect.Effect' combinators that integrate directly into the
+-- Model-View-Update loop. Each function returns an t'Miso.Effect.Effect' and
 -- feeds its result back as an action via 'Miso.Effect.withSink' or
 -- 'Miso.Effect.io'.
 --
@@ -34,9 +34,9 @@
 --   | LocationError t'GeolocationError'
 --   | RequestCamera
 --   | GotStream t'Stream'
---   | MediaError 'Miso.DSL.JSVal'
+--   | MediaError t'Miso.DSL.JSVal'
 --
--- update :: Action -> 'Miso.Effect.Effect' p props Model Action
+-- update :: Action -> t'Miso.Effect.Effect' p props Model Action
 -- update RequestLocation =
 --   'geolocation' GotLocation LocationError
 -- update RequestCamera =
@@ -48,11 +48,11 @@
 --
 -- * __Camera \/ microphone__ ('Navigator.mediaDevices.getUserMedia'):
 --   'getUserMedia', 'userMedia', t'UserMedia', t'Stream'
--- * __Clipboard__ ('Navigator.clipboard.writeText'):
+-- * __Clipboard__ (@navigator.clipboard.writeText@):
 --   'copyClipboard'
--- * __Online status__ ('Navigator.onLine'):
+-- * __Online status__ (@navigator.onLine@):
 --   'isOnLine'
--- * __Geolocation__ ('Navigator.geolocation.getCurrentPosition'):
+-- * __Geolocation__ (@navigator.geolocation.getCurrentPosition@):
 --   'geolocation', t'Geolocation', t'GeolocationError', 'GeolocationErrorCode'
 --
 -- = Error handling
@@ -65,8 +65,8 @@
 --
 -- = See also
 --
--- * "Miso.FFI.Internal" — 'Miso.FFI.Internal.getUserMedia', 'Miso.FFI.Internal.copyClipboard',
---   'Miso.FFI.Internal.geolocation', 'Miso.FFI.Internal.isOnLine' — the raw IO primitives
+-- * "Miso.Runtime.Internal" — 'Miso.Runtime.Internal.getUserMedia', 'Miso.Runtime.Internal.copyClipboard',
+--   'Miso.Runtime.Internal.geolocation', 'Miso.Runtime.Internal.isOnLine' — the raw IO primitives
 -- * "Miso.Subscription.OnLine" — subscription-based online\/offline monitoring
 -- * "Miso.Effect" — 'Miso.Effect.withSink', 'Miso.Effect.io'
 -----------------------------------------------------------------------------
@@ -144,7 +144,7 @@ isOnLine
   -> Effect context props model action
 isOnLine action = io (action <$> FFI.isOnLine)
 -----------------------------------------------------------------------------
--- | Type for dealing with 'navigator.mediaDevices.getUserMedia'
+-- | Type for dealing with @navigator.mediaDevices.getUserMedia@
 --
 -- <https://developer.mozilla.org/en-US/docs/Web/API/Navigator/mediaDevices>
 --

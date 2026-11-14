@@ -13,11 +13,11 @@
 --
 -- "Miso.Mathml.Element" provides smart constructors for every element in the
 -- <https://developer.mozilla.org/en-US/docs/Web/MathML MathML Core>
--- vocabulary. Each constructor produces a 'Miso.Types.View' node in the
+-- vocabulary. Each constructor produces a t'Miso.Types.View' node in the
 -- @MATHML@ namespace:
 --
 -- @
--- tagName_ :: ['Miso.Types.Attribute' action] -> ['Miso.Types.View' model action] -> 'Miso.Types.View' model action
+-- tagName_ :: [t'Miso.Types.Attribute' action] -> [t'Miso.Types.View' model action] -> t'Miso.Types.View' model action
 -- @
 --
 -- All names are suffixed with @_@. The module is re-exported by "Miso.Mathml".
@@ -31,7 +31,7 @@
 -- import "Miso.Mathml.Element"
 -- import "Miso.Mathml.Property" (@display_@)
 --
--- formula :: 'Miso.Types.View' model action
+-- formula :: t'Miso.Types.View' model action
 -- formula =
 --   'Miso.Html.Element.p_' []
 --     [ 'math_' [ @display_@ \"block\" ]
@@ -101,7 +101,7 @@ module Miso.Mathml.Element
 -----------------------------------------------------------------------------
 import           Miso.Types
 -----------------------------------------------------------------------------
--- | Low-level helper used to construct 'MATHML' 'node' in 'Miso.Types.View'.
+-- | Low-level helper used to construct 'MATHML' 'node' in t'Miso.Types.View'.
 -- Most View helpers in this module are defined in terms of it.
 nodeMathml :: MisoString -> [Attribute model action] -> [View context props model action] -> View context props model action
 nodeMathml nodeName = node MATHML nodeName

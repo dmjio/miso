@@ -21,14 +21,14 @@
 -- = Overview
 --
 -- "Miso.Html.Render" provides the 'ToHtml' typeclass for serialising a
--- 'Miso.Types.View' tree to a lazy 'Data.ByteString.Lazy.ByteString' of
+-- t'Miso.Types.View' tree to a lazy t'Data.ByteString.Lazy.ByteString' of
 -- UTF-8 HTML. This is the foundation of miso's
 -- <https://en.wikipedia.org/wiki/Server-side_scripting server-side rendering (SSR)>
 -- support.
 --
--- Instances are provided for both @'Miso.Types.View' () () () a@ (a single
--- node) and @['Miso.Types.View' () () () a]@ (a sequence of nodes): a bare
--- 'Miso.Types.View' is static markup with no enclosing component and no
+-- Instances are provided for both @t'Miso.Types.View' () () () a@ (a single
+-- node) and @[t'Miso.Types.View' () () () a]@ (a sequence of nodes): a bare
+-- t'Miso.Types.View' is static markup with no enclosing component and no
 -- app-global @context@ to read, so its @context@, @props@ and @model@ are all
 -- fixed to @()@. A component's view, or any subtree that reads @context@ \/
 -- @props@ \/ @model@, is rendered with 'toHtmlWith'.
@@ -46,8 +46,8 @@
 -- staticPage = 'toHtml' ('Miso.Html.Element.div_' [] [ "Hello, world!" ])
 -- @
 --
--- With @servant@, use @'toHtml'@ inside a @'Data.ByteString.Lazy.ByteString'@
--- or @OctetStream@ response, or wire it into a 'Miso.Html.Render.ToHtml' servant
+-- With @servant@, use @'toHtml'@ inside a @t'Data.ByteString.Lazy.ByteString'@
+-- or @OctetStream@ response, or wire it into a t'Miso.Html.Render.ToHtml' servant
 -- MIME type.
 --
 -- = Rendering rules
@@ -56,21 +56,21 @@
 --   Self-closing elements (@\<br\/\>@, @\<img\/\>@, @\<input\/\>@, …) are
 --   rendered without a closing tag.
 -- * __'Miso.Types.VText'__ — rendered as a raw text string (no escaping
---   beyond what is already in the 'Miso.String.MisoString').
+--   beyond what is already in the t'Miso.String.MisoString').
 -- * __'Miso.Types.VComp'__ — recursively renders the sub-component's view
 --   using its initial (or hydrated) model.
 -- * __'Miso.Types.VFrag'__ — renders all children inline, no wrapper tag.
 -- * __'Miso.Types.VContext'__ (ambient accessor, not a node) — applied to
---   the app-global @context@ (@()@ for a bare 'Miso.Types.View' under
+--   the app-global @context@ (@()@ for a bare t'Miso.Types.View' under
 --   'toHtml'; the value given to 'toHtmlWith' otherwise) and the result
 --   rendered in its place.
 -- * __'Miso.Types.VProps'__ (ambient accessor, not a node) — applied to the
---   @props@ of the enclosing component (@()@ for a bare 'Miso.Types.View'
+--   @props@ of the enclosing component (@()@ for a bare t'Miso.Types.View'
 --   under 'toHtml'; the value given to 'toHtmlWith' otherwise) and the
 --   result rendered in its place.
 -- * __'Miso.Types.VModel'__ (ambient accessor, not a node) — applied to the
 --   initial (or hydrated) @model@ of the enclosing component (@()@ for a
---   bare 'Miso.Types.View' under 'toHtml'; the value given to 'toHtmlWith'
+--   bare t'Miso.Types.View' under 'toHtml'; the value given to 'toHtmlWith'
 --   otherwise) and the result rendered in its place.
 -- * __Event handlers__ (@'Miso.Types.On'@) — silently dropped; they have
 --   no meaning in a static HTML string.
@@ -87,7 +87,7 @@
 --
 -- = See also
 --
--- * "Miso.Hydrate" — client-side hydration from server-rendered HTML
+-- * @Miso.Hydrate@ — client-side hydration from server-rendered HTML
 -- * "Miso.Html.Element" — element smart constructors
 -- * "Miso.Html" — top-level HTML DSL re-export hub
 -----------------------------------------------------------------------------

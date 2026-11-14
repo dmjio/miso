@@ -42,8 +42,8 @@
 --   or the convenience lenses.
 -- * __Writer__ — accumulated list of t'Schedule'd 'IO' actions to run after
 --   the model update.
--- * __State__ — the @model@, updated via 'Control.Monad.State.put',
---   'Control.Monad.State.modify', or the lens operators from "Miso.Lens".
+-- * __State__ — the @model@, updated via 'Control.Monad.State.Class.put',
+--   'Control.Monad.State.Class.modify', or the lens operators from "Miso.Lens".
 --
 -- = Scheduling IO
 --
@@ -177,7 +177,7 @@ mkComponentInfo
   -> ComponentInfo context props
 mkComponentInfo = ComponentInfo
 -----------------------------------------------------------------------------
--- | This is the 'Reader r' in t'Miso.Effect'. Accessible via 'Control.Monad.Reader.ask'. It holds
+-- | This is the 'Reader r' in t'Miso.Effect.Effect'. Accessible via 'Control.Monad.Reader.ask'. It holds
 -- a phantom type for @context@ (the app-global React-style context, which is
 -- write-only from within @update@). It gives access to t'Miso.Types.Component' metadata such
 -- as the 'DOMRef' the t'Miso.Types.Component' was mounted on and the 'ComponentId' associated
@@ -352,7 +352,7 @@ async = Schedule Async
 -- | Run @action@'s 'Miso.Types.update' on the __background__ thread (BTS).
 --
 -- On the Lynx dual-thread runtime the shared @model@ is owned solely by the
--- background thread. A main-thread ('Miso.Event.Types.MTS') event handler that
+-- background thread. A main-thread ('Miso.Effect.MTS') event handler that
 -- needs to change shared state cannot do so directly — it dispatches the state
 -- change here, and @action@'s 'Miso.Types.update' runs (exactly once) on the
 -- BTS, where the model write commits. Off the native runtime (or when already
@@ -368,7 +368,7 @@ runOnBG action = tell [ CrossThread BTS action ]
 -----------------------------------------------------------------------------
 -- | Run @action@'s 'Miso.Types.update' on the __main__ thread (MTS).
 --
--- The dual of 'runOnBG': a background-thread ('Miso.Event.Types.MTS') effect
+-- The dual of 'runOnBG': a background-thread ('Miso.Effect.BTS') effect
 -- that needs an imperative main-thread operation (see "Miso.Native.MainThread")
 -- dispatches @action@ here, and its 'Miso.Types.update' runs (exactly once) on
 -- the MTS. Off the native runtime (or when already on the MTS) this is an
@@ -378,7 +378,7 @@ runOnBG action = tell [ CrossThread BTS action ]
 runOnMain :: action -> Effect context props model action
 runOnMain action = tell [ CrossThread MTS action ]
 -----------------------------------------------------------------------------
--- | `Effect` smart constructor, flipped
+-- | @Effect@ smart constructor, flipped
 infixr 0 #>
 (#>) :: IO action -> model -> Effect context props model action
 (#>) = flip (<#)
@@ -597,7 +597,7 @@ modifyAllIO f = censor (map go)
     go s                   = s  -- 'CrossThread' / 'ContextModify' carry no IO
 -----------------------------------------------------------------------------
 -- | @withSink@ allows users to write to the global event queue. This is useful for introducing 'IO' into the system.
--- A synonym for 'Control.Monad.Writer.tell', specialized to 'Effect'.
+-- A synonym for 'Control.Monad.Writer.Class.tell', specialized to 'Effect'.
 --
 -- A use-case is scheduling an 'IO' computation which creates a 3rd-party JS
 -- widget which has an associated callback. The callback can then call the sink

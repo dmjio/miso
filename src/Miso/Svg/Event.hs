@@ -14,8 +14,8 @@
 --
 -- = Overview
 --
--- "Miso.Svg.Event" provides event-handler 'Miso.Types.Attribute' values
--- for SVG-specific DOM events. All handlers use 'Miso.Event.emptyDecoder'
+-- "Miso.Svg.Event" provides event-handler t'Miso.Types.Attribute' values
+-- for SVG-specific DOM events. All handlers use 'Miso.Event.Decoder.emptyDecoder'
 -- — they fire a fixed action with no payload extracted from the event
 -- object. This module is re-exported by "Miso.Svg".
 --
@@ -31,7 +31,7 @@
 --
 -- data Action = AnimDone | Zoomed
 --
--- view :: Model -> 'Miso.Types.View' context props Model Action
+-- view :: Model -> t'Miso.Types.View' context props Model Action
 -- view _ =
 --   @svg_@ []
 --     [ 'Miso.Svg.Element.animate_'
@@ -65,7 +65,7 @@
 -- * "Miso.Html.Event" — 'Miso.Html.Event.onPointerDown', 'Miso.Html.Event.onKeyDown', …
 --   work on SVG elements too
 -- * "Miso.Svg.Element" — SVG element constructors
--- * "Miso.Event" — 'Miso.Event.on', 'Miso.Event.emptyDecoder' primitives
+-- * "Miso.Event" — 'Miso.Event.on', 'Miso.Event.Decoder.emptyDecoder' primitives
 ----------------------------------------------------------------------------
 module Miso.Svg.Event
   ( -- *** Animation

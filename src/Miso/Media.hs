@@ -16,22 +16,22 @@
 -- "Miso.Media" is a Haskell wrapper around the browser's
 -- <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement HTMLMediaElement>
 -- API. It covers both @\<audio\>@ and @\<video\>@ elements through the
--- unified t'Media' type, which wraps the underlying 'Miso.DSL.JSVal'.
+-- unified t'Media' type, which wraps the underlying t'Miso.DSL.JSVal'.
 --
 -- All property reads and method calls run in 'IO'. Properties that can be
 -- set declaratively are cross-linked to their corresponding
--- 'Miso.Html.Property' combinators.
+-- "Miso.Html.Property" combinators.
 --
 -- = Quick start
 --
 -- Obtain a t'Media' handle from the DOM, then read or control it in an
--- 'Miso.Effect.Effect':
+-- t'Miso.Effect.Effect':
 --
 -- @
 -- import "Miso"
 -- import "Miso.Media"
 --
--- update :: Action -> 'Miso.Effect.Effect' p props Model Action
+-- update :: Action -> t'Miso.Effect.Effect' p props Model Action
 -- update PlayVideo = 'Miso.Effect.io_' $ do
 --   m <- t'Media' \<$\> 'Miso.FFI.getElementById' \"myVideo\"
 --   'play' m
@@ -48,8 +48,8 @@
 -- Wire events using 'mediaEvents' and the handlers from "Miso.Html.Event":
 --
 -- @
--- myComponent = ('Miso.component' model update view)
---   { 'Miso.Types.events' = 'Miso.Event.Types.defaultEvents' \<\> 'mediaEvents' }
+-- main :: IO ()
+-- main = 'Miso.startApp' ('Miso.Event.Types.defaultEvents' \<\> 'mediaEvents') myComponent
 -- @
 --
 -- = API groups
@@ -57,11 +57,11 @@
 -- * __Methods__: 'play', 'pause', 'load', 'canPlayType', 'srcObject'
 -- * __Playback state__ (read-only): 'currentSrc', 'currentTime', 'duration',
 --   'ended', 'paused', 'seeking', 'networkState', 'readyState'
--- * __Playback control__ (read; set via 'Miso.Html.Property'): 'autoplay',
+-- * __Playback control__ (read; set via "Miso.Html.Property"): 'autoplay',
 --   'controls', 'loop', 'muted', 'defaultMuted', 'volume', 'playbackRate',
 --   'defaultPlaybackRate', 'preload', 'mediaGroup'
 -- * __Video-specific__ (read-only): 'videoWidth', 'videoHeight', 'poster'
--- * __Event map__: 'mediaEvents' — merge into 'Miso.Types.events' to enable
+-- * __Event map__: 'mediaEvents' — pass to 'Miso.startApp' to enable
 --   media event delegation
 --
 -- = State enumerations
@@ -336,7 +336,7 @@ volume (Media m) = fromJSValUnchecked =<< m ! ("volume" :: MisoString)
 -- | A media Stream
 type Stream = JSVal
 -----------------------------------------------------------------------------
--- | Sets the `srcObject` on audio or video elements.
+-- | Sets the @srcObject@ on audio or video elements.
 srcObject
   :: Stream
   -- ^ A t'Stream' obtained from @navigator.mediaDevices.getUserMedia@ or similar

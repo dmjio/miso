@@ -25,10 +25,10 @@
 -- import "Miso.Subscription.Keyboard"
 --
 -- -- Fire action with arrow-key state on every key change
--- subs :: ['Miso.Effect.Sub' Action]
+-- subs :: [t'Miso.Effect.Sub' Action]
 -- subs = [ 'arrowsSub' ArrowsChanged ]
 --
--- update :: Action -> 'Miso.Effect.Effect' p props Model Action
+-- update :: Action -> t'Miso.Effect.Effect' p props Model Action
 -- update (ArrowsChanged ('Arrows' x y)) = do
 --   -- x ∈ {-1, 0, 1}, y ∈ {-1, 0, 1}
 --   'Miso.Effect.io_' (move x y)
@@ -36,7 +36,7 @@
 --
 -- = Subscription variants
 --
--- * 'keyboardSub' — delivers the raw @'Data.IntSet.IntSet'@ of all currently
+-- * 'keyboardSub' — delivers the raw @t'Data.IntSet.IntSet'@ of all currently
 --   pressed
 --   <https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/keyCode keyCodes>.
 --   Use this when you need to handle arbitrary key combinations.

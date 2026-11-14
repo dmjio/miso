@@ -12,7 +12,7 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- DOM event handlers and component lifecycle hooks for 'Miso.Types.View'.
+-- DOM event handlers and component lifecycle hooks for t'Miso.Types.View'.
 --
 -- There are two axes of event handling:
 --

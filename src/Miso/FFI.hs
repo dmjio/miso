@@ -9,7 +9,7 @@
 --
 -- Public re-export surface for Miso's JavaScript FFI layer.
 --
--- This module re-exports the stable public API from "Miso.FFI.Internal".
+-- This module re-exports the stable public API from @Miso.FFI.Internal@.
 -- Prefer importing this module over @Internal@ in application code and
 -- library extensions.
 --

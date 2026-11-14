@@ -78,7 +78,7 @@ name_ = textProp "name"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#classname
 --
--- Use `className` to set CSS class names, equivalent to 'Miso.Html.Property.class_'
+-- Use @className@ to set CSS class names, equivalent to 'Miso.Html.Property.class_'
 --
 -- > className_ "foo"
 --
@@ -296,7 +296,7 @@ accessibilityTrait_ = textProp "accessibility-trait"
 --
 -- Customize the focus order of child nodes. This property is set on the parent node,
 -- and the focus order of its child nodes will be focused according to the
--- order of the child node `id` specified by the `accessibility-elements` property.
+-- order of the child node @id@ specified by the @accessibility-elements@ property.
 --
 -- > accessibilityElements_ "view-3,view-2,view-5,view-1,view-4"
 --
@@ -336,7 +336,7 @@ accessibilityExclusiveFocus_ = boolProp "accessibility-exclusive-focus"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#a11y-id
 --
--- Different from `id`, it is used to identify barrier-free nodes separately.
+-- Different from @id@, it is used to identify barrier-free nodes separately.
 --
 -- > a11yId_ "test"
 --
@@ -418,7 +418,7 @@ blockNativeEvent_ = boolProp "block-native-event"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/view.html#block-native-event-areas
 --
--- Specify whether to block platform layer gestures outside Lynx when the target node is on the [eventAreas response chain](../../../guide/interaction/eventAreas-handling/eventAreas-propagation.mdx#eventAreas-response-chain), which can achieve an effect similar to blocking the platform layer side sliding back.
+-- Specify whether to block platform layer gestures outside Lynx when the target node is on the [eventAreas response chain](https://lynxjs.org/guide/interaction/eventAreas-handling/eventAreas-propagation.html#eventAreas-response-chain), which can achieve an effect similar to blocking the platform layer side sliding back.
 --
 -- > blockNativeEventAreas_ []
 --

@@ -41,7 +41,7 @@
 -- * @*Id@ variants return the traced value itself.
 -- * @*With@ variants trace the result of applying a function to the value.
 -- * @*M@ variants trace inside an 'Applicative' (e.g. miso's
---   'Miso.Effect.Effect' monad, or 'IO').
+--   t'Miso.Effect.Effect' monad, or 'IO').
 --
 -- = See also
 --
@@ -143,7 +143,7 @@ traceShowWith
 traceShowWith f = traceWith (show . f)
 -----------------------------------------------------------------------------
 -- | Traces a message in an 'Applicative' context, such as miso's
--- 'Miso.Effect.Effect' monad or 'IO'. The browser analogue of
+-- t'Miso.Effect.Effect' monad or 'IO'. The browser analogue of
 -- 'Debug.Trace.traceM'.
 traceM :: (ToMisoString s, Applicative f) => s -> f ()
 traceM s = trace s $ pure ()

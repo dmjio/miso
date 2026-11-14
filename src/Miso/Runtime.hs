@@ -859,7 +859,7 @@ data ComponentState context props model action
   -- to mount, hydrate, or unmount this child across the Lynx thread boundary.
   -- 'Nothing' for the root (each thread mounts the root locally).
   , _componentParentId :: ComponentId
-  -- ^ The ID of the t'Miso.Types.Component''s parent
+  -- ^ The ID of the t'Miso.Types.Component'\'s parent
   , _componentProps :: props
   -- ^ The current props passed to this t'Miso.Types.Component'
   , _prevComponentProps :: props
@@ -874,7 +874,7 @@ data ComponentState context props model action
   -- ^ t'Miso.Types.Component' t'Sink' used to enter events into the system
   , _componentPostEffect :: Sink action
   -- ^ Cross-thread (Lynx) t'Sink': serializes the @action@ and ships it to the
-  -- opposite thread via @postEffect@. Captures the t'Miso.Types.Component''s
+  -- opposite thread via @postEffect@. Captures the t'Miso.Types.Component'\'s
   -- 'ToJSON' instance at initialization time. Used by 'CrossThread' effects
   -- ('Miso.Effect.runOnMain' \/ 'Miso.Effect.runOnBG').
   , _componentModel :: model
@@ -900,7 +900,7 @@ data ComponentState context props model action
   -- ^ Helper function for t'Miso.Types.Component' rendering
   , _componentHydrate :: model -> IO ()
   -- ^ Posts the model to the MTS for cross-thread (Lynx) hydration via
-  -- @MODEL_HYDRATE@. Captures the t'Miso.Types.Component''s 'ToJSON' instance at
+  -- @MODEL_HYDRATE@. Captures the t'Miso.Types.Component'\'s 'ToJSON' instance at
   -- initialization time; a no-op unless running on the background thread ('bts').
   , _componentPropsPhase :: props -> props -> IO ()
   -- ^ Helper function for t'Miso.Types.Component' props changed phase.

@@ -11,7 +11,7 @@
 --
 -- = Overview
 --
--- "Miso.Html.Event" provides pre-wired event-handler 'Miso.Types.Attribute'
+-- "Miso.Html.Event" provides pre-wired event-handler t'Miso.Types.Attribute'
 -- values for the most common browser events. Each handler is built on the
 -- lower-level 'Miso.Event.on' \/ 'Miso.Event.onWithOptions' primitives from
 -- "Miso.Event".
@@ -23,7 +23,7 @@
 -- Handlers follow a consistent naming pattern:
 --
 -- [@onXxx action@] fires @action@; no event data extracted
--- [@onXxxWith (a -> action)@] passes extracted event data or 'Miso.Effect.DOMRef'
+-- [@onXxxWith (a -> action)@] passes extracted event data or t'Miso.Effect.DOMRef'
 -- [@onXxxWithOptions opts act@] adds 'Miso.Event.Types.Options' (@preventDefault@ \/ @stopPropagation@) before firing
 -- [@onXxxCapture action@] registers in the capture phase instead of bubble
 --
@@ -32,7 +32,7 @@
 -- @
 -- import "Miso"
 --
--- view :: Model -> 'Miso.Types.View' context props Model Action
+-- view :: Model -> t'Miso.Types.View' context props Model Action
 -- view m =
 --   'Miso.Html.Element.div_' []
 --     [ 'Miso.Html.Element.button_' [ 'onClick' Increment ]        [ 'Miso.text' \"+\" ]
@@ -497,7 +497,7 @@ onDropWithOptions options action =
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/submit
 --
--- Note: This has `preventDefault` enabled by default.
+-- Note: This has @preventDefault@ enabled by default.
 --
 onSubmit :: action -> Attribute model action
 onSubmit action =

@@ -25,7 +25,7 @@
 --
 -- "Miso.Lens.Generic" derives 'Miso.Lens.Lens' values for record fields
 -- at compile time using @GHC.Generics@ and @GHC.Records@, without
--- Template Haskell. Fields are addressed by name via 'GHC.OverloadedLabels'
+-- Template Haskell. Fields are addressed by name via "GHC.OverloadedLabels"
 -- or the explicit 'field' combinator.
 --
 -- Enable the required extensions:
@@ -40,7 +40,7 @@
 -- = Quick start
 --
 -- @
--- data Counter = Counter { _count :: Int, _label :: 'Miso.String.MisoString' }
+-- data Counter = Counter { _count :: Int, _label :: t'Miso.String.MisoString' }
 --   deriving ('GHC.Generics.Generic')
 --
 -- -- Label syntax (requires OverloadedLabels):
@@ -48,17 +48,17 @@
 -- countLens = #_count
 --
 -- -- Explicit syntax (works without OverloadedLabels):
--- labelLens :: 'Miso.Lens.Lens' Counter 'Miso.String.MisoString'
+-- labelLens :: 'Miso.Lens.Lens' Counter t'Miso.String.MisoString'
 -- labelLens = 'field' \@\"_label\"
 --
--- update :: Action -> 'Miso.Effect.Effect' p props Counter Action
+-- update :: Action -> t'Miso.Effect.Effect' p props Counter Action
 -- update Increment = #_count @+=@ 1
 -- update (SetLabel l) = #_label @.=@ l
 -- @
 --
 -- = How it works
 --
--- The 'HasLens' instance is resolved via 'GHC.Records.HasField' for the
+-- The 'HasLens' instance is resolved via t'GHC.Records.HasField' for the
 -- getter and a generic traversal ('GSet') for the setter. A type-level
 -- 'TotalityCheck' produces a descriptive compile error if the field name
 -- is absent from (or inconsistent across) the constructors.
@@ -88,7 +88,7 @@ import Miso.Lens (Lens, lens)
 -- | Provides a 'Lens' onto the field named @name@ of the record @s@.
 --
 -- The single instance is derived from @s@'s t'GHC.Generics.Generic'
--- representation, so any record with a 'GHC.Generics.Generic' instance gets
+-- representation, so any record with a t'GHC.Generics.Generic' instance gets
 -- lenses for free. Also backs the @OverloadedLabels@ syntax @#fieldName@.
 --
 -- @since 1.11.0.0

@@ -17,7 +17,7 @@
 -- * The standard "Prelude" — familiar Haskell functions remain in scope,
 --   with @'(!!)'@ hidden to avoid the clash with miso's index operator.
 -- * @'Control.Category.(.)'@ — replaces 'Prelude.(.)' so it works for any
---   'Control.Category.Category', not just @(->)@.
+--   t'Control.Category.Category', not just @(->)@.
 --
 -- = Usage
 --
@@ -44,7 +44,7 @@
 -- = See also
 --
 -- * "Miso" — the main miso re-export hub
--- * "Miso.Effect" — 'Miso.Effect.Effect', 'Miso.Effect.Sub', 'Miso.Effect.io_'
+-- * "Miso.Effect" — t'Miso.Effect.Effect', t'Miso.Effect.Sub', 'Miso.Effect.io_'
 -- * "Miso.Html" — HTML element and event combinators
 -----------------------------------------------------------------------------
 module Miso.Prelude

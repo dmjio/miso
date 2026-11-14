@@ -48,7 +48,7 @@ import           Miso.Event
 import           Miso.JSON (withObject, (.:?), (.!=))
 import           Miso.String (MisoString)
 -----------------------------------------------------------------------------
--- | The 'Events' map for the Lynx @\<scrollview\>@ element.
+-- | The 'Events' map for the Lynx @\<scroll-view\>@ element.
 --
 -- Combine with other element maps using @<>@ and pass the result to
 -- 'Miso.Native.native', so the delegator listens for these events.
@@ -276,7 +276,7 @@ onScrollEndMainWith action = onMain "scrollend" scrollDecoder action
 -- Triggered when the content area comprised of direct child nodes changes in width
 -- or height. This event triggers after the \<scroll-view\> content completes layout.
 -- If updating \<scroll-view\> child nodes, call updated scrolling methods like
--- `scrollTo` in this event.
+-- @scrollTo@ in this event.
 --
 -- @
 --

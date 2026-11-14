@@ -27,7 +27,7 @@
 -- JavaScript snippets directly in Haskell source. In-scope Haskell
 -- variables are spliced into the JS body with @${varName}@ interpolation
 -- syntax, and their types are checked at compile time via
--- 'Miso.DSL.ToJSVal'.
+-- t'Miso.DSL.ToJSVal'.
 --
 -- Enable the extension and import the quoter:
 --
@@ -50,7 +50,7 @@
 -- |]
 --
 -- -- Call a third-party JS library with a DOM reference and a string
--- highlight :: 'Miso.DSL.JSVal' -> 'Miso.String.MisoString' -> IO ()
+-- highlight :: t'Miso.DSL.JSVal' -> t'Miso.String.MisoString' -> IO ()
 -- highlight domRef lang = ['js'|
 --   hljs.highlightElement(${domRef}, { language: ${lang} });
 -- |]
@@ -63,7 +63,7 @@
 -- 1. Lexes the JS body to find all @${varName}@ interpolations.
 -- 2. Looks up each @varName@ in the Haskell scope (compile error if not found).
 -- 3. Builds a 'Miso.DSL.Object' mapping short generated keys to the
---    marshalled values (via 'Miso.FFI.Internal.inline' \/ 'Miso.DSL.createWith').
+--    marshalled values (via 'Miso.FFI.inline' \/ 'Miso.DSL.createWith').
 -- 4. Rewrites the JS body, replacing each @${varName}@ with its generated
 --    key, and wraps the whole thing in a JS function so the keys are visible
 --    as named parameters.
@@ -72,7 +72,7 @@
 --
 -- @
 -- do o <- 'Miso.DSL.createWith' [(\"a0\", toJSVal n)]
---    'Miso.FFI.Internal.inline' \"… body with a0 instead of n …\" o
+--    'Miso.FFI.inline' \"… body with a0 instead of n …\" o
 -- @
 --
 -- = Differences from eval
@@ -84,8 +84,8 @@
 --
 -- = See also
 --
--- * 'Miso.FFI.Internal.inline' — the runtime primitive this expands to
--- * "Miso.DSL" — 'Miso.DSL.ToJSVal', 'Miso.DSL.createWith'
+-- * 'Miso.FFI.inline' — the runtime primitive this expands to
+-- * "Miso.DSL" — t'Miso.DSL.ToJSVal', 'Miso.DSL.createWith'
 -- * "Miso.FFI" — higher-level browser API wrappers
 -----------------------------------------------------------------------------
 module Miso.FFI.QQ

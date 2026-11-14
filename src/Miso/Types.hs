@@ -41,10 +41,10 @@
 -- data t'Component' context props model action = Component
 --   { model           :: model
 --   , hydrateModel    :: Maybe (IO model)
---   , update          :: action -> 'Miso.Effect.Effect' context props model action
+--   , update          :: action -> t'Miso.Effect.Effect' context props model action
 --   , view            :: model -> 'View' context props model action
 --   , useContext      :: Bool
---   , subs            :: ['Miso.Effect.Sub' action]
+--   , subs            :: [t'Miso.Effect.Sub' action]
 --   , styles          :: ['CSS']
 --   , scripts         :: ['JS']
 --   , mountPoint      :: Maybe 'MountPoint'
@@ -76,7 +76,7 @@
 -- * 'VNode' — a regular DOM element (@\<div\>@, @\<svg\>@, …)
 -- * 'VText' — a text node
 -- * @VComp@ — an embedded child t'Component'
--- * @VCompStatic@ — an embedded child t'Component' behind a 'GHC.StaticPtr.StaticPtr',
+-- * @VCompStatic@ — an embedded child t'Component' behind a t'GHC.StaticPtr.StaticPtr',
 --   so it can cross the Lynx dual-thread boundary (see 'vcomp' \/ 'mountStatic')
 -- * 'VFrag' — a group of siblings with no wrapper element, optionally keyed
 --
@@ -126,13 +126,13 @@
 -- * 'mountUseContext' — mount without a key, subscribed to @context@ updates
 -- * 'vcomp' / 'vcomp_' (with 'mountStatic') —
 --   static-key mounting; the compile-time
---   'GHC.StaticPtr.StaticKey' already provides identity, so unlike the
+--   t'GHC.StaticPtr.StaticKey' already provides identity, so unlike the
 --   non-static combinators there is no keyed variant
 --
--- __Under the Lynx dual-thread (@NATIVE@) backend, always use 'vcomp' \/
--- 'vcomp_' — never '+>' \/ 'mount_' \/ 'mountWithProps' \/ 'mountWithProps_' \/
--- 'mountUseContext'.__ The non-static combinators build a component with no
--- 'GHC.StaticPtr.StaticKey'; anything mounted with them /after/ the initial
+-- __Under the Lynx dual-thread (@NATIVE@) backend, always use 'vcomp' \/__
+-- __'vcomp_' — never '+>' \/ 'mount_' \/ 'mountWithProps' \/ 'mountWithProps_' \/__
+-- __'mountUseContext'.__ The non-static combinators build a component with no
+-- t'GHC.StaticPtr.StaticKey'; anything mounted with them /after/ the initial
 -- frame (e.g. inside a list or behind a conditional) never registers a
 -- main-thread mirror on the MTS, which silently drops every @OnStatic@
 -- (main-thread) event handler inside that subtree for the component's whole
@@ -153,10 +153,10 @@
 --
 -- = See also
 --
--- * "Miso.Effect" — 'Miso.Effect.Effect', 'Miso.Effect.Sub', 'Miso.Effect.Sink'
+-- * "Miso.Effect" — t'Miso.Effect.Effect', t'Miso.Effect.Sub', t'Miso.Effect.Sink'
 -- * "Miso.Html.Element" — element smart constructors built on 'node'
 -- * "Miso.Html.Property" — attribute constructors built on 'Attribute'
--- * "Miso.Html.Render" — SSR serialisation via 'Miso.Html.Render.ToHtml'
+-- * "Miso.Html.Render" — SSR serialisation via t'Miso.Html.Render.ToHtml'
 -- * "Miso.Router" — 'Miso.Router.URI' parsing and pretty-printing
 ----------------------------------------------------------------------------
 module Miso.Types
@@ -598,17 +598,17 @@ fragment_ key = VFrag (Just (Key key))
 -- @
 --
 -- __Warning (Lynx dual-thread \/ @NATIVE@):__ this builds a @VComp@ with no
--- 'GHC.StaticPtr.StaticKey'. A component mounted this way as part of the
+-- t'GHC.StaticPtr.StaticKey'. A component mounted this way as part of the
 -- /initial/ frame is fine (the MTS independently reconstructs it while
 -- painting its own first frame). But if it is mounted /later/ — e.g. inside
 -- a list or behind a conditional, appearing only after the first frame — the
 -- MTS has no other way to learn of it, so it never registers a mirror
--- t'Miso.Types.ComponentState' for it, and any main-thread (@OnStatic@)
+-- t'Miso.Runtime.Internal.ComponentState' for it, and any main-thread (@OnStatic@)
 -- event handler inside that subtree silently fails to dispatch for the
 -- component's whole lifetime, with only a console error as a clue. Use
 -- 'vcomp' with 'mountStatic' instead for anything that may mount
 -- after the initial frame under @NATIVE@ — the compile-time
--- 'GHC.StaticPtr.StaticKey' already supplies the identity a manual key would,
+-- t'GHC.StaticPtr.StaticKey' already supplies the identity a manual key would,
 -- no explicit key needed.
 --
 -- @since 1.9.0.0
@@ -633,7 +633,7 @@ key +> child = VComp (SomeComponent (Just (toKey key)) () child)
 -- | t'Miso.Types.Component' mounting combinator, with @props@ supplied directly.
 --
 -- __Warning (Lynx dual-thread \/ @NATIVE@):__ see the note on '(+>)' — this
--- also builds an unkeyed @VComp@ with no 'GHC.StaticPtr.StaticKey', so the
+-- also builds an unkeyed @VComp@ with no t'GHC.StaticPtr.StaticKey', so the
 -- same caveat applies: components mounted with this /after/ the initial
 -- frame never get a main-thread mirror registered, silently breaking
 -- @OnStatic@ handlers inside them. Use 'vcomp' with 'mountStatic'
@@ -657,12 +657,12 @@ mountWithProps props comp = VComp (SomeComponent Nothing props comp)
 -- | t'Miso.Types.Component' mounting combinator, keyed, with @props@ supplied directly.
 --
 -- __Warning (Lynx dual-thread \/ @NATIVE@):__ see the note on '(+>)' — this
--- also builds a @VComp@ with no 'GHC.StaticPtr.StaticKey' (the key here is
+-- also builds a @VComp@ with no t'GHC.StaticPtr.StaticKey' (the key here is
 -- just the diffing t'Key', unrelated), so the same caveat applies: mounted
 -- /after/ the initial frame, it never gets a main-thread mirror registered,
 -- silently breaking @OnStatic@ handlers inside it. Use 'vcomp' with
 -- 'mountStatic' instead for anything that may mount dynamically
--- under @NATIVE@ — the compile-time 'GHC.StaticPtr.StaticKey' already
+-- under @NATIVE@ — the compile-time t'GHC.StaticPtr.StaticKey' already
 -- supplies the identity a manual key would, no explicit key needed.
 mountWithProps_
   :: forall context childProps childModel childAction model action props .
@@ -689,7 +689,7 @@ mountWithProps_ key props child = VComp (SomeComponent (Just (Key key)) props ch
 -- site, so a parent can pass runtime @props@ (e.g. derived from its own
 -- @model@) without an explicit lambda; a component with @props ~ ()@ pairs
 -- with 'vcomp_'. Unlike 'mount_', no key is needed: the compile-time
--- 'GHC.StaticPtr.StaticKey' already supplies identity, so this is safe to
+-- t'GHC.StaticPtr.StaticKey' already supplies identity, so this is safe to
 -- diff against another t'Miso.Types.Component'.
 --
 -- To opt the child into app-global @context@ updates, set the field directly:
@@ -720,7 +720,7 @@ mountStatic = SomeStaticComponent
 -- @
 --
 -- __Warning (Lynx dual-thread \/ @NATIVE@):__ see the note on '(+>)' — this
--- also builds a @VComp@ with no 'GHC.StaticPtr.StaticKey', so the same
+-- also builds a @VComp@ with no t'GHC.StaticPtr.StaticKey', so the same
 -- caveat applies: mounted /after/ the initial frame, it never gets a
 -- main-thread mirror registered, silently breaking @OnStatic@ handlers
 -- inside it. Use 'vcomp_' with 'mountStatic' instead for anything that may
@@ -754,9 +754,9 @@ mount_ comp = VComp (SomeComponent Nothing () comp)
 --
 -- No class constraints appear here: the dictionaries are discharged at the
 -- @static (mountStatic child)@ site and travel inside the t'SomeStaticComponent',
--- which is where the MTS recovers them from the 'GHC.StaticPtr.StaticKey'.
+-- which is where the MTS recovers them from the t'GHC.StaticPtr.StaticKey'.
 --
--- The 'GHC.StaticPtr.StaticKey' also serves as the node's diff key: two
+-- The t'GHC.StaticPtr.StaticKey' also serves as the node's diff key: two
 -- different @static@ sites at the same position are replaced, not reused,
 -- while siblings built from one site still diff positionally.
 --
@@ -800,7 +800,7 @@ vcomp_ = vcomp ()
 -- @
 --
 -- __Warning (Lynx dual-thread \/ @NATIVE@):__ see the note on 'mount_' —
--- this also builds a @VComp@ with no 'GHC.StaticPtr.StaticKey', so the same
+-- this also builds a @VComp@ with no t'GHC.StaticPtr.StaticKey', so the same
 -- caveat applies: mounted /after/ the initial frame, it never gets a
 -- main-thread mirror registered, silently breaking @OnStatic@ handlers
 -- inside it. Use @'vcomp_' (static ('mountStatic' comp { useContext = True }))@
@@ -1092,7 +1092,7 @@ instance Show (Attribute model action) where
 --
 -- The obstacle is 'OnStatic'. Under @native@ a main-thread handler is not a
 -- closure the main thread can call: the background thread ships only its
--- 'StaticKey', and @dispatchMainThreadEvent@ (in "Miso.Runtime") rebuilds the
+-- 'StaticKey', and @dispatchMainThreadEvent@ (in @Miso.Runtime@) rebuilds the
 -- t'EventHandler' from that key and sinks its result straight into the owning
 -- component's @_componentSink@. That is sound only because every 'OnStatic'
 -- reachable from component @C@'s view has @C@'s @action@ type.

@@ -18,15 +18,15 @@
 -- extract a Haskell value from a browser
 -- <https://developer.mozilla.org/en-US/docs/Web/API/Event DOM Event> object.
 -- It pairs a target path ('DecodeTarget') into the event with a
--- JSON-style parser ('Miso.JSON.Value' @->@ 'Miso.JSON.Parser' @a@).
+-- JSON-style parser (@t'Miso.JSON.Value'@ @->@ 'Miso.JSON.Parser' @a@).
 --
--- Decoders are consumed by 'Miso.Html.Event.on' from "Miso.Html.Event":
+-- Decoders are consumed by 'Miso.Event.on' from "Miso.Html.Event":
 --
 -- @
--- on :: 'Miso.String.MisoString'   -- event name (e.g. \"click\")
+-- on :: t'Miso.String.MisoString'   -- event name (e.g. \"click\")
 --    -> t'Decoder' a      -- how to extract @a@ from the event object
 --    -> (a -> action)   -- turn the extracted value into an action
---    -> 'Miso.Types.Attribute' action
+--    -> t'Miso.Types.Attribute' action
 -- @
 --
 -- = DecodeTarget
@@ -43,7 +43,7 @@
 -- ['emptyDecoder'] @()@ — @click@, @submit@, stateless events
 -- ['keycodeDecoder'] 'Miso.Event.Types.KeyCode' — @keydown@ \/ @keyup@ key code
 -- ['keyInfoDecoder'] 'Miso.Event.Types.KeyInfo' — key code + modifier keys
--- ['valueDecoder'] 'Miso.String.MisoString' — @input@ \/ @change@ (@event.target.value@)
+-- ['valueDecoder'] t'Miso.String.MisoString' — @input@ \/ @change@ (@event.target.value@)
 -- ['checkedDecoder'] 'Miso.Event.Types.Checked' — checkbox @change@ (@event.target.checked@)
 -- ['pointerDecoder'] 'Miso.Event.Types.PointerEvent' — pointer\/mouse position and metadata
 --
@@ -66,7 +66,7 @@
 --
 -- * "Miso.Html.Event" — @on@ and the pre-wired event handlers (@onClick@, @onInput@, …)
 -- * "Miso.Event.Types" — payload types ('Miso.Event.Types.KeyCode', 'Miso.Event.Types.PointerEvent', …)
--- * "Miso.JSON" — 'Miso.JSON.Value', 'Miso.JSON.Parser', 'Miso.JSON.withObject', @('Miso.JSON..:')@
+-- * "Miso.JSON" — t'Miso.JSON.Value', 'Miso.JSON.Parser', 'Miso.JSON.withObject', @('Miso.JSON..:')@
 -----------------------------------------------------------------------------
 module Miso.Event.Decoder
   ( -- ** Types
@@ -98,7 +98,7 @@ data DecodeTarget
   | DecodeTargets [[MisoString]]
   -- ^ Specify multiple paths withing Event object, where decoding should be attempted. The first path where decoding suceeds is the one taken.
 -----------------------------------------------------------------------------
--- | `ToJSVal` instance for t'DecodeTarget'.
+-- | @ToJSVal@ instance for t'DecodeTarget'.
 instance ToJSVal DecodeTarget where
   toJSVal = \case
     DecodeTarget xs -> toJSVal xs

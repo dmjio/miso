@@ -33,7 +33,7 @@
 --
 -- = Parser \/ lexer combinators
 --
--- These 'Control.Applicative.Alternative'-polymorphic combinators work
+-- These t'Control.Applicative.Alternative'-polymorphic combinators work
 -- with both 'Miso.Util.Lexer.Lexer' and 'Miso.Util.Parser.Parser':
 --
 -- * 'oneOf' — try alternatives in order, succeeding on the first match
@@ -49,7 +49,7 @@
 -- * '(=:)' — infix tuple constructor for key-value pairs:
 --   @\"key\" @=:@ value@
 -- * 'compose' — forward function composition generalised to any
---   'Control.Category.Category': @f \`compose\` g = g . f@
+--   t'Control.Category.Category': @f \`compose\` g = g . f@
 --
 -- = See also
 --
@@ -96,7 +96,7 @@ withFoldable
 withFoldable ta f = map f (toList ta)
 -----------------------------------------------------------------------------
 -- | Conditionally includes views.
--- Hides the 'Miso.Types.View's if the condition is False. Shows them when the condition
+-- Hides the t'Miso.Types.View's if the condition is False. Shows them when the condition
 -- is True.
 conditionalViews
   :: Bool

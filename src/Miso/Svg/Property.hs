@@ -11,11 +11,11 @@
 --
 -- = Overview
 --
--- "Miso.Svg.Property" provides 'Miso.Types.Attribute' smart constructors
+-- "Miso.Svg.Property" provides t'Miso.Types.Attribute' smart constructors
 -- for all
 -- <https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute SVG attributes>.
--- Every combinator takes a 'Miso.String.MisoString' value and produces an
--- 'Miso.Types.Attribute' that is set on the SVG element by the virtual DOM.
+-- Every combinator takes a t'Miso.String.MisoString' value and produces an
+-- t'Miso.Types.Attribute' that is set on the SVG element by the virtual DOM.
 --
 -- This module is __not__ re-exported by "Miso.Svg" and must be imported
 -- separately. Qualify it to avoid clashing with same-named combinators
@@ -31,7 +31,7 @@
 -- import "Miso.Svg"
 -- import qualified "Miso.Svg.Property" as SP
 --
--- arrow :: 'Miso.Types.View' model action
+-- arrow :: t'Miso.Types.View' model action
 -- arrow =
 --   'Miso.Svg.Element.svg_' [ SP.'viewBox_' \"0 0 100 100\", SP.'width_' \"100\" ]
 --     [ 'Miso.Svg.Element.path_'

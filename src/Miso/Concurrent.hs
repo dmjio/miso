@@ -12,7 +12,7 @@
 -- = Overview
 --
 -- "Miso.Concurrent" provides t'Waiter', a lightweight synchronization
--- primitive built on 'Control.Concurrent.MVar.MVar' that the miso runtime
+-- primitive built on t'Control.Concurrent.MVar.MVar' that the miso runtime
 -- uses to coordinate its event loop with subscription threads.
 --
 -- Two constructors are available with different wakeup semantics:
@@ -30,9 +30,9 @@
 --
 -- = See also
 --
--- * "Miso.Effect" — 'Miso.Effect.Sub' subscriptions that use 'notify' to
+-- * "Miso.Effect" — t'Miso.Effect.Sub' subscriptions that use 'notify' to
 --   wake the event loop
--- * "Miso.Runtime" — the event loop that calls 'wait'
+-- * @Miso.Runtime@ — the event loop that calls 'wait'
 -----------------------------------------------------------------------------
 module Miso.Concurrent
   ( -- ** Synchronization primitives

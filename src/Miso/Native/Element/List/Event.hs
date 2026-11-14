@@ -468,6 +468,7 @@ onScrollToLowerMainWith action = onMain "scrolltolower" scrollDecoder action
 --
 -- Callback triggered when the scroll state of \<list\> changes. The state
 -- field in the event parameter's detail indicates the scroll state:
+--
 -- * 1 for stationary
 -- * 2 for dragging
 -- * 3 for inertial scrolling

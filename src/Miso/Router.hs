@@ -43,7 +43,7 @@
 --   = Index                                                    -- \"\/\"
 --   | About                                                    -- \"\/about\"
 --   | User (Capture \"id\" Int)                                 -- \"\/user\/42\"
---   | Search (QueryParam \"q\" 'Miso.String.MisoString')         -- \"\/search?q=foo\"
+--   | Search (QueryParam \"q\" t'Miso.String.MisoString')         -- \"\/search?q=foo\"
 --   deriving stock (Show, Eq, Generic)
 --   deriving anyclass 'Router'
 -- @
@@ -103,7 +103,7 @@
 -- @
 -- import "Miso.Subscription.History" ('Miso.Subscription.History.routerSub')
 --
--- subs :: ['Miso.Effect.Sub' Action]
+-- subs :: [t'Miso.Effect.Sub' Action]
 -- subs = [ 'Miso.Subscription.History.routerSub' RouteChanged ]
 -- @
 --
@@ -391,7 +391,7 @@ class Router route where
   route :: URI -> Either RoutingError route
   route = toRoute . prettyURI
 
-  -- | Convenience for specifying a URL as a hyperlink reference in 'Miso.Types.View'
+  -- | Convenience for specifying a URL as a hyperlink reference in t'Miso.Types.View'
   href_ :: route -> Attribute model action
   href_ = P.href_ . prettyRoute
 

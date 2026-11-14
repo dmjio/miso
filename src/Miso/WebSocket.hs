@@ -15,7 +15,7 @@
 -- "Miso.WebSocket" provides a full-duplex
 -- <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket WebSocket>
 -- client that integrates directly into the MVU loop. Every operation
--- — connecting, sending, and closing — returns an 'Miso.Effect.Effect',
+-- — connecting, sending, and closing — returns an t'Miso.Effect.Effect',
 -- making WebSocket communication a first-class citizen of the @update@
 -- function.
 --
@@ -28,16 +28,16 @@
 -- data Action
 --   = Connect
 --   | Connected  t'WebSocket'
---   | Received   'Miso.String.MisoString'
+--   | Received   t'Miso.String.MisoString'
 --   | Disconnected t'Closed'
---   | WsError    'Miso.String.MisoString'
---   | Send       'Miso.String.MisoString'
+--   | WsError    t'Miso.String.MisoString'
+--   | Send       t'Miso.String.MisoString'
 --   | Disconnect
 --
 -- -- Hold the socket handle in the model so we can send later
 -- data Model = Model { ws :: t'WebSocket' }
 --
--- update :: Action -> 'Miso.Effect.Effect' p props Model Action
+-- update :: Action -> t'Miso.Effect.Effect' p props Model Action
 -- update Connect =
 --   'connectText' \"wss:\/\/echo.websocket.org\"
 --     Connected Disconnected Received WsError
@@ -60,8 +60,8 @@
 -- same callback signature — @onOpen@, @onClosed@, @onMessage@, @onError@
 -- — but differ in how the message payload is decoded:
 --
--- ['connectText'] 'Miso.String.MisoString' — plain UTF-8 text
--- ['connectJSON'] @json@ ('Miso.JSON.FromJSON' json) — auto-decoded from JSON
+-- ['connectText'] t'Miso.String.MisoString' — plain UTF-8 text
+-- ['connectJSON'] @json@ (@t'Miso.JSON.FromJSON'@ json) — auto-decoded from JSON
 -- ['connectBLOB'] t'Blob' — raw binary Blob
 -- ['connectArrayBuffer'] t'ArrayBuffer' — raw binary buffer
 -- ['connect'] @'Payload' json@ — mixed; caller pattern-matches the payload ADT
@@ -72,10 +72,10 @@
 -- model and passed to each send call:
 --
 -- @
--- 'sendText'        :: t'WebSocket' -> 'Miso.String.MisoString' -> 'Miso.Effect.Effect' p props model action
--- 'sendJSON'        :: 'Miso.JSON.ToJSON' json => t'WebSocket' -> json -> 'Miso.Effect.Effect' p props model action
--- 'sendBLOB'        :: t'WebSocket' -> t'Blob' -> 'Miso.Effect.Effect' p props model action
--- 'sendArrayBuffer' :: t'WebSocket' -> t'ArrayBuffer' -> 'Miso.Effect.Effect' p props model action
+-- 'sendText'        :: t'WebSocket' -> t'Miso.String.MisoString' -> t'Miso.Effect.Effect' p props model action
+-- 'sendJSON'        :: t'Miso.JSON.ToJSON' json => t'WebSocket' -> json -> t'Miso.Effect.Effect' p props model action
+-- 'sendBLOB'        :: t'WebSocket' -> t'Blob' -> t'Miso.Effect.Effect' p props model action
+-- 'sendArrayBuffer' :: t'WebSocket' -> t'ArrayBuffer' -> t'Miso.Effect.Effect' p props model action
 -- @
 --
 -- = Lifecycle
@@ -91,19 +91,19 @@
 -- = Types
 --
 -- * t'WebSocket' — an opaque integer file descriptor returned by @onOpen@.
--- * @URL@ — alias for 'Miso.String.MisoString'.
+-- * @URL@ — alias for t'Miso.String.MisoString'.
 -- * 'SocketState' — four-state enum mirroring the JS @readyState@ property.
 -- * t'Closed' — close event data: 'closedCode', 'wasClean', 'reason'.
 -- * 'CloseCode' — typed close codes from
 --   <https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent/code RFC 6455>.
 -- * 'Payload' — @JSON value | BLOB Blob | TEXT MisoString | BUFFER ArrayBuffer@.
--- * t'Blob' / t'ArrayBuffer' — re-exported from "Miso.FFI.Internal".
+-- * t'Blob' / t'ArrayBuffer' — re-exported from @Miso.FFI.Internal@.
 --
 -- = See also
 --
 -- * "Miso.EventSource" — Server-Sent Events (SSE), a unidirectional alternative
 -- * "Miso.Fetch" — one-shot HTTP requests
--- * "Miso.Effect" — 'Miso.Effect.Effect', 'Miso.Effect.io_'
+-- * "Miso.Effect" — t'Miso.Effect.Effect', 'Miso.Effect.io_'
 ----------------------------------------------------------------------------
 module Miso.WebSocket
   ( -- *** t'WebSocket'

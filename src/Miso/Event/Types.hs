@@ -25,18 +25,16 @@
 -- <https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Scripting/Event_bubbling event delegation>:
 -- a single listener is attached at the root of the component's DOM subtree
 -- and catches all matching events as they bubble or capture past it.
--- The 'Events' map (@'Data.Map.Strict.Map' 'Miso.String.MisoString' 'Phase'@)
+-- The 'Events' map (@t'Data.Map.Strict.Map' t'Miso.String.MisoString' 'Phase'@)
 -- declares which event names participate and their phase.
 --
 -- The default set ('defaultEvents') covers the most common interactions.
--- Additional event groups can be merged in when constructing a component:
+-- Additional event groups can be merged in and passed to 'Miso.startApp'
+-- (or 'Miso.miso' \/ 'Miso.renderApp'):
 --
 -- @
--- myComponent = ('Miso.component' model update view)
---   { 'Miso.Types.events' = 'defaultEvents'
---       \<\> 'keyboardEvents'
---       \<\> 'pointerEvents'
---   }
+-- main :: IO ()
+-- main = 'Miso.startApp' ('defaultEvents' \<\> 'keyboardEvents' \<\> 'pointerEvents') myComponent
 -- @
 --
 -- = Event groups
@@ -284,7 +282,7 @@ pointerEvents = M.fromList
 -- For use with the @\<audio\>@ and @\<video\>@ tags.
 --
 -- @
--- myApp :: 'Miso.Types.App' Model Action
+-- myApp :: t'Miso.Types.App' Model Action
 -- myApp = ('Miso.Types.component' model update view){ events = 'defaultEvents' <> 'mediaEvents' }
 -- @
 mediaEvents :: Events

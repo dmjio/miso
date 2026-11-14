@@ -31,7 +31,7 @@ import           Miso.Event
 import           Miso.JSON
 import           Miso.Types (Attribute, EventHandler, DOMRef)
 -----------------------------------------------------------------------------
--- | The 'Events' map for the Lynx @\<scrollcoordinator\>@ element.
+-- | The 'Events' map for the Lynx @\<scroll-coordinator\>@ element.
 --
 -- Combine with other element maps using @<>@ and pass the result to
 -- 'Miso.Native.native', so the delegator listens for these events.

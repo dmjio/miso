@@ -31,15 +31,15 @@
 -- @
 -- data Model = Model
 --   { _count :: Int
---   , _text  :: 'Miso.String.MisoString'
+--   , _text  :: t'Miso.String.MisoString'
 --   } deriving (Eq)
 --
 -- 'makeLenses' \'\'Model
 -- -- Generates:
 -- --   count :: 'Lens' Model Int
--- --   text  :: 'Lens' Model 'Miso.String.MisoString'
+-- --   text  :: 'Lens' Model t'Miso.String.MisoString'
 --
--- update :: Action -> 'Miso.Effect.Effect' p props Model Action
+-- update :: Action -> t'Miso.Effect.Effect' p props Model Action
 -- update Increment   = count @+=@ 1
 -- update (SetText t) = text  @.=@ t
 -- @

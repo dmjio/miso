@@ -54,8 +54,8 @@
 --
 -- = See also
 --
--- * 'Miso.FFI.Internal.splitmix32' — the raw JS PRNG primitive
--- * 'Miso.FFI.Internal.getRandomValue' — @crypto.getRandomValues()@ used for seeding
+-- * 'Miso.FFI.splitmix32' — the raw JS PRNG primitive
+-- * 'Miso.Runtime.Internal.getRandomValue' — @crypto.getRandomValues()@ used for seeding
 ----------------------------------------------------------------------------
 module Miso.Random
   ( -- ** Types
@@ -116,11 +116,11 @@ globalStdGen = unsafePerformIO $ do
   seed <- floor . (*1e7) <$> FFI.mathRandom
   newIORef (mkStdGen seed)
 -----------------------------------------------------------------------------
--- | Read the `globalStdGen`
+-- | Read the @globalStdGen@
 getStdGen :: IO StdGen
 getStdGen = readIORef globalStdGen
 -----------------------------------------------------------------------------
--- | Set the `globalStdGen`
+-- | Set the @globalStdGen@
 setStdGen
   :: StdGen
   -- ^ New generator to install as the global PRNG

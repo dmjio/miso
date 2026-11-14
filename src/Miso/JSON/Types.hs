@@ -15,10 +15,10 @@
 -- * 'Value' — an
 --   <https://www.json.org/ RFC 8259>-compliant JSON value. Used as the
 --   intermediate representation in event decoders
---   ("Miso.Event.Decoder") and in 'Miso.DSL.ToJSVal' \/ 'Miso.DSL.FromJSVal'
+--   ("Miso.Event.Decoder") and in t'Miso.DSL.ToJSVal' \/ t'Miso.DSL.FromJSVal'
 --   marshalling.
 --
--- * 'Result' — a lightweight error monad (@'Success' a | 'Error' 'Miso.String.MisoString'@)
+-- * 'Result' — a lightweight error monad (@'Success' a | 'Error' t'Miso.String.MisoString'@)
 --   used by JSON parsers to report decode failures. It has full
 --   'Functor', 'Applicative', 'Monad', 'MonadFail', 'Alternative',
 --   'Foldable', and 'Traversable' instances.
@@ -32,7 +32,7 @@
 -- data 'Value'
 --   = 'Number' Double          -- JSON number
 --   | t'Bool'   Bool            -- JSON boolean
---   | t'String' 'Miso.String.MisoString'   -- JSON string
+--   | t'String' t'Miso.String.MisoString'   -- JSON string
 --   | 'Array'  ['Value']       -- JSON array
 --   | t'Object' ('Miso.JSON.Types.Object')  -- JSON object (Map MisoString Value)
 --   | 'Null'                   -- JSON null
@@ -40,7 +40,7 @@
 --
 -- = See also
 --
--- * "Miso.JSON" — top-level re-export hub; 'Miso.JSON.FromJSON', 'Miso.JSON.ToJSON', @(@.:@)@, 'Miso.JSON.withObject'
+-- * "Miso.JSON" — top-level re-export hub; t'Miso.JSON.FromJSON', t'Miso.JSON.ToJSON', @(@.:@)@, 'Miso.JSON.withObject'
 -- * "Miso.JSON.Parser" — pure server-side JSON decoder ('Miso.JSON.Parser.decodePure')
 -- * "Miso.JSON.Lexer" — tokenizer used by the parser
 -- * "Miso.Event.Decoder" — uses 'Value' and 'Result' via 'Miso.JSON.Parser'

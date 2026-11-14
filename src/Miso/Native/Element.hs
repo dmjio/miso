@@ -67,7 +67,7 @@ lynxDirect_ direct tag attrs kids = nodeDirectEvents HTML tag attrs direct kids
 --
 -- You shouldn't use this, we already generate the @page@ for you when
 -- the initial @renderPage@ callback is invoked by PrimJS, and there can
--- only be one @page@ present at at time. We include it here for completeness,
+-- only be one @page@ present at a time. We include it here for completeness,
 -- and because @page@ functionality might change in the future.
 --
 page_ :: [Attribute model action] -> [View context props model action] -> View context props model action
@@ -75,9 +75,8 @@ page_ = lynx_ "page"
 -----------------------------------------------------------------------------
 -- | <https://lynxjs.org/api/elements/built-in/scroll-view.html>
 --
--- Basic element, used to contain other elements. \<view\> is the foundation
--- for all other elements; its attributes, events, and methods can be
--- used in other elements.
+-- Basic scrollable container: \<scroll-view\> lets its children scroll
+-- horizontally or vertically.
 --
 scrollView_ :: [Attribute model action] -> [View context props model action] -> View context props model action
 scrollView_ = lynxDirect_

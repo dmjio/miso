@@ -28,11 +28,11 @@
 -- chatTopic = 'topic'
 --
 -- -- 2. Subscribe in a component's subs list
--- myChatSub :: t'Topic' -> 'Miso.Effect.Sub' Action
+-- myChatSub :: t'Topic' -> t'Miso.Effect.Sub' Action
 -- myChatSub t = 'subscribe' t GotMessage
 --
 -- -- 3. Publish from any component's update function
--- update :: Action -> 'Miso.Effect.Effect' p props Model Action
+-- update :: Action -> t'Miso.Effect.Effect' p props Model Action
 -- update (SendMessage msg) =
 --   'Miso.Effect.io_' ('publish' chatTopic msg)
 -- update (GotMessage msg) = do
@@ -48,8 +48,8 @@
 --
 -- = See also
 --
--- * "Miso.Effect" — 'Miso.Effect.Sub', 'Miso.Effect.withSink'
--- * "Miso.Runtime" — where t'Topic', 'subscribe', 'publish' are defined
+-- * "Miso.Effect" — t'Miso.Effect.Sub', 'Miso.Effect.withSink'
+-- * @Miso.Runtime@ — where t'Topic', 'subscribe', 'publish' are defined
 ----------------------------------------------------------------------------
 module Miso.PubSub
   ( -- * Pub\/Sub

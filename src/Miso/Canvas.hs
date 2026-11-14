@@ -20,7 +20,7 @@
 --
 -- "Miso.Canvas" is a typed Haskell wrapper around the browser's
 -- <https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API HTML5 Canvas 2D API>.
--- It lets you draw graphics imperatively inside a miso 'Miso.Types.View'
+-- It lets you draw graphics imperatively inside a miso t'Miso.Types.View'
 -- without leaving Haskell.
 --
 -- The central abstraction is the 'Canvas' monad:
@@ -47,7 +47,7 @@
 -- import qualified "Miso.CSS.Color" as Color
 -- import qualified "Miso.Html.Property" as HP
 --
--- view :: Model -> 'Miso.Types.View' context props Model Action
+-- view :: Model -> t'Miso.Types.View' context props Model Action
 -- view m =
 --   'canvas'
 --     [ HP.'Miso.Html.Property.width_' \"800\", HP.'Miso.Html.Property.height_' \"480\" ]
@@ -73,14 +73,14 @@
 --   the 'Canvas' monad.
 --
 -- * 'canvas_' — the escape hatch. @init@ and @draw@ receive raw 'IO'
---   callbacks and a 'Miso.DSL.DOMRef', letting you hand the element off to
+--   callbacks and a t'Miso.Types.DOMRef', letting you hand the element off to
 --   a third-party JavaScript library (e.g. Three.js, WebGL) that manages
 --   its own context.
 --
 -- = Styling
 --
 -- 'fillStyle' and 'strokeStyle' accept a 'StyleArg', which can be a plain
--- 'Miso.CSS.Color.Color' (via 'color'), a t'Gradient' (via 'gradient'), or a
+-- t'Miso.CSS.Color.Color' (via 'color'), a t'Gradient' (via 'gradient'), or a
 -- t'Pattern' (via 'pattern_'):
 --
 -- @
@@ -95,7 +95,7 @@
 --
 -- = See also
 --
--- * "Miso.CSS.Color" — 'Miso.CSS.Color.Color' type and named colors
+-- * "Miso.CSS.Color" — t'Miso.CSS.Color.Color' type and named colors
 -- * "Miso.CSS" — CSS property DSL for non-canvas styling
 -- * "Miso.FFI" — lower-level JS interop used internally
 -----------------------------------------------------------------------------
@@ -298,7 +298,7 @@ instance ToArgs StyleArg where
 instance ToJSVal StyleArg where
   toJSVal = renderStyleArg
 -----------------------------------------------------------------------------
--- | Pretty-prints a t'PatternType' as 'Miso.String.MisoString'
+-- | Pretty-prints a t'PatternType' as t'Miso.String.MisoString'
 renderPattern :: PatternType -> MisoString
 renderPattern = \case
   Repeat -> "repeat"
@@ -693,7 +693,7 @@ createImageData = call "createImageData"
 getImageData :: (Double, Double, Double, Double) -> Canvas ImageData
 getImageData = call "getImageData"
 -----------------------------------------------------------------------------
--- | [imageData.data\[index\] = 255](https://www.w3schools.com/tags/canvas_imagedata_data.asp)
+-- | <https://www.w3schools.com/tags/canvas_imagedata_data.asp imageData.data[index] = 255>
 setImageData :: (ImageData, Int, Double) -> Canvas ()
 setImageData (imgData, index, value) = liftIO $ do
    o <- imgData ! ("data" :: MisoString)
