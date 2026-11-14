@@ -17,7 +17,7 @@
 -----------------------------------------------------------------------------
 module Main where
 -----------------------------------------------------------------------------
-import           Control.Concurrent (newEmptyMVar, putMVar, takeMVar, threadDelay, killThread)
+import           Control.Concurrent (MVar, newEmptyMVar, putMVar, takeMVar, threadDelay, killThread)
 import           Control.Monad.Reader
 import           Control.Exception (try, evaluate, SomeException)
 import qualified Data.Map.Strict as M
@@ -54,6 +54,7 @@ import qualified Miso.String as S
 import           Miso.Subscription.Keyboard (Arrows (..), arrowsSub)
 import           Miso.Subscription.Util (createSub)
 import qualified Miso.FFI as FFI
+import qualified Miso.WebSocket as WS
 import qualified Miso.Data.Map as MDM
 import qualified Miso.Data.Set as MDS
 import qualified Miso.Data.Array as Array
@@ -245,6 +246,61 @@ rAFStopComponent =
       RAFTick _ -> do
         this += 1
         stopSub ("raf" :: MisoString)
+-----------------------------------------------------------------------------
+data ProtocolAction
+  = ProtocolConnect
+  | ProtocolOpened Int
+  | ProtocolSelected (Maybe MisoString)
+  | ProtocolClosed
+  | ProtocolIgnore
+  deriving stock (Show, Eq, Generic)
+#ifndef __MHS__
+  deriving anyclass (JSON.FromJSON, JSON.ToJSON)
+#endif
+-----------------------------------------------------------------------------
+-- | Connects to the echo server's @\/ws@ endpoint requesting @offered@ and
+-- puts the subprotocol it selected into @result@. A test must also wait for @closed@:
+-- a socket that outlives its test sinks its late events into the next test's component.
+protocolComponent :: MVar (Maybe MisoString) -> MVar () -> [MisoString] -> Component () () () ProtocolAction
+protocolComponent result closed offered =
+  (component () update_ $ \_ -> div_ [] [])
+  { mount = Just ProtocolConnect }
+  where
+    update_ = \case
+      ProtocolConnect ->
+        WS.connectTextWith WS.defaultConnectOptions { WS.protocols = offered }
+          "ws://127.0.0.1:8081/ws" (\(WS.WebSocket n) -> ProtocolOpened n) (const ProtocolClosed)
+          (const ProtocolIgnore) (const ProtocolIgnore)
+      ProtocolOpened n -> do
+        WS.protocol (WS.WebSocket n) ProtocolSelected
+        WS.close (WS.WebSocket n)
+      ProtocolSelected selected -> io_ (putMVar result selected)
+      ProtocolClosed -> io_ (putMVar closed ())
+      ProtocolIgnore -> pure ()
+-----------------------------------------------------------------------------
+data ConnectAction
+  = ConnectStart
+  | ConnectClosed Bool Bool
+  | ConnectIgnore
+  deriving stock (Show, Eq, Generic)
+#ifndef __MHS__
+  deriving anyclass (JSON.FromJSON, JSON.ToJSON)
+#endif
+-----------------------------------------------------------------------------
+-- | Connects to @url@ and puts the first close it sees into @result@: whether the code
+-- was abnormal (1006), and whether the close was clean.
+connectComponent :: MVar ConnectAction -> MisoString -> Component () () () ConnectAction
+connectComponent result url =
+  (component () update_ $ \_ -> div_ [] [])
+  { mount = Just ConnectStart }
+  where
+    update_ = \case
+      ConnectStart ->
+        WS.connectText url (const ConnectIgnore)
+          (\c -> ConnectClosed (WS.closedCode c == WS.CLOSE_ABNORMAL) (WS.wasClean c))
+          (const ConnectIgnore) (const ConnectIgnore)
+      ConnectClosed abnormal clean -> io_ (putMVar result (ConnectClosed abnormal clean))
+      ConnectIgnore -> pure ()
 -----------------------------------------------------------------------------
 testComponent :: Component () () Int Action
 testComponent = component (0 :: Int) update_ $ \_ -> button_ [ id_ "foo", onClick AddOne ] [ "click me " ]
@@ -456,6 +512,7 @@ main = withJS $ do
     lensGenericTests
     storageTests
     cookieFFITests
+    webSocketTests
     fetchFFITests
     dataArrayTests
     dateTests
@@ -568,6 +625,26 @@ cookieFFITests = do
         Right _ <- liftIO (cookieDelete_ "miso-test-delete-nopath")
         result <- liftIO (cookieGet_ "miso-test-delete-nopath")
         result `shouldBe` (Right Nothing :: Either MisoString (Maybe MisoString))
+-----------------------------------------------------------------------------
+webSocketTests :: Test ()
+webSocketTests = do
+    describe "Miso.WebSocket tests" $ do
+      it "Should negotiate a requested subprotocol" $ do
+        result <- liftIO newEmptyMVar
+        closed <- liftIO newEmptyMVar
+        liftIO (startApp mempty (protocolComponent result closed ["graphql-transport-ws"]))
+        (`shouldBe` Just "graphql-transport-ws") =<< liftIO (takeMVar result)
+        liftIO (takeMVar closed)
+      it "Should report no subprotocol when none is requested" $ do
+        result <- liftIO newEmptyMVar
+        closed <- liftIO newEmptyMVar
+        liftIO (startApp mempty (protocolComponent result closed []))
+        (`shouldBe` Nothing) =<< liftIO (takeMVar result)
+        liftIO (takeMVar closed)
+      it "Should call onClosed (1006, not clean) when the connection cannot be created" $ do
+        result <- liftIO newEmptyMVar
+        liftIO (startApp mempty (connectComponent result "not a url"))
+        (`shouldBe` ConnectClosed True False) =<< liftIO (takeMVar result)
 -----------------------------------------------------------------------------
 fetchFFITests :: Test ()
 fetchFFITests = do
