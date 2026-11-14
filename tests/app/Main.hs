@@ -473,6 +473,7 @@ main = withJS $ do
     inlineJSTests
     routerTests
     misoStringTests
+    jsStringTests
     jsDSLTests
     marshalTests
     staticKeyFingerprintTests
@@ -1685,6 +1686,19 @@ routerTests = do
           `shouldBe` "a#b"
         prettyURI (tokensToURI [CaptureOrPathToken "x", FragmentToken "a", FragmentToken "b"])
           `shouldBe` "/x#a#b"
+-----------------------------------------------------------------------------
+jsStringTests :: Test ()
+jsStringTests = do
+#ifndef VANILLA
+    describe "Miso.String JSString tests" $ do
+      it "Should convert a JSString to and from a MisoString" $ do
+        let js = S.textToJSString (T.pack "h\233llo \127757")
+        S.fromMisoString (S.toMisoString js) `shouldBe` js
+      it "Should convert Text and JSString with textFromJSString and textToJSString" $ do
+        let t = T.pack "h\233llo \127757"
+        S.textFromJSString (S.textToJSString t) `shouldBe` t
+#endif
+    pure ()
 -----------------------------------------------------------------------------
 misoStringTests :: Test ()
 misoStringTests = do

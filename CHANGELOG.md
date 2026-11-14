@@ -13,6 +13,10 @@ All notable changes to `miso` are documented here.
   previously needed `freeFunction (Function cb)`. `freeCallback` is
   `freeFunction . Function`. `freeFunction` is unchanged.
 
+- `Miso.String` exports `JSString`, `textFromJSString` and `textToJSString` on
+  WASM, JS and MicroHs, with or without the `text` flag. With `text` it also has
+  `ToMisoString` and `FromMisoString` instances for `JSString`.
+
 ## 1.15.0.0
 
 ### Added

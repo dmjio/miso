@@ -36,6 +36,13 @@ module Miso.String
 #else
   , module Data.JSString
 #endif
+#if defined(MISO_TEXT) && !defined(VANILLA)
+  , JSString (..)
+#endif
+#if !defined(VANILLA) && (defined(MISO_TEXT) || defined(GHCJS_BOTH))
+  , textFromJSString
+  , textToJSString
+#endif
   , ms
   ) where
 ----------------------------------------------------------------------------
@@ -102,6 +109,11 @@ instance ToMisoString a => ToMisoString (Maybe a) where
     Nothing -> mempty
     Just x -> ms x
 ----------------------------------------------------------------------------
+#if defined(MISO_TEXT) && !defined(VANILLA)
+instance ToMisoString JSString where
+  toMisoString = textFromJSString
+-----------------------------------------------------------------------------
+#endif
 instance ToMisoString Char where
   toMisoString = singleton
 ----------------------------------------------------------------------------
@@ -153,6 +165,11 @@ instance ToMisoString Word where
 #if !defined(VANILLA) && !defined(MISO_TEXT)
 instance FromMisoString MisoString where
   fromMisoStringEither = Right
+#endif
+-----------------------------------------------------------------------------
+#if defined(MISO_TEXT) && !defined(VANILLA)
+instance FromMisoString JSString where
+  fromMisoStringEither = Right . textToJSString
 #endif
 ----------------------------------------------------------------------------
 instance FromMisoString T.Text where
