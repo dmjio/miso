@@ -30,10 +30,10 @@
 --
 -- data Action = MouseMoved 'Miso.Event.Types.PointerEvent'
 --
--- subs :: ['Miso.Effect.Sub' Action]
+-- subs :: [t'Miso.Effect.Sub' Action]
 -- subs = [ 'mouseSub' MouseMoved ]
 --
--- update :: Action -> 'Miso.Effect.Effect' p props Model Action
+-- update :: Action -> t'Miso.Effect.Effect' p props Model Action
 -- update (MouseMoved ev) = do
 --   let (cx, cy) = client ev   -- (clientX, clientY)
 --   ...
@@ -43,7 +43,7 @@
 --
 -- * "Miso.Subscription.Window" — 'Miso.Subscription.Window.windowPointerMoveSub',
 --   'Miso.Subscription.Window.windowCoordsSub', 'Miso.Subscription.Window.windowSub'
--- * "Miso.Event.Types" — 'Miso.Event.Types.PointerEvent', 'Miso.Event.Types.PointerType'
+-- * "Miso.Event.Types" — 'Miso.Event.Types.PointerEvent', t'Miso.Event.Types.PointerType'
 -- * "Miso.Event.Decoder" — 'Miso.Event.Decoder.pointerDecoder'
 ----------------------------------------------------------------------------
 module Miso.Subscription.Mouse

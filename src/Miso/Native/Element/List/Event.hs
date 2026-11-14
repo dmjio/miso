@@ -62,7 +62,7 @@ import           Miso.JSON
 import           Miso.Types (Attribute, EventHandler, DOMRef)
 import           Miso.String (MisoString)
 -----------------------------------------------------------------------------
--- | The 'Events' map for the Lynx @<list>@ element.
+-- | The 'Events' map for the Lynx @\<list\>@ element.
 --
 -- Combine with other element maps using @<>@ and pass the result to
 -- 'Miso.Native.native', so the delegator listens for these events.
@@ -123,7 +123,7 @@ data ScrollEvent
   -- ^ Attached cells
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
--- | One cell currently attached to a @<list>@, as reported by
+-- | One cell currently attached to a @\<list\>@, as reported by
 -- 'Miso.Native.Element.List.Method.getVisibleCells' and the layout events.
 -- 
 -- @since 1.13.0.0
@@ -147,7 +147,7 @@ instance FromJSON Cell where
     <*> cell .: "right"
     <*> cell .: "bottom"
 -----------------------------------------------------------------------------
--- | What triggered a @<list>@ layout-complete event: a data @DIFF@, a
+-- | What triggered a @\<list\>@ layout-complete event: a data @DIFF@, a
 -- re-@LAYOUT@, or a @SCROLL@.
 -- 
 -- @since 1.13.0.0
@@ -164,7 +164,7 @@ instance FromJSON ListEventSource where
     2 -> pure SCROLL
     x -> typeMismatch "ListEventSource" (toJSON x)
 -----------------------------------------------------------------------------
--- | The scroll state a @<list>@ has just entered — at rest, under the
+-- | The scroll state a @\<list\>@ has just entered — at rest, under the
 -- user's finger, coasting, or animating to a snap point.
 -- 
 -- @since 1.13.0.0
@@ -200,7 +200,7 @@ instance FromJSON ScrollStateChange where
 scrollStateDecoder :: Decoder ScrollStateChange
 scrollStateDecoder = ["detail"] `at` withObject "ScrollStateChange" (.: "state")
 -----------------------------------------------------------------------------
--- | Payload of a @<list>@ pagination (snap) event: which cell will be
+-- | Payload of a @\<list\>@ pagination (snap) event: which cell will be
 -- snapped to, and the scroll offsets at the moment of the snap.
 -- 
 -- @since 1.13.0.0
@@ -251,7 +251,7 @@ data LayoutCompleteEvent
   -- ^ Target vertical scroll offset for pagination, in px
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
--- | The row-level changes a @<list>@ data update produced, as index lists:
+-- | The row-level changes a @\<list\>@ data update produced, as index lists:
 -- insertions, moves and removals.
 -- 
 -- @since 1.13.0.0
@@ -275,7 +275,7 @@ instance FromJSON DiffResult where
       <*> o .: "update_from"
       <*> o .: "update_to"
 -----------------------------------------------------------------------------
--- | Position and identity of a single @<list>@ item, as reported in the
+-- | Position and identity of a single @\<list\>@ item, as reported in the
 -- layout-complete event's before\/after cell lists.
 -- 
 -- @since 1.13.0.0
@@ -468,6 +468,7 @@ onScrollToLowerMainWith action = onMain "scrolltolower" scrollDecoder action
 --
 -- Callback triggered when the scroll state of \<list\> changes. The state
 -- field in the event parameter's detail indicates the scroll state:
+--
 -- * 1 for stationary
 -- * 2 for dragging
 -- * 3 for inertial scrolling

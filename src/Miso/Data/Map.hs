@@ -18,13 +18,13 @@
 -- object. Values of type @'Map' k v@ live in JavaScript memory; all
 -- operations run in 'IO' and mutate the underlying JS map in place.
 --
--- Unlike 'Data.Map.Strict.Map', keys do not require an 'Ord' instance —
--- any type with a 'Miso.DSL.ToJSVal' instance can serve as a key, including
+-- Unlike t'Data.Map.Strict.Map', keys do not require an 'Ord' instance —
+-- any type with a t'Miso.DSL.ToJSVal' instance can serve as a key, including
 -- JS objects and numeric values that compare by identity.
 --
 -- Use this module when you need to share a key-value structure with a browser
 -- API or a third-party JavaScript library. For pure Haskell processing,
--- prefer 'Data.Map.Strict.Map'.
+-- prefer t'Data.Map.Strict.Map'.
 --
 -- Import qualified to avoid clashing with "Prelude":
 --
@@ -55,9 +55,9 @@
 --
 -- = See also
 --
--- * "Miso.Data.Array" — mutable JS 'Miso.Data.Array.Array'
--- * "Miso.Data.Set" — mutable JS 'Miso.Data.Set.Set'
--- * "Miso.DSL" — 'Miso.DSL.ToJSVal' \/ 'Miso.DSL.FromJSVal' used by key and value types
+-- * "Miso.Data.Array" — mutable JS t'Miso.Data.Array.Array'
+-- * "Miso.Data.Set" — mutable JS t'Miso.Data.Set.Set'
+-- * "Miso.DSL" — t'Miso.DSL.ToJSVal' \/ t'Miso.DSL.FromJSVal' used by key and value types
 -----------------------------------------------------------------------------
 module Miso.Data.Map
   ( -- * Type

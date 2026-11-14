@@ -39,7 +39,7 @@
 --
 -- * 'ToJSVal' — converts a Haskell value into a t'JSVal'. Instances exist
 --   for all primitive types, lists, tuples (up to 6), 'Maybe', and
---   'Data.Map.Strict.Map' 'Miso.String.MisoString'. Product record types can
+--   t'Data.Map.Strict.Map' t'Miso.String.MisoString'. Product record types can
 --   derive 'ToJSVal' via @GHC.Generics@ (sum types are not supported).
 --
 -- * 'FromJSVal' — parses a t'JSVal' back into Haskell, returning
@@ -63,7 +63,7 @@
 --
 -- -- Call a global function
 -- 'jsg0' \"requestAnimationFrame\"   -- no args
--- 'jsg1' \"parseInt\" (\"42\" :: 'Miso.String.MisoString')  -- one arg
+-- 'jsg1' \"parseInt\" (\"42\" :: t'Miso.String.MisoString')  -- one arg
 -- 'jsgf' \"encodeURIComponent\" args -- arbitrary ToArgs
 -- @
 --
@@ -762,10 +762,10 @@ getProp k v = getProp_ffi
 -----------------------------------------------------------------------------
 -- | Dynamically evaluates a JS string. See [eval](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/eval)
 --
--- `eval()` is slower (not subject to JS engine optimizations) and also
+-- @eval()@ is slower (not subject to JS engine optimizations) and also
 -- has security vulnerabilities (can alter other local variables).
 --
--- Consider using the more performant and secure (isolated) `inline` function.
+-- Consider using the more performant and secure (isolated) @inline@ function.
 --
 eval :: MisoString -> IO JSVal
 eval =

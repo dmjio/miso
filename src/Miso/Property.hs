@@ -12,7 +12,7 @@
 -- = Overview
 --
 -- "Miso.Property" provides the low-level primitives for constructing
--- 'Miso.Types.Attribute' values that set DOM properties on virtual nodes.
+-- t'Miso.Types.Attribute' values that set DOM properties on virtual nodes.
 -- All higher-level property combinators in "Miso.Html.Property",
 -- "Miso.Svg.Property", and "Miso.Mathml.Property" are built on top of
 -- these.
@@ -20,7 +20,7 @@
 -- The central combinator is 'prop':
 --
 -- @
--- 'prop' :: 'Miso.JSON.ToJSON' a => 'Miso.String.MisoString' -> a -> 'Miso.Types.Attribute' action
+-- 'prop' :: t'Miso.JSON.ToJSON' a => t'Miso.String.MisoString' -> a -> t'Miso.Types.Attribute' action
 -- @
 --
 -- It wraps any JSON-serialisable value as a 'Miso.Types.Property' node,
@@ -29,7 +29,7 @@
 --
 -- = Typed convenience wrappers
 --
--- ['textProp'] 'Miso.String.MisoString' — @'textProp' \"placeholder\" \"…\"@
+-- ['textProp'] t'Miso.String.MisoString' — @'textProp' \"placeholder\" \"…\"@
 -- ['stringProp'] 'String' — @'stringProp' \"lang\" \"en\"@
 -- ['boolProp'] 'Bool' — @'boolProp' \"checked\" True@
 -- ['intProp'] 'Int' — @'intProp' \"tabIndex\" 3@
@@ -65,7 +65,7 @@
 -- * "Miso.Html.Property" — named HTML property combinators built on this module
 -- * "Miso.Svg.Property" — SVG property combinators
 -- * "Miso.Mathml.Property" — MathML property combinators
--- * "Miso.Types" — 'Miso.Types.Attribute', 'Miso.Types.Key', 'Miso.Types.ToKey'
+-- * "Miso.Types" — t'Miso.Types.Attribute', 'Miso.Types.Key', t'Miso.Types.ToKey'
 -----------------------------------------------------------------------------
 module Miso.Property
   ( -- *** Smart constructors
@@ -169,7 +169,7 @@ keyProp key = prop "key" (toKey key)
 key_ :: ToKey key => key -> Attribute model action
 key_ = keyProp
 -----------------------------------------------------------------------------
--- | Smart constructor for specifying 'class'
+-- | Smart constructor for specifying @class@
 --
 -- @since 1.9.0.0
 classList :: [MisoString] -> Attribute model action

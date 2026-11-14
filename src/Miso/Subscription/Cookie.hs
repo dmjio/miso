@@ -31,10 +31,10 @@
 --
 -- data Action = CookiesChanged 'CookieChangeEvent'
 --
--- subs :: ['Miso.Effect.Sub' Action]
+-- subs :: [t'Miso.Effect.Sub' Action]
 -- subs = [ 'cookieChangeSub' CookiesChanged ]
 --
--- update :: Action -> 'Miso.Effect.Effect' p props Model Action
+-- update :: Action -> t'Miso.Effect.Effect' p props Model Action
 -- update (CookiesChanged ev) =
 --   'Miso.Effect.io_' (consoleLog (ms (show (@cookiesChanged@ ev))))
 -- @

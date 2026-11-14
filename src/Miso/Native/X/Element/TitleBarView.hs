@@ -9,7 +9,7 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- [/<title-bar-view/>](https://lynxjs.org/api/elements/built-in/title-bar-view.html)
+-- [/\<title-bar-view\>/](https://lynxjs.org/api/elements/built-in/title-bar-view.html)
 --
 -- Defines a custom draggable window region (Clay Windows / macOS).
 --

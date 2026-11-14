@@ -15,7 +15,7 @@
 --
 -- "Miso.Cookie" wraps the browser's
 -- <https://developer.mozilla.org/en-US/docs/Web/API/CookieStore CookieStore API>
--- as 'Miso.Effect.Effect' combinators that integrate directly into the
+-- as t'Miso.Effect.Effect' combinators that integrate directly into the
 -- Model-View-Update loop.
 --
 -- = Quick start
@@ -27,11 +27,11 @@
 -- data Action
 --   = LoadSession
 --   | GotSession (Maybe t'Cookie')
---   | SessionError 'Miso.String.MisoString'
+--   | SessionError t'Miso.String.MisoString'
 --   | SaveTheme
 --   | ThemeSaved
 --
--- update :: Action -> 'Miso.Effect.Effect' p props Model Action
+-- update :: Action -> t'Miso.Effect.Effect' p props Model Action
 -- update LoadSession =
 --   'cookieGet' \"session\" GotSession SessionError
 -- update SaveTheme =
@@ -61,7 +61,7 @@
 --
 -- * "Miso.Subscription.Cookie" — 'Miso.Subscription.Cookie.cookieChangeSub'
 --   for subscribing to cookie change events
--- * "Miso.FFI" — raw FFI primitives ('Miso.FFI.cookieGet' etc.) for
+-- * "Miso.FFI" — raw FFI primitives ('Miso.Cookie.cookieGet' etc.) for
 --   advanced use-cases
 -----------------------------------------------------------------------------
 module Miso.Cookie

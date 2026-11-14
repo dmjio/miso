@@ -10,7 +10,7 @@
 -- Portability :  non-portable
 --
 -- __N.B.__ The Desktop-only @cookies.*@ methods
--- (@cookies.get@ / @cookies.set@ / @cookies.remove@ / @cookies.flushStore@)
+-- (@cookies.get@ \/ @cookies.set@ \/ @cookies.remove@ \/ @cookies.flushStore@)
 -- are not modelled here. They can be invoked directly with
 -- 'Miso.Native.FFI.invokeExec' if required.
 --

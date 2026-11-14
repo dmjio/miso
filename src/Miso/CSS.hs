@@ -16,7 +16,7 @@
 -- available:
 --
 -- * __Structured styles__ ('style_'): CSS properties are stored in a
---   'Data.Map.Map' and diffed by the virtual DOM, so only changed properties
+--   t'Data.Map.Strict.Map' and diffed by the virtual DOM, so only changed properties
 --   are written to the DOM node on each render. Prefer this for dynamic styles.
 --
 -- * __Inline string styles__ ('styleInline_'): a raw CSS string is set on the
@@ -29,7 +29,7 @@
 -- import qualified "Miso.CSS"       as CSS
 -- import           "Miso.CSS.Color" ('Miso.CSS.Color.red', 'Miso.CSS.Color.rgba')
 --
--- myView :: model -> 'Miso.Types.View' context props model Action
+-- myView :: model -> t'Miso.Types.View' context props model Action
 -- myView _ =
 --   'Miso.Html.Element.div_'
 --     [ CSS.'Miso.CSS.style_'
@@ -622,7 +622,7 @@ sheet_ = StyleSheet
 -- | Constructs a structured @style@ attribute from a list of CSS properties.
 --
 -- Each 'Style' is a @(property, value)@ pair produced by the combinators in
--- this module. Miso tracks the properties as a 'Data.Map.Map', diffs them on
+-- this module. Miso tracks the properties as a t'Data.Map.Strict.Map', diffs them on
 -- each render, and applies only the changed properties to the DOM. Properties
 -- absent from the list are removed from the node.
 --
@@ -729,11 +729,11 @@ renderStyleSheet styleSheet = MS.intercalate "\n"
 keyframes_ :: MisoString -> [KeyframeStop] -> Styles
 keyframes_ name stops = KeyFrame name (map getKeyframeStop stops)
 -----------------------------------------------------------------------------
--- | The @from@ stop in a '@keyframes' rule (equivalent to @0%@).
+-- | The @from@ stop in a @\@keyframes@ rule (equivalent to @0%@).
 from_ :: [Style] -> KeyframeStop
 from_ styles = KeyframeStop ("from", styles)
 -----------------------------------------------------------------------------
--- | The @to@ stop in a '@keyframes' rule (equivalent to @100%@).
+-- | The @to@ stop in a @\@keyframes@ rule (equivalent to @100%@).
 to_ :: [Style] -> KeyframeStop
 to_ styles = KeyframeStop ("to", styles)
 -----------------------------------------------------------------------------

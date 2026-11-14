@@ -10,10 +10,10 @@
 -- = Overview
 --
 -- "Miso.Subscription" is the re-export hub for all of miso's built-in
--- 'Miso.Effect.Sub' subscriptions. A subscription is a long-running 'IO'
--- action of type @'Miso.Effect.Sink' action -> IO ()@ that delivers
+-- t'Miso.Effect.Sub' subscriptions. A subscription is a long-running 'IO'
+-- action of type @t'Miso.Effect.Sink' action -> IO ()@ that delivers
 -- external events — mouse moves, key presses, URL changes, animation
--- frames — into the update loop by calling its 'Miso.Effect.Sink'.
+-- frames — into the update loop by calling its t'Miso.Effect.Sink'.
 --
 -- Register subscriptions in the 'Miso.Types.subs' field of a
 -- t'Miso.Types.Component':
@@ -38,7 +38,7 @@
 -- ['keyboardSub'] global @keydown@ \/ @keyup@ — "Miso.Subscription.Keyboard"
 -- ['arrowsSub', 'wasdSub', 'directionSub'] arrow or WASD keys held — "Miso.Subscription.Keyboard"
 -- ['uriSub'] browser @popstate@ (back\/forward\/pushState) — "Miso.Subscription.History"
--- ['Miso.Subscription.History.routerSub'] same, decoded via 'Miso.Router.Router' — "Miso.Subscription.History"
+-- ['Miso.Subscription.History.routerSub'] same, decoded via t'Miso.Router.Router' — "Miso.Subscription.History"
 -- ['windowCoordsSub'] global window @pointermove@ — "Miso.Subscription.Window"
 -- ['windowPointerMoveSub'] global window @pointermove@ — "Miso.Subscription.Window"
 -- ['windowSubWithOptions'] any window event — "Miso.Subscription.Window"
@@ -50,7 +50,7 @@
 -- = History helpers
 --
 -- The "Miso.Subscription.History" module also exports imperative
--- navigation functions usable from within 'Miso.Effect.Effect':
+-- navigation functions usable from within t'Miso.Effect.Effect':
 --
 -- @
 -- update GoHome = 'Miso.Effect.io_' ('pushURI' ('Miso.Router.toURI' Home))
@@ -59,9 +59,9 @@
 --
 -- = See also
 --
--- * "Miso.Effect" — 'Miso.Effect.Sub', 'Miso.Effect.Sink', 'Miso.Effect.mapSub'
+-- * "Miso.Effect" — t'Miso.Effect.Sub', t'Miso.Effect.Sink', 'Miso.Effect.mapSub'
 -- * "Miso.Subscription.Util" — 'Miso.Subscription.Util.createSub' for custom subscriptions
--- * "Miso.Router" — 'Miso.Router.Router' typeclass used by 'Miso.Subscription.History.routerSub'
+-- * "Miso.Router" — t'Miso.Router.Router' typeclass used by 'Miso.Subscription.History.routerSub'
 ----------------------------------------------------------------------------
 module Miso.Subscription
   ( -- ** Mouse

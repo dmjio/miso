@@ -40,7 +40,7 @@ import           Miso.Event
 import           Miso.JSON
 import           Miso.Types (DOMRef, Attribute, EventHandler)
 -----------------------------------------------------------------------------
--- | The 'Events' map for the Lynx @<viewpager>@ element.
+-- | The 'Events' map for the Lynx @\<viewpager\>@ element.
 --
 -- Combine with other element maps using @<>@ and pass the result to
 -- 'Miso.Native.native', so the delegator listens for these events.

@@ -24,7 +24,7 @@
 --
 -- Colors are produced by smart constructors ('rgb', 'rgba', 'hsl', 'hsla',
 -- 'oklch', 'oklcha', 'hex', 'var') and consumed by 'renderColor', which
--- serialises a 'Color' to a 'Miso.String.MisoString' suitable for use as a
+-- serialises a 'Color' to a t'Miso.String.MisoString' suitable for use as a
 -- CSS property value. All color constructors are re-exported from "Miso.CSS".
 --
 -- = Color formats
@@ -44,7 +44,7 @@
 -- import qualified "Miso.CSS"       as CSS
 -- import           "Miso.CSS.Color"
 --
--- myView :: Model -> 'Miso.Types.View' context props Model Action
+-- myView :: Model -> t'Miso.Types.View' context props Model Action
 -- myView _ =
 --   'Miso.Html.Element.div_'
 --     [ CSS.'Miso.CSS.style_'
@@ -58,7 +58,7 @@
 -- = Overloaded hex literals
 --
 -- With @-XOverloadedLabels@, hex color strings can be written as label
--- literals directly where a 'Color' or 'Miso.String.MisoString' is expected.
+-- literals directly where a 'Color' or t'Miso.String.MisoString' is expected.
 -- The leading @#@ is inserted automatically:
 --
 -- @
@@ -67,7 +67,7 @@
 -- myColor :: 'Color'
 -- myColor = #ff6347          -- equivalent to 'hex' \"ff6347\"
 --
--- myString :: 'Miso.String.MisoString'
+-- myString :: t'Miso.String.MisoString'
 -- myString = #cccccc         -- equivalent to \"#cccccc\"
 -- @
 --

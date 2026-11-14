@@ -52,7 +52,7 @@ import           Miso.JSON
 import           Miso.String (MisoString)
 import           Miso.Types (Attribute, EventHandler, DOMRef)
 -----------------------------------------------------------------------------
--- | The 'Events' map for the Lynx @<overlay>@ element.
+-- | The 'Events' map for the Lynx @\<overlay\>@ element.
 --
 -- Combine with other element maps using @<>@ and pass the result to
 -- 'Miso.Native.native', so the delegator listens for these events.

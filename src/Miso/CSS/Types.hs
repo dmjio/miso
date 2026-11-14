@@ -42,7 +42,7 @@
 -- = See also
 --
 -- * "Miso.CSS" — smart constructors and property combinators built on these types
--- * "Miso.CSS.Color" — 'Miso.CSS.Color.Color' type used as property values
+-- * "Miso.CSS.Color" — t'Miso.CSS.Color.Color' type used as property values
 -----------------------------------------------------------------------------
 module Miso.CSS.Types
   ( -- *** Types
@@ -118,7 +118,7 @@ data Styles
 newtype KeyframeStop = KeyframeStop { getKeyframeStop :: (MisoString, [Style]) }
   deriving (Eq, Show)
 -----------------------------------------------------------------------------
--- | A selector rule inside a '@media' block. Construct with 'Miso.CSS.rule_'.
+-- | A selector rule inside a @\@media@ block. Construct with 'Miso.CSS.rule_'.
 newtype MediaRule = MediaRule { getMediaRule :: (MisoString, [Style]) }
   deriving (Eq, Show)
 -----------------------------------------------------------------------------

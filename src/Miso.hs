@@ -147,7 +147,7 @@
 --     v x = 'Miso.Types.vfrag'
 --       [ H.'Miso.Html.Element.button_' [ HE.'Miso.Html.Event.onClick' Add, HP.'Miso.Html.Property.id_' "add" ] [ "+" ]
 --       , 'Miso.Types.text' ('ms' x)
---       , H.'Miso.Html.Elemment.button_' [ HE.'Miso.Html.Event.onClick' Subtract, HP.'Miso.Html.Property.id_' "subtract" ] [ "-" ]
+--       , H.'Miso.Html.Element.button_' [ HE.'Miso.Html.Event.onClick' Subtract, HP.'Miso.Html.Property.id_' "subtract" ] [ "-" ]
 --       ]
 -- -----------------------------------------------------------------------------
 -- main :: 'IO' ()
@@ -215,8 +215,8 @@
 -- data 'View' context props model action
 --   = 'VNode' 'Namespace' 'Tag' ['Attribute' model action] ['View' context props model action] 'DirectEvents'
 --   | 'VText' (Maybe t'Key') 'MisoString'
---   | 'VComp' (t'SomeComponent' context)
---   | forall childProps . 'VCompStatic' (StaticPtr (t'SomeStaticComponent' childProps context)) childProps
+--   | 'VComp' ('SomeComponent' context)
+--   | forall childProps . 'VCompStatic' (StaticPtr ('SomeStaticComponent' childProps context)) childProps
 --   | 'VFrag' (Maybe t'Key') ['View' context props model action]
 --   | 'VContext' (context -> 'View' context props model action)
 --   | 'VProps' (props -> 'View' context props model action)
@@ -251,7 +251,7 @@
 -- * 'vprops' \/ 'withProps' — access the props
 -- * 'vmodel' \/ 'withModel' — access the model
 --
--- A full list of element smart constructors built on 'node' (e.g. 'Miso.Html.Element.Miso.Html.Element.div_') can be found in "Miso.Html.Element".
+-- A full list of element smart constructors built on 'node' (e.g. 'Miso.Html.Element.div_') can be found in "Miso.Html.Element".
 --
 -- == Mapping actions
 --
@@ -268,7 +268,7 @@
 -- keeps its own @action@ type and sink.
 --
 -- __These instances do not exist under the @native@ (Lynx dual-thread) flag.__
--- There a main-thread handler crosses threads as a bare 'GHC.StaticPtr.StaticKey'
+-- There a main-thread handler crosses threads as a bare t'GHC.StaticPtr.StaticKey'
 -- that the main thread re-dispatches at the owning component's @action@ type,
 -- and an arbitrary mapping function cannot travel with it. See
 -- Note [Functor View] in "Miso.Types".
@@ -406,14 +406,14 @@
 -- via miso's dual-thread (main-thread \/ background-thread) runtime. Unlike
 -- 'VComp', it carries a @StaticPtr@ to its t'Miso.Types.Component' constructor,
 -- giving the mount a stable, cross-thread-resolvable identity (a
--- 'GHC.StaticPtr.StaticKey') instead of relying on a manually-supplied t'Key'.
+-- t'GHC.StaticPtr.StaticKey') instead of relying on a manually-supplied t'Key'.
 -- This is what lets the main thread (MTS) independently reconstruct a mirror
 -- of a t'Miso.Types.Component' mounted on the background thread (BTS), including
 -- ones mounted after the initial frame, and is also how @action@s dispatched
 -- from a main-thread (@OnStatic@) handler get routed back to the correct
 -- t'Miso.Types.Component' on the background thread.
 --
--- The 'GHC.StaticPtr.StaticKey' itself serves as the mount's identity, so
+-- The t'GHC.StaticPtr.StaticKey' itself serves as the mount's identity, so
 -- there's no need for ('+>') or a manually-supplied t'Key' — use 'vcomp' \/
 -- 'vcomp_' together with 'Miso.Types.mountStatic' to build a 'VCompStatic'.
 --
@@ -506,7 +506,7 @@
 -- any extra imports:
 --
 -- @
--- 'Miso.Html.Element.Miso.Html.Element.div_' [] [ "Hello, world!" ]
+-- 'Miso.Html.Element.div_' [] [ "Hello, world!" ]
 -- @
 --
 -- For dynamic content, use the 'Miso.Types.text' smart constructor with a 'MisoString':
@@ -714,7 +714,7 @@
 --
 -- * Keys are used to compare two identical nodes.
 --
--- If two `VNode` are being compared (or two 'VComp') and their keys differ, the old node will be destroyed and a new one created. Otherwise, the underlying DOM node won't be removed, but its properties will be diffed. In the case of diffing two t'Miso.Types.Component' (the 'VComp' case), if the keys differ, the 'unmount' phase will be triggered for the old 'VComp' and the 'mount' phase will be triggered for the new t'Miso.Types.Component'. The underlying DOM reference will be replaced.
+-- If two @VNode@ are being compared (or two 'VComp') and their keys differ, the old node will be destroyed and a new one created. Otherwise, the underlying DOM node won't be removed, but its properties will be diffed. In the case of diffing two t'Miso.Types.Component' (the 'VComp' case), if the keys differ, the 'unmount' phase will be triggered for the old 'VComp' and the 'mount' phase will be triggered for the new t'Miso.Types.Component'. The underlying DOM reference will be replaced.
 --
 -- * Keys preserve the DOM reference across updates.
 --
@@ -746,7 +746,7 @@
 --
 -- @
 -- 'touchEvents' :: 'Events'
--- 'touchEvents' = M.'Data.Map.fromList'
+-- 'touchEvents' = M.'Data.Map.Strict.fromList'
 --   [ ("touchstart", 'BUBBLE')
 --   , ("touchcancel", 'BUBBLE')
 --   , ("touchmove", 'BUBBLE')
@@ -763,7 +763,7 @@
 -- @onChangeWith@ = 'on' "change" 'valueDecoder'
 -- @
 --
--- The @*with@ variant of events (e.g. 'Miso.Event.onChangeWith') provides the target @DOMRef@ in the callback function.
+-- The @*with@ variant of events (e.g. 'Miso.Html.Event.onChangeWith') provides the target @DOMRef@ in the callback function.
 --
 -- * Decoding events
 --
@@ -772,7 +772,7 @@
 -- @
 -- data t'Decoder' a
 --   = t'Decoder'
---   { 'decoder' :: 'Miso.JSON.Value' -> 'Miso.Util.Parser.Parser' a
+--   { 'decoder' :: t'Miso.JSON.Value' -> 'Miso.Util.Parser.Parser' a
 --   , 'decodeAt' :: t'DecodeTarget'
 --   }
 --
@@ -780,8 +780,8 @@
 -- 'valueDecoder' :: t'Decoder' 'MisoString'
 -- 'valueDecoder' = t'Decoder' {..}
 --   where
---     'Miso.Event.decodeAt' = t'Miso.Event.DecodeTarget' ["target"]
---     'Miso.Event.decoder' = 'Miso.JSON.withObject' "target" $ \\o -> o 'Miso.JSON..:' "value"
+--     'Miso.Event.Decoder.decodeAt' = t'Miso.Event.Decoder.DecodeTarget' ["target"]
+--     'Miso.Event.Decoder.decoder' = 'Miso.JSON.withObject' "target" $ \\o -> o 'Miso.JSON..:' "value"
 -- @
 --
 -- = Attributes / Properties
@@ -790,7 +790,7 @@
 --
 -- @
 -- data 'Attribute' model action
---   = 'Property' 'MisoString' 'Miso.JSON.Value'          -- ^ DOM property (key/value)
+--   = 'Property' 'MisoString' t'Miso.JSON.Value'          -- ^ DOM property (key/value)
 --   | 'ClassList' ['MisoString']             -- ^ 'CSS' class list
 --   | 'On' (model -> 'Sink' action -> ...)   -- ^ Fully-applied event handler
 --   | @OnStatic@ (@StaticPtr@ ('EventHandler' model action)) -- ^ @static@ handler, rebuilt on the main thread (@native@ only)
@@ -804,7 +804,7 @@
 -- 'Miso.Html.Element.div_'
 --   [ 'Miso.Html.Property.id_' "container"                    -- 'textProp' "id"
 --   , 'Miso.Html.Property.className' "card active"            -- 'textProp' "class"
---   , 'Miso.Html.Property.classList' ["card", "active"]       -- 'ClassList'
+--   , 'Miso.Property.classList' ["card", "active"]       -- 'ClassList'
 --   , 'Miso.Html.Property.disabled_'                          -- 'boolProp' "disabled" 'True'
 --   , 'Miso.Html.Event.onClick' MyAction                   -- 'On' event handler
 --   , 'Miso.CSS.style_' [ 'Miso.CSS.display' "flex" ]          -- 'Styles' map
@@ -849,15 +849,15 @@
 -- Note: 'IO' is never evaluated inside of 'Effect', it is only scheduled.
 -- There is no @MonadIO@ instance for 'Effect'.
 --
--- The 'Effect' type is defined as a 'Control.Monad.RWS.RWS'.
+-- The 'Effect' type is defined as a t'Control.Monad.RWS.Strict.RWS'.
 --
 -- @
--- type 'Effect' context props model action = 'Control.Monad.RWS.RWS' ('ComponentInfo' context props) ['Schedule' context action] model ()
+-- type 'Effect' context props model action = t'Control.Monad.RWS.Strict.RWS' ('ComponentInfo' context props) ['Schedule' context action] model ()
 -- @
 --
--- * The 'Control.Monad.Reader' portion of 'Effect' is t'ComponentInfo'. 'ask', 'asks', 'Miso.Lens.view' can be used to access its fields.
--- * The 'Control.Monad.Writer' portion of 'Effect' is used to schedule t'IO' actions. 'tell' can be used to create a t'Schedule' for an 'IO' action that is executed according to 'Synchronicity'. See also 'withSink' for usage.
--- * The 'Control.Monad.State' portion of 'Effect' is used to manipulate the @model@. 'get', 'put', 'modify', and the 'Control.Monad.State.MonadState' lenses in t'Miso.Lens.Lens' can be used to modify the @model@.
+-- * The "Control.Monad.Reader" portion of 'Effect' is t'ComponentInfo'. 'ask', 'asks', 'Miso.Lens.view' can be used to access its fields.
+-- * The "Control.Monad.Writer" portion of 'Effect' is used to schedule t'IO' actions. 'tell' can be used to create a t'Schedule' for an 'IO' action that is executed according to 'Synchronicity'. See also 'withSink' for usage.
+-- * The "Control.Monad.State" portion of 'Effect' is used to manipulate the @model@. 'get', 'put', 'modify', and the t'Control.Monad.State.Class.MonadState' lenses in t'Miso.Lens.Lens' can be used to modify the @model@.
 --
 -- 'IO' can be performed either synchronously or asynchronously. By default all 'IO' is asynchronous
 --
@@ -1131,11 +1131,11 @@
 -- 'onLineSub' f sink = 'Miso.Subscription.Util.createSub' acquire release sink
 --   where
 --     release (cb1, cb2) = do
---       'Miso.FFI.windowRemoveEventListener' "online"  cb1
---       'Miso.FFI.windowRemoveEventListener' "offline" cb2
+--       'Miso.Runtime.Internal.windowRemoveEventListener' "online"  cb1
+--       'Miso.Runtime.Internal.windowRemoveEventListener' "offline" cb2
 --     acquire = do
---       cb1 <- 'Miso.FFI.windowAddEventListener' "online"  (const $ sink (f True))
---       cb2 <- 'Miso.FFI.windowAddEventListener' "offline" (const $ sink (f False))
+--       cb1 <- 'Miso.Runtime.Internal.windowAddEventListener' "online"  (const $ sink (f True))
+--       cb2 <- 'Miso.Runtime.Internal.windowAddEventListener' "offline" (const $ sink (f False))
 --       pure (cb1, cb2)
 -- @
 --
@@ -1163,7 +1163,7 @@
 -- please see the "Miso.Subscription" sub modules. 'Miso.Subscription.Util.createSub' is only meant to be used in scenarios where
 -- custom event listeners are required.
 --
--- = 'Control.Monad.State.State' management
+-- = t'Control.Monad.State.Strict.State' management
 --
 -- Miso bundles a lightweight lens library in "Miso.Lens" to minimise dependencies
 -- and payload size. Any lens library (optics, lens) also works — "Miso.Lens" is not required.
@@ -1200,7 +1200,7 @@
 --
 -- Three approaches, pick one:
 --
--- * __Template Haskell__ ("Miso.Lens.TH"): 'Miso.Lens.makeLenses' / 'Miso.Lens.makeClassy' splice lenses for each record field.
+-- * __Template Haskell__ ("Miso.Lens.TH"): 'Miso.Lens.TH.makeLenses' / 'Miso.Lens.TH.makeClassy' splice lenses for each record field.
 --
 -- @
 -- {-# LANGUAGE TemplateHaskell #-}
@@ -1216,7 +1216,7 @@
 --   Rename n  -> name 'Miso.Lens..=' n
 -- @
 --
--- * __Generics__ ("Miso.Lens.Generic"): 'Miso.Lens.Generic.field' \/ 'Miso.Lens.Generic.HasLens' derive lenses at compile time
+-- * __Generics__ ("Miso.Lens.Generic"): 'Miso.Lens.Generic.field' \/ t'Miso.Lens.Generic.HasLens' derive lenses at compile time
 --   using @GHC.Generics@ — no TH splice required. Requires @TypeApplications@ and,
 --   optionally, @OverloadedLabels@ for the @#field@ shorthand.
 --
@@ -1230,7 +1230,7 @@
 -- import "Miso.Lens.Generic" ('Miso.Lens.Generic.field')
 --
 -- data Model = Model { count :: 'Int', name :: 'MisoString' }
---   deriving ('Eq', 'GHC.Generics.Generic')
+--   deriving ('Eq', t'GHC.Generics.Generic')
 --
 -- update = \\case
 --   Increment -> 'Miso.Lens.Generic.field' \@\"count\" 'Miso.Lens.+=' 1  -- via TypeApplications
@@ -1250,13 +1250,13 @@
 -- [miso-canvas](https://github.com/haskell-miso/miso-canvas2d) example and the
 -- [three-miso](https://github.com/haskell-miso/three-miso) package for Three.js integration.
 --
--- == The 'Miso.Canvas.Canvas' monad
+-- == The t'Miso.Canvas.Canvas' monad
 --
--- Drawing commands run in the 'Miso.Canvas.Canvas' monad, which is a 'Control.Monad.Reader.ReaderT' over a
--- 'Miso.Canvas.CanvasContext2D' (the raw JavaScript 'Miso.Canvas.CanvasContext2D'):
+-- Drawing commands run in the t'Miso.Canvas.Canvas' monad, which is a 'Control.Monad.Reader.ReaderT' over a
+-- t'Miso.Canvas.CanvasContext2D' (the raw JavaScript t'Miso.Canvas.CanvasContext2D'):
 --
 -- @
--- type t'Miso.Canvas.Canvas' a = 'Control.Monad.Reader.ReaderT' 'Miso.Canvas.CanvasContext2D' 'IO' a
+-- type t'Miso.Canvas.Canvas' a = 'Control.Monad.Reader.ReaderT' t'Miso.Canvas.CanvasContext2D' 'IO' a
 -- @
 --
 -- == Embedding a canvas in the 'Miso.Lens.view'
@@ -1279,7 +1279,7 @@
 -- Common 2D primitives:
 --
 -- @
--- drawScene :: Model -> 'Miso.Canvas.Canvas' ()
+-- drawScene :: Model -> t'Miso.Canvas.Canvas' ()
 -- drawScene model = do
 --   'Miso.Canvas.clearRect' (0, 0, 800, 480)
 --   'Miso.Canvas.fillStyle' ('Miso.CSS.Color.RGB' 30 144 255)
@@ -1296,7 +1296,7 @@
 -- 'Miso.Canvas.fillText', 'Miso.Canvas.drawImage'.
 --
 -- Style setters: 'Miso.Canvas.fillStyle', 'Miso.Canvas.strokeStyle', 'Miso.Canvas.lineWidth', 'Miso.Canvas.font'.
--- 'Miso.Canvas.fillStyle' and 'Miso.Canvas.strokeStyle' accept a 'Miso.Canvas.StyleArg' — use
+-- 'Miso.Canvas.fillStyle' and 'Miso.Canvas.strokeStyle' accept a t'Miso.Canvas.StyleArg' — use
 -- 'Miso.Canvas.color' (not 'Miso.CSS.color') to construct one from a t'Miso.CSS.Color.Color' value.
 -- See the __Canonical Import Pattern__ section for how to avoid the name collision
 -- between 'Miso.Canvas.color' and 'Miso.CSS.color'.
@@ -1318,14 +1318,14 @@
 --
 -- = HTML
 --
--- Miso's 'View' type doubles as an HTML serialiser via the 'Miso.Html.Render.ToHtml' class in
+-- Miso's 'View' type doubles as an HTML serialiser via the t'Miso.Html.Render.ToHtml' class in
 -- "Miso.Html.Render". This is used for server-side rendering (SSR): build a
--- 'View' with the normal DSL and render it to a lazy 'Data.ByteString.Lazy.ByteString'
+-- 'View' with the normal DSL and render it to a lazy t'Data.ByteString.Lazy.ByteString'
 -- on the server.
 --
 -- @
--- class 'Miso.Html.ToHtml' a where
---   'Miso.Html.ToHtml.toHtml' :: a -> 'Data.ByteString.Lazy.ByteString'
+-- class t'Miso.Html.Render.ToHtml' a where
+--   'Miso.Html.Render.toHtml' :: a -> t'Data.ByteString.Lazy.ByteString'
 -- @
 --
 -- Instances are provided for @'View' () () () a@ and @['View' () () () a]@ — a
@@ -1335,7 +1335,7 @@
 -- @
 -- import "Miso.Html.Render" ('Miso.Html.Render.toHtml')
 --
--- pageHtml :: 'Data.ByteString.Lazy.ByteString'
+-- pageHtml :: t'Data.ByteString.Lazy.ByteString'
 -- pageHtml = 'Miso.Html.Render.toHtml' $ 'Miso.Html.Element.div_' [ 'Miso.Html.Property.id_' "root" ] [ "Hello, world!" ]
 -- @
 --
@@ -1355,7 +1355,7 @@
 -- @
 -- import Servant.Miso.Html (HTML)
 --
--- type Home    = \"home\"    :\> Get '[HTML] (t'Miso.Types.Component' context props model action)
+-- type Home    = \"home\"    :\> Get '[HTML] ('Miso.Types.Component' context props model action)
 -- type About   = \"about\"   :\> Get '[HTML] ('View' context props model action)
 -- type Contact = \"contact\" :\> Get '[HTML] ['View' context props model action]
 -- type API = Home :\<|\> About :\<|\> Contact
@@ -1389,15 +1389,15 @@
 --
 -- == Marshalling
 --
--- 'Miso.DSL.ToJSVal' converts Haskell values to 'Miso.DSL.JSVal' for passing into JavaScript.
--- 'Miso.DSL.FromJSVal' converts 'Miso.DSL.JSVal' back to Haskell.
+-- t'Miso.DSL.ToJSVal' converts Haskell values to t'Miso.DSL.JSVal' for passing into JavaScript.
+-- t'Miso.DSL.FromJSVal' converts t'Miso.DSL.JSVal' back to Haskell.
 -- 'Miso.DSL.fromJSValUnchecked' throws on failure; use 'Miso.DSL.fromJSVal' for a safe @Maybe@ variant.
 --
 -- = QuasiQuotation (@inline-js@)
 --
 -- "Miso.FFI.QQ" provides the 'Miso.FFI.QQ.js' QuasiQuoter for embedding inline JavaScript
 -- directly in Haskell source. Any Haskell binding in scope can be interpolated into
--- the JavaScript body with @${varName}@ syntax — miso uses the binding's 'Miso.DSL.ToJSVal'
+-- the JavaScript body with @${varName}@ syntax — miso uses the binding's t'Miso.DSL.ToJSVal'
 -- instance to marshal it across the boundary at runtime.
 --
 -- @
@@ -1405,7 +1405,7 @@
 --
 -- import "Miso.FFI.QQ" ('Miso.FFI.QQ.js')
 --
--- update :: Action -> 'Miso.Effect.Effect' context props model Action
+-- update :: Action -> t'Miso.Effect.Effect' context props model Action
 -- update = \\case
 --   Log msg -> 'io_' ['Miso.FFI.QQ.js'| console.log(${msg}) |]
 --
@@ -1414,7 +1414,7 @@
 --
 -- == Returning values from JavaScript
 --
--- The return type is inferred from the call site via 'Miso.DSL.FromJSVal'.
+-- The return type is inferred from the call site via t'Miso.DSL.FromJSVal'.
 -- Use an explicit type annotation or a @do@-binding to drive inference:
 --
 -- @
@@ -1432,13 +1432,13 @@
 -- = Routing
 --
 -- "Miso.Router" provides a reversible, type-safe client-side router. A @Route@
--- type encodes URL structure; the 'Miso.Router.Router' class converts between routes and
+-- type encodes URL structure; the t'Miso.Router.Router' class converts between routes and
 -- t'URI' values in both directions. Use it with 'Miso.Subscription.History.routerSub'
 -- or 'Miso.Subscription.History.uriSub' to react to browser navigation.
 --
--- == Defining a 'Miso.Router.Router' with Generics
+-- == Defining a t'Miso.Router.Router' with Generics
 --
--- Derive 'Miso.Router.Router' via "GHC.Generics" — constructor names become path segments
+-- Derive t'Miso.Router.Router' via "GHC.Generics" — constructor names become path segments
 -- (camel-case uses only the first hump). Use 'Miso.Router.Capture', 'Miso.Router.Path', 'Miso.Router.QueryParam',
 -- and 'Miso.Router.QueryFlag' as constructor fields to describe the URL shape:
 --
@@ -1453,8 +1453,8 @@
 --   = Index                                                      -- matches "/"
 --   | About                                                      -- matches "/about"
 --   | Product ('Miso.Router.Capture' "id" Int) ('Miso.Router.QueryParam' "tab" 'MisoString')   -- matches "/product/42?tab=info"
---   deriving stock ('Show', 'Eq', 'GHC.Generics.Generic')
---   deriving anyclass 'Miso.Router.Router'
+--   deriving stock ('Show', 'Eq', t'GHC.Generics.Generic')
+--   deriving anyclass t'Miso.Router.Router'
 -- @
 --
 -- The router is /reversible/ — 'Miso.Router.prettyRoute' re-serialises any route back to a URL:
@@ -1464,14 +1464,14 @@
 -- -- "\/product\/42?tab=info"
 -- @
 --
--- == Defining a 'Miso.Router.Router' manually
+-- == Defining a t'Miso.Router.Router' manually
 --
 -- For full control, implement 'Miso.Router.routeParser' and 'Miso.Router.fromRoute' directly:
 --
 -- @
 -- data Route = Product 'Int'
 --
--- instance 'Miso.Router.Router' Route where
+-- instance t'Miso.Router.Router' Route where
 --   'Miso.Router.routeParser' = 'Miso.Router.routes' [ Product \<$\> ('Miso.Router.path' "product" *\> 'Miso.Router.capture') ]
 --   'Miso.Router.fromRoute' (Product n) = [ 'Miso.Router.toPath' "product", 'Miso.Router.toCapture' n ]
 -- @
@@ -1479,10 +1479,10 @@
 -- == Subscribing to URI changes
 --
 -- 'Miso.Subscription.History.routerSub' listens to @popstate@ events and delivers
--- the parsed route (or a 'Miso.Router.RoutingError') to your @update@ function:
+-- the parsed route (or a t'Miso.Router.RoutingError') to your @update@ function:
 --
 -- @
--- app = ('Miso.Types.component' m u v) { 'subs' = [ 'Miso.Router.routerSub' HandleRoute ] }
+-- app = ('Miso.Types.component' m u v) { 'subs' = [ 'Miso.Subscription.History.routerSub' HandleRoute ] }
 --
 -- update = \\case
 --   HandleRoute (Right Index)       -> page 'Miso.Lens..=' HomePage
@@ -1496,11 +1496,11 @@
 -- == Navigating programmatically
 --
 -- @
--- 'Miso.Router.pushURI'    uri    -- push a raw t'URI' onto the History stack
--- 'Miso.Router.pushRoute'  route  -- push a typed route (serialised via 'Miso.Router.Router')
--- 'Miso.Router.replaceURI' uri    -- replace the current history entry
--- 'Miso.Router.back'              -- go back one entry
--- 'Miso.Router.forward'           -- go forward one entry
+-- 'Miso.Subscription.History.pushURI'    uri    -- push a raw t'URI' onto the History stack
+-- 'Miso.Subscription.History.pushRoute'  route  -- push a typed route (serialised via t'Miso.Router.Router')
+-- 'Miso.Subscription.History.replaceURI' uri    -- replace the current history entry
+-- 'Miso.Subscription.History.back'              -- go back one entry
+-- 'Miso.Subscription.History.forward'           -- go forward one entry
 -- @
 --
 -- == Type-safe links in 'Miso.Lens.view'
@@ -1518,24 +1518,24 @@
 --
 -- * __JS / WASM backends__: t'MisoString' is @JSString@, a direct reference to a
 --   JavaScript string — no marshalling cost when passing to the DOM or FFI.
--- * __Server / vanilla GHC__ (@-fssr@ flag): t'MisoString' is t'Data.Text'.
+-- * __Server / vanilla GHC__ (@-fssr@ flag): t'MisoString' is t'Data.Text.Text'.
 --
--- Use t'MisoString' anywhere you would otherwise reach for 'String' or t'Data.Text' in a
+-- Use t'MisoString' anywhere you would otherwise reach for 'String' or t'Data.Text.Text' in a
 -- miso application. See "Miso.String" for the full API.
 --
 -- == Converting to 'MisoString'
 --
 -- The 'ms' function (shorthand for 'toMisoString') converts any type with a
--- 'Miso.String.ToMisoString' instance:
+-- t'Miso.String.ToMisoString' instance:
 --
 -- @
 -- 'ms' "hello"          -- 'String'    -> 'MisoString'
 -- 'ms' (42 :: 'Int')      -- 'Int'       -> 'MisoString'
 -- 'ms' (3.14 :: 'Double') -- 'Double'    -> 'MisoString'
--- 'ms' myText           -- 'Data.Text.Text' -> 'MisoString'
+-- 'ms' myText           -- t'Data.Text.Text' -> 'MisoString'
 -- @
 --
--- 'Miso.String.ToMisoString' instances are provided for 'String', t'Data.Text.Text',
+-- t'Miso.String.ToMisoString' instances are provided for 'String', t'Data.Text.Text',
 -- t'Data.Text.Lazy.Text', t'Data.ByteString.ByteString', 'Int', 'Word',
 -- 'Double', 'Float', and 'Char'.
 --
@@ -1550,7 +1550,7 @@
 -- 'Miso.String.fromMisoStringEither' s  :: 'Either' 'String' 'Int'
 -- @
 --
--- 'Miso.String.FromMisoString' instances are provided for 'String', t'Data.Text.Text',
+-- t'Miso.String.FromMisoString' instances are provided for 'String', t'Data.Text.Text',
 -- t'Data.Text.Lazy.Text', t'Data.ByteString.ByteString', 'Int', 'Word',
 -- 'Double', and 'Float'.
 --
@@ -1580,23 +1580,23 @@
 -- for performance. On the server (@ssr@ flag) it uses a pure Haskell implementation.
 -- "Miso.JSON" is used internally by "Miso.Event.Decoder", "Miso.Fetch", and "Miso.WebSocket".
 --
--- == 'Miso.JSON.Value'
+-- == t'Miso.JSON.Value'
 --
 -- The JSON t'Miso.JSON.Value' type mirrors the JSON specification:
 --
 -- @
--- data 'Miso.JSON.Value'
+-- data t'Miso.JSON.Value'
 --   = 'Miso.JSON.Number' 'Double'
 --   | 'Miso.JSON.Bool'   'Bool'
 --   | 'Miso.JSON.String' 'MisoString'
---   | 'Miso.JSON.Array'  ['Miso.JSON.Value']
+--   | 'Miso.JSON.Array'  [t'Miso.JSON.Value']
 --   | 'Miso.JSON.Object' 'Miso.JSON.Object'
 --   | 'Miso.JSON.Null'
 -- @
 --
 -- == Encoding
 --
--- Encode any 'Miso.JSON.ToJSON' instance to a t'MisoString':
+-- Encode any t'Miso.JSON.ToJSON' instance to a t'MisoString':
 --
 -- @
 -- 'Miso.JSON.encode' value        -- uses JS runtime on client, pure on server
@@ -1610,7 +1610,7 @@
 -- 'Miso.JSON.eitherDecode' s      :: 'Either' 'MisoString' a
 -- @
 --
--- == 'Miso.JSON.ToJSON' \/ 'Miso.JSON.FromJSON'
+-- == t'Miso.JSON.ToJSON' \/ t'Miso.JSON.FromJSON'
 --
 -- Derive instances via @GHC.Generics@:
 --
@@ -1623,8 +1623,8 @@
 -- data User = User { name :: 'MisoString', age :: 'Int' }
 --   deriving ('GHC.Generics.Generic')
 --
--- instance 'Miso.JSON.ToJSON' User
--- instance 'Miso.JSON.FromJSON' User
+-- instance t'Miso.JSON.ToJSON' User
+-- instance t'Miso.JSON.FromJSON' User
 -- @
 --
 -- Use 'Miso.JSON.genericToJSON' \/ 'Miso.JSON.genericParseJSON' with t'Options' to customise field and
@@ -1632,7 +1632,7 @@
 -- @snake_case@ (or any separator):
 --
 -- @
--- instance 'Miso.JSON.ToJSON' User where
+-- instance t'Miso.JSON.ToJSON' User where
 --   'Miso.JSON.toJSON' = 'Miso.JSON.genericToJSON' 'Miso.JSON.defaultOptions' { 'Miso.JSON.fieldLabelModifier' = 'Miso.JSON.camelTo2' \'_\' }
 -- @
 --
@@ -1663,7 +1663,7 @@
 --
 -- If you prefer to use the [aeson](https://hackage.haskell.org/package/aeson) library directly,
 -- the [miso-aeson](https://github.com/haskell-miso/miso-aeson) package provides a compatibility
--- shim that bridges @aeson@\'s 'Data.Aeson.ToJSON' \/ 'Data.Aeson.FromJSON' instances with miso\'s
+-- shim that bridges @aeson@\'s @ToJSON@ \/ @FromJSON@ instances with miso\'s
 -- event decoder and fetch API, so existing @aeson@-derived instances can be used without rewriting them.
 --
 -- = Styles
@@ -1982,7 +1982,7 @@ import           Miso.JSON (ToJSON, FromJSON)
 --
 -- __Warning__: if compiling with the @native@ Cabal flag, use
 -- 'Miso.Native.native' \/ 'Miso.Native.nativeWithContext' instead of this —
--- it mounts with no 'GHC.StaticPtr.StaticKey', which is needed for
+-- it mounts with no t'GHC.StaticPtr.StaticKey', which is needed for
 -- cross-thread mounting, cross-thread effect handling, and main-thread events.
 miso
 #ifdef NATIVE
@@ -2014,7 +2014,7 @@ miso events f = do
 --
 -- __Warning__: if compiling with the @native@ Cabal flag, use
 -- 'Miso.Native.native' \/ 'Miso.Native.nativeWithContext' instead of this —
--- it mounts with no 'GHC.StaticPtr.StaticKey', which is needed for
+-- it mounts with no t'GHC.StaticPtr.StaticKey', which is needed for
 -- cross-thread mounting, cross-thread effect handling, and main-thread events.
 prerender
 #ifdef NATIVE
@@ -2093,7 +2093,7 @@ prerenderWithContext events initialContext comp_ =
 -----------------------------------------------------------------------------
 -- | Like 'miso', except it does not perform page hydration.
 --
--- This function draws your application on an empty <body>
+-- This function draws your application on an empty \<body\>
 --
 -- You will most likely want to use this function for your application
 -- unless you are using prerendering.
@@ -2106,7 +2106,7 @@ prerenderWithContext events initialContext comp_ =
 --
 -- __Warning__: if compiling with the @native@ Cabal flag, use
 -- 'Miso.Native.native' \/ 'Miso.Native.nativeWithContext' instead of this —
--- it mounts with no 'GHC.StaticPtr.StaticKey', which is needed for
+-- it mounts with no t'GHC.StaticPtr.StaticKey', which is needed for
 -- cross-thread mounting, cross-thread effect handling, and main-thread events.
 startApp
 #ifdef NATIVE
@@ -2140,11 +2140,11 @@ startApp events comp_ = initComponent events Draw False () comp_ Nothing () Noth
 -- @
 --
 -- For server-side rendering (where the runtime is never started) pass the
--- context to 'Miso.Html.Render.toHtmlWith' when serializing the 'Miso.Types.View'.
+-- context to 'Miso.Html.Render.toHtmlWith' when serializing the t'Miso.Types.View'.
 --
 -- __Warning__: if compiling with the @native@ Cabal flag, use
 -- 'Miso.Native.nativeWithContext' instead of this — it mounts with no
--- 'GHC.StaticPtr.StaticKey', which is needed for cross-thread mounting,
+-- t'GHC.StaticPtr.StaticKey', which is needed for cross-thread mounting,
 -- cross-thread effect handling, and main-thread events.
 --
 -- @since 1.13.0.0

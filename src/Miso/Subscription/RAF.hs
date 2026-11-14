@@ -33,11 +33,9 @@
 -- data Action = Tick Double   -- DOMHighResTimeStamp in ms
 --
 -- myComponent = ('Miso.component' model update view)
---   { 'Miso.Types.subs'   = [ 'rAFSub' Tick ]
---   , 'Miso.Types.events' = 'Miso.Event.Types.defaultEvents'
---   }
+--   { 'Miso.Types.subs' = [ 'rAFSub' Tick ] }
 --
--- update :: Action -> 'Miso.Effect.Effect' p props Model Action
+-- update :: Action -> t'Miso.Effect.Effect' p props Model Action
 -- update (Tick t) = do
 --   'Miso.State.modify' (\\m -> m { time = t })
 -- @
@@ -49,7 +47,7 @@
 --
 -- * __Acquire__ — schedules the first @requestAnimationFrame@ callback,
 --   which re-schedules itself on every invocation.
--- * __Release__ — when the 'Sub' is stopped ('Miso.Runtime.stopSub', or
+-- * __Release__ — when the 'Sub' is stopped ('Miso.stopSub', or
 --   the component unmounting), the callback is told to stop; on its next
 --   frame it frees its JS reference instead of re-scheduling. See
 --   @Note [rAFLoop teardown]@ in "Miso.Subscription.Util".

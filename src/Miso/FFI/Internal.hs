@@ -86,7 +86,7 @@
 --
 -- * "Miso.FFI" — public re-export surface for application code
 -- * "Miso.FFI.QQ" — @[js| … |]@ quasi-quoter for inline JavaScript
--- * "Miso.DSL" — 'Miso.DSL.JSVal', 'Miso.DSL.ToJSVal', 'Miso.DSL.FromJSVal'
+-- * "Miso.DSL" — t'Miso.DSL.JSVal', t'Miso.DSL.ToJSVal', t'Miso.DSL.FromJSVal'
 -----------------------------------------------------------------------------
 module Miso.FFI.Internal
    ( -- * Callbacks
@@ -489,7 +489,7 @@ inline code o = do
   fromJSValUnchecked =<< do
     moduleMiso # "inline" $ (code, obj)
 -----------------------------------------------------------------------------
--- | Populate the 'Miso.Html.Property.classList' Set on the virtual DOM.
+-- | Populate the 'Miso.Property.classList' Set on the virtual DOM.
 populateClass
     :: JSVal
     -- ^ Node
@@ -893,7 +893,7 @@ instance FromJSVal Image where
   fromJSVal = pure . pure . Image
   {-# INLINE fromJSVal #-}
 -----------------------------------------------------------------------------
--- | Smart constructor for building a t'Image' w/ 'Miso.Html.Property.src_' 'Miso.Types.Attribute'.
+-- | Smart constructor for building a t'Image' w/ 'Miso.Html.Property.src_' t'Miso.Types.Attribute'.
 newImage :: MisoString -> IO Image
 {-# INLINABLE newImage #-}
 newImage url = do

@@ -61,13 +61,13 @@ lynxDirect_ direct tag attrs kids = nodeDirectEvents HTML tag attrs direct kids
 -----------------------------------------------------------------------------
 -- | <https://lynxjs.org/api/elements/built-in/page.html>
 --
--- <page> element is the root node, only one <page> element is allowed per page.
--- You can omit the explicit <page> wrapper, as the frontend framework will
+-- \<page\> element is the root node, only one \<page\> element is allowed per page.
+-- You can omit the explicit \<page\> wrapper, as the frontend framework will
 -- generate the root node by default.
 --
 -- You shouldn't use this, we already generate the @page@ for you when
 -- the initial @renderPage@ callback is invoked by PrimJS, and there can
--- only be one @page@ present at at time. We include it here for completeness,
+-- only be one @page@ present at a time. We include it here for completeness,
 -- and because @page@ functionality might change in the future.
 --
 page_ :: [Attribute model action] -> [View context props model action] -> View context props model action
@@ -75,9 +75,8 @@ page_ = lynx_ "page"
 -----------------------------------------------------------------------------
 -- | <https://lynxjs.org/api/elements/built-in/scroll-view.html>
 --
--- Basic element, used to contain other elements. <view> is the foundation
--- for all other elements; its attributes, events, and methods can be
--- used in other elements.
+-- Basic scrollable container: \<scroll-view\> lets its children scroll
+-- horizontally or vertically.
 --
 scrollView_ :: [Attribute model action] -> [View context props model action] -> View context props model action
 scrollView_ = lynxDirect_
@@ -86,7 +85,7 @@ scrollView_ = lynxDirect_
 -----------------------------------------------------------------------------
 -- | <https://lynxjs.org/api/elements/built-in/view.html>
 --
--- Basic element, used to contain other elements. <view> is the foundation
+-- Basic element, used to contain other elements. \<view\> is the foundation
 -- for all other elements; its attributes, events, and methods can be
 -- used in other elements.
 --
@@ -137,9 +136,9 @@ list_ ListOptions {..} attrs = lynxDirect_
 -----------------------------------------------------------------------------
 -- | <https://lynxjs.org/api/elements/built-in/text.html>
 --
--- <text> is a built-in component in Lynx used to display text content.
+-- \<text\> is a built-in component in Lynx used to display text content.
 -- It supports specifying text style, binding click event callbacks, and can
--- nest <text>, <image>, and <view> components to achieve relatively complex
+-- nest \<text\>, \<image\>, and \<view\> components to achieve relatively complex
 -- text and image content presentation.
 --
 text_ :: [Attribute model action] -> [View context props model action] -> View context props model action

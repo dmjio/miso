@@ -108,7 +108,7 @@ customContextMenu_ = boolProp "custom-context-menu"
 -- Used to set whether to enable the custom text selection function.
 -- When it is enabled, the element will no longer handle the gesture logic
 -- related to selection and copying. Developers need to control it through
--- APIs such as `setTextSelection`. It takes effect after enabling text-selection.
+-- APIs such as @setTextSelection@. It takes effect after enabling text-selection.
 --
 -- > customTextSelection_ True
 --

@@ -116,7 +116,7 @@
 -- * __Constructors__ — 'object', @.=@, 'emptyObject', 'emptyArray'
 -- * __Accessors__ — @.:@ (required), '.:?' (optional), '.:!' (optional\/nullable), '.!=' (default)
 -- * __Encoding__ — 'encode', 'encodePure', 'encodePretty', 'encodePretty''
--- * __Decoding__ — 'decode', 'eitherDecode', 'Parser.decodePure'
+-- * __Decoding__ — 'decode', 'eitherDecode', 'Miso.JSON.Parser.decodePure'
 -- * __Type classes__ — 'ToJSON', 'FromJSON', t'Parser'
 -- * __Prism-style parsers__ — 'withObject', 'withText', 'withArray', 'withNumber', 'withBool'
 -- * __Conversion__ — 'fromJSON', 'parseMaybe', 'parseEither'
@@ -371,7 +371,7 @@ instance FromJSONKey MisoString where
 -- | A type that can be serialised to a JSON 'Value'.
 --
 -- Instances for the most common Haskell types are provided. Derive via
--- 'GHC.Generics' for product\/sum types, or write instances by hand for
+-- "GHC.Generics" for product\/sum types, or write instances by hand for
 -- full control:
 --
 -- @
@@ -399,7 +399,7 @@ class ToJSON a where
   toJSONList = Array . Prelude.map toJSON
 ----------------------------------------------------------------------------
 #ifndef __MHS__
--- | Derive 'toJSON' via 'GHC.Generics' with custom t'Options'.
+-- | Derive 'toJSON' via "GHC.Generics" with custom t'Options'.
 -- Called by the default 'ToJSON' implementation using 'defaultOptions'.
 genericToJSON
   :: (Generic a, GToJSON (Rep a))
@@ -789,7 +789,7 @@ parseEither m v = first ms (Aeson.parseEither m v)
 -- | A type that can be deserialised from a JSON 'Value'.
 --
 -- Instances for the most common Haskell types are provided. Derive via
--- 'GHC.Generics' for product\/sum types, or write instances by hand:
+-- "GHC.Generics" for product\/sum types, or write instances by hand:
 --
 -- @
 -- -- Generic derivation:
@@ -818,7 +818,7 @@ class FromJSON a where
 class GFromJSON (f :: Type -> Type) where
   gParseJSON :: Options -> Value -> Parser (f a)
 ----------------------------------------------------------------------------
--- | Derive 'parseJSON' via 'GHC.Generics' with custom t'Options'.
+-- | Derive 'parseJSON' via "GHC.Generics" with custom t'Options'.
 -- Called by the default 'FromJSON' implementation using 'defaultOptions'.
 genericParseJSON
   :: (Generic a, GFromJSON (Rep a))

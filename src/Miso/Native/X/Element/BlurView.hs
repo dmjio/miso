@@ -9,7 +9,7 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- [/<blur-view/>](https://lynxjs.org/api/elements/built-in/blur-view.html)
+-- [/\<blur-view\>/](https://lynxjs.org/api/elements/built-in/blur-view.html)
 --
 -- Applies a Gaussian blur / material effect to the content behind it.
 --

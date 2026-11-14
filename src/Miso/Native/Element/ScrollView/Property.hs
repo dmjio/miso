@@ -51,7 +51,7 @@ enableScroll_ = boolProp "enable-scroll"
 --
 -- Sets the absolute content offset distance during initial rendering
 -- (different from the offset concept in the scrollTo method). The horizontal
--- or vertical direction is determined by `scroll-orientation`, and it only takes
+-- or vertical direction is determined by @scroll-orientation@, and it only takes
 -- effect during the first render execution, not responding to subsequent changes.
 --
 initialScrollOffset_ :: MisoString -> Attribute model action
@@ -79,7 +79,7 @@ bounces_ = boolProp "bounces"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/scroll-view.html#upper-threshold
 --
--- Sets a scroll threshold (unit: `px`), indicating how far from the top
+-- Sets a scroll threshold (unit: @px@), indicating how far from the top
 -- or left before triggering the @scrolltoupper@ event.
 --
 upperThreshold_ :: MisoString -> Attribute model action

@@ -9,7 +9,7 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- [/<svg/>](https://lynxjs.org/api/elements/built-in/svg.html)
+-- [/\<svg\>/](https://lynxjs.org/api/elements/built-in/svg.html)
 --
 -- Displays SVG content supplied inline or by URL.
 --

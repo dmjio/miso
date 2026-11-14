@@ -20,10 +20,10 @@
 -- * On the client (WASM \/ GHC JS backend) it is @JSString@ — a zero-copy
 --   wrapper around a native JavaScript string, giving optimal interop with
 --   the DOM and JSON APIs.
--- * On the server (@VANILLA@ build) it is 'Data.Text.Text', enabling
+-- * On the server (@VANILLA@ build) it is t'Data.Text.Text', enabling
 --   server-side rendering without any FFI dependency.
 --
--- Use 'ms' (short for 'toMisoString') to convert from 'String', 'T.Text',
+-- Use 'ms' (short for 'toMisoString') to convert from 'String', t'Data.Text.Text',
 -- numeric types, etc. into 'MisoString'.
 ----------------------------------------------------------------------------
 module Miso.String
@@ -60,7 +60,7 @@ import           Miso.DSL.FFI
 ----------------------------------------------------------------------------
 -- | The primary string type in Miso applications.
 --
--- * @VANILLA@ (server\/SSR build): alias for 'Data.Text.Text'
+-- * @VANILLA@ (server\/SSR build): alias for t'Data.Text.Text'
 -- * WASM \/ GHC JS backend: alias for @JSString@ — a zero-copy wrapper around
 --   a native JavaScript string, giving optimal interop with the DOM and JSON APIs
 --
@@ -72,8 +72,8 @@ type MisoString = JSString
 ----------------------------------------------------------------------------
 -- | A type that can be converted to 'MisoString'.
 --
--- Instances are provided for 'String', 'T.Text', 'LT.Text', 'B.ByteString',
--- 'BL.ByteString', 'Double', 'Float', 'Int', 'Word', and others.
+-- Instances are provided for 'String', t'Data.Text.Text', t'Data.Text.Lazy.Text', t'Data.ByteString.ByteString',
+-- t'Data.ByteString.Lazy.ByteString', 'Double', 'Float', 'Int', 'Word', and others.
 -- Use 'ms' as a short alias for 'toMisoString'.
 class ToMisoString str where
   -- | Convert a value to 'MisoString'.

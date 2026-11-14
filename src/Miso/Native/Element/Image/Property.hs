@@ -105,7 +105,7 @@ capInsets_ = textProp "cap-insets"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/image.html#cap-insets-scale
 --
--- Works with `cap-insets` to adjust the pixel positions when stretching the image.
+-- Works with @cap-insets@ to adjust the pixel positions when stretching the image.
 --
 -- > capInsetsScale_ 10
 --

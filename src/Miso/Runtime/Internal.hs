@@ -15,21 +15,21 @@
 -- the miso runtime's global mutable state from the internal runtime module.
 --
 -- __Do not import this module in application code.__ Mutating any of
--- the exported 'Data.IORef.IORef' values will corrupt the component
+-- the exported t'Data.IORef.IORef' values will corrupt the component
 -- lifecycle and produce undefined behaviour. The module exists solely to
 -- give the @miso-tests@ integration-test package direct access to
 -- component state for assertions.
 --
 -- = Exported names
 --
--- * 'components' — global 'Data.IORef.IORef' mapping 'Miso.Effect.ComponentId'
+-- * 'components' — global t'Data.IORef.IORef' mapping t'Miso.Effect.ComponentId'
 --   to t'ComponentState' for every mounted component.
--- * 'componentIds' — monotonically increasing 'Data.IORef.IORef' used to
+-- * 'componentIds' — monotonically increasing t'Data.IORef.IORef' used to
 --   assign fresh component identifiers.
 -- * 'rootComponentId' — the well-known identifier of the top-level app component.
 -- * t'ComponentState' — record holding the live model, scheduler mailbox, and
 --   other per-component runtime fields.
--- * 'schedulerThread' — 'Data.IORef.IORef' holding the 'Control.Concurrent.ThreadId'
+-- * 'schedulerThread' — t'Data.IORef.IORef' holding the t'Control.Concurrent.ThreadId'
 --   of the event-loop scheduler thread.
 -- * 'unmountComponent' / 'freeLifecycleHooks' — teardown functions normally
 --   only invoked internally, exposed here so tests can exercise unmounting a

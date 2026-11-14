@@ -26,10 +26,10 @@
 -- import "Miso.Subscription.Window"
 --
 -- data Action
---   = MouseMoved 'Miso.Canvas.Coord'         -- (clientX, clientY)
+--   = MouseMoved t'Miso.Canvas.Coord'         -- (clientX, clientY)
 --   | PointerMoved 'Miso.Event.Types.PointerEvent' -- full pointer data
 --
--- subs :: ['Miso.Effect.Sub' Action]
+-- subs :: [t'Miso.Effect.Sub' Action]
 -- subs =
 --   [ 'windowCoordsSub'      MouseMoved    -- simple (x, y) pair
 --   , 'windowPointerMoveSub' PointerMoved  -- full PointerEvent
@@ -38,7 +38,7 @@
 --
 -- = Subscription variants
 --
--- * 'windowCoordsSub' — fires @(clientX, clientY)@ as a 'Miso.Canvas.Coord'
+-- * 'windowCoordsSub' — fires @(clientX, clientY)@ as a t'Miso.Canvas.Coord'
 --   on every @pointermove@. Simplest option when only screen position is needed.
 --
 -- * 'windowPointerMoveSub' — fires the full 'Miso.Event.Types.PointerEvent'
@@ -48,7 +48,7 @@
 --   name and a 'Miso.Event.Decoder.Decoder':
 --
 -- @
--- resizeSub :: ('Miso.Canvas.Coord' -> action) -> 'Miso.Effect.Sub' action
+-- resizeSub :: ('Coord' -> action) -> t'Miso.Effect.Sub' action
 -- resizeSub f = 'windowSub' \"resize\" 'Miso.Event.Decoder.emptyDecoder' (const (f (0,0)))
 -- @
 --

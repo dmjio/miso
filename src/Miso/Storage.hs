@@ -20,9 +20,9 @@
 -- <https://developer.mozilla.org/en-US/docs/Web/API/Window/sessionStorage sessionStorage>
 -- through symmetric 'IO' functions.
 --
--- Both stores map 'Miso.String.MisoString' keys to 'Miso.String.MisoString'
+-- Both stores map t'Miso.String.MisoString' keys to t'Miso.String.MisoString'
 -- values (the Web Storage API only persists strings). Reads return
--- @'Maybe' 'Miso.String.MisoString'@ — 'Nothing' when the key is absent.
+-- @'Maybe' t'Miso.String.MisoString'@ — 'Nothing' when the key is absent.
 --
 -- * __localStorage__ — persists across browser sessions until explicitly
 --   cleared.
@@ -36,15 +36,15 @@
 -- import "Miso.String" ('Miso.String.ms')
 --
 -- -- Persist a preference
--- saveTheme :: 'Miso.String.MisoString' -> IO ()
+-- saveTheme :: t'Miso.String.MisoString' -> IO ()
 -- saveTheme theme = 'setLocalStorage' \"theme\" theme
 --
 -- -- Restore it on startup
--- loadTheme :: IO ('Maybe' 'Miso.String.MisoString')
+-- loadTheme :: IO ('Maybe' t'Miso.String.MisoString')
 -- loadTheme = 'getLocalStorage' \"theme\"
 --
 -- -- Session-scoped token (cleared when tab closes)
--- saveToken :: 'Miso.String.MisoString' -> IO ()
+-- saveToken :: t'Miso.String.MisoString' -> IO ()
 -- saveToken tok = 'setSessionStorage' \"auth_token\" tok
 -- @
 --

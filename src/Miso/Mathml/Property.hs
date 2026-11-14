@@ -11,7 +11,7 @@
 --
 -- = Overview
 --
--- "Miso.Mathml.Property" provides 'Miso.Types.Attribute' smart constructors
+-- "Miso.Mathml.Property" provides t'Miso.Types.Attribute' smart constructors
 -- for
 -- <https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Attribute MathML attributes>.
 -- They are used alongside the element constructors from "Miso.Mathml.Element".
@@ -23,7 +23,7 @@
 -- import "Miso.Mathml.Element"
 -- import "Miso.Mathml.Property"
 --
--- styledFrac :: 'Miso.Types.View' model action
+-- styledFrac :: t'Miso.Types.View' model action
 -- styledFrac =
 --   'Miso.Mathml.Element.math_' [ 'display_' \"block\" ]
 --     [ 'Miso.Mathml.Element.mfrac_' [ 'linethickness_' \"2px\" ]

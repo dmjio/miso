@@ -63,7 +63,7 @@
 --
 -- = See also
 --
--- * "Miso.DSL" — 'Miso.DSL.JSVal' and marshaling used internally
+-- * "Miso.DSL" — t'Miso.DSL.JSVal' and marshaling used internally
 -----------------------------------------------------------------------------
 module Miso.Date
   ( -- * Type

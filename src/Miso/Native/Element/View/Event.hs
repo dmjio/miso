@@ -109,7 +109,7 @@ import           Miso.JSON
 import           Miso.String (MisoString, isPrefixOf)
 import           Miso.Types (Attribute, EventHandler, DOMRef)
 ----------------------------------------------------------------------------
--- | The 'Events' map for the Lynx @<view>@ element.
+-- | The 'Events' map for the Lynx @\<view\>@ element.
 --
 -- Combine with other element maps using @<>@ and pass the result to
 -- 'Miso.Native.native', so the delegator listens for these events.
@@ -174,12 +174,12 @@ data AnimationEvent
   = AnimationEvent
   { animationType :: AnimationType
     -- ^ The type of the animation. If it is a keyframe animation,
-    -- this value is `keyframe-animation`; if it is a transition animation,
-    -- this value is `transition-animation`.
+    -- this value is @keyframe-animation@; if it is a transition animation,
+    -- this value is @transition-animation@.
   , animationName :: Maybe MisoString
     -- ^ The name of the animation. If it is a keyframe animation, it
-    -- is the name of `@keyframes` in CSS; if it is a transition animation,
-    -- it is the name of `transition-property` in CSS. 'Nothing' for
+    -- is the name of @\@keyframes@ in CSS; if it is a transition animation,
+    -- it is the name of @transition-property@ in CSS. 'Nothing' for
     -- 'LegacyTransitionAnimation', whose property name is folded into
     -- 'animationType' instead.
   , newAnimator :: Bool
@@ -225,7 +225,7 @@ animationDecoder = Decoder {..}
       newAnim <- d .:? "new_animator" .!= False
       pure (AnimationEvent aType name newAnim)
 -----------------------------------------------------------------------------
--- | Payload of a @<view>@ layout-change event: the target's id, its new
+-- | Payload of a @\<view\>@ layout-change event: the target's id, its new
 -- box, and its @dataset@.
 -- 
 -- @since 1.13.0.0
@@ -285,7 +285,7 @@ instance FromJSON UIAppearanceDetailEventType where
     "uidisappear" -> pure UIDisappear
     x -> typeMismatch "UIAppearanceDetailEventType" (toJSON x)
 -----------------------------------------------------------------------------
--- | Payload of a @<view>@ appearance event: whether the element appeared
+-- | Payload of a @\<view\>@ appearance event: whether the element appeared
 -- or disappeared, plus the exposure identifiers Lynx assigns it.
 -- 
 -- @since 1.13.0.0
@@ -330,7 +330,7 @@ uiAppearanceDetailDecoder = Decoder {..}
 -- update :: Action -> Effect props Model Action
 -- update (HandleTouch TouchEvent {..}) = do
 --   io_ (consoleLog "touch event received")
---
+-- @
 onTouchStart :: (TouchEvent -> action) -> Attribute model action
 onTouchStart action = on "touchstart" touchDecoder (\x _ _ -> action x)
 ----------------------------------------------------------------------------
@@ -480,7 +480,7 @@ onTapMainModel action = onMain "tap" emptyDecoder (\() m _ -> action m)
 -- | https://lynxjs.org/api/elements/built-in/view.html#longpress
 --
 -- It belongs to the touch event, which is triggered when the finger is long
--- pressed on the touch surface, and the interval between long press triggers is `500 ms`.
+-- pressed on the touch surface, and the interval between long press triggers is @500 ms@.
 --
 -- @
 -- data Action = HandleTouch TouchEvent

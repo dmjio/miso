@@ -9,7 +9,7 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- [/<textarea/>](https://lynxjs.org/api/elements/built-in/textarea.html)
+-- [/\<textarea\>/](https://lynxjs.org/api/elements/built-in/textarea.html)
 --
 -- Multi-line text input element.
 --

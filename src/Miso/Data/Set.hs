@@ -18,15 +18,15 @@
 -- object. Values of type @'Set' a@ live in JavaScript memory; all
 -- operations run in 'IO' and mutate the underlying JS set in place.
 --
--- Unlike 'Data.Set.Set', elements do not require an 'Ord' instance —
--- any type with a 'Miso.DSL.ToJSVal' instance can be stored, and equality
+-- Unlike t'Data.Set.Set', elements do not require an 'Ord' instance —
+-- any type with a t'Miso.DSL.ToJSVal' instance can be stored, and equality
 -- is determined by JavaScript's
 -- <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Equality_comparisons_and_sameness SameValueZero>
 -- algorithm.
 --
 -- Use this module when you need to share a set with a browser API or a
 -- third-party JavaScript library. For pure Haskell processing, prefer
--- 'Data.Set.Set'.
+-- t'Data.Set.Set'.
 --
 -- Import qualified to avoid clashing with "Prelude":
 --
@@ -58,9 +58,9 @@
 --
 -- = See also
 --
--- * "Miso.Data.Array" — mutable JS 'Miso.Data.Array.Array'
--- * "Miso.Data.Map" — mutable JS 'Miso.Data.Map.Map'
--- * "Miso.DSL" — 'Miso.DSL.ToJSVal' \/ 'Miso.DSL.FromJSVal' used by element types
+-- * "Miso.Data.Array" — mutable JS t'Miso.Data.Array.Array'
+-- * "Miso.Data.Map" — mutable JS t'Miso.Data.Map.Map'
+-- * "Miso.DSL" — t'Miso.DSL.ToJSVal' \/ t'Miso.DSL.FromJSVal' used by element types
 -----------------------------------------------------------------------------
 module Miso.Data.Set
   ( -- * Type

@@ -9,12 +9,12 @@
 --
 -- = Overview
 --
--- "Miso.State" re-exports the 'Control.Monad.RWS.RWS' combinators that are
--- most useful inside an 'Miso.Effect.Effect' handler. Because
--- 'Miso.Effect.Effect' is an @RWS@ monad, the full
--- 'Control.Monad.State.Class.MonadState',
--- 'Control.Monad.Reader.Class.MonadReader', and
--- 'Control.Monad.Writer.Class.MonadWriter' interfaces are available
+-- "Miso.State" re-exports the t'Control.Monad.RWS.Strict.RWS' combinators that are
+-- most useful inside an t'Miso.Effect.Effect' handler. Because
+-- t'Miso.Effect.Effect' is an @RWS@ monad, the full
+-- t'Control.Monad.State.Class.MonadState',
+-- t'Control.Monad.Reader.Class.MonadReader', and
+-- t'Control.Monad.Writer.Class.MonadWriter' interfaces are available
 -- without importing @mtl@ directly.
 --
 -- This module is re-exported in its entirety by "Miso", so most
@@ -30,7 +30,7 @@
 -- data Model = Model { _count :: Int } deriving (Eq)
 -- data Action = Increment | Decrement | Reset | Log
 --
--- update :: Action -> 'Miso.Effect.Effect' p props Model Action
+-- update :: Action -> t'Miso.Effect.Effect' p props Model Action
 -- update Increment = 'modify' (\\m -> m { _count = _count m + 1 })
 -- update Decrement = 'modify'' (\\m -> m { _count = _count m - 1 })
 -- update Reset     = 'put' (Model 0)
@@ -52,7 +52,7 @@
 --
 -- = See also
 --
--- * "Miso.Effect" — 'Miso.Effect.Effect', 'Miso.Effect.io', 'Miso.Effect.io_', 'Miso.Effect.sync'
+-- * "Miso.Effect" — t'Miso.Effect.Effect', 'Miso.Effect.io', 'Miso.Effect.io_', 'Miso.Effect.sync'
 -- * "Miso.Lens" — lens operators that wrap 'modify'
 -- * "Miso.Lens.TH" — Template Haskell lens generation
 ----------------------------------------------------------------------------

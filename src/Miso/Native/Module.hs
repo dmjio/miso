@@ -87,7 +87,7 @@ callNativeModule name method args = do
 -- via 'FromJSON' and handed to the supplied continuation, which fires exactly
 -- once — with @'Left' error@ if the native call errored or the result failed
 -- to decode. Callers that block awaiting the continuation (e.g. via an
--- 'Control.Concurrent.MVar.MVar') can therefore rely on it always firing,
+-- t'Control.Concurrent.MVar.MVar') can therefore rely on it always firing,
 -- instead of hanging forever on the error path.
 --
 -- > callNativeModuleWith "NativeLocalStorageModule" "getStorageItem"

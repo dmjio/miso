@@ -14,7 +14,7 @@
 --
 -- "Miso.JSON.Lexer" is the first stage of miso's pure Haskell JSON pipeline,
 -- which is used for server-side rendering (SSR). It tokenises a
--- 'Miso.String.MisoString' into a stream of 'Token' values consumed by
+-- t'Miso.String.MisoString' into a stream of 'Token' values consumed by
 -- "Miso.JSON.Parser".
 --
 -- This module is __internal__. Application code should use "Miso.JSON" or
@@ -30,7 +30,7 @@
 --   = 'TokenPunctuator' Char    -- one of @[ ] { } , :@
 --   | 'TokenNumber'     Double  -- JSON number (integer or floating-point)
 --   | 'TokenBool'       Bool    -- @true@ or @false@
---   | 'TokenString'     'Miso.String.MisoString' -- quoted string with escape sequences
+--   | 'TokenString'     t'Miso.String.MisoString' -- quoted string with escape sequences
 --   | 'TokenNull'               -- @null@
 -- @
 --
@@ -41,7 +41,7 @@
 -- = See also
 --
 -- * "Miso.JSON.Parser" — consumes 'Token' streams produced here
--- * "Miso.JSON.Types" — 'Miso.JSON.Types.Value' produced by the parser
+-- * "Miso.JSON.Types" — t'Miso.JSON.Types.Value' produced by the parser
 -- * "Miso.Util.Lexer" — the underlying 'Miso.Util.Lexer.Lexer' combinator library
 ----------------------------------------------------------------------------
 module Miso.JSON.Lexer (Token (..), tokens) where

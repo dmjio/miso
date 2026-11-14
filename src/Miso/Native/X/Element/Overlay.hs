@@ -9,7 +9,7 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- [/<overlay/>](https://lynxjs.org/api/elements/built-in/overlay.html)
+-- [/\<overlay\>/](https://lynxjs.org/api/elements/built-in/overlay.html)
 --
 -- Renders its children on an independent layer above the page.
 --

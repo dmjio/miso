@@ -11,13 +11,13 @@
 --
 -- "Miso.JSON.Parser" is the second stage of miso's pure Haskell JSON
 -- pipeline, used for server-side rendering (SSR). It takes the 'Token'
--- stream produced by "Miso.JSON.Lexer" and builds a 'Miso.JSON.Types.Value'
+-- stream produced by "Miso.JSON.Lexer" and builds a t'Miso.JSON.Types.Value'
 -- tree.
 --
 -- The single public entry point is 'decodePure':
 --
 -- @
--- 'decodePure' :: 'Miso.String.MisoString' -> Either String 'Miso.JSON.Types.Value'
+-- 'decodePure' :: t'Miso.String.MisoString' -> Either String t'Miso.JSON.Types.Value'
 -- @
 --
 -- It returns @'Left' err@ on a lexical or parse error and @'Right' v@ on
@@ -32,7 +32,7 @@
 -- = See also
 --
 -- * "Miso.JSON.Lexer" — tokenizer that feeds this parser
--- * "Miso.JSON.Types" — 'Miso.JSON.Types.Value' and 'Miso.JSON.Types.Result' types
+-- * "Miso.JSON.Types" — t'Miso.JSON.Types.Value' and t'Miso.JSON.Types.Result' types
 -- * "Miso.Util.Parser" — the underlying parser combinator library
 ----------------------------------------------------------------------------
 {-# LANGUAGE CPP #-}

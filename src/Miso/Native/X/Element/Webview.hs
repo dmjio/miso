@@ -9,7 +9,7 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- [/<webview/>](https://lynxjs.org/api/elements/built-in/webview.html)
+-- [/\<webview\>/](https://lynxjs.org/api/elements/built-in/webview.html)
 --
 -- Embeds a web page.
 --

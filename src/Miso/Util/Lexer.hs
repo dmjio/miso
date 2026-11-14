@@ -23,7 +23,7 @@
 -- @
 --
 -- t'Lexer' is a 'Monad', 'Alternative', and 'MonadFail'. Its
--- 'Control.Applicative.Alternative' instance implements the
+-- t'Control.Applicative.Alternative' instance implements the
 -- /maximal munch/ rule: when both branches succeed, the one that
 -- consumes the most input wins.
 --
@@ -43,7 +43,7 @@
 -- @
 -- 'satisfy'  :: (Char -> Bool) -> t'Lexer' Char   -- consume one matching char
 -- 'char'     :: Char -> t'Lexer' Char              -- consume a specific char
--- 'string'   :: 'Miso.String.MisoString' -> t'Lexer' 'Miso.String.MisoString'   -- consume a literal prefix
+-- 'string'   :: t'Miso.String.MisoString' -> t'Lexer' t'Miso.String.MisoString'   -- consume a literal prefix
 -- 'string''  :: String -> t'Lexer' String          -- same for 'String'
 -- 'peek'     :: t'Lexer' (Maybe Char)              -- look ahead without consuming
 -- 'oops'     :: t'Lexer' token                     -- always fails
@@ -63,7 +63,7 @@
 --
 -- @
 -- 'runLexer' :: t'Lexer' token -> t'Stream' -> Either t'LexerError' (token, t'Stream')
--- 'mkStream' :: 'Miso.String.MisoString' -> t'Stream'   -- create initial stream
+-- 'mkStream' :: t'Miso.String.MisoString' -> t'Stream'   -- create initial stream
 -- @
 --
 -- = See also

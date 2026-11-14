@@ -13,7 +13,7 @@
 --
 -- "Miso.UUID" provides a t'UUID' type, as defined in
 -- <http://tools.ietf.org/html/rfc4122 RFC 4122>, backed by a
--- 'Miso.String.MisoString'. Its API mirrors @Data.UUID@ from the
+-- t'Miso.String.MisoString'. Its API mirrors @Data.UUID@ from the
 -- <https://hackage.haskell.org/package/uuid uuid> package.
 --
 -- New v4 UUIDs are generated with the browser's
@@ -24,7 +24,7 @@
 -- = Quick start
 --
 -- @
--- import "Miso.UUID" (t'UUID')
+-- import "Miso.UUID" ('UUID')
 -- import qualified "Miso.UUID" as UUID
 --
 -- -- Generate a fresh identifier
@@ -42,8 +42,8 @@
 --
 -- = Instances
 --
--- t'UUID' can be converted to and from 'Miso.String.MisoString', JSON,
--- 'Miso.DSL.JSVal', and used as a route capture with "Miso.Router".
+-- t'UUID' can be converted to and from t'Miso.String.MisoString', JSON,
+-- t'Miso.DSL.JSVal', and used as a route capture with "Miso.Router".
 -- Its 'Show' and 'Read' instances use the unquoted @8-4-4-4-12@ form,
 -- like @Data.UUID@.
 ----------------------------------------------------------------------------
@@ -132,27 +132,27 @@ toString = fromMisoString . toMisoString
 fromString :: String -> Maybe UUID
 fromString = either (const Nothing) Just . parse . toMisoString
 -----------------------------------------------------------------------------
--- | Like 'toString', but to t'T.Text'.
+-- | Like 'toString', but to t'Data.Text.Text'.
 toText :: UUID -> T.Text
 toText = fromMisoString . toMisoString
 -----------------------------------------------------------------------------
--- | Like 'fromString', but from t'T.Text'.
+-- | Like 'fromString', but from t'Data.Text.Text'.
 fromText :: T.Text -> Maybe UUID
 fromText = fromString . T.unpack
 -----------------------------------------------------------------------------
--- | Like 'toString', but to an ASCII-encoded strict 'B8.ByteString'.
+-- | Like 'toString', but to an ASCII-encoded strict t'Data.ByteString.Char8.ByteString'.
 toASCIIBytes :: UUID -> B8.ByteString
 toASCIIBytes = B8.pack . toString
 -----------------------------------------------------------------------------
--- | Like 'fromString', but from an ASCII-encoded strict 'B8.ByteString'.
+-- | Like 'fromString', but from an ASCII-encoded strict t'Data.ByteString.Char8.ByteString'.
 fromASCIIBytes :: B8.ByteString -> Maybe UUID
 fromASCIIBytes = fromString . B8.unpack
 -----------------------------------------------------------------------------
--- | Like 'toString', but to an ASCII-encoded lazy 'BL.ByteString'.
+-- | Like 'toString', but to an ASCII-encoded lazy t'Data.ByteString.Lazy.ByteString'.
 toLazyASCIIBytes :: UUID -> BL.ByteString
 toLazyASCIIBytes = BL8.pack . toString
 -----------------------------------------------------------------------------
--- | Like 'fromString', but from an ASCII-encoded lazy 'BL.ByteString'.
+-- | Like 'fromString', but from an ASCII-encoded lazy t'Data.ByteString.Lazy.ByteString'.
 fromLazyASCIIBytes :: BL.ByteString -> Maybe UUID
 fromLazyASCIIBytes = fromString . BL8.unpack
 -----------------------------------------------------------------------------

@@ -26,10 +26,10 @@
 --
 -- data Action = OnLineChanged Bool
 --
--- subs :: ['Miso.Effect.Sub' Action]
+-- subs :: [t'Miso.Effect.Sub' Action]
 -- subs = [ 'onLineSub' OnLineChanged ]
 --
--- update :: Action -> 'Miso.Effect.Effect' p props Model Action
+-- update :: Action -> t'Miso.Effect.Effect' p props Model Action
 -- update (OnLineChanged isOnLine)
 --   | isOnLine  = 'Miso.Effect.io_' (consoleLog \"Back online\")
 --   | otherwise = 'Miso.Effect.io_' (consoleLog \"Offline\")

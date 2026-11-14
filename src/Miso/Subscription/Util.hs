@@ -34,18 +34,18 @@
 -- @
 -- import "Miso.Subscription.Util" ('createSub')
 -- import "Miso.Effect" ('Sub')
--- import qualified "Miso.FFI.Internal" as FFI
+-- import qualified "Miso.Runtime.Internal" as FFI
 --
 -- -- Custom subscription: fire an action whenever the window is resized
 -- resizeSub :: (Int -> action) -> 'Sub' action
 -- resizeSub toAction sink = 'createSub' acquire release sink
 --   where
 --     acquire =
---       FFI.'Miso.FFI.Internal.windowAddEventListener' \"resize\" $ \\_ -> do
---         w <- FFI.'Miso.FFI.Internal.windowInnerWidth'
+--       FFI.'Miso.Runtime.Internal.windowAddEventListener' \"resize\" $ \\_ -> do
+--         w <- FFI.'Miso.FFI.windowInnerWidth'
 --         sink (toAction w)
 --     release cb =
---       FFI.'Miso.FFI.Internal.windowRemoveEventListener' \"resize\" cb
+--       FFI.'Miso.Runtime.Internal.windowRemoveEventListener' \"resize\" cb
 -- @
 --
 -- = How it works
@@ -64,9 +64,9 @@
 --
 -- = See also
 --
--- * "Miso.Effect" — 'Miso.Effect.Sub', 'Miso.Effect.Sink'
--- * "Miso.FFI.Internal" — 'Miso.FFI.Internal.windowAddEventListener',
---   'Miso.FFI.Internal.windowRemoveEventListener'
+-- * "Miso.Effect" — t'Miso.Effect.Sub', t'Miso.Effect.Sink'
+-- * "Miso.Runtime.Internal" — 'Miso.Runtime.Internal.windowAddEventListener',
+--   'Miso.Runtime.Internal.windowRemoveEventListener'
 -- * "Miso.Subscription" — all built-in subscriptions
 ----------------------------------------------------------------------------
 module Miso.Subscription.Util
@@ -104,7 +104,7 @@ createSub acquire release = \_ _ ->
 --
 -- The 'IO' action runs once, when the 'Sub' starts, and builds the
 -- per-frame handler; it is the place to acquire anything the handler
--- needs (a canvas context, 'Data.IORef.IORef's for timing state, ...).
+-- needs (a canvas context, t'Data.IORef.IORef's for timing state, ...).
 -- The handler then receives the frame's @DOMHighResTimeStamp@ in
 -- milliseconds, every frame, until the 'Sub' is stopped.
 --

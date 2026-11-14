@@ -21,7 +21,7 @@
 --
 -- Use this module when you need to pass a JS-native array to a browser API
 -- or a third-party JavaScript library. For pure Haskell data processing,
--- prefer ordinary lists or 'Data.Map.Strict.Map'.
+-- prefer ordinary lists or t'Data.Map.Strict.Map'.
 --
 -- Import qualified to avoid clashing with "Prelude":
 --
@@ -53,9 +53,9 @@
 --
 -- = See also
 --
--- * "Miso.Data.Map" — mutable JS 'Miso.Data.Map.Map'
--- * "Miso.Data.Set" — mutable JS 'Miso.Data.Set.Set'
--- * "Miso.DSL" — 'Miso.DSL.ToJSVal' \/ 'Miso.DSL.FromJSVal' used by element types
+-- * "Miso.Data.Map" — mutable JS t'Miso.Data.Map.Map'
+-- * "Miso.Data.Set" — mutable JS t'Miso.Data.Set.Set'
+-- * "Miso.DSL" — t'Miso.DSL.ToJSVal' \/ t'Miso.DSL.FromJSVal' used by element types
 -----------------------------------------------------------------------------
 module Miso.Data.Array
   ( -- * Type

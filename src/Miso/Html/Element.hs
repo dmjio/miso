@@ -18,7 +18,7 @@
 -- Each constructor has the signature:
 --
 -- @
--- tagName_ :: ['Miso.Types.Attribute' action] -> ['Miso.Types.View' model action] -> 'Miso.Types.View' model action
+-- tagName_ :: [t'Miso.Types.Attribute' action] -> [t'Miso.Types.View' model action] -> t'Miso.Types.View' model action
 -- @
 --
 -- All names are suffixed with @_@ to avoid clashing with Haskell
@@ -30,7 +30,7 @@
 -- @
 -- import "Miso"
 --
--- view :: Model -> 'Miso.Types.View' context props Model Action
+-- view :: Model -> t'Miso.Types.View' context props Model Action
 -- view m =
 --   'div_' []
 --     [ 'h1_' [] [ 'Miso.text' \"Hello, miso!\" ]
@@ -70,7 +70,7 @@
 --
 -- * "Miso.Html.Property" — 'Miso.Html.Property.id_', 'Miso.Html.Property.class_', 'Miso.Html.Property.src_', …
 -- * "Miso.Html.Event" — 'Miso.Html.Event.onClick', 'Miso.Html.Event.onInput', …
--- * "Miso.Html.Render" — server-side HTML rendering via 'Miso.Html.Render.ToHtml'
+-- * "Miso.Html.Render" — server-side HTML rendering via t'Miso.Html.Render.ToHtml'
 -- * "Miso.Svg.Element" — SVG element constructors
 -----------------------------------------------------------------------------
 module Miso.Html.Element
@@ -215,7 +215,7 @@ import           Miso.Types
 -----------------------------------------------------------------------------
 import           Miso.Svg.Element (svg_)
 -----------------------------------------------------------------------------
--- | Low-level helper used to construct 'HTML' 'node' in 'Miso.Types.View'.
+-- | Low-level helper used to construct 'HTML' 'node' in t'Miso.Types.View'.
 -- Almost all functions in this module, like 'div_', 'table_' etc. are defined in terms of it.
 nodeHtml :: MisoString -> [Attribute model action] -> [View context props model action] -> View context props model action
 nodeHtml nodeName = node HTML nodeName

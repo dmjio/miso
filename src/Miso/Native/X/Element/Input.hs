@@ -9,7 +9,7 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- [/<input/>](https://lynxjs.org/api/elements/built-in/input.html)
+-- [/\<input\>/](https://lynxjs.org/api/elements/built-in/input.html)
 --
 -- Single-line text input element.
 --

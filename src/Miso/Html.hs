@@ -32,7 +32,7 @@
 --
 -- data Action = Increment | Decrement | Reset
 --
--- view :: Int -> 'Miso.Types.View' context props Int Action
+-- view :: Int -> t'Miso.Types.View' context props Int Action
 -- view n =
 --   'Miso.Html.Element.div_' [ 'Miso.Html.Property.class_' \"counter\" ]
 --     [ 'h1_' [] [ 'Miso.text' \"Counter\" ]
@@ -56,8 +56,8 @@
 --   pointer, drag, touch, media, and lifecycle events.
 --
 -- ["Miso.Html.Render"]
---   The 'Miso.Html.Render.ToHtml' typeclass for serialising a
---   'Miso.Types.View' tree to a lazy @ByteString@ of UTF-8 HTML
+--   The t'Miso.Html.Render.ToHtml' typeclass for serialising a
+--   t'Miso.Types.View' tree to a lazy @ByteString@ of UTF-8 HTML
 --   (server-side rendering \/ SSR).
 --
 -- = See also

@@ -38,8 +38,8 @@
 --
 -- = live
 --
--- Clears only @\<body\>@, then re-mounts the component using the __old
--- model__ value recovered from the previous GHCi session via a C-heap
+-- Clears only @\<body\>@, then re-mounts the component using the __old__
+-- __model__ value recovered from the previous GHCi session via a C-heap
 -- stable pointer. @\<head\>@ injections (stylesheets, scripts) from the
 -- previous session are preserved.
 --
@@ -57,7 +57,7 @@
 -- = See also
 --
 -- * <https://github.com/haskell-miso/miso-sampler miso-sampler> — reference project demonstrating 'live'
--- * "Miso.Runtime" — 'Miso.Runtime.initComponent' and component lifecycle
+-- * @Miso.Runtime@ — @initComponent@ and component lifecycle
 -- * "Miso.Event.Types" — 'Miso.Event.Types.defaultEvents' used as first argument
 ----------------------------------------------------------------------------
 module Miso.Reload
@@ -124,7 +124,7 @@ foreign import ccall unsafe "miso_x_clear"
 -- mounted components become unmounted and @ComponentId@ are reset to their
 -- original form factory.
 --
--- If you'd like to preserve application state between calls to GHCi `:r`, see 'live'.
+-- If you'd like to preserve application state between calls to GHCi @:r@, see 'live'.
 --
 -- @since 1.9.0.0
 reload

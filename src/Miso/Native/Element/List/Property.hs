@@ -131,7 +131,7 @@ listMainAxisGap_ = textProp "list-main-axis-gap"
 -----------------------------------------------------------------------------
 -- | https://lynxjs.org/api/elements/built-in/list.html#list-cross-axis-gap
 --
--- Specifies the spacing of <list> child nodes in the cross axis direction,
+-- Specifies the spacing of \<list\> child nodes in the cross axis direction,
 -- which needs to be written in the style.
 --
 listCrossAxisGap_ :: MisoString -> Attribute model action
@@ -194,6 +194,7 @@ initialScrollIndex_ = intProp "initial-scroll-index"
 -- information of the currently rendering node.
 --
 -- The scroll events include:
+--
 --  * @scroll@
 --  * @scrolltoupper@
 --  * @scrolltolower@
@@ -206,7 +207,7 @@ needVisibleItemInfo_ = boolProp "need-visible-item-info"
 -- | https://lynxjs.org/api/elements/built-in/list.html#upper-threshold-item-count
 -- 
 -- Triggers a @scrolltoupper@ event once when the number of remaining displayable
--- child nodes at the top of \<list\> is less than `upper-threshold-item-count`
+-- child nodes at the top of \<list\> is less than @upper-threshold-item-count@
 -- for the first time.
 --
 upperThresholdItemCount_ :: Int -> Attribute model action
@@ -216,7 +217,7 @@ upperThresholdItemCount_ = intProp "upper-threshold-item-count"
 -- 
 -- Triggers a @scrolltolower@ event once when the number of remaining
 -- displayable child nodes at the bottom of \<list\> is less than
--- `lower-threshold-item-count` for the first time.
+-- @lower-threshold-item-count@ for the first time.
 --
 lowerThresholdItemCount_ :: Int -> Attribute model action
 lowerThresholdItemCount_ = intProp "lower-threshold-item-count"
@@ -231,7 +232,7 @@ lowerThresholdItemCount_ = intProp "lower-threshold-item-count"
 scrollEventThrottle_ :: Int -> Attribute model action
 scrollEventThrottle_ = intProp "scroll-event-throttle"
 -----------------------------------------------------------------------------
--- | Where a @<list>@ item comes to rest when pagination snaps to it.
+-- | Where a @\<list\>@ item comes to rest when pagination snaps to it.
 -- 
 -- @since 1.13.0.0
 data ListItemSnapAlignment
@@ -252,8 +253,8 @@ instance ToJSON ListItemSnapAlignment where
 -- Used to mark the unique identifier for this data source update, which
 -- will be returned in the 'Miso.Native.Element.List.Event.onLayoutComplete' event callback.
 --
--- - `factor`: The parameter for paginated positioning, with a range of `[0, 1]`.
--- - `offset`: Additional `offset` parameter added on top of `factor`.
+-- - @factor@: The parameter for paginated positioning, with a range of @[0, 1]@.
+-- - @offset@: Additional @offset@ parameter added on top of @factor@.
 --
 itemSnap_ :: ListItemSnapAlignment -> Attribute model action
 itemSnap_ = prop "item-snap"
