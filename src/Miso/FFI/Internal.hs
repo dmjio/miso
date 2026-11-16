@@ -1036,13 +1036,14 @@ websocketConnect
   -> Maybe (JSVal -> IO ())
   -> (JSVal -> IO ())
   -> Bool
+  -> [MisoString]
   -> IO JSVal
 {-# INLINABLE websocketConnect #-}
 websocketConnect
   url onOpen onClose
   onMessageText onMessageJSON
   onMessageBLOB onMessageArrayBuffer
-  onError textOnly = do
+  onError textOnly protocols = do
     url_ <- toJSVal url
     onOpen_ <- toJSVal =<< asyncCallback onOpen
     onClose_ <- toJSVal =<< asyncCallback1 onClose
@@ -1052,6 +1053,7 @@ websocketConnect
     onMessageArrayBuffer_ <- withMaybe onMessageArrayBuffer
     onError_ <- toJSVal =<< asyncCallback1 onError
     textOnly_ <- toJSVal textOnly
+    protocols_ <- toJSVal protocols
     jsg "miso" # "websocketConnect" $
       [ url_
       , onOpen_
@@ -1062,6 +1064,7 @@ websocketConnect
       , onMessageArrayBuffer_
       , onError_
       , textOnly_
+      , protocols_
       ]
   where
     withMaybe Nothing = pure jsNull

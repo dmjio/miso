@@ -109,10 +109,13 @@ export function websocketConnect (
     onMessageArrayBuffer,
     onError,
     textOnly : boolean,
+    protocols? : string[],
 ): WebSocket {
   try {
-    let socket = new WebSocket(url);
+    let socket = new WebSocket(url, protocols?.length ? protocols : undefined);
+    let opened = false;
     socket.onopen = function () {
+      opened = true;
       onOpen();
     };
     socket.onclose = function (e) {
@@ -120,7 +123,8 @@ export function websocketConnect (
     };
     socket.onerror = function (error) {
       console.error (error);
-      onError("WebSocket error received");
+      // the error event carries no detail, and readyState is already CLOSED here; the close event has the code
+      onError(opened ? "WebSocket error received" : "WebSocket connection failed");
     };
     socket.onmessage = function (msg) {
       if (typeof msg.data === "string") {
@@ -149,7 +153,12 @@ export function websocketConnect (
     };
     return socket;
   } catch (err) {
-    onError (err.message);
+    // no socket, so no close event: synthesize one so consumers see exactly one onClose.
+    // Deferred: on wasm the callbacks must not run inside this (unsafe) call.
+    setTimeout(() => {
+      onError (err.message);
+      onClose ({ code: 1006, wasClean: false, reason: err.message });
+    }, 0);
   }
 }
 
@@ -165,7 +174,7 @@ export function websocketClose (
 export function websocketSend (
   socket, message
 ): void {
-  if (message && socket && socket.readyState === WebSocket.OPEN) {
+  if (message != null && socket && socket.readyState === WebSocket.OPEN) {
       socket.send(message);
   }
 }

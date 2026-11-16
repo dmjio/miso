@@ -83,8 +83,12 @@
 -- * Always call 'close' when the connection is no longer needed to avoid
 --   resource leaks. It is safe to call 'close' multiple times — subsequent
 --   calls are no-ops.
+-- * A send on a socket that is not open is a no-op. The @onClosed@ callback is how you
+--   learn that a connection has gone, so re-send after you reconnect.
 -- * 'socketState' lets you query the current 'SocketState'
 --   (@CONNECTING@, @OPEN@, @CLOSING@, @CLOSED@) asynchronously.
+-- * 'protocol' returns the subprotocol the server selected from the
+--   'protocols' requested via the @connect*With@ variants.
 -- * 'emptyWebSocket' (@= -1@) is a null sentinel you can store in the
 --   model before a connection has been established.
 --
@@ -112,15 +116,23 @@ module Miso.WebSocket
   , connectText
   , connectBLOB
   , connectArrayBuffer
+  , connectWith
+  , connectJSONWith
+  , connectTextWith
+  , connectBLOBWith
+  , connectArrayBufferWith
   , sendText
   , sendJSON
   , sendBLOB
   , sendArrayBuffer
   , close
   , socketState
+  , protocol
   -- *** Defaults
   , emptyWebSocket
   -- *** Types
+  , ConnectOptions (..)
+  , defaultConnectOptions
   , WebSocket   (..)
   , URL
   , SocketState (..)
@@ -157,7 +169,7 @@ connect
   -> (MisoString -> action)
   -- ^ Error message callback
   -> Effect context props model action
-connect = websocketConnect
+connect = connectWith defaultConnectOptions
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket>
 --
@@ -176,7 +188,7 @@ connectJSON
   -> (MisoString -> action)
   -- ^ Error message callback
   -> Effect context props model action
-connectJSON = websocketConnectJSON
+connectJSON = connectJSONWith defaultConnectOptions
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket>
 --
@@ -194,7 +206,7 @@ connectText
   -> (MisoString -> action)
   -- ^ Error message callback
   -> Effect context props model action
-connectText = websocketConnectText
+connectText = connectTextWith defaultConnectOptions
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket>
 --
@@ -212,7 +224,7 @@ connectBLOB
   -> (MisoString -> action)
   -- ^ @onError@ callback
   -> Effect context props model action
-connectBLOB = websocketConnectBLOB
+connectBLOB = connectBLOBWith defaultConnectOptions
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket>
 --
@@ -230,7 +242,90 @@ connectArrayBuffer
   -> (MisoString -> action)
   -- ^ @onError@ callback
   -> Effect context props model action
-connectArrayBuffer = websocketConnectArrayBuffer
+connectArrayBuffer = connectArrayBufferWith defaultConnectOptions
+-----------------------------------------------------------------------------
+-- | 'connect' with t'ConnectOptions', e.g. to request subprotocols.
+--
+-- @
+-- connectWith defaultConnectOptions { protocols = ["graphql-transport-ws"] } url ...
+-- @
+--
+-- @since 1.16.0.0
+connectWith
+  :: FromJSON json
+  => ConnectOptions
+  -> URL
+  -> (WebSocket -> action)
+  -> (Closed -> action)
+  -> (Payload json -> action)
+  -> (MisoString -> action)
+  -> Effect context props model action
+connectWith = websocketConnect
+-----------------------------------------------------------------------------
+-- | 'connectJSON' with t'ConnectOptions'.
+--
+-- @since 1.16.0.0
+connectJSONWith
+  :: FromJSON json
+  => ConnectOptions
+  -> URL
+  -> (WebSocket -> action)
+  -> (Closed -> action)
+  -> (json -> action)
+  -> (MisoString -> action)
+  -> Effect context props model action
+connectJSONWith = websocketConnectJSON
+-----------------------------------------------------------------------------
+-- | 'connectText' with t'ConnectOptions'.
+--
+-- @since 1.16.0.0
+connectTextWith
+  :: ConnectOptions
+  -> URL
+  -> (WebSocket -> action)
+  -> (Closed -> action)
+  -> (MisoString -> action)
+  -> (MisoString -> action)
+  -> Effect context props model action
+connectTextWith = websocketConnectText
+-----------------------------------------------------------------------------
+-- | 'connectBLOB' with t'ConnectOptions'.
+--
+-- @since 1.16.0.0
+connectBLOBWith
+  :: ConnectOptions
+  -> URL
+  -> (WebSocket -> action)
+  -> (Closed -> action)
+  -> (Blob -> action)
+  -> (MisoString -> action)
+  -> Effect context props model action
+connectBLOBWith = websocketConnectBLOB
+-----------------------------------------------------------------------------
+-- | 'connectArrayBuffer' with t'ConnectOptions'.
+--
+-- @since 1.16.0.0
+connectArrayBufferWith
+  :: ConnectOptions
+  -> URL
+  -> (WebSocket -> action)
+  -> (Closed -> action)
+  -> (ArrayBuffer -> action)
+  -> (MisoString -> action)
+  -> Effect context props model action
+connectArrayBufferWith = websocketConnectArrayBuffer
+-----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/protocol>
+--
+-- The subprotocol the server selected from 'protocols', or 'Nothing'.
+-- Query it after @onOpen@.
+--
+-- @since 1.16.0.0
+protocol
+  :: WebSocket
+  -> (Maybe MisoString -> action)
+  -> Effect context props model action
+protocol = websocketProtocol
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/send>
 --
