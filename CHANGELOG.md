@@ -38,6 +38,7 @@ All notable changes to `miso` are documented here.
   unmount.
 - `socketState` read a property that does not exist (`socketState`) instead of
   `readyState`.
+- `width_` and `height_` are re-exported by `Miso.Svg.Property` again.
 
 ## 1.15.0.0
 
