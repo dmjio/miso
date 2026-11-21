@@ -47,7 +47,7 @@
 -- = Attribute groups
 --
 -- * __Geometry__: 'cx_', 'cy_', 'r_', 'rx_', 'ry_', 'x_', 'y_',
---   'x1_', 'y1_', 'x2_', 'y2_', @width_@, @height_@, 'd_', 'points_',
+--   'x1_', 'y1_', 'x2_', 'y2_', 'width_', 'height_', 'd_', 'points_',
 --   'viewBox_', 'preserveAspectRatio_', 'pathLength_', 'textLength_'
 --
 -- * __Paint__: 'fill_', 'fillOpacity_', 'fillRule_', 'stroke_',
@@ -142,6 +142,7 @@ module Miso.Svg.Property
   , fy_
   , gradientTransform_
   , gradientUnits_
+  , height_
   , in_'
   , in2_
   , intercept_
@@ -220,6 +221,7 @@ module Miso.Svg.Property
   , values_
   , vectorEffect_
   , viewBox_
+  , width_
   , x_
   , x1_
   , x2_
@@ -286,6 +288,7 @@ module Miso.Svg.Property
   , writingMode_
   ) where
 -----------------------------------------------------------------------------
+import Miso.Html.Property ( height_, width_ )
 import Miso.Property ( textProp )
 import Miso.String ( MisoString )
 import Miso.Types ( Attribute )
