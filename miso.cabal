@@ -293,6 +293,10 @@ library
   -- Live reload (meant for WASM or Vanilla)
   c-sources:
     cbits/foreign.c
+  include-dirs:
+    cbits
+  install-includes:
+    miso_reload.h
 
   -- FFI declarations
   if arch(javascript)

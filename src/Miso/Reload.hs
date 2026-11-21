@@ -97,16 +97,26 @@ import           Foreign.C.Types
 import           Miso.JSON
 #endif
 -----------------------------------------------------------------------------
-foreign import ccall unsafe "miso_x_store"
-  x_store :: StablePtr a -> IO ()
+-- The C side (cbits/foreign.c, declared in cbits/miso_reload.h) stores a
+-- @void *@, so the imports take a monomorphic 'Ptr' () and cast.  MicroHs does
+-- not accept a polymorphic @StablePtr a@ in a foreign import, passes a
+-- 'StablePtr' to C as an integer, and needs the header to declare the functions.
+foreign import ccall unsafe "miso_reload.h miso_x_store"
+  c_x_store :: Ptr () -> IO ()
 -----------------------------------------------------------------------------
-foreign import ccall unsafe "miso_x_get"
-  x_get :: IO (StablePtr a)
+foreign import ccall unsafe "miso_reload.h miso_x_get"
+  c_x_get :: IO (Ptr ())
 -----------------------------------------------------------------------------
-foreign import ccall unsafe "miso_x_exists"
+x_store :: StablePtr a -> IO ()
+x_store = c_x_store . castStablePtrToPtr
+-----------------------------------------------------------------------------
+x_get :: IO (StablePtr a)
+x_get = castPtrToStablePtr <$> c_x_get
+-----------------------------------------------------------------------------
+foreign import ccall unsafe "miso_reload.h miso_x_exists"
   x_exists :: IO CInt
 -----------------------------------------------------------------------------
-foreign import ccall unsafe "miso_x_clear"
+foreign import ccall unsafe "miso_reload.h miso_x_clear"
   x_clear :: IO ()
 -----------------------------------------------------------------------------
 #define MISO_JS_PATH "js/miso.js"
