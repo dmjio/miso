@@ -79,6 +79,7 @@
 --   'httpEquiv_', 'language_', 'scoped_'
 -- * __\<iframe\>__: 'sandbox_', 'seamless_', 'srcdoc_', 'frameborder_',
 --   'scrolling_'
+-- * __Dialog__: 'closedby_'
 -- * __Misc__: 'open_', 'reversed_', 'default_', 'kind_', 'srclang_',
 --   'label_', 'autosave_', 'formation_', 'ref_'
 --
@@ -110,6 +111,7 @@ module Miso.Html.Property
    , accept_
    , acceptCharset_
    , action_
+   , closedby_
    , autocomplete_
    , autofocus_
    , autosave_
@@ -255,6 +257,10 @@ acceptCharset_   = textProp "acceptCharset"
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLFormElement/action>
 action_ :: MisoString -> Attribute model action
 action_  = textProp "action"
+-----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLDialogElement/closedBy>
+closedby_ :: MisoString -> Attribute modal action
+closedby_ = textProp "closedby"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes/autocomplete>
 autocomplete_ :: MisoString -> Attribute model action
