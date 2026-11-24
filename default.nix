@@ -41,6 +41,23 @@ rec {
       styles = ./sample-app-native/conformance.css;
     };
 
+  # The same two Lynx bundles, with the app built by MicroHs (mhs) instead of
+  # GHC's JavaScript backend, see sample-app-native-mhs in nix/mhs/default.nix.
+  # MicroHs has the static pointers that the native runtime needs from the
+  # static-ptr branch of haskell-miso/MicroHs on.
+  sample-app-native-mhs-bundle =
+    pkgs.mkLynxBundle {
+      name = "sample-app-native-mhs-bundle";
+      jsFile = "${pkgs.sample-app-native-mhs}/bin/app-native.js";
+      styles = ./sample-app-native/styles.css;
+    };
+  sample-app-native-mhs-conformance-bundle =
+    pkgs.mkLynxBundle {
+      name = "sample-app-native-mhs-conformance-bundle";
+      jsFile = "${pkgs.sample-app-native-mhs}/bin/app-native-conformance.js";
+      styles = ./sample-app-native/conformance.css;
+    };
+
   # Android host APK (Kotlin + Lynx SDK), built reproducibly via nixpkgs
   # androidenv + the gradle mitm-cache dep fetcher. Embeds the freshly built
   # sample-app-native-bundle in assets. See nix/android.nix.
@@ -174,7 +191,7 @@ rec {
   # Same as playwright-wasm, but miso and the integration tests are built with
   # MicroHs (mhs), see nix/mhs/default.nix.  playwright-mhs uses the mhs
   # target browser (WebAssembly), playwright-mhs-js browser_js (JavaScript).
-  inherit (pkgs) microhs microhs-packages miso-mhs sample-app-mhs-bundle miso-tests-mhs-bundle miso-tests-mhs-js-bundle;
+  inherit (pkgs) microhs microhs-packages miso-mhs miso-mhs-native sample-app-mhs-bundle sample-app-native-mhs miso-tests-mhs-bundle miso-tests-mhs-js-bundle;
   playwright-mhs = pkgs.writeScriptBin "playwright" ''
     #!${pkgs.stdenv.shell}
     export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}

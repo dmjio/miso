@@ -236,6 +236,53 @@ jobs:
            bundle-artifact/main.lynx.bundle.sha256
          if-no-files-found: error
 
+  # The Lynx bundles again, with sample-app-native built by MicroHs (mhs)
+  # instead of GHC's JavaScript backend: miso with the native flag, the
+  # `static` keyword and GHC.StaticPtr from haskell-miso/MicroHs static-ptr,
+  # emscripten (JavaScript only) and rspeedy. See nix/mhs/default.nix.
+  build-bundle-mhs:
+    runs-on: ubuntu-latest
+    steps:
+     - uses: actions/checkout@v7.0.1
+     - uses: cachix/install-nix-action@v31.11.1
+       with:
+         extra_nix_config: |
+           experimental-features = nix-command flakes
+     - uses: cachix/cachix-action@v17
+       with:
+         name: haskell-miso-cachix
+         authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+
+     - name: Nix channel update
+       run: nix-channel --update
+
+     - name: Bun install
+       run: nix-env -iA bun -f . && bun install
+
+     - name: Bun build js
+       run: bun run js
+
+     - name: (MHS) miso with the native flag
+       run: nix-build -A miso-mhs-native
+
+     - name: (MHS) sample-app-native, JavaScript
+       run: nix-build -A sample-app-native-mhs
+
+     - name: (MHS) Sample app native bundles (gallery, conformance)
+       run: |
+         mkdir -p bundle-artifact/gallery bundle-artifact/conformance
+         nix-build -A sample-app-native-mhs-bundle -o result-gallery
+         cp result-gallery/main.lynx.bundle result-gallery/main.lynx.bundle.sha256 bundle-artifact/gallery/
+         nix-build -A sample-app-native-mhs-conformance-bundle -o result-conformance
+         cp result-conformance/main.lynx.bundle result-conformance/main.lynx.bundle.sha256 bundle-artifact/conformance/
+
+     - name: Upload MicroHs Lynx bundles
+       uses: actions/upload-artifact@v7.0.1
+       with:
+         name: lynx-bundle-mhs
+         path: bundle-artifact
+         if-no-files-found: error
+
   build-macos:
     runs-on: macos-latest
     needs: build-bundle
