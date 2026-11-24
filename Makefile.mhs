@@ -21,10 +21,11 @@
 # Revisions are kept in step with nix/source.nix -- change them in both.
 #####################################################################
 
-# MicroHs with the JSVal/JavaScript FFI and browser targets: haskell-miso/MicroHs,
-# branch jsval.  Upstream augustss/MicroHs will not work.
+# MicroHs with the JSVal/JavaScript FFI, browser targets and static pointers:
+# haskell-miso/MicroHs, branch static-ptr (on top of jsval).  Upstream
+# augustss/MicroHs will not work.
 MICROHS_URL   := https://github.com/haskell-miso/MicroHs
-MICROHS_REV   := f9f4e64a5c1c4b1b87848631bc4b42d0af128682
+MICROHS_REV   := 7083d737c4259c8a6ea26d6253103a8a92e858fe
 
 GHC_COMPAT_URL := https://github.com/augustss/ghc-compat
 GHC_COMPAT_REV := e04bd70e4040d52cd1d319387bda7514000b58a0

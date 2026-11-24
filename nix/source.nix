@@ -70,14 +70,15 @@ in
     sha256 = "1wi3vpswik9wj8x16ik5v17sjkd537c482kiavh719kfaz4h7884";
   };
 
-  # MicroHs (mhs) with the JSVal / JavaScript FFI, browser targets and
-  # js-sources support (haskell-miso/MicroHs, branch jsval), plus the
+  # MicroHs (mhs) with the JSVal / JavaScript FFI, browser targets,
+  # js-sources support and static pointers (haskell-miso/MicroHs, branch
+  # static-ptr, which is on top of jsval), plus the
   # packages miso needs when built with mhs.  See nix/mhs/default.nix.
   microhs = fetchFromGitHub {
     owner = "haskell-miso";
     repo = "MicroHs";
-    rev = "f9f4e64a5c1c4b1b87848631bc4b42d0af128682";
-    hash = "sha256-WXLaKMZwRFpgf4waZD75JUkNsEjj6FQyVUyWs2WYjxA=";
+    rev = "7083d737c4259c8a6ea26d6253103a8a92e858fe";
+    hash = "sha256-one4a3EWUWD3RndhBy+p7Qmv1djz1q8ZOx6ckndb5iY=";
   };
   mhs-ghc-compat = fetchFromGitHub {
     owner = "augustss";
