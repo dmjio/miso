@@ -11,6 +11,9 @@
 # bundle* (offline, no asset server) and registers it by relative name on
 # `globalThis.__galleryAssets` for Haskell to read back.
 #
+# For an app built otherwise (MicroHs, say), pass the compiled program itself as
+# `jsFile` instead of `jsDrv` and `exeName`.
+#
 # Usage (from a flake that has miso as an input):
 #
 #     miso.lib.${system}.mkLynxBundle {
@@ -23,8 +26,9 @@
 pkgs:
 
 { name ? "lynx-bundle"
-, jsDrv                    # the app's ghcjs derivation
-, exeName                  # executable name; its `.jsexe/all.js` is the program
+, jsDrv ? null             # the app's ghcjs derivation
+, exeName ? null           # executable name; its `.jsexe/all.js` is the program
+, jsFile ? "${jsDrv}/bin/${exeName}.jsexe/all.js"  # the program, if not from jsDrv
 , assets ? null            # optional path to a directory of PNGs to inline
 , styles ? null            # optional path to a styles.css to compile in
 }:
@@ -61,7 +65,7 @@ pkgs.stdenv.mkDerivation {
       --minify-whitespace \
       --target=bun \
       --outfile=build/all.js \
-      ${jsDrv}/bin/${exeName}.jsexe/all.js
+      ${jsFile}
 
     ln -s ${pkgs.rspeedy}/lib/node_modules build/node_modules
     cp ${lynxConfig} build/lynx.config.ts

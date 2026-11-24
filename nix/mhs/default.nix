@@ -90,17 +90,57 @@ rec {
   };
 
   # miso built with mhs, installed as a package.
-  miso-mhs = super.stdenv.mkDerivation {
-    pname = "miso-mhs";
+  # -text: MisoString is Data.JSString, as on the other client backends
+  # (wasm, GHCJS).  Flip to "text" for MisoString = Data.Text; both build.
+  miso-mhs = mkMisoMhs "miso-mhs" "-template-haskell -aeson -native -production -ssr -benchmark -text";
+  # The same with the native flag, for Lynx (see sample-app-native-mhs).
+  # mcabal takes a flag to set as its bare name, not +name.
+  miso-mhs-native = mkMisoMhs "miso-mhs-native" "-template-haskell -aeson native -production -ssr -benchmark -text";
+  mkMisoMhs = pname: flags: super.stdenv.mkDerivation {
+    inherit pname;
     version = "1.15.0.0";
     src = src.miso;
     nativeBuildInputs = [ microhs ];
     installPhase = ''
       runHook preInstall
       ${copyDB microhs-packages}
-      # -text: MisoString is Data.JSString, as on the other client backends
-      # (wasm, GHCJS).  Flip to "text" for MisoString = Data.Text; both build.
-      ${mcabal} -q -f"-template-haskell -aeson -native -production -ssr -benchmark -text" install
+      ${mcabal} -q -f"${flags}" install
+      runHook postInstall
+    '';
+  };
+
+  # sample-app-native (app-native, the gallery, and app-native-conformance)
+  # built with mhs to one JavaScript file each, for mkLynxBundle (see
+  # sample-app-native-mhs-bundle in default.nix): bin/<exe>.js.
+  #
+  # The target is browser_js (JavaScript only, -sWASM=0, js-sources as
+  # --pre-js), but for the environment of the Lynx JavaScript threads, like
+  # the GHC build's ld-options in sample-app-native/app.cabal: emcc takes the
+  # last value of a setting, and -optl comes after the target's ccflags.
+  # No BigInt: PrimJS has none.
+  sample-app-native-mhs = super.stdenv.mkDerivation {
+    pname = "sample-app-native-mhs";
+    version = "0.1.0.0";
+    src = src.sample-app-native;
+    nativeBuildInputs = [ microhs super.emscripten ];
+    buildPhase = ''
+      runHook preBuild
+      export CABALDIR=$TMPDIR/mcabal
+      cp -r ${cabalDir miso-mhs-native} $CABALDIR
+      chmod -R u+w $CABALDIR
+      export HOME=$TMPDIR
+      export EM_CACHE=$TMPDIR/emcache
+      cp -r ${super.emscripten}/share/emscripten/cache $EM_CACHE
+      chmod -R u+w $EM_CACHE
+      ${mcabal} "--options=-tbrowser_js -optl -sENVIRONMENT=shell -optl -sWASM_BIGINT=0" build
+      runHook postBuild
+    '';
+    installPhase = ''
+      runHook preInstall
+      mkdir -p $out/bin
+      for exe in app-native app-native-conformance; do
+        cp dist-mcabal/bin/mhs/$exe $out/bin/$exe.js
+      done
       runHook postInstall
     '';
   };
