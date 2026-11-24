@@ -2495,30 +2495,34 @@ effectListener Proxy jsval = void $ do
             Just ptr ->
               -- The t'SomeStaticComponent' carries the child's dictionaries, so the
               -- @action@ type (and its 'FromJSON') is in scope from the key alone.
-              case deRefStaticPtr ptr of
-                SomeStaticComponent (_ :: Component context props model action) ->
-                  case fromJSON effectAction :: Result action of
-                    Success action -> do
-                      comps <- readIORef components
-                      case IM.lookup effectComponentId comps of
-                        Nothing ->
-                          FFI.consoleError $ ms $
-                            "[effectListener]: ComponentId NOT registered:" <> ms effectComponentId
-                        Just _ -> do
-                          FFI.consoleLog "[effectListener]: Sinking action into Component"
-                          -- dmj: enqueue the cross-thread action onto the ordinary
-                          -- 'globalQueue' rather than replaying @update@ inline here.
-                          -- This keeps the scheduler the sole writer of every model
-                          -- (no read-modify-write race with the scheduler's own
-                          -- 'commit') and preserves ordering relative to any actions
-                          -- already queued for this component. The action's @update@
-                          -- runs only on this thread; it does not ping-pong back
-                          -- because only an explicit 'CrossThread' effect crosses.
-                          atomicModifyIORef' globalQueue $ \q ->
-                            (enqueue effectComponentId action q, ())
-                          notify globalWaiter
-                    Error e ->
-                      FFI.consoleError ("[effectListener]: action decode error: " <> ms e)
+              -- A function of its own, with a signature, so that the match on the
+              -- existential has a known type: MicroHs cannot use the dictionaries of
+              -- t'SomeStaticComponent' when its @props@ is not yet known at the match.
+              let sinkAction :: SomeStaticComponent props context -> IO ()
+                  sinkAction (SomeStaticComponent comp_) =
+                    case decodeActionOf comp_ effectAction of
+                      Success action -> do
+                        comps <- readIORef components
+                        case IM.lookup effectComponentId comps of
+                          Nothing ->
+                            FFI.consoleError $ ms $
+                              "[effectListener]: ComponentId NOT registered:" <> ms effectComponentId
+                          Just _ -> do
+                            FFI.consoleLog "[effectListener]: Sinking action into Component"
+                            -- dmj: enqueue the cross-thread action onto the ordinary
+                            -- 'globalQueue' rather than replaying @update@ inline here.
+                            -- This keeps the scheduler the sole writer of every model
+                            -- (no read-modify-write race with the scheduler's own
+                            -- 'commit') and preserves ordering relative to any actions
+                            -- already queued for this component. The action's @update@
+                            -- runs only on this thread; it does not ping-pong back
+                            -- because only an explicit 'CrossThread' effect crosses.
+                            atomicModifyIORef' globalQueue $ \q ->
+                              (enqueue effectComponentId action q, ())
+                            notify globalWaiter
+                      Error e ->
+                        FFI.consoleError ("[effectListener]: action decode error: " <> ms e)
+              in sinkAction (deRefStaticPtr ptr)
 #endif
 ----------------------------------------------------------------------------
 #ifdef NATIVE
@@ -2619,74 +2623,78 @@ componentListener contextRef live (BTS ctx) = void $ do
               Nothing ->
                 FFI.consoleError "[COMPONENT]: staticPtr NOT found for componentStaticKey"
               Just ptr ->
-                case deRefStaticPtr ptr of
-                  SomeStaticComponent (comp_ :: Component context props model action) ->
-                    case componentComponentType of
-                      MOUNT ->
-                        -- The MTS paints the initial frame itself, so any child that is part
-                        -- of that frame is already mounted+registered here by the root
-                        -- 'initialDraw' (nodeIds in lockstep with the BTS, so updates land on
-                        -- it). The BTS still posts @MOUNT@ for every non-root child; re-running
-                        -- 'initialize' for one we already have would paint a SECOND, orphaned
-                        -- copy — the doubled 'vcomp'. So mount only children we don't yet know:
-                        -- that is exactly the components created later, during a BTS update,
-                        -- which the MTS learns about solely through this message.
-                        IM.member componentComponentId <$> readIORef components >>= \case
-                          True -> pure ()
-                          False ->
-                            -- The BTS always ships its @{ nodeId }@ @DOMRef@ alongside @MOUNT@
-                            -- (see 'postComponent' MOUNT); 'Nothing' here means the wire
-                            -- invariant broke, so error out rather than silently mounting
-                            -- against a bogus synthesized parent.
-                            case componentComponentDOMRef of
-                              Nothing ->
-                                FFI.consoleError "[COMPONENT]: MOUNT missing domRef payload"
-                              Just domRef -> do
-                                -- Resolve the shipped @DOMRef@ to the real native element via
-                                -- @globalThis.runtime.nodes[nodeId]@ so the MTS t'ComponentInfo'
-                                -- Reader ('componentInfoDOMRef') holds a live ref.
-                                parent_ <- resolveNodeRef domRef
-                                -- Recover the child's initial @props@ from the wire (the BTS ships
-                                -- them on @MOUNT@), decoded at the @props@ type recovered above.
-                                case componentComponentPayload of
-                                  Just pv | Success initProps <- (fromJSON pv :: Result props) ->
-                                    -- 'contextRef' is this thread's own @context@ cell, closed
-                                    -- over from 'initComponent'. Nothing is looked up: the cell
-                                    -- exists before this listener is installed, and the mirror
-                                    -- component shares it exactly as a locally built one does.
-                                    --
-                                    -- This is also why the parent is not consulted. 'postComponent'
-                                    -- MOUNT fires at the end of 'initialize', after 'initialDraw'
-                                    -- has built the children, so a nested subtree posts the child's
-                                    -- MOUNT ahead of its parent's and the parent is routinely not
-                                    -- here yet.
-                                    void $ initialize mempty componentComponentId Draw False live contextRef initProps
-                                      Nothing (Just (staticKey ptr)) comp_ (pure parent_)
-                                  _ ->
-                                    FFI.consoleError "[COMPONENT]: MOUNT missing/invalid props payload"
-                      UNMOUNT ->
-                        IM.lookup componentComponentId <$> readIORef components >>= \case
-                          Nothing ->
-                            FFI.consoleError $ "[COMPONENT]: Couldn't find Component to unmount " <>
-                              ms (show componentComponentId)
-                          Just c -> unmountComponent @context c
-                      MODEL_HYDRATE -> do
-                        case componentComponentPayload of
-                          Nothing ->
-                            FFI.consoleError "[COMPONENT]: No model to hydrate"
-                          Just m ->
-                            case fromJSON m :: Result model of
-                              Success newModel ->
-                                modifyComponent componentComponentId $ do
-                                  componentModel .= newModel
-                              Error e ->
-                                FFI.consoleError ("[COMPONENT]: Could not decode model: " <> e)
-                      -- 'READY' handled above (no deref), so GHC's long-distance
-                      -- info knows it can't reach here — no catch-all needed.
-                      -- 'READY_ACK' flows MTS -> BTS only (see 'readyAckListener');
-                      -- 'componentListener' only runs on MTS, so this never
-                      -- actually fires — kept as a no-op so the match stays total.
-                      READY_ACK -> pure ()
+                -- A function of its own, with a signature, so that the match on the
+                -- existential has a known type: MicroHs cannot use the dictionaries of
+                -- t'SomeStaticComponent' when its @props@ is not yet known at the match.
+                let onComponent :: SomeStaticComponent props context -> IO ()
+                    onComponent (SomeStaticComponent comp_) =
+                      case componentComponentType of
+                        MOUNT ->
+                          -- The MTS paints the initial frame itself, so any child that is part
+                          -- of that frame is already mounted+registered here by the root
+                          -- 'initialDraw' (nodeIds in lockstep with the BTS, so updates land on
+                          -- it). The BTS still posts @MOUNT@ for every non-root child; re-running
+                          -- 'initialize' for one we already have would paint a SECOND, orphaned
+                          -- copy — the doubled 'vcomp'. So mount only children we don't yet know:
+                          -- that is exactly the components created later, during a BTS update,
+                          -- which the MTS learns about solely through this message.
+                          IM.member componentComponentId <$> readIORef components >>= \case
+                            True -> pure ()
+                            False ->
+                              -- The BTS always ships its @{ nodeId }@ @DOMRef@ alongside @MOUNT@
+                              -- (see 'postComponent' MOUNT); 'Nothing' here means the wire
+                              -- invariant broke, so error out rather than silently mounting
+                              -- against a bogus synthesized parent.
+                              case componentComponentDOMRef of
+                                Nothing ->
+                                  FFI.consoleError "[COMPONENT]: MOUNT missing domRef payload"
+                                Just domRef -> do
+                                  -- Resolve the shipped @DOMRef@ to the real native element via
+                                  -- @globalThis.runtime.nodes[nodeId]@ so the MTS t'ComponentInfo'
+                                  -- Reader ('componentInfoDOMRef') holds a live ref.
+                                  parent_ <- resolveNodeRef domRef
+                                  -- Recover the child's initial @props@ from the wire (the BTS ships
+                                  -- them on @MOUNT@), decoded at the @props@ type recovered above.
+                                  case componentComponentPayload of
+                                    Just pv | Success initProps <- decodePropsOf comp_ pv ->
+                                      -- 'contextRef' is this thread's own @context@ cell, closed
+                                      -- over from 'initComponent'. Nothing is looked up: the cell
+                                      -- exists before this listener is installed, and the mirror
+                                      -- component shares it exactly as a locally built one does.
+                                      --
+                                      -- This is also why the parent is not consulted. 'postComponent'
+                                      -- MOUNT fires at the end of 'initialize', after 'initialDraw'
+                                      -- has built the children, so a nested subtree posts the child's
+                                      -- MOUNT ahead of its parent's and the parent is routinely not
+                                      -- here yet.
+                                      void $ initialize mempty componentComponentId Draw False live contextRef initProps
+                                        Nothing (Just (staticKey ptr)) comp_ (pure parent_)
+                                    _ ->
+                                      FFI.consoleError "[COMPONENT]: MOUNT missing/invalid props payload"
+                        UNMOUNT ->
+                          IM.lookup componentComponentId <$> readIORef components >>= \case
+                            Nothing ->
+                              FFI.consoleError $ "[COMPONENT]: Couldn't find Component to unmount " <>
+                                ms (show componentComponentId)
+                            Just c -> unmountComponent @context c
+                        MODEL_HYDRATE -> do
+                          case componentComponentPayload of
+                            Nothing ->
+                              FFI.consoleError "[COMPONENT]: No model to hydrate"
+                            Just m ->
+                              case decodeModelOf comp_ m of
+                                Success newModel ->
+                                  modifyComponent componentComponentId $ do
+                                    componentModel .= newModel
+                                Error e ->
+                                  FFI.consoleError ("[COMPONENT]: Could not decode model: " <> e)
+                        -- 'READY' handled above (no deref), so GHC's long-distance
+                        -- info knows it can't reach here — no catch-all needed.
+                        -- 'READY_ACK' flows MTS -> BTS only (see 'readyAckListener');
+                        -- 'componentListener' only runs on MTS, so this never
+                        -- actually fires — kept as a no-op so the match stays total.
+                        READY_ACK -> pure ()
+                in onComponent (deRefStaticPtr ptr)
 #endif
 ----------------------------------------------------------------------------
 -- | Dispatch a main-thread ('MTS') event on the Haskell layer.
@@ -2750,6 +2758,21 @@ registerMainThreadDispatch = do
   cb <- FFI.syncCallback1 dispatchMainThreadEvent
   runtimeObj <- jsg "runtime"
   FFI.set "dispatchMainThreadEvent" cb (Object runtimeObj)
+#endif
+#ifdef NATIVE
+-----------------------------------------------------------------------------
+-- | Decode a cross-thread payload at the @action@, @props@ or @model@ type of
+-- the t'Component' recovered from a t'SomeStaticComponent'. The component
+-- fixes the type, so the existential type variables never need a name (a
+-- pattern type signature binding them is GHC-only; MicroHs has none).
+decodeActionOf :: FromJSON action => Component context props model action -> Value -> Result action
+decodeActionOf _ = fromJSON
+
+decodePropsOf :: FromJSON props => Component context props model action -> Value -> Result props
+decodePropsOf _ = fromJSON
+
+decodeModelOf :: FromJSON model => Component context props model action -> Value -> Result model
+decodeModelOf _ = fromJSON
 #endif
 ----------------------------------------------------------------------------
 -- | Dispatches a t'COMPONENT' lifecycle message (BTS → MTS) on the
